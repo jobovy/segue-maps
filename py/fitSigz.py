@@ -73,9 +73,22 @@ def fitSigz(parser):
     ys= numpy.array([s[options.d2] for s in samples])
     if options.expd1: xs= numpy.exp(xs)
     if options.expd2: ys= numpy.exp(ys)
+    if options.xmin is None or options.xmax is None:
+        xrange= [numpy.amin(xs),numpy.amax(xs)]
+    else:
+        xrange= [options.xmin,options.xmax]
+    if options.ymin is None or options.ymax is None:
+        yrange= [numpy.amin(ys),numpy.amax(ys)]
+    else:
+        yrange= [options.ymin,options.ymax]
     bovy_plot.bovy_print()
-    bovy_plot.scatterplot(xs,ys,'k,',onedhists=True)
-    bovy_plot.bovy_plot(params[options.d1],params[options.d2],'wx',
+    bovy_plot.scatterplot(xs,ys,'k,',onedhists=True,xrange=xrange,
+                          yrange=yrange,xlabel=options.xlabel,
+                          ylabel=options.ylabel)
+    maxx, maxy= params[options.d1], params[options.d2]
+    if options.expd1: maxx= math.exp(maxx)
+    if options.expd2: maxy= math.exp(maxy)
+    bovy_plot.bovy_plot([maxx],[maxy],'wx',
                         overplot=True,ms=10.,mew=2.)
     bovy_plot.bovy_end_print(options.plotfile)
 
@@ -193,6 +206,18 @@ def get_options():
     parser.add_option("--expd2",action="store_true", dest="expd2",
                       default=False,
                       help="Plot exp() of d2")
+    parser.add_option("--xmin",dest='xmin',type='float',default=None,
+                      help="xrange[0]")
+    parser.add_option("--xmax",dest='xmax',type='float',default=None,
+                      help="xrange[1]")
+    parser.add_option("--ymin",dest='ymin',type='float',default=None,
+                      help="yrange[0]")
+    parser.add_option("--ymax",dest='ymax',type='float',default=None,
+                      help="yrange[1]")
+    parser.add_option("--xlabel",dest='xlabel',default=None,
+                      help="xlabel")
+    parser.add_option("--ylabel",dest='ylabel',default=None,
+                      help="ylabel")
     return parser
 
 if __name__ == '__main__':
