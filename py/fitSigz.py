@@ -37,13 +37,40 @@ def fitSigz(parser):
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
-        if options.metal == 'rich':
-            params= numpy.array([0.02,numpy.log(25.),0.,0.,numpy.log(6.)])
-        elif options.metal == 'poor':
-            params= numpy.array([0.02,numpy.log(40.),0.,0.,numpy.log(15.)])
-        else:
-            params= numpy.array([0.02,numpy.log(30.),0.,0.,numpy.log(15.)])
-        params= optimize.fmin_powell(_HWRLikeMinus,params,
+        if options.model.lower() == 'hwr':
+            if options.metal == 'rich':
+                params= numpy.array([0.02,numpy.log(25.),0.,0.,numpy.log(6.)])
+            elif options.metal == 'poor':
+                params= numpy.array([0.02,numpy.log(40.),0.,0.,numpy.log(15.)])
+            else:
+                params= numpy.array([0.02,numpy.log(30.),0.,0.,numpy.log(15.)])
+            like_func= _HWRLikeMinus
+            pdf_func= _HWRLike
+            #Slice sampling keywords
+            step= [0.01,0.05,0.3]
+            create_method=['full','step_out','step_out',
+                           'step_out','step_out']
+            isDomainFinite=[[True,True],[False,False],
+                            [False,False],[False,False],
+                            [False,False]],
+            domain=[[0.,1.],[0.,0.],[0.,0.],[0.,0.],
+                    [0.,0.]],
+        elif options.model.lower() == 'isotherm':
+            if options.metal == 'rich':
+                params= numpy.array([0.02,numpy.log(25.),numpy.log(6.)])
+            elif options.metal == 'poor':
+                params= numpy.array([0.02,numpy.log(40.),numpy.log(15.)])
+            else:
+                params= numpy.array([0.02,numpy.log(30.),numpy.log(15.)])
+            like_func= _IsothermLikeMinus
+            pdf_func= _IsothermLike
+            #Slice sampling keywords
+            step= [0.01,0.05,0.3]
+            create_method=['full','step_out','step_out']
+            isDomainFinite=[[True,True],[False,False],
+                            [False,False]]
+            domain=[[0.,1.],[0.,0.],[0.,0.]]
+        params= optimize.fmin_powell(like_func,params,
                                      args=(XYZ,vxvyvz,cov_vxvyvz,R,d))
         if _DEBUG:
             print "Optimal likelihood:", params
@@ -52,16 +79,12 @@ def fitSigz(parser):
         if _VERBOSE:
             print "Sampling the likelihood ..."
         samples= bovy_mcmc.slice(params,
-                                 [0.01,0.05,.3,.3,0.3],
-                                 _HWRLike,
+                                 step,
+                                 pdf_func,
                                  (XYZ,vxvyvz,cov_vxvyvz,R,d),
-                                 create_method=['full','step_out','step_out',
-                                                'step_out','step_out'],
-                                 isDomainFinite=[[True,True],[False,False],
-                                                 [False,False],[False,False],
-                                                 [False,False]],
-                                 domain=[[0.,1.],[0.,0.],[0.,0.],[0.,0.],
-                                         [0.,0.]],
+                                 create_method=create_method,
+                                 isDomainFinite=isDomainFinite,
+                                 domain=domain,
                                  nsamples=options.nsamples)
         if _DEBUG:
             print "Printing mean and std dev of samples ..."
@@ -129,13 +152,38 @@ def _HWRLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
     return -_HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d)
 
 def _HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
-    """Minus log likelihood for the HWR model for one object"""
+    """Minus log likelihood for the HWR model"""
     if params[0] < 0. or params[0] > 1.:
         return numpy.finfo(numpy.dtype(numpy.float64)).max
     #Get model sigma_z
     sigo= math.exp(params[1])
     Rs= math.exp(params[4])
     sigz= (sigo+params[2]*d+params[3]*d**2.)*numpy.exp(-(R-8.)/Rs)
+    sigz2= sigz**2.+cov_vxvyvz[:,2,2]
+    sigz= numpy.sqrt(sigz2)
+    vz= vxvyvz[:,2]
+    out= -numpy.sum(numpy.log(params[0]/numpy.sqrt(100.**2.+
+                                                   cov_vxvyvz[:,2,2])\
+                                  *numpy.exp(-vz**2./2./(100.**2.+
+                                                         cov_vxvyvz[:,2,2]))+
+                              (1.-params[0])/sigz*numpy.exp(-vz**2./2./\
+                                                                 sigz2)))
+    if _DEBUG:
+        print "Current params, minus likelihood:", params, out
+    return out
+
+def _IsothermLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
+    """log likelihood for the HWR model"""
+    return -_IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d)
+
+def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
+    """Minus log likelihood for the isothermal model"""
+    if params[0] < 0. or params[0] > 1.:
+        return numpy.finfo(numpy.dtype(numpy.float64)).max
+    #Get model sigma_z
+    sigo= math.exp(params[1])
+    Rs= math.exp(params[2])
+    sigz= sigo*numpy.exp(-(R-8.)/Rs)
     sigz2= sigz**2.+cov_vxvyvz[:,2,2]
     sigz= numpy.sqrt(sigz2)
     vz= vxvyvz[:,2]
@@ -223,6 +271,8 @@ def get_options():
     parser = OptionParser(usage=usage)
     parser.add_option("-o",dest='plotfile',
                       help="Name of file for plot")
+    parser.add_option("--model",dest='model',default='HWR',
+                      help="Model to fit")
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
     parser.add_option("-n","--nsamples",dest='nsamples',type='int',
