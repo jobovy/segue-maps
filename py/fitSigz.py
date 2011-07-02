@@ -1,6 +1,7 @@
 import os, os.path
 import math
 import numpy
+import random
 import cPickle as pickle
 from optparse import OptionParser
 from scipy import optimize
@@ -36,7 +37,12 @@ def fitSigz(parser):
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
-        params= numpy.array([0.02,numpy.log(25.),0.,0.,numpy.log(6.)])
+        if options.metal == 'rich':
+            params= numpy.array([0.02,numpy.log(25.),0.,0.,numpy.log(6.)])
+        elif options.metal == 'poor':
+            params= numpy.array([0.02,numpy.log(40.),0.,0.,numpy.log(15.)])
+        else:
+            params= numpy.array([0.02,numpy.log(30.),0.,0.,numpy.log(15.)])
         params= optimize.fmin_powell(_HWRLikeMinus,params,
                                      args=(XYZ,vxvyvz,cov_vxvyvz,R,d))
         if _DEBUG:
@@ -69,28 +75,54 @@ def fitSigz(parser):
         pickle.dump(samples,savefile)
         savefile.close()
     #Plot
-    xs= numpy.array([s[options.d1] for s in samples])
-    ys= numpy.array([s[options.d2] for s in samples])
-    if options.expd1: xs= numpy.exp(xs)
-    if options.expd2: ys= numpy.exp(ys)
-    if options.xmin is None or options.xmax is None:
-        xrange= [numpy.amin(xs),numpy.amax(xs)]
+    if options.plotfunc:
+        #First plot the best fit
+        zs= numpy.linspace(0.3,1.2,1001)
+        ds= zs-0.5
+        maxys= math.exp(params[1])+params[2]*ds+params[3]*ds**2.
+        if options.xmin is None or options.xmax is None:
+            xrange= [numpy.amin(zs)-0.1,numpy.amax(zs)+0.1]
+        else:
+            xrange= [options.xmin,options.xmax]
+        if options.ymin is None or options.ymax is None:
+            yrange= [numpy.amin(ys)-1.,numpy.amax(ys)+1.]
+        else:
+            yrange= [options.ymin,options.ymax]
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_plot(zs,maxys,'k-',xrange=xrange,yrange=yrange,
+                            xlabel=options.xlabel,
+                            ylabel=options.ylabel)
+        #Now print some samples from the posterior
+        random.shuffle(samples)
+        for ii in range(options.plotnsamples):
+            thisparams= samples[ii]
+            ys= math.exp(thisparams[1])+thisparams[2]*ds+thisparams[3]*ds**2.
+            bovy_plot.bovy_plot(zs,ys,'-',color='0.75',overplot=True,alpha=0.1)
+        bovy_plot.bovy_plot(zs,maxys,'k-',overplot=True)
+        bovy_plot.bovy_end_print(options.plotfile)
     else:
-        xrange= [options.xmin,options.xmax]
-    if options.ymin is None or options.ymax is None:
-        yrange= [numpy.amin(ys),numpy.amax(ys)]
-    else:
-        yrange= [options.ymin,options.ymax]
-    bovy_plot.bovy_print()
-    bovy_plot.scatterplot(xs,ys,'k,',onedhists=True,xrange=xrange,
-                          yrange=yrange,xlabel=options.xlabel,
-                          ylabel=options.ylabel)
-    maxx, maxy= params[options.d1], params[options.d2]
-    if options.expd1: maxx= math.exp(maxx)
-    if options.expd2: maxy= math.exp(maxy)
-    bovy_plot.bovy_plot([maxx],[maxy],'wx',
-                        overplot=True,ms=10.,mew=2.)
-    bovy_plot.bovy_end_print(options.plotfile)
+        xs= numpy.array([s[options.d1] for s in samples])
+        ys= numpy.array([s[options.d2] for s in samples])
+        if options.expd1: xs= numpy.exp(xs)
+        if options.expd2: ys= numpy.exp(ys)
+        if options.xmin is None or options.xmax is None:
+            xrange= [numpy.amin(xs),numpy.amax(xs)]
+        else:
+            xrange= [options.xmin,options.xmax]
+        if options.ymin is None or options.ymax is None:
+            yrange= [numpy.amin(ys),numpy.amax(ys)]
+        else:
+            yrange= [options.ymin,options.ymax]
+        bovy_plot.bovy_print()
+        bovy_plot.scatterplot(xs,ys,'k,',onedhists=True,xrange=xrange,
+                              yrange=yrange,xlabel=options.xlabel,
+                              ylabel=options.ylabel)
+        maxx, maxy= params[options.d1], params[options.d2]
+        if options.expd1: maxx= math.exp(maxx)
+        if options.expd2: maxy= math.exp(maxy)
+        bovy_plot.bovy_plot([maxx],[maxy],'wx',
+                            overplot=True,ms=10.,mew=2.)
+        bovy_plot.bovy_end_print(options.plotfile)
 
 def _HWRLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
     """log likelihood for the HWR model"""
@@ -218,6 +250,12 @@ def get_options():
                       help="xlabel")
     parser.add_option("--ylabel",dest='ylabel',default=None,
                       help="ylabel")
+    parser.add_option("--plotfunc",action="store_true", dest="plotfunc",
+                      default=False,
+                      help="Plot samples from the inferred sigma_z(z) relation at R_0")
+    parser.add_option("--plotnsamples",dest='plotnsamples',default=10,
+                      type='int',
+                      help="Plot this number of function samples")
     return parser
 
 if __name__ == '__main__':
