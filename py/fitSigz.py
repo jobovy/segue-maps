@@ -72,7 +72,7 @@ def fitSigz(parser):
     xs= numpy.array([s[options.d1] for s in samples])
     ys= numpy.array([s[options.d2] for s in samples])
     if options.expd1: xs= numpy.exp(xs)
-    if options.expd1: ys= numpy.exp(ys)
+    if options.expd2: ys= numpy.exp(ys)
     bovy_plot.bovy_print()
     bovy_plot.scatterplot(xs,ys,'k,',onedhists=True)
     bovy_plot.bovy_plot(params[options.d1],params[options.d2],'wx',
