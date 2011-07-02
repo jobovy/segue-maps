@@ -41,6 +41,7 @@ $(OUTDIR)/HWR_poor_g_func.$(EXT): fitSigz.py Makefile
 	--ylabel='\sigma_z\ [\mathrm{km\ s}^{-1}]' \
 	--ymin=0. --ymax=50. --metal=poor
 
+
 #Metal rich, isothermal model
 $(OUTDIR)/isotherm_rich_g_sR.$(EXT): fitSigz.py Makefile
 	$(PYTHON) fitSigz.py isotherm_rich_g.sav -o $@ --expd1 --expd2 \

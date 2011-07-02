@@ -47,7 +47,7 @@ def fitSigz(parser):
             like_func= _HWRLikeMinus
             pdf_func= _HWRLike
             #Slice sampling keywords
-            step= [0.01,0.05,0.3]
+            step= [0.01,0.05,0.3,0.3,0.3]
             create_method=['full','step_out','step_out',
                            'step_out','step_out']
             isDomainFinite=[[True,True],[False,False],
@@ -68,13 +68,12 @@ def fitSigz(parser):
             step= [0.01,0.05,0.3]
             create_method=['full','step_out','step_out']
             isDomainFinite=[[True,True],[False,False],
-                            [False,False]]
-            domain=[[0.,1.],[0.,0.],[0.,0.]]
+                            [False,True]]
+            domain=[[0.,1.],[0.,0.],[0.,10.]]
         params= optimize.fmin_powell(like_func,params,
                                      args=(XYZ,vxvyvz,cov_vxvyvz,R,d))
         if _DEBUG:
             print "Optimal likelihood:", params
-        #params= numpy.array([0.01716897,3.03033338,1.67680775,2.15822347,2.26041775])
         #Now sample
         if _VERBOSE:
             print "Sampling the likelihood ..."
@@ -178,7 +177,7 @@ def _IsothermLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
 
 def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
     """Minus log likelihood for the isothermal model"""
-    if params[0] < 0. or params[0] > 1.:
+    if params[0] < 0. or params[0] > 1. or params[2] > 10.:
         return numpy.finfo(numpy.dtype(numpy.float64)).max
     #Get model sigma_z
     sigo= math.exp(params[1])
