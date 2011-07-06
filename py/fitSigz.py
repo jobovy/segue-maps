@@ -1,10 +1,10 @@
 import os, os.path
 import math
 import numpy
-import random
 import cPickle as pickle
+from matplotlib import pyplot
 from optparse import OptionParser
-from scipy import optimize
+from scipy import optimize, special
 from galpy.util import bovy_coords, bovy_plot
 import bovy_mcmc
 _VERBOSE=True
@@ -103,24 +103,47 @@ def fitSigz(parser):
         ds= zs-0.5
         maxys= math.exp(params[1])+params[2]*ds+params[3]*ds**2.
         if options.xmin is None or options.xmax is None:
-            xrange= [numpy.amin(zs)-0.1,numpy.amax(zs)+0.1]
+            xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.1]
         else:
             xrange= [options.xmin,options.xmax]
         if options.ymin is None or options.ymax is None:
             yrange= [numpy.amin(ys)-1.,numpy.amax(ys)+1.]
         else:
             yrange= [options.ymin,options.ymax]
+        #Now plot the mean and std-dev from the posterior
+        zmean= numpy.zeros(len(zs))
+        nsigs= 3
+        zsigs= numpy.zeros((len(zs),2*nsigs))
+        fs= numpy.zeros((len(zs),len(samples)))
+        ds= zs-0.5
+        for ii in range(len(samples)):
+            thisparams= samples[ii]
+            fs[:,ii]= math.exp(thisparams[1])+thisparams[2]*ds+thisparams[3]*ds**2.
+        #Record mean and std-devs
+        zmean[:]= numpy.mean(fs,axis=1)
         bovy_plot.bovy_print()
-        bovy_plot.bovy_plot(zs,maxys,'k-',xrange=xrange,yrange=yrange,
+        bovy_plot.bovy_plot(zs,zmean,'k-',xrange=xrange,yrange=yrange,
                             xlabel=options.xlabel,
                             ylabel=options.ylabel)
-        #Now print some samples from the posterior
-        random.shuffle(samples)
-        for ii in range(options.plotnsamples):
-            thisparams= samples[ii]
-            ys= math.exp(thisparams[1])+thisparams[2]*ds+thisparams[3]*ds**2.
-            bovy_plot.bovy_plot(zs,ys,'-',color='0.75',overplot=True,alpha=0.1)
-        bovy_plot.bovy_plot(zs,maxys,'k-',overplot=True)
+        for ii in range(nsigs):
+            for jj in range(len(zs)):
+                thisf= sorted(fs[jj,:])
+                thiscut= 0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                zsigs[jj,2*ii]= thisf[int(math.ceil(thiscut*len(samples)))]
+                thiscut= 1.-thiscut
+                zsigs[jj,2*ii+1]= thisf[int(math.ceil(thiscut*len(samples)))]
+        colord, cc= (1.-0.75)/nsigs, 1
+        nsigma= nsigs
+        pyplot.fill_between(zs,zsigs[:,0],zsigs[:,1],color='0.75')
+        while nsigma > 1:
+            pyplot.fill_between(zs,zsigs[:,cc+1],zsigs[:,cc-1],
+                                color='%f' % (.75+colord*cc))
+            pyplot.fill_between(zs,zsigs[:,cc],zsigs[:,cc+2],
+                                color='%f' % (.75+colord*cc))
+            cc+= 1.
+            nsigma-= 1
+        bovy_plot.bovy_plot(zs,zmean,'k-',overplot=True)
+        #bovy_plot.bovy_plot(zs,maxys,'w--',overplot=True)
         bovy_plot.bovy_end_print(options.plotfile)
     else:
         xs= numpy.array([s[options.d1] for s in samples])

@@ -1,6 +1,12 @@
 OUTDIR=../figs
 EXT=png
 
+#Sig_z(z) for both metal rich and metal poor
+
+$(OUTDIR)/HWR_rich_poor_g_func.$(EXT): plotSigzFunc.py
+	$(PYTHON) plotSigzFunc.py HWR_rich_g.sav HWR_poor_g.sav \
+	-o $@
+
 #Metal rich
 $(OUTDIR)/HWR_rich_g_sR.$(EXT): fitSigz.py Makefile
 	$(PYTHON) fitSigz.py HWR_rich_g.sav -o $@ --expd1 --expd2 -n 10000 \
