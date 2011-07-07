@@ -28,7 +28,8 @@ def fitSigz(parser):
         #First read the data
         if _VERBOSE:
             print "Reading and parsing data ..."
-        XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal)
+        XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
+                                                sample=options.sample)
         XYZ= XYZ.astype(numpy.float64)
         vxvyvz= vxvyvz.astype(numpy.float64)
         cov_vxvyvz= cov_vxvyvz.astype(numpy.float64)
@@ -219,9 +220,35 @@ def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
         print "Current params, minus likelihood:", params, out
     return out
 
-def readData(metal='rich'):
-    rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
-                                          'segue-local','gdwarf_raw.dat'))
+def readData(metal='rich',sample='G'):
+    if sample.lower() == 'g':
+        rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
+                                            'segue-local','gdwarf_raw.dat'))
+    elif sample.lower() == 'k':
+        rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
+                                            'segue-local','kdwarf.dat'))
+        weights= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
+                                            'segue-local','kweight.dat'),
+                               usecols=set(range(21)))
+        types= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
+                                          'segue-local','kweight.dat'),
+                             usecols=(21,),dtype='str')
+        print rawdata.shape, weights.shape, types.shape
+        #Match weights to rawdata
+        allIndx= numpy.arange(len(weights[:,0]),dtype='int')
+        reIndx= numpy.zeros(len(weights[:,0]),dtype='int')-1
+        for ii in range(len(rawdata[:,0])):
+            indx= (((rawdata[ii,0]-weights[:,0])**2. < (.5/3600.)**2.)
+                   *((rawdata[ii,1]-weights[:,1])**2. < (.5/3600.)**2.))
+            if not True in indx: continue
+            #print indx, numpy.sum(indx)
+            #print allIndx[numpy.where(indx)]
+            #print rawdata[ii,0], rawdata[ii,1]
+            if numpy.sum(indx) > 1:
+                print weights[indx,0], weights[indx,1], weights[indx,6], types[indx], weights[indx,19]
+                continue
+            reIndx[ii]= allIndx[numpy.where(indx)]
+        print reIndx
     #Select sample
     if metal == 'rich':
         indx= (rawdata[:,16] > -0.4)*(rawdata[:,16] < 0.5)\
@@ -295,6 +322,8 @@ def get_options():
                       help="Name of file for plot")
     parser.add_option("--model",dest='model',default='HWR',
                       help="Model to fit")
+    parser.add_option("--sample",dest='sample',default='g',
+                      help="Use 'G' or 'K' dwarf sample")
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
     parser.add_option("-n","--nsamples",dest='nsamples',type='int',
