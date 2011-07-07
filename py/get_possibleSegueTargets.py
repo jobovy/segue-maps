@@ -7,7 +7,7 @@ import astrometry.util.pyfits_utils as pyfits_utils
 import pyfits
 from optparse import OptionParser
 _PYTHON='/usr/local/epd/bin/python'
-_CASJOBS='/global/data/scr/jb2777/astrometry/src/astrometry/util/casjobs.py'
+_CASJOBS='/home/users/jb2777/scr/astrometry/src/astrometry/util/casjobs.py'
 def get_possibleSegueTargets():
     """
     NAME:
@@ -32,14 +32,14 @@ def get_possibleSegueTargets():
     nplates= len(platecenters.ra)
     done= []
     for plate in platecenters:
-        print "Working on plate "+platecenters.plate
-        if platecenters.plate in done:
-            print platecenters.plate+" already done!"
+        print "Working on plate "+str(plate.plate)
+        if plate.plate in done:
+            print plate.plate+" already done!"
             return
-        done.append(platecenters.plate)
+        done.append(plate.plate)
         tmpsavefilename= os.path.join(os.getenv('DATADIR'),'bovy',
                                       'segue-local','segueplates',
-                                      '%i4.fit' % platecenters.plate)
+                                      '%i4.fit' % plate.plate)
         if os.path.exists(tmpsavefilename):
             print "file "+tmpsavefilename+" exists"
             print "Delete file "+tmpsavefilename+" before running this to update the sample from the CAS"
@@ -52,13 +52,13 @@ def get_possibleSegueTargets():
 
 def prepare_sql(plate):
     output_f = open('tmp1.sql', 'w')
-    subprocess.call(["sed",'s/PLATERA/'+str(plate.ra).strip()+'/g',"possibleSegueTargets.sql"],stdout=output_f)
+    subprocess.call(["sed",'s/PLATERA/'+str(plate.ra).strip()+'/g',"../sql/possibleSegueTargets.sql"],stdout=output_f)
     output_f.close()
     output_f = open('tmp2.sql', 'w')
-    subprocess.call(["sed",'s/PLATEDEC/'+str(qso.dec).strip()+'/g','tmp1.sql'],stdout=output_f)
+    subprocess.call(["sed",'s/PLATEDEC/'+str(plate.dec).strip()+'/g','tmp1.sql'],stdout=output_f)
     output_f.close()
     output_f = open('tmp.sql', 'w')
-    dbname= 'plate_'+str(plate.plate)
+    dbname= 'plate'+str(plate.plate)
     d= ''
     for db in dbname:
         d+= db
