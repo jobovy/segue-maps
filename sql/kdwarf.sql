@@ -18,4 +18,4 @@ and sspp.specobjid = sp.specobjid
 and sspp.targ_pmraerr >	0
 and sspp.targ_pmdecerr > 0
 and (ph.psfMag_r-ph.extinction_r between 14.5 and  19.0) and
-ph.psfMag_g-ph.extinction_g-ph.psfMag_r+ph.extinction_r between 0.55 and 0.75)
+ph.psfMag_g-ph.extinction_g-ph.psfMag_r+ph.extinction_r between 0.55 and 0.75
