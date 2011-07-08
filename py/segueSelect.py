@@ -90,7 +90,6 @@ class segueSelect:
             else:
                 indx= (self.platephot[str(plate)].field('r') < 17.8)
                 self.platephot[str(plate)]= self.platephot[str(plate)][indx]
-            print self.platestr[ii].field('programname'), numpy.amax(self.platephot[str(plate)].field('r')), numpy.amin(self.platephot[str(plate)].field('r'))
         sys.stdout.write('\r'+"                                              \r")
         sys.stdout.flush()
         #Flesh out samples
@@ -148,9 +147,10 @@ class segueSelect:
             if not type is None:
                 pindx= (self.platestr.field('plate') == p)
             if not type is None and type.lower() == 'bright':
-                if 'faint' in self.platestr[pindx].field('programname'): continue
+                if 'faint' in self.platestr[pindx].field('programname')[0]:
+                    continue
             elif not type is None and type.lower() == 'faint':
-                if not 'faint' in self.platestr[pindx].field('programname'):
+                if not 'faint' in self.platestr[pindx].field('programname')[0]:
                     continue
             if len(x) > 1: #Color
                 xs.extend(thisplatephot.field(x[0])\
