@@ -50,7 +50,7 @@ $(OUTDIR)/HWR_poor_g_func.$(EXT): fitSigz.py Makefile
 #Metal rich K dwarf velocities
 $(OUTDIR)/HWR_rich_k_sR.$(EXT): fitSigz.py Makefile
 	$(PYTHON) fitSigz.py HWR_rich_k.sav -o $@ --expd1 --expd2 -n 10000 \
-	--xmin=15. --xmax=25. --ymin=0. --ymax=30. \
+	--xmin=15. --xmax=25. --ymin=0. --ymax=100. \
 	--xlabel='\sigma_z(z=500\ \mathrm{pc})\ [\mathrm{km\ s}^{-1}]' \
 	--ylabel='R_\sigma\ [\mathrm{kpc}]' --sample=K
 
@@ -70,13 +70,13 @@ $(OUTDIR)/HWR_rich_k_func.$(EXT): fitSigz.py Makefile
 #Metal poor K dwarfs velocity
 $(OUTDIR)/HWR_poor_k_sR.$(EXT): fitSigz.py Makefile
 	$(PYTHON) fitSigz.py HWR_poor_k.sav -o $@ --expd1 --expd2 -n 10000 \
-	--xmin=35. --xmax=45. --ymin=0. --ymax=30. \
+	--xmin=35. --xmax=45. --ymin=0. --ymax=100. \
 	--xlabel='\sigma_z(z=500\ \mathrm{pc})\ [\mathrm{km\ s}^{-1}]' \
 	--ylabel='R_\sigma\ [\mathrm{kpc}]' --metal=poor --sample=K
 
 $(OUTDIR)/HWR_poor_k_spbad.$(EXT): fitSigz.py Makefile
 	$(PYTHON) fitSigz.py HWR_poor_k.sav -o $@ --expd1 -n 10000 \
-	--xmin=35. --xmax=45. --ymin=0. --ymax=.05 --d2=0 \
+	--xmin=35. --xmax=45. --ymin=0. --ymax=.1 --d2=0 \
 	--xlabel='\sigma_z(z=500\ \mathrm{pc})\ [\mathrm{km\ s}^{-1}]' \
 	--ylabel='P_{\mathrm{bad}}' --metal=poor --sample=K
 

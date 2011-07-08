@@ -55,7 +55,7 @@ def fitSigz(parser):
                             [False,False],[False,False],
                             [False,False]]
             domain=[[0.,1.],[0.,0.],[0.,0.],[0.,0.],
-                    [0.,10.]]
+                    [0.,4.6051701859880918]]
         elif options.model.lower() == 'isotherm':
             if options.metal == 'rich':
                 params= numpy.array([0.02,numpy.log(25.),numpy.log(6.)])
@@ -70,7 +70,7 @@ def fitSigz(parser):
             create_method=['full','step_out','step_out']
             isDomainFinite=[[True,True],[False,False],
                             [False,True]]
-            domain=[[0.,1.],[0.,0.],[0.,10.]]
+            domain=[[0.,1.],[0.,0.],[0.,4.6051701859880918]]
         params= optimize.fmin_powell(like_func,params,
                                      args=(XYZ,vxvyvz,cov_vxvyvz,R,d))
         if _VERBOSE:
@@ -102,6 +102,7 @@ def fitSigz(parser):
         #First plot the best fit
         zs= numpy.linspace(0.3,1.2,1001)
         ds= zs-0.5
+        func= zfunc
         maxys= math.exp(params[1])+params[2]*ds+params[3]*ds**2.
         if options.xmin is None or options.xmax is None:
             xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.1]
@@ -170,6 +171,12 @@ def fitSigz(parser):
                             overplot=True,ms=10.,mew=2.)
         bovy_plot.bovy_end_print(options.plotfile)
 
+#These are for plotting only
+def zfunc(ds,params):
+    return math.exp(params[1])+params[2]*ds+params[3]*ds**2.
+def Rfunc(Rs,params):
+    return numpy.exp(-(R-8.)/math.exp(params[4]))
+
 def _HWRLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
     """log likelihood for the HWR model"""
     return -_HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d)
@@ -177,7 +184,7 @@ def _HWRLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
 def _HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
     """Minus log likelihood for the HWR model"""
     if params[0] < 0. or params[0] > 1.\
-            or params[4] > 10.:
+            or params[4] > 4.6051701859880918:
         return numpy.finfo(numpy.dtype(numpy.float64)).max
     #Get model sigma_z
     sigo= math.exp(params[1])
