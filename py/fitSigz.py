@@ -53,9 +53,9 @@ def fitSigz(parser):
                            'step_out','step_out']
             isDomainFinite=[[True,True],[False,False],
                             [False,False],[False,False],
-                            [False,False]],
+                            [False,False]]
             domain=[[0.,1.],[0.,0.],[0.,0.],[0.,0.],
-                    [0.,0.]],
+                    [0.,10.]]
         elif options.model.lower() == 'isotherm':
             if options.metal == 'rich':
                 params= numpy.array([0.02,numpy.log(25.),numpy.log(6.)])
@@ -73,7 +73,7 @@ def fitSigz(parser):
             domain=[[0.,1.],[0.,0.],[0.,10.]]
         params= optimize.fmin_powell(like_func,params,
                                      args=(XYZ,vxvyvz,cov_vxvyvz,R,d))
-        if _DEBUG:
+        if _VERBOSE:
             print "Optimal likelihood:", params
         #Now sample
         if _VERBOSE:
@@ -176,7 +176,8 @@ def _HWRLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
 
 def _HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
     """Minus log likelihood for the HWR model"""
-    if params[0] < 0. or params[0] > 1.:
+    if params[0] < 0. or params[0] > 1.\
+            or params[4] > 10.:
         return numpy.finfo(numpy.dtype(numpy.float64)).max
     #Get model sigma_z
     sigo= math.exp(params[1])
@@ -224,9 +225,14 @@ def readData(metal='rich',sample='G'):
     if sample.lower() == 'g':
         rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
                                             'segue-local','gdwarf_raw.dat'))
+        feh= rawdata[:,16]
+        afe= rawdata[:,18]
     elif sample.lower() == 'k':
         rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
                                             'segue-local','kdwarf.dat'))
+        feh= rawdata[:,8]
+        afe= rawdata[:,11]
+        """
         weights= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
                                             'segue-local','kweight.dat'),
                                usecols=set(range(21)))
@@ -249,69 +255,81 @@ def readData(metal='rich',sample='G'):
                 continue
             reIndx[ii]= allIndx[numpy.where(indx)]
         print reIndx
+        """
     #Select sample
     if metal == 'rich':
-        indx= (rawdata[:,16] > -0.4)*(rawdata[:,16] < 0.5)\
-            *(rawdata[:,18] > -0.25)*(rawdata[:,18] < 0.2)
+        indx= (feh > -0.4)*(feh < 0.5)\
+            *(afe > -0.25)*(afe < 0.2)
     elif metal == 'poor':
-        indx= (rawdata[:,16] > -1.5)*(rawdata[:,16] < -0.5)\
-            *(rawdata[:,18] > 0.25)*(rawdata[:,18] < 0.5)
+        indx= (feh > -1.5)*(feh < -0.5)\
+            *(afe > 0.25)*(afe < 0.5)
     else:
-        indx= (rawdata[:,16] > -2.)*(rawdata[:,16] < 0.5)\
-            *(rawdata[:,18] > -0.25)*(rawdata[:,18] < 0.5)
+        indx= (feh > -2.)*(feh < 0.5)\
+            *(afe > -0.25)*(afe < 0.5)
     rawdata= rawdata[indx,:]
     ndata= len(rawdata[:,0])
-    #calculate distances and velocities
-    lb= bovy_coords.radec_to_lb(rawdata[:,0],rawdata[:,1],degree=True)
-    XYZ= bovy_coords.lbd_to_XYZ(lb[:,0],lb[:,1],rawdata[:,26]/1000.,
-                                degree=True)
-    pmllpmbb= bovy_coords.pmrapmdec_to_pmllpmbb(rawdata[:,22],rawdata[:,24],
-                                                rawdata[:,0],rawdata[:,1],
-                                                degree=True)
-    vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(rawdata[:,20],pmllpmbb[:,0],
-                                             pmllpmbb[:,1],lb[:,0],lb[:,1],
-                                             rawdata[:,26]/1000.,degree=True)
-    #Solar motion
-    vxvyvz[:,0]+= -11.1
-    vxvyvz[:,1]+= 12.24
-    vxvyvz[:,2]+= 7.25
-    #print numpy.mean(vxvyvz[:,2]), numpy.std(vxvyvz[:,2])
-    #Propagate uncertainties
-    cov_pmradec= numpy.zeros((ndata,2,2))
-    cov_pmradec[:,0,0]= rawdata[:,23]**2.
-    cov_pmradec[:,1,1]= rawdata[:,25]**2.
-    cov_pmllbb= bovy_coords.cov_pmrapmdec_to_pmllpmbb(cov_pmradec,rawdata[:,0],
-                                                      rawdata[:,1],degree=True)
-    cov_vxvyvz= bovy_coords.cov_dvrpmllbb_to_vxyz(rawdata[:,26]/1000.,
-                                                  rawdata[:,27]/1000.,
-                                                  rawdata[:,21],
-                                                  pmllpmbb[:,0],pmllpmbb[:,1],
-                                                  cov_pmllbb,lb[:,0],lb[:,1],
-                                                  degree=True)
-    #print numpy.median(cov_vxvyvz[:,0,0]), numpy.median(cov_vxvyvz[:,1,1]), numpy.median(cov_vxvyvz[:,2,2])
-    if _DEBUG:
-        #Compare U with Chao Liu
-        print "Z comparison with Chao Liu"
-        print numpy.mean(XYZ[:,2]-rawdata[:,31]/1000.)#mine are in kpc
-        print numpy.std(XYZ[:,2]-rawdata[:,31]/1000.)
-        #Compare U with Chao Liu
-        print "U comparison with Chao Liu"
-        print numpy.mean(vxvyvz[:,0]-rawdata[:,32])
-        print numpy.std(vxvyvz[:,0]-rawdata[:,32])
-        print numpy.mean(numpy.sqrt(cov_vxvyvz[:,0,0])-rawdata[:,33])
-        print numpy.std(numpy.sqrt(cov_vxvyvz[:,0,0])-rawdata[:,33])
-        #V
-        print "V comparison with Chao Liu"
-        print numpy.mean(vxvyvz[:,1]-rawdata[:,34])
-        print numpy.std(vxvyvz[:,1]-rawdata[:,34])
-        print numpy.mean(numpy.sqrt(cov_vxvyvz[:,1,1])-rawdata[:,35])
-        print numpy.std(numpy.sqrt(cov_vxvyvz[:,1,1])-rawdata[:,35])
-        #W
-        print "W comparison with Chao Liu"
-        print numpy.mean(vxvyvz[:,2]-rawdata[:,36])
-        print numpy.std(vxvyvz[:,2]-rawdata[:,36])
-        print numpy.mean(numpy.sqrt(cov_vxvyvz[:,2,2])-rawdata[:,37])
-        print numpy.std(numpy.sqrt(cov_vxvyvz[:,2,2])-rawdata[:,37])
+    #calculate distances and velocities for G dwarfs
+    if sample.lower() == 'g':
+        lb= bovy_coords.radec_to_lb(rawdata[:,0],rawdata[:,1],degree=True)
+        XYZ= bovy_coords.lbd_to_XYZ(lb[:,0],lb[:,1],rawdata[:,26]/1000.,
+                                    degree=True)
+        pmllpmbb= bovy_coords.pmrapmdec_to_pmllpmbb(rawdata[:,22],rawdata[:,24],
+                                                    rawdata[:,0],rawdata[:,1],
+                                                    degree=True)
+        vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(rawdata[:,20],pmllpmbb[:,0],
+                                                 pmllpmbb[:,1],lb[:,0],lb[:,1],
+                                                 rawdata[:,26]/1000.,degree=True)
+        #Solar motion
+        vxvyvz[:,0]+= -11.1
+        vxvyvz[:,1]+= 12.24
+        vxvyvz[:,2]+= 7.25
+        #print numpy.mean(vxvyvz[:,2]), numpy.std(vxvyvz[:,2])
+        #Propagate uncertainties
+        cov_pmradec= numpy.zeros((ndata,2,2))
+        cov_pmradec[:,0,0]= rawdata[:,23]**2.
+        cov_pmradec[:,1,1]= rawdata[:,25]**2.
+        cov_pmllbb= bovy_coords.cov_pmrapmdec_to_pmllpmbb(cov_pmradec,rawdata[:,0],
+                                                          rawdata[:,1],degree=True)
+        cov_vxvyvz= bovy_coords.cov_dvrpmllbb_to_vxyz(rawdata[:,26]/1000.,
+                                                      rawdata[:,27]/1000.,
+                                                      rawdata[:,21],
+                                                      pmllpmbb[:,0],pmllpmbb[:,1],
+                                                      cov_pmllbb,lb[:,0],lb[:,1],
+                                                      degree=True)
+        #print numpy.median(cov_vxvyvz[:,0,0]), numpy.median(cov_vxvyvz[:,1,1]), numpy.median(cov_vxvyvz[:,2,2])
+        if _DEBUG:
+            #Compare U with Chao Liu
+            print "Z comparison with Chao Liu"
+            print numpy.mean(XYZ[:,2]-rawdata[:,31]/1000.)#mine are in kpc
+            print numpy.std(XYZ[:,2]-rawdata[:,31]/1000.)
+            #Compare U with Chao Liu
+            print "U comparison with Chao Liu"
+            print numpy.mean(vxvyvz[:,0]-rawdata[:,32])
+            print numpy.std(vxvyvz[:,0]-rawdata[:,32])
+            print numpy.mean(numpy.sqrt(cov_vxvyvz[:,0,0])-rawdata[:,33])
+            print numpy.std(numpy.sqrt(cov_vxvyvz[:,0,0])-rawdata[:,33])
+            #V
+            print "V comparison with Chao Liu"
+            print numpy.mean(vxvyvz[:,1]-rawdata[:,34])
+            print numpy.std(vxvyvz[:,1]-rawdata[:,34])
+            print numpy.mean(numpy.sqrt(cov_vxvyvz[:,1,1])-rawdata[:,35])
+            print numpy.std(numpy.sqrt(cov_vxvyvz[:,1,1])-rawdata[:,35])
+            #W
+            print "W comparison with Chao Liu"
+            print numpy.mean(vxvyvz[:,2]-rawdata[:,36])
+            print numpy.std(vxvyvz[:,2]-rawdata[:,36])
+            print numpy.mean(numpy.sqrt(cov_vxvyvz[:,2,2])-rawdata[:,37])
+            print numpy.std(numpy.sqrt(cov_vxvyvz[:,2,2])-rawdata[:,37])
+    else:
+        XYZ= numpy.zeros((ndata,3))
+        vxvyvz= numpy.zeros((ndata,3))
+        cov_vxvyvz= numpy.zeros((ndata,3,3))+8.**2.
+        XYZ[:,0]= -(rawdata[:,4]+8.) #?
+        XYZ[:,1]= rawdata[:,5]
+        XYZ[:,2]= rawdata[:,6]
+        vxvyvz[:,0]= rawdata[:,12]
+        vxvyvz[:,1]= rawdata[:,9]
+        vxvyvz[:,2]= rawdata[:,13]
     #Load for output
     return (XYZ,vxvyvz,cov_vxvyvz,rawdata)
     
