@@ -67,7 +67,7 @@ $(OUTDIR)/HWR_rich_k_func.$(EXT): fitSigz.py Makefile
 	--ylabel='\sigma_z\ [\mathrm{km\ s}^{-1}]' \
 	--ymin=0. --ymax=50. --sample=K
 
-#Metal poor G dwarfs velocity
+#Metal poor K dwarfs velocity
 $(OUTDIR)/HWR_poor_k_sR.$(EXT): fitSigz.py Makefile
 	$(PYTHON) fitSigz.py HWR_poor_k.sav -o $@ --expd1 --expd2 -n 10000 \
 	--xmin=35. --xmax=45. --ymin=0. --ymax=30. \
