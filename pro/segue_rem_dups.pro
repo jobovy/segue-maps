@@ -1,0 +1,37 @@
+PRO SEGUE_REM_DUPS, infile, outfile
+in= mrdfits(infile,1)
+spherematch, in.ra, in.dec, in.ra, in.dec, 0.5/3600., m1, m2, maxmatch=0
+sortindx= sort(m1)
+m1= m1[sortindx]
+m2= m2[sortindx]
+nmatches= n_elements(m1)
+ii=0L
+sub= 0L
+bestindx= lonarr(n_elements(in.ra))-1
+while ii lt nmatches-2 do begin
+    if ii eq nmatches-1 then begin
+        bestindx[sub]= m2[ii]
+        break
+    endif
+    jj=0
+    while m1[ii] eq m1[ii+1] do begin
+        jj+= 1
+        ii+= 1
+    endwhile
+    if jj gt 0 then begin
+        ;;these have multiple matches
+        sns= in[m2[ii-jj:ii]].sna
+        maxsn= max(sns,indx)
+        bestindx[sub]= m2[ii-jj+indx]
+    endif else begin
+        bestindx[sub]= m2[ii]
+    endelse
+    ii+= +1
+    sub+= 1
+endwhile
+;;print, bestindx
+bestindx= bestindx[where(bestindx ge 0)]
+bestindx= bestindx[uniq(bestindx,sort(bestindx))]
+out= in[bestindx]
+mwrfits, out, outfile, /create
+END
