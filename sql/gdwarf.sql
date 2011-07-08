@@ -24,8 +24,8 @@ spp.fehaerr as feh_err,
 spp.loggaerr as
 logg_err,spp.alphafe as afe,spp.alphafeerr as afe_err,
    spp.zbsubclass as Type, spp.zbelodiesptype, soa.primtarget as
-primtarget, spp.sna as sna
-   into MyDB.gdwarf
+primtarget, spp.sna as sna,s.run, s.rerun, s.camcol, s.field, s.obj
+into MyDB.gdwarf
 from  sppParams as spp, specObjAll as soa, star as s,  platex p
 where  p.programname like '%segue%'
    and p.plate = soa.plate
