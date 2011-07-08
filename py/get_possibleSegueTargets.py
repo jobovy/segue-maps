@@ -34,12 +34,12 @@ def get_possibleSegueTargets():
     for plate in platecenters:
         print "Working on plate "+str(plate.plate)
         if plate.plate in done:
-            print plate.plate+" already done!"
-            return
+            print str(plate.plate)+" already done!"
+            continue
         done.append(plate.plate)
         tmpsavefilename= os.path.join(os.getenv('DATADIR'),'bovy',
                                       'segue-local','segueplates',
-                                      '%i4.fit' % plate.plate)
+                                      '%i.fit' % plate.plate)
         if os.path.exists(tmpsavefilename):
             print "file "+tmpsavefilename+" exists"
             print "Delete file "+tmpsavefilename+" before running this to update the sample from the CAS"
