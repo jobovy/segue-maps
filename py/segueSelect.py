@@ -121,9 +121,8 @@ class segueSelect:
             self.spec= read_gdwarfs(logg=logg,ug=ug,ri=ri,sn=ri,
                                         ebv=ebv)
         elif sample.lower() == 'k':
-            specfile= os.path.join(_SEGUESELECTDIR,'kdwarf.dat')
-            #if sample.lower() == 'g':
-        self.platespec= {}
+            specfile= os.path.join(_SEGUESELECTDIR,'kdwarf.dat') 
+       self.platespec= {}
         for plate in self.plates:
             #Find spectra for each plate
             indx= (self.spec.field('plate') == plate)
