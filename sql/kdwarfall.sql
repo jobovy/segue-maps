@@ -23,7 +23,7 @@ spp.teffaerr as Tef_err, spp.logga as logga,
 spp.loggaerr as logg_err,spp.alphafe as afe,spp.alphafeerr as afe_err,
    spp.zbsubclass as Type, spp.zbelodiesptype, soa.primtarget as
 primtarget, spp.sna as sna,s.run, s.rerun, s.camcol, s.field, s.obj
-into MyDB.kdwarf
+into MyDB.kdwarfall
 from  sppParams as spp, SpecObjAll as soa, star as s, platex as p
 --, ProperMotions pm
 where  p.programname like '%segue%' 
