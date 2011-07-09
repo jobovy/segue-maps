@@ -1,30 +1,36 @@
-select sp.specObjID, sp.mjd, sp.plate, sp.fiberID,sp.specClass, sp.primTarget,
-sp.sci_sn,ph.objID, 
-ph.psfMag_u as u, ph.psfMag_g as g, ph.psfMag_r as r,
-ph.psfMag_i as i, ph.psfMag_z as z, 
-ph.psfMag_u-ph.extinction_u as u0, 
-ph.psfMag_g-ph.extinction_g as g0, 
-ph.psfMag_r-ph.extinction_r as r0,
-ph.psfMag_i-ph.extinction_i as i0, 
-ph.psfMag_z-ph.extinction_z as z0, 
-ph.ra, ph.dec, ph.raErr, ph.decErr,
-ph.raDecCorr, ph.b, ph.l, ph.extinction_u, ph.extinction_g, ph.extinction_r,
-ph.extinction_i, ph.extinction_z, sspp.feha, sspp.fehaerr,
-sspp.teffa, sspp.teffaerr, sspp.logga, sspp.loggaerr, sspp.alphafe,
-sspp.alphafeerr, sspp.elodierv as vr, sspp.elodierverr as vr_err, sspp.sna,
-sspp.targ_pml as pmll, sspp.targ_pmb as pmbb, sspp.targ_pmra as pmra,
-sspp.targ_pmdec as pmdec, sspp.targ_pmraerr as pmra_err,
-sspp.targ_pmdecerr as pmdec_err, sspp.zbsubclass as type,
-sspp.zbelodiesptype as specTypeElodie, p.programname
-into mydb.kdwarf
-from specObj sp, star ph, sppparams sspp, platex p
-where p.plate = sp.plate
---and sspp.flag like '_n%'
-and sspp.elodierverr > 0
---AND p.programname LIKE '%segue%'
-and sp.bestobjid = ph.objid
-and sspp.specobjid = sp.specobjid
-and sspp.targ_pmraerr > 0
-and sspp.targ_pmdecerr > 0
-and ((ph.psfMag_r-ph.extinction_r) between 14.5 and  19.0)
-and (ph.psfMag_g-ph.extinction_g-ph.psfMag_r+ph.extinction_r) between 0.55 and 0.75
+select spp.mjd, spp.plate, spp.fiberID,
+s.ra as RA, s.dec as Dec, s.b as b, s.l as l, 
+s.psfMag_u as u, s.extinction_u as ext_u, 
+s.psfMag_u-s.extinction_u as dered_u, s.psfMagErr_u as u_err,     
+s.psfMag_g as g, s.extinction_g as ext_g, 
+s.psfMag_g-s.extinction_g as dered_g, s.psfMagErr_g as g_err, 
+s.psfMag_r as r, s.extinction_r as ext_r, 
+s.psfMag_r-s.extinction_r as dered_r, s.psfMagErr_r as r_err, 
+s.psfMag_i as i, s.extinction_i as ext_i, 
+s.psfMag_i-s.extinction_i as dered_i, s.psfMagErr_i as i_err,
+s.psfMag_g as z, s.extinction_z as ext_z, 
+s.psfMag_z-s.extinction_z as dered_z, s.psfMagErr_z as z_err,
+spp.ELODIERV as vr, spp.ELODIERVERR as vr_err, 
+--pm.pmL, pm.pmB, pm.pmRa, pm.pmDec, pm.pmRaErr, pm.pmDecErr, 
+spp.targ_pmmatch as match, spp.targ_pml as pml,
+spp.targ_pmb as pmb, spp.targ_pmra as pmra, spp.targ_pmraerr as pmra_err,
+spp.targ_pmdec as pmdec, spp.targ_pmdecerr as pmdec_err, 
+--spp.FEHADOP as FeHa, spp.FEHADOPUNC as feha_err,
+--spp.FEHSPEC as FeH_spe, spp.FEHSPECUNC as FeH_spe_err, 
+--spp.LOGGADOP as log_g, spp.TEFFADOP as teff
+spp.feha as feh, spp.fehaerr as feh_err, spp.teffa as Teff, 
+spp.teffaerr as Tef_err, spp.logga as logga,
+spp.loggaerr as logg_err,spp.alphafe as afe,spp.alphafeerr as afe_err,
+   spp.zbsubclass as Type, spp.zbelodiesptype, soa.primtarget as
+primtarget, spp.sna as sna,s.run, s.rerun, s.camcol, s.field, s.obj
+into MyDB.kdwarf
+from  sppParams as spp, SpecObjAll as soa, star as s, platex as p
+--, ProperMotions pm
+where  p.programname like '%segue%' 
+and p.plate = soa.plate
+--and soa.primtarget = -2147450880
+and spp.specobjid = soa.specobjid and soa.bestobjid = s.objid
+--and s.objid = pm.objid
+and s.psfMag_r-s.extinction_r between 14.5 and 19.0
+and s.psfMag_g-s.extinction_g-s.psfMag_r+s.extinction_r between 0.55 and 0.75 
+--and pm.pmRaErr > 0. and spp.SNR > 15.0
