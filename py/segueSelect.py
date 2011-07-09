@@ -7,7 +7,10 @@ import pyfits
 from galpy.util import bovy_plot
 import matplotlib
 _SEGUESELECTDIR=os.getenv('SEGUESELECTDIR')
+_GDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'gdwarfall_raw_nodups.fit')
 _GDWARFFILE= os.path.join(_SEGUESELECTDIR,'gdwarf_raw_nodups.fit')
+_KDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'kdwarfall_raw_nodups.fit')
+_KDWARFFILE= os.path.join(_SEGUESELECTDIR,'kdwarf_raw_nodups.fit')
 class segueSelect:
     """Class that contains selection function for SEGUE targets"""
     def __init__(self,sample='G',remove_dups=True,plates=None,
@@ -235,7 +238,7 @@ def _load_fits(file,ext=1):
     hdulist.close()
     return out
 
-def read_gdwarfs(file=_GDWARFFILE,logg=True,ug=False,ri=False,sn=True,
+def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
                  ebv=False):
     """
     NAME:
