@@ -122,7 +122,7 @@ class segueSelect:
                                         ebv=ebv)
         elif sample.lower() == 'k':
             specfile= os.path.join(_SEGUESELECTDIR,'kdwarf.dat') 
-       self.platespec= {}
+        self.platespec= {}
         for plate in self.plates:
             #Find spectra for each plate
             indx= (self.spec.field('plate') == plate)
