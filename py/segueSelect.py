@@ -232,12 +232,6 @@ class segueSelect:
                                 xrange=xrange,yrange=yrange)
         return None                
 
-def _load_fits(file,ext=1):
-    hdulist= pyfits.open(file)
-    out= hdulist[1].data
-    hdulist.close()
-    return out
-
 def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
                  ebv=False):
     """
@@ -287,5 +281,36 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
         indx= (raw.field('ebv') < .3)
         raw= raw[indx]
     #BOVY: distances
+    raw= _add_distances(raw)
     return raw
-    
+
+def _add_distances(raw):
+    """Add distances"""
+    ndata= len(raw.field('ra'))
+    ds= numpy.ones(ndata)
+    return _append_field_recarray(raw,'d',ds)
+
+def _load_fits(file,ext=1):
+    """Loads fits file's data and returns it as a numpy.recarray with lowercase field names"""
+    hdulist= pyfits.open(file)
+    out= hdulist[1].data
+    hdulist.close()
+    return _as_recarray(out)
+
+def _append_field_recarray(recarray, name, new):
+    new = numpy.asarray(new)
+    newdtype = numpy.dtype(recarray.dtype.descr + [(name, new.dtype)])
+    newrecarray = numpy.recarray(recarray.shape, dtype=newdtype)
+    for field in recarray.dtype.fields:
+        newrecarray[field] = recarray.field(field)
+    newrecarray[name] = new
+    return newrecarray
+
+def _as_recarray(recarray):
+    """go from FITS_rec to recarray"""
+    newdtype = numpy.dtype(recarray.dtype.descr)
+    newdtype.names= tuple([n.lower() for n in newdtype.names])
+    newrecarray = numpy.recarray(recarray.shape, dtype=newdtype)
+    for field in recarray.dtype.fields:
+        newrecarray[field.lower()] = recarray.field(field)
+    return newrecarray
