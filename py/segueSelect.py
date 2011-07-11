@@ -391,8 +391,6 @@ def _ivezic_dist(raw):
     gi= _gi_gr(raw.dered_g-raw.dered_r)
     mr= _mr_gi(gi,raw.feh)
     ds= 10.**(0.2*(raw.dered_r-mr)-2.)
-    mask= numpy.isinf(ds)
-    print raw[mask].dered_r-raw[mask].dered_i, raw[mask].dered_r, mr[mask]
     #Now propagate the uncertainties
     derrs= ds/10. #BOVY: ASSUME 10% for now
     return (ds,derrs)
