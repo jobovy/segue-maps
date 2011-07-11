@@ -303,6 +303,27 @@ class segueSelect:
         if type.lower() == 'constant':
             return
 
+def ivezic_dist_gr(g,r,feh):
+    """
+    NAME:
+       ivezic_dist_gr
+    PURPOSE:
+        Iveziv et al. (2008) distances in terms of g-r for <M0 stars
+    INPUT:
+       g, r, feh - dereddened g and r and metallicity
+    OUTPUT:
+       (dist,disterr) arrays in kpc
+    HISTORY:
+       2011-07-11 - Written - Bovy (NYU)
+    """
+    #First distances, then uncertainties
+    gi= _gi_gr(g-r)
+    mr= _mr_gi(gi,feh)
+    ds= 10.**(0.2*(r-mr)-2.)
+    #Now propagate the uncertainties
+    derrs= ds/10. #BOVY: ASSUME 10% for now
+    return (ds,derrs)
+
 def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
                  ebv=False):
     """
@@ -317,7 +338,7 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
        sn= if False, don't cut on SN
        ebv= if True, cut on E(B-V)
     OUTPUT:
-       cut data, still pyfits format
+       cut data, returns numpy.recarray
     HISTORY:
        2011-07-08 - Written - Bovy (NYU)
     """
@@ -359,7 +380,7 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
 
 def _add_distances(raw):
     """Add distances"""
-    ds,derrs= _ivezic_dist(raw)
+    ds,derrs= ivezic_dist_gr(raw.dered_g,raw.dered_r,raw.feh)
     raw= _append_field_recarray(raw,'dist',ds)
     raw= _append_field_recarray(raw,'dist_err',derrs)
     return raw
@@ -448,17 +469,7 @@ def _as_recarray(recarray):
         newrecarray[field.lower()] = recarray.field(field)
     return newrecarray
 
-def _ivezic_dist(raw):
-    """Iveziv et al. (2008) distances in terms of g-r"""
-    #First distances, then uncertainties
-    gi= _gi_gr(raw.dered_g-raw.dered_r)
-    mr= _mr_gi(gi,raw.feh)
-    ds= 10.**(0.2*(raw.dered_r-mr)-2.)
-    #Now propagate the uncertainties
-    derrs= ds/10. #BOVY: ASSUME 10% for now
-    return (ds,derrs)
-    pass
-
+#Ivezic distance functions
 def _mr_gi(gi,feh):
     """Ivezic+08 photometric distance"""
     mro= -5.06+14.32*gi-12.97*gi**2.+6.127*gi**3.-1.267*gi**4.+0.0967*gi**5.

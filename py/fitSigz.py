@@ -286,7 +286,7 @@ def readData(metal='rich',sample='G'):
     vxvyvz[:,2]= raw.vzc
     cov_vxvyvz[:,0,0]= raw.vxc_err**2.
     cov_vxvyvz[:,1,1]= raw.vyc_err**2.
-    cov_vxvyvz[:,1,1]= raw.vzc_err**2.
+    cov_vxvyvz[:,2,2]= raw.vzc_err**2.
     cov_vxvyvz[:,0,1]= raw.vxvyc_rho*raw.vxc_err*raw.vyc_err
     cov_vxvyvz[:,0,2]= raw.vxvzc_rho*raw.vxc_err*raw.vzc_err
     cov_vxvyvz[:,1,2]= raw.vyvzc_rho*raw.vyc_err*raw.vzc_err
