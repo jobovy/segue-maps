@@ -22,6 +22,7 @@ _KDWARFFILE= os.path.join(_SEGUESELECTDIR,'kdwarf_raw_nodups.fit')
 class segueSelect:
     """Class that contains selection function for SEGUE targets"""
     def __init__(self,sample='G',remove_dups=True,plates=None,
+                 type='constant',
                  logg=True,ug=False,ri=False,sn=True,
                  ebv=False):
         """
@@ -31,8 +32,12 @@ class segueSelect:
            load the selection function for this sample
         INPUT:
            sample= sample to load ('G' or 'K', 'GK' loads all)
-           plates= if set, only consider this plate or list of plates
-           
+           plates= if set, only consider this plate, or list of plates,
+                   or 'faint'/'bright'plates only,
+                   or plates '>1000' or '<2000'
+           type= type of selection function to determine ('constant' for 
+                 constant per plate)
+
            SPECTROSCOPIC SAMPLE SELECTION:
               logg= if False, don't cut on logg
               ug= if True, cut on u-g
@@ -48,14 +53,22 @@ class segueSelect:
         #Load plates
         self.platestr= _load_fits(os.path.join(_SEGUESELECTDIR,'segueplates.fits'))
         if plates is None:
-            self.plates= list(self.platestr.field('plate'))
+            self.plates= list(self.platestr.plate)
         else:
             if isinstance(plates,str):
-                self.plates= self.platestr.field('plate')
+                self.plates= self.platestr.plate
                 if plates[0] == '>':
                     self.plates= self.plates[(self.plates > int(plates[1:len(plates)]))]
                 elif plates[0] == '<':
                     self.plates= self.plates[(self.plates < int(plates[1:len(plates)]))]
+                elif plates.lower() == 'faint':
+                    indx= ['faint' in name for name in self.platestr.programname]
+                    indx= numpy.array(indx,dtype='bool')
+                    self.plates= self.plates[indx]
+                elif plates.lower() == 'bright':
+                    indx= [not 'faint' in name for name in self.platestr.programname]
+                    indx= numpy.array(indx,dtype='bool')
+                    self.plates= self.plates[indx]
                 else:
                     print "'plates=' format not understood, check documentation"
                     return
@@ -95,7 +108,7 @@ class segueSelect:
                                     '%i.fit' % plate)
             self.platephot[str(plate)]= _load_fits(platefile)
             #Split into bright and faint
-            if 'faint' in self.platestr[ii].field('programname'):
+            if 'faint' in self.platestr[ii].programname:
                 indx= (self.platephot[str(plate)].field('r') > 17.8)
                 self.platephot[str(plate)]= self.platephot[str(plate)][indx]
             else:
@@ -128,6 +141,8 @@ class segueSelect:
                            *(self.platephot[str(plate)].field('r') > 14.5)
             self.platephot[str(plate)]= self.platephot[str(plate)][indx]
         #Now load the spectroscopic data
+        sys.stdout.write('\r'+"Reading and parsing spectroscopic data ...\r")
+        sys.stdout.flush()
         if sample.lower() == 'g':
             self.spec= read_gdwarfs(logg=logg,ug=ug,ri=ri,sn=ri,
                                         ebv=ebv)
@@ -138,7 +153,44 @@ class segueSelect:
             #Find spectra for each plate
             indx= (self.spec.field('plate') == plate)
             self.platespec[str(plate)]= self.spec[indx]
+        sys.stdout.write('\r'+"                                              \r")
+        sys.stdout.flush()
+        #Determine selection function
+        sys.stdout.write('\r'+"Determining selection function ...\r")
+        sys.stdout.flush()
+        self._determine_select(type)
+        sys.stdout.write('\r'+"                                              \r")
+        sys.stdout.flush()
         return None
+
+    def __call__(self,plate,r=None,gr=None):
+        """
+        NAME:
+           __call__
+        PURPOSE:
+           evaluate the selection function
+        INPUT:
+           plate - plate number
+           r - dereddened r-band magnitude
+           gr - dereddened g-r color
+        OUTPUT:
+           selection function
+        HISTORY:
+           2011-07-11 - Written - Bovy (NYU)
+        """
+        if self.type.lower() == 'constant':
+            try:
+                if isinstance(plate,(list,numpy.ndarray)):
+                    out= []
+                    for p in plate:
+                        out.append(self.weight[str(p)])
+                    if isinstance(plate,numpy.ndarray):
+                        out= numpy.array(out)
+                    return out
+                else:
+                    return self.weight[str(plate)]
+            except KeyError:
+                raise IOError("Requested plate %i either not loaded or it does not exist" % plate)
 
     def plot(self,x='gr',y='r',plate='all',spec=False,scatterplot=True,
              bins=None,specbins=None,type=None):
@@ -239,6 +291,17 @@ class segueSelect:
                                 xlabel=xlabel,ylabel=ylabel,
                                 xrange=xrange,yrange=yrange)
         return None                
+
+    def _determine_select(self,type):
+        self.type= type
+        #First determine the total weight for each plate
+        self.weight= {}
+        for ii in range(len(self.plates)):
+            plate= self.plates[ii]
+            self.weight[str(plate)]= len(self.platespec[str(plate)])\
+                /float(len(self.platephot[str(plate)]))
+        if type.lower() == 'constant':
+            return
 
 def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
                  ebv=False):
