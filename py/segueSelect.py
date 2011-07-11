@@ -296,10 +296,8 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
 
 def _add_distances(raw):
     """Add distances"""
-    ndata= len(raw.field('ra'))
-    ds= numpy.ones(ndata)
+    ds,derrs= _ivezic_dist(raw)
     raw= _append_field_recarray(raw,'dist',ds)
-    derrs= numpy.zeros(ndata)
     raw= _append_field_recarray(raw,'dist_err',derrs)
     return raw
 
@@ -338,9 +336,9 @@ def _add_velocities(raw):
                                                   cov_pmllbb,lb[:,0],lb[:,1],
                                                   degree=True)
     #Cast
-    XYZ= XYZ.astype('float64')
-    vxvyvz= vxvyvz.astype('float64')
-    cov_vxvyvz= cov_vxvyvz.astype('float64')
+    XYZ= XYZ.astype(numpy.float64)
+    vxvyvz= vxvyvz.astype(numpy.float64)
+    cov_vxvyvz= cov_vxvyvz.astype(numpy.float64)
     #Append results to structure
     raw= _append_field_recarray(raw,'xc',XYZ[:,0])
     raw= _append_field_recarray(raw,'yc',XYZ[:,1])
@@ -386,3 +384,29 @@ def _as_recarray(recarray):
     for field in recarray.dtype.fields:
         newrecarray[field.lower()] = recarray.field(field)
     return newrecarray
+
+def _ivezic_dist(raw):
+    """Iveziv et al. (2008) distances in terms of g-r"""
+    #First distances, then uncertainties
+    gi= _gi_gr(raw.dered_g-raw.dered_r)
+    mr= _mr_gi(gi,raw.feh)
+    ds= 10.**(0.2*(raw.dered_r-mr)-2.)
+    mask= numpy.isinf(ds)
+    print raw[mask].dered_r-raw[mask].dered_i, raw[mask].dered_r, mr[mask]
+    #Now propagate the uncertainties
+    derrs= ds/10. #BOVY: ASSUME 10% for now
+    return (ds,derrs)
+    pass
+
+def _mr_gi(gi,feh):
+    """Ivezic+08 photometric distance"""
+    mro= -5.06+14.32*gi-12.97*gi**2.+6.127*gi**3.-1.267*gi**4.+0.0967*gi**5.
+    dmr= 4.5-1.11*feh-0.18*feh**2.
+    mr= mro+dmr
+    return mr
+
+def _gi_gr(gr):
+    """(g-i) = (g-r)+(r-i), with Juric et al. (2008) stellar locus for g-r,
+    BOVY: JUST USES LINEAR APPROXIMATION VALID FOR < M0"""
+    ri= (gr-0.07)/2.34
+    return gr+ri

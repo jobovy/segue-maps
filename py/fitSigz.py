@@ -7,6 +7,7 @@ from optparse import OptionParser
 from scipy import optimize, special
 from galpy.util import bovy_coords, bovy_plot
 import bovy_mcmc
+from segueSelect import read_gdwarfs
 _VERBOSE=True
 _DEBUG=False
 def fitSigz(parser):
@@ -230,10 +231,9 @@ def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
 
 def readData(metal='rich',sample='G'):
     if sample.lower() == 'g':
-        rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
-                                            'segue-local','gdwarf_raw.dat'))
-        feh= rawdata[:,16]
-        afe= rawdata[:,18]
+        raw= read_gdwarfs()
+        #rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
+        #                                    'segue-local','gdwarf_raw.dat'))
     elif sample.lower() == 'k':
         rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
                                             'segue-local','kdwarf.dat'))
@@ -265,16 +265,32 @@ def readData(metal='rich',sample='G'):
         """
     #Select sample
     if metal == 'rich':
-        indx= (feh > -0.4)*(feh < 0.5)\
-            *(afe > -0.25)*(afe < 0.2)
+        indx= (raw.feh > -0.4)*(raw.feh < 0.5)\
+            *(raw.afe > -0.25)*(raw.afe < 0.2)
     elif metal == 'poor':
-        indx= (feh > -1.5)*(feh < -0.5)\
-            *(afe > 0.25)*(afe < 0.5)
+        indx= (raw.feh > -1.5)*(raw.feh < -0.5)\
+            *(raw.afe > 0.25)*(raw.afe < 0.5)
     else:
-        indx= (feh > -2.)*(feh < 0.5)\
-            *(afe > -0.25)*(afe < 0.5)
-    rawdata= rawdata[indx,:]
-    ndata= len(rawdata[:,0])
+        indx= (raw.feh > -2.)*(raw.feh < 0.5)\
+            *(raw.afe > -0.25)*(raw.afe < 0.5)
+    raw= raw[indx]
+    ndata= len(raw.ra)
+    XYZ= numpy.zeros((ndata,3))
+    vxvyvz= numpy.zeros((ndata,3))
+    cov_vxvyvz= numpy.zeros((ndata,3,3))
+    XYZ[:,0]= raw.xc
+    XYZ[:,1]= raw.yc
+    XYZ[:,2]= raw.zc
+    vxvyvz[:,0]= raw.vxc
+    vxvyvz[:,1]= raw.vyc
+    vxvyvz[:,2]= raw.vzc
+    cov_vxvyvz[:,0,0]= raw.vxc_err**2.
+    cov_vxvyvz[:,1,1]= raw.vyc_err**2.
+    cov_vxvyvz[:,1,1]= raw.vzc_err**2.
+    cov_vxvyvz[:,0,1]= raw.vxvyc_rho*raw.vxc_err*raw.vyc_err
+    cov_vxvyvz[:,0,2]= raw.vxvzc_rho*raw.vxc_err*raw.vzc_err
+    cov_vxvyvz[:,1,2]= raw.vyvzc_rho*raw.vyc_err*raw.vzc_err
+    """
     #calculate distances and velocities for G dwarfs
     if sample.lower() == 'g':
         lb= bovy_coords.radec_to_lb(rawdata[:,0],rawdata[:,1],degree=True)
@@ -337,8 +353,9 @@ def readData(metal='rich',sample='G'):
         vxvyvz[:,0]= rawdata[:,12]
         vxvyvz[:,1]= rawdata[:,9]
         vxvyvz[:,2]= rawdata[:,13]
+    """
     #Load for output
-    return (XYZ,vxvyvz,cov_vxvyvz,rawdata)
+    return (XYZ,vxvyvz,cov_vxvyvz,raw)
     
 def get_options():
     usage = "usage: %prog [options] <savefilename>\n\nsavefilename= name of the file that the fit/samples will be saved to"
