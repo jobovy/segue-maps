@@ -432,7 +432,7 @@ def _add_velocities(raw):
     raw= _append_field_recarray(raw,'vzc',vxvyvz[:,2])
     raw= _append_field_recarray(raw,'vxc_err',numpy.sqrt(cov_vxvyvz[:,0,0]))
     raw= _append_field_recarray(raw,'vyc_err',numpy.sqrt(cov_vxvyvz[:,1,1]))
-    raw= _append_field_recarray(raw,'vzc_err',numpy.sqrt(cov_vxvyvz[:,1,1]))
+    raw= _append_field_recarray(raw,'vzc_err',numpy.sqrt(cov_vxvyvz[:,2,2]))
     raw= _append_field_recarray(raw,'vxvyc_rho',cov_vxvyvz[:,0,1]\
                                     /numpy.sqrt(cov_vxvyvz[:,0,0])\
                                     /numpy.sqrt(cov_vxvyvz[:,1,1]))
