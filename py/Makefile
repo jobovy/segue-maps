@@ -7,6 +7,39 @@ $(OUTDIR)/HWR_rich_poor_g_func.$(EXT): plotSigzFunc.py
 	$(PYTHON) plotSigzFunc.py HWR_rich_g.sav HWR_poor_g.sav \
 	-o $@
 
+#Metal rich G dwarf densities
+$(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile
+	$(PYTHON) fitDensz.py HWR_dens_rich_g.sav -o $@ \
+	--expd1 --expd2 -n 100 \
+	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
+	--xlabel='h_z\ [\mathrm{kpc}]' \
+	--ylabel='h_R [\mathrm{kpc}]'
+
+#Metal poor G dwarf densities
+$(OUTDIR)/HWR_poor_g_hRhz.$(EXT): fitDensz.py Makefile
+	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \
+	--expd1 --expd2 -n 100 --metal=poor \
+	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
+	--xlabel='h_z\ [\mathrm{kpc}]' \
+	--ylabel='h_R [\mathrm{kpc}]'
+
+#Metal rich G dwarf densities, flare
+$(OUTDIR)/flare_rich_g_hRhz.$(EXT): fitDensz.py Makefile
+	$(PYTHON) fitDensz.py flare_dens_rich_g.sav -o $@ \
+	--expd1 --expd2 -n 100 --model=flare \
+	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
+	--xlabel='h_z\ [\mathrm{kpc}]' \
+	--ylabel='h_R [\mathrm{kpc}]'
+
+#Metal poor G dwarf densities, flare
+$(OUTDIR)/flare_poor_g_hRhz.$(EXT): fitDensz.py Makefile
+	$(PYTHON) fitDensz.py flare_dens_poor_g.sav -o $@ \
+	--expd1 --expd2 -n 100 --metal=poor --model=flare \
+	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
+	--xlabel='h_z\ [\mathrm{kpc}]' \
+	--ylabel='h_R [\mathrm{kpc}]'
+
+
 #Metal rich G dwarf velocities
 $(OUTDIR)/HWR_rich_g_sR.$(EXT): fitSigz.py Makefile
 	$(PYTHON) fitSigz.py HWR_rich_g.sav -o $@ --expd1 --expd2 -n 10000 \

@@ -19,6 +19,7 @@ _GDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'gdwarfall_raw_nodups.fit')
 _GDWARFFILE= os.path.join(_SEGUESELECTDIR,'gdwarf_raw_nodups.fit')
 _KDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'kdwarfall_raw_nodups.fit')
 _KDWARFFILE= os.path.join(_SEGUESELECTDIR,'kdwarf_raw_nodups.fit')
+_ERASESTR= "                                                                                "
 class segueSelect:
     """Class that contains selection function for SEGUE targets"""
     def __init__(self,sample='G',remove_dups=True,plates=None,
@@ -31,7 +32,7 @@ class segueSelect:
         PURPOSE:
            load the selection function for this sample
         INPUT:
-           sample= sample to load ('G' or 'K', 'GK' loads all)
+           sample= sample to load ('G' or 'K', 'GK' loads all BOVY: GK NOT IMPLEMENTED)
            plates= if set, only consider this plate, or list of plates,
                    or 'faint'/'bright'plates only,
                    or plates '>1000' or '<2000'
@@ -114,7 +115,7 @@ class segueSelect:
             else:
                 indx= (self.platephot[str(plate)].field('r') < 17.8)
                 self.platephot[str(plate)]= self.platephot[str(plate)][indx]
-        sys.stdout.write('\r'+"                                              \r")
+        sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         #Flesh out samples
         for plate in self.plates:
@@ -147,19 +148,20 @@ class segueSelect:
             self.spec= read_gdwarfs(logg=logg,ug=ug,ri=ri,sn=ri,
                                         ebv=ebv)
         elif sample.lower() == 'k':
-            specfile= os.path.join(_SEGUESELECTDIR,'kdwarf.dat') 
+            self.spec= read_kdwarfs(logg=logg,ug=ug,ri=ri,sn=ri,
+                                        ebv=ebv)
         self.platespec= {}
         for plate in self.plates:
             #Find spectra for each plate
             indx= (self.spec.field('plate') == plate)
             self.platespec[str(plate)]= self.spec[indx]
-        sys.stdout.write('\r'+"                                              \r")
+        sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         #Determine selection function
         sys.stdout.write('\r'+"Determining selection function ...\r")
         sys.stdout.flush()
         self._determine_select(type)
-        sys.stdout.write('\r'+"                                              \r")
+        sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         return None
 
@@ -363,6 +365,60 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
             *((raw.field('dered_u')-raw.field('dered_g')) > .6)
         raw= raw[indx]
     if ri:
+        indx= ((raw.field('dered_r')-raw.field('dered_i')) < .4)\
+            *((raw.field('dered_r')-raw.field('dered_i')) > -.1)
+        raw= raw[indx]
+    if sn:
+        indx= (raw.field('sna') > 15.)
+        raw= raw[indx]
+    if ebv:
+        indx= (raw.field('ebv') < .3)
+        raw= raw[indx]
+    #BOVY: distances
+    raw= _add_distances(raw)
+    #velocities
+    raw= _add_velocities(raw)
+    return raw
+
+def read_kdwarfs(file=_KDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
+                 ebv=False):
+    """
+    NAME:
+       read_kdwarfs
+    PURPOSE:
+       read the spectroscopic K dwarf sample
+    INPUT:
+       logg= if False, don't cut on logg
+       ug= if True, cut on u-g
+       ri= if True, cut on r-i
+       sn= if False, don't cut on SN
+       ebv= if True, cut on E(B-V)
+    OUTPUT:
+       cut data, returns numpy.recarray
+    HISTORY:
+       2011-07-11 - Written - Bovy (NYU)
+    """
+    raw= _load_fits(file)
+    #First cut on r
+    indx= (raw.field('dered_r') < 19.)*(raw.field('dered_r') > 14.5)
+    raw= raw[indx]
+    #Then cut on g-r
+    indx= ((raw.field('dered_g')-raw.field('dered_r')) < 0.75)\
+        *((raw.field('dered_g')-raw.field('dered_r')) > .55)
+    raw= raw[indx]
+    #Cut on velocity errs
+    indx= (raw.field('pmra_err') > 0.)*(raw.field('pmdec_err') > 0.)\
+        *(raw.field('vr_err') > 0.)
+    raw= raw[indx]
+    #Cut on logg?
+    if logg:
+        indx= (raw.field('logga') > 3.75)
+        raw= raw[indx]
+    if ug: #BOVY UPDATE FOR K
+        indx= ((raw.field('dered_u')-raw.field('dered_g')) < 2.)\
+            *((raw.field('dered_u')-raw.field('dered_g')) > .6)
+        raw= raw[indx]
+    if ri: #BOVY: UPDATE FOR K
         indx= ((raw.field('dered_r')-raw.field('dered_i')) < .4)\
             *((raw.field('dered_r')-raw.field('dered_i')) > -.1)
         raw= raw[indx]

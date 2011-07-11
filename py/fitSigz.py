@@ -235,34 +235,9 @@ def readData(metal='rich',sample='G'):
         #rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
         #                                    'segue-local','gdwarf_raw.dat'))
     elif sample.lower() == 'k':
-        rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
-                                            'segue-local','kdwarf.dat'))
-        feh= rawdata[:,8]
-        afe= rawdata[:,11]
-        """
-        weights= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
-                                            'segue-local','kweight.dat'),
-                               usecols=set(range(21)))
-        types= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
-                                          'segue-local','kweight.dat'),
-                             usecols=(21,),dtype='str')
-        print rawdata.shape, weights.shape, types.shape
-        #Match weights to rawdata
-        allIndx= numpy.arange(len(weights[:,0]),dtype='int')
-        reIndx= numpy.zeros(len(weights[:,0]),dtype='int')-1
-        for ii in range(len(rawdata[:,0])):
-            indx= (((rawdata[ii,0]-weights[:,0])**2. < (.5/3600.)**2.)
-                   *((rawdata[ii,1]-weights[:,1])**2. < (.5/3600.)**2.))
-            if not True in indx: continue
-            #print indx, numpy.sum(indx)
-            #print allIndx[numpy.where(indx)]
-            #print rawdata[ii,0], rawdata[ii,1]
-            if numpy.sum(indx) > 1:
-                print weights[indx,0], weights[indx,1], weights[indx,6], types[indx], weights[indx,19]
-                continue
-            reIndx[ii]= allIndx[numpy.where(indx)]
-        print reIndx
-        """
+        raw= read_kdwarfs()
+        #rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
+        #                                    'segue-local','kdwarf.dat'))
     #Select sample
     if metal == 'rich':
         indx= (raw.feh > -0.4)*(raw.feh < 0.5)\
