@@ -94,7 +94,6 @@ def fitDensz(parser):
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
-        """
         params= optimize.fmin_powell(like_func,params,
                                      args=(XYZ,R,
                                            sf,plates,platelb[:,0],
@@ -102,8 +101,6 @@ def fitDensz(parser):
                                            platefaint,Ap,
                                            grmin,grmax,rmin,rmax,
                                            feh,colordist))
-        """
-        params= numpy.array([-0.84145588,  1.70720328,  6.49396337])
         if _VERBOSE:
             print "Optimal likelihood:", params
         #Now sample
