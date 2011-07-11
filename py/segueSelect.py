@@ -4,8 +4,16 @@ import copy
 import numpy
 from scipy import special
 import pyfits
-from galpy.util import bovy_plot
+try:
+    from galpy.util import bovy_plot
+except ImportError:
+    pass #BOVY ADD LOCAL MODULE HERE IF RELEASED
 import matplotlib
+try:
+    from galpy.util import bovy_coords
+    _COORDSLOADED= True
+except ImportError:
+    _COORDSLOADED= False
 _SEGUESELECTDIR=os.getenv('SEGUESELECTDIR')
 _GDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'gdwarfall_raw_nodups.fit')
 _GDWARFFILE= os.path.join(_SEGUESELECTDIR,'gdwarf_raw_nodups.fit')
@@ -282,13 +290,77 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
         raw= raw[indx]
     #BOVY: distances
     raw= _add_distances(raw)
+    #velocities
+    raw= _add_velocities(raw)
     return raw
 
 def _add_distances(raw):
     """Add distances"""
     ndata= len(raw.field('ra'))
     ds= numpy.ones(ndata)
-    return _append_field_recarray(raw,'d',ds)
+    raw= _append_field_recarray(raw,'dist',ds)
+    derrs= numpy.zeros(ndata)
+    raw= _append_field_recarray(raw,'dist_err',derrs)
+    return raw
+
+def _add_velocities(raw):
+    if not _COORDSLOADED:
+        print "galpy.util.bovy_coords failed to load ..."
+        print "Install galpy for coordinate transformations ..."
+        print "*not* adding velocities ..."
+        return raw
+    #We start from RA and Dec
+    lb= bovy_coords.radec_to_lb(raw.ra,raw.dec,degree=True)
+    XYZ= bovy_coords.lbd_to_XYZ(lb[:,0],lb[:,1],raw.dist,degree=True)
+    pmllpmbb= bovy_coords.pmrapmdec_to_pmllpmbb(raw.pmra,raw.pmdec,
+                                                raw.ra,raw.dec,degree=True)
+    #print numpy.mean(pmllpmbb[:,0]-raw.pml), numpy.std(pmllpmbb[:,0]-raw.pml)
+    #print numpy.mean(pmllpmbb[:,1]-raw.pmb), numpy.std(pmllpmbb[:,1]-raw.pmb)
+    vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(raw.vr,pmllpmbb[:,0],
+                                             pmllpmbb[:,1],lb[:,0],lb[:,1],
+                                             raw.dist,degree=True)
+    #Solar motion from Schoenrich & Binney
+    vxvyvz[:,0]+= -11.1
+    vxvyvz[:,1]+= 12.24
+    vxvyvz[:,2]+= 7.25
+    #print numpy.mean(vxvyvz[:,2]), numpy.std(vxvyvz[:,2])
+    #Propagate uncertainties
+    ndata= len(raw.ra)
+    cov_pmradec= numpy.zeros((ndata,2,2))
+    cov_pmradec[:,0,0]= raw.pmra_err**2.
+    cov_pmradec[:,1,1]= raw.pmdec_err**2.
+    cov_pmllbb= bovy_coords.cov_pmrapmdec_to_pmllpmbb(cov_pmradec,raw.ra,
+                                                      raw.dec,degree=True)
+    cov_vxvyvz= bovy_coords.cov_dvrpmllbb_to_vxyz(raw.dist,
+                                                  raw.dist_err,
+                                                  raw.vr_err,
+                                                  pmllpmbb[:,0],pmllpmbb[:,1],
+                                                  cov_pmllbb,lb[:,0],lb[:,1],
+                                                  degree=True)
+    #Cast
+    XYZ= XYZ.astype('float64')
+    vxvyvz= vxvyvz.astype('float64')
+    cov_vxvyvz= cov_vxvyvz.astype('float64')
+    #Append results to structure
+    raw= _append_field_recarray(raw,'xc',XYZ[:,0])
+    raw= _append_field_recarray(raw,'yc',XYZ[:,1])
+    raw= _append_field_recarray(raw,'zc',XYZ[:,2])
+    raw= _append_field_recarray(raw,'vxc',vxvyvz[:,0])
+    raw= _append_field_recarray(raw,'vyc',vxvyvz[:,1])
+    raw= _append_field_recarray(raw,'vzc',vxvyvz[:,2])
+    raw= _append_field_recarray(raw,'vxc_err',numpy.sqrt(cov_vxvyvz[:,0,0]))
+    raw= _append_field_recarray(raw,'vyc_err',numpy.sqrt(cov_vxvyvz[:,1,1]))
+    raw= _append_field_recarray(raw,'vzc_err',numpy.sqrt(cov_vxvyvz[:,1,1]))
+    raw= _append_field_recarray(raw,'vxvyc_rho',cov_vxvyvz[:,0,1]\
+                                    /numpy.sqrt(cov_vxvyvz[:,0,0])\
+                                    /numpy.sqrt(cov_vxvyvz[:,1,1]))
+    raw= _append_field_recarray(raw,'vxvzc_rho',cov_vxvyvz[:,0,2]\
+                                    /numpy.sqrt(cov_vxvyvz[:,0,0])\
+                                    /numpy.sqrt(cov_vxvyvz[:,2,2]))
+    raw= _append_field_recarray(raw,'vyvzc_rho',cov_vxvyvz[:,1,2]\
+                                    /numpy.sqrt(cov_vxvyvz[:,1,1])\
+                                    /numpy.sqrt(cov_vxvyvz[:,2,2]))
+    return raw
 
 def _load_fits(file,ext=1):
     """Loads fits file's data and returns it as a numpy.recarray with lowercase field names"""
