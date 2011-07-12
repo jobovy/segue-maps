@@ -17,6 +17,8 @@ _INTEGRATEPLATESEP= True
 _EPSREL=0.1
 _EPSABS=0.0
 _DEGTORAD=math.pi/180.
+_DZ=6.
+_DR=5.
 def fitDensz(parser):
     (options,args)= parser.parse_args()
     if len(args) == 0:
@@ -50,11 +52,11 @@ def fitDensz(parser):
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
         if options.model.lower() == 'hwr':
             if options.metal == 'rich':
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(len(rawdata.ra)*.5*.5*.1),0.05])
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.,0.05])
             elif options.metal == 'poor':
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(len(rawdata.ra)*.5*.5*.1),0.05])
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.,0.05])
             else:
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(len(rawdata.ra)/.5/.5/.1),0.05])
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.,0.05])
             like_func= _HWRLikeMinus
             pdf_func= _HWRLike
             densfunc= _HWRDensity
@@ -92,7 +94,7 @@ def fitDensz(parser):
         platebright= numpy.array(indx,dtype='bool')
         indx= ['faint' in name for name in sf.platestr.programname]
         platefaint= numpy.array(indx,dtype='bool')
-        Ap= 7. #BOVY CHECK
+        Ap= math.pi*2.*(1.-numpy.cos(1.49*_DEGTORAD)) #SEGUE PLATE=1.49 deg radius
         if options.sample.lower() == 'g':
             grmin, grmax= 0.48, 0.55
             rmin,rmax= 14.5, 20.2
@@ -103,6 +105,13 @@ def fitDensz(parser):
         else:
             feh= -0.5 
         colordist= _const_colordist
+        #Given all of this, estimate the normalizing factor
+        normint= _NormInt(params,XYZ,R,
+                          sf,plates,platelb[:,0],platelb[:,1],
+                          platebright,platefaint,Ap,
+                          grmin,grmax,rmin,rmax,feh,
+                          colordist,densfunc)
+        params[2]= numpy.log(numpy.exp(params[2])*len(rawdata.ra)/normint)
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
@@ -143,26 +152,10 @@ def fitDensz(parser):
         pickle.dump(samples,savefile)
         savefile.close()
 
-def _HWRLike(params,XYZ,R,
-             sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
-             grmin,grmax,rmin,rmax,feh,#sample definition
-             colordist,densfunc): #function that describes the color-distribution and the density
-    """log likelihood for the HWR model"""
-    return -_HWRLikeMinus(params,XYZ,R,sf,plates,platel,plateb,platebright,
-                          platefaint,Ap,
-                          grmin,grmax,rmin,rmax,feh,
-                          colordist,densfunc)
-
-def _HWRLikeMinus(params,XYZ,R,
-                  sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
-                  grmin,grmax,rmin,rmax,feh,#sample definition
-                  colordist,densfunc): #function that describes the color-distribution and function that describes the density
-    """Minus log likelihood for the HWR model"""
-    if params[0] > 4.6051701859880918 \
-            or params[1] > 4.6051701859880918 \
-            or params[3] < 0. or params[3] > 1.:
-        return numpy.finfo(numpy.dtype(numpy.float64)).max
-    #First calculate the normalizing integral
+def _NormInt(params,XYZ,R,
+                  sf,plates,platel,plateb,platebright,platefaint,Ap,
+                  grmin,grmax,rmin,rmax,feh,
+                  colordist,densfunc): 
     out= 0.
     if _INTEGRATEPLATESEP:
         for ii in range(len(plates)):
@@ -204,19 +197,37 @@ def _HWRLikeMinus(params,XYZ,R,
                                           params,faintplates,sf,densfunc),
                                     epsrel=_EPSREL,epsabs=_EPSABS)[0]
     out*= Ap
+    return out
+
+def _HWRLike(params,XYZ,R,
+             sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
+             grmin,grmax,rmin,rmax,feh,#sample definition
+             colordist,densfunc): #function that describes the color-distribution and the density
+    """log likelihood for the HWR model"""
+    return -_HWRLikeMinus(params,XYZ,R,sf,plates,platel,plateb,platebright,
+                          platefaint,Ap,
+                          grmin,grmax,rmin,rmax,feh,
+                          colordist,densfunc)
+
+def _HWRLikeMinus(params,XYZ,R,
+                  sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
+                  grmin,grmax,rmin,rmax,feh,#sample definition
+                  colordist,densfunc): #function that describes the color-distribution and function that describes the density
+    """Minus log likelihood for the HWR model"""
+    if params[0] > 4.6051701859880918 \
+            or params[1] > 4.6051701859880918 \
+            or params[3] < 0. or params[3] > 1.:
+        return numpy.finfo(numpy.dtype(numpy.float64)).max
+    #First calculate the normalizing integral
+    out= _NormInt(params,XYZ,R,
+                  sf,plates,platel,plateb,platebright,platefaint,Ap,
+                  grmin,grmax,rmin,rmax,feh,
+                  colordist,densfunc)
     #Then evaluate the individual densities
     out+= -numpy.sum(numpy.log(densfunc(R,XYZ[:,2],params)))
     if _DEBUG: print out, numpy.exp(params)
     return out
 
-def _HWRDensity(R,Z,params):
-    """Double exponential disk + constant,
-    params= [hz,hR,Amplitude,Pbad]"""
-    return numpy.exp(params[2])\
-        *((1.-params[3])*numpy.exp(-(R-8.)/numpy.exp(params[1])
-                                    -numpy.fabs(Z)/numpy.exp(params[0]))\
-              +params[3]*R)
-    
 def _HWRLikeNormInt(d,gr,colordist,l,b,params,densfunc):
     #Color density
     rhogr= colordist(gr)
@@ -246,104 +257,17 @@ def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc):
         out+= rhogr*dens*jac*sf(plates[ii])
     return out
 
-
-#Flare model, bad bad coding
-def _FlareLike(params,XYZ,R,
-                  sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
-                  grmin,grmax,rmin,rmax,feh,#sample definition
-                  colordist): #function that describes the color-distribution
-    """log likelihood for the flare model"""
-    return -_FlareLikeMinus(params,XYZ,R,sf,plates,platel,plateb,platebright,
-                            platefaint,Ap,
-                            grmin,grmax,rmin,rmax,feh,
-                            colordist)
-
-def _FlareLikeMinus(params,XYZ,R,
-                  sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
-                  grmin,grmax,rmin,rmax,feh,#sample definition
-                  colordist): #function that describes the color-distribution
-    """Minus log likelihood for the flare model"""
-    if params[0] > 4.6051701859880918 \
-            or params[1] > 4.6051701859880918:
-        return numpy.finfo(numpy.dtype(numpy.float64)).max
-    #First calculate the normalizing integral
-    out= 0.
-    if _INTEGRATEPLATESEP:
-        for ii in range(len(plates)):
-        #if _DEBUG: print plates[ii], sf(plates[ii])
-            if platebright[ii]:
-                thisrmin= rmin
-                thisrmax= 17.8
-            else:
-                thisrmin= 17.8
-                thisrmax= rmax
-            out+= bovy_quadpack.dblquad(_FlareLikeNormInt,grmin,grmax,
-                                        lambda x: _ivezic_dist(x,thisrmin,feh),
-                                        lambda x: _ivezic_dist(x,thisrmax,feh),
-                                        args=(colordist,platel[ii],plateb[ii],
-                                              params),
-                                        epsrel=_EPSREL,epsabs=_EPSABS)[0]\
-                                        *sf(plates[ii])
-    else:
-        #First bright plates
-        brightplates= plates[platebright]
-        thisrmin= rmin
-        thisrmax= 17.8
-        out+= bovy_quadpack.dblquad(_FlareLikeNormIntAll,grmin,grmax,
-                                    lambda x: _ivezic_dist(x,thisrmin,feh),
-                                    lambda x: _ivezic_dist(x,thisrmax,feh),
-                                    args=(colordist,platel[platebright],
-                                          plateb[platebright],
-                                          params,brightplates,sf),
-                                    epsrel=_EPSREL,epsabs=_EPSABS)[0]
-        #then faint plates
-        faintplates= plates[platefaint]
-        thisrmin= 17.8
-        thisrmax= rmax
-        out+= bovy_quadpack.dblquad(_FlareLikeNormIntAll,grmin,grmax,
-                                    lambda x: _ivezic_dist(x,thisrmin,feh),
-                                    lambda x: _ivezic_dist(x,thisrmax,feh),
-                                    args=(colordist,platel[platefaint],
-                                          plateb[platefaint],
-                                          params,faintplates,sf),
-                                    epsrel=_EPSREL,epsabs=_EPSABS)[0]
-    out*= Ap
-    #Then evaluate the individual densities
-    hz= numpy.exp(params[0])*numpy.exp((R-8.)/numpy.exp(params[3]))
+def _HWRDensity(R,Z,params):
+    """Double exponential disk + constant,
+    params= [hz,hR,Amplitude,Pbad]"""
     hR= numpy.exp(params[1])
-    out+= -numpy.sum(-(R-8.)/hR-numpy.fabs(XYZ[:,2])/hz+params[2])
-    if _DEBUG: print out, numpy.exp(params)
-    return out
-
-def _FlareLikeNormInt(d,gr,colordist,l,b,params):
-    #Color density
-    rhogr= colordist(gr)
-    #Spatial density
-    XYZ= bovy_coords.lbd_to_XYZ(l,b,d,degree=True)
-    R= ((8.-XYZ[0])**2.+XYZ[1]**2.)**(0.5)
-    dens= numpy.exp(params[2]-(R-8.)/numpy.exp(params[1])
-                    -numpy.fabs(XYZ[2])/numpy.exp(params[0])/\
-                        numpy.exp((R-8.)/numpy.exp(params[3])))
-    #Jacobian
-    jac= d**2.*numpy.fabs(numpy.cos(b*_DEGTORAD))/R
-    return rhogr*dens*jac
-
-def _FlareLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf):
-    out= 0.
-    for ii in range(len(plates)):
-        #Color density
-        rhogr= colordist(gr)
-        #Spatial density
-        XYZ= bovy_coords.lbd_to_XYZ(l[ii],b[ii],d,degree=True)
-        R= ((8.-XYZ[0])**2.+XYZ[1]**2.)**(0.5)
-        dens= numpy.exp(params[2]-(R-8.)/numpy.exp(params[1])
-                        -numpy.fabs(XYZ[2])/numpy.exp(params[0])/\
-                            numpy.exp((R-8.)/numpy.exp(params[3])))
-        #Jacobian
-        jac= d**2.*numpy.fabs(numpy.cos(b[ii]*_DEGTORAD))/R
-        out+= rhogr*dens*jac*sf(plates[ii])
-    return out
-
+    hz= numpy.exp(params[0])
+    return numpy.exp(params[2])\
+        *((1.-params[3])/(2.*hz*hR)\
+              *numpy.exp(-(R-8.)/numpy.exp(params[1])
+                          -numpy.fabs(Z)/numpy.exp(params[0]))\
+              +params[3]*R/(_DZ*8.))
+    
 def _const_colordist(gr):
     return 1./.07
 
