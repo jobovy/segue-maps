@@ -52,11 +52,11 @@ def fitDensz(parser):
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
         if options.model.lower() == 'hwr':
             if options.metal == 'rich':
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.05])
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.0])
             elif options.metal == 'poor':
-                params= numpy.array([numpy.log(1.2),numpy.log(2.5),0.05])
+                params= numpy.array([numpy.log(1.2),numpy.log(2.5),0.0])
             else:
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.05])
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.0])
             like_func= _HWRLikeMinus
             pdf_func= _HWRLike
             densfunc= _HWRDensity
