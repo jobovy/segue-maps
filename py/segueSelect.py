@@ -23,6 +23,7 @@ _ERASESTR= "                                                                    
 class segueSelect:
     """Class that contains selection function for SEGUE targets"""
     def __init__(self,sample='G',remove_dups=True,plates=None,
+                 select='all',
                  type='constant',
                  logg=True,ug=False,ri=False,sn=True,
                  ebv=False):
@@ -33,6 +34,8 @@ class segueSelect:
            load the selection function for this sample
         INPUT:
            sample= sample to load ('G' or 'K', 'GK' loads all BOVY: GK NOT IMPLEMENTED)
+           select= 'all' selects all SEGUE stars in the color-range; 
+                   'program' only selects program stars
            plates= if set, only consider this plate, or list of plates,
                    or 'faint'/'bright'plates only,
                    or plates '>1000' or '<2000'
@@ -145,10 +148,20 @@ class segueSelect:
         sys.stdout.write('\r'+"Reading and parsing spectroscopic data ...\r")
         sys.stdout.flush()
         if sample.lower() == 'g':
-            self.spec= read_gdwarfs(logg=logg,ug=ug,ri=ri,sn=ri,
+            if select.lower() == 'all':
+                self.spec= read_gdwarfs(logg=logg,ug=ug,ri=ri,sn=ri,
                                         ebv=ebv)
+            elif select.lower() == 'program':
+                self.spec= read_gdwarfs(file=_GDWARFFILE,
+                                        logg=logg,ug=ug,ri=ri,sn=ri,
+                                        ebv=ebv)                
         elif sample.lower() == 'k':
-            self.spec= read_kdwarfs(logg=logg,ug=ug,ri=ri,sn=ri,
+            if select.lower() == 'all':
+                self.spec= read_kdwarfs(logg=logg,ug=ug,ri=ri,sn=ri,
+                                        ebv=ebv)
+            elif select.lower() == 'program':
+                self.spec= read_kdwarfs(file=_KDWARFFILE,
+                                        logg=logg,ug=ug,ri=ri,sn=ri,
                                         ebv=ebv)
         self.platespec= {}
         for plate in self.plates:

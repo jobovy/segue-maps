@@ -13,7 +13,8 @@ $(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile
 	--expd1 --expd2 -n 100 \
 	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
 	--xlabel='h_z\ [\mathrm{kpc}]' \
-	--ylabel='h_R [\mathrm{kpc}]'
+	--ylabel='h_R [\mathrm{kpc}]' \
+	--subsample=1000
 
 #Metal poor G dwarf densities
 $(OUTDIR)/HWR_poor_g_hRhz.$(EXT): fitDensz.py Makefile
@@ -21,7 +22,8 @@ $(OUTDIR)/HWR_poor_g_hRhz.$(EXT): fitDensz.py Makefile
 	--expd1 --expd2 -n 100 --metal=poor \
 	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
 	--xlabel='h_z\ [\mathrm{kpc}]' \
-	--ylabel='h_R [\mathrm{kpc}]'
+	--ylabel='h_R [\mathrm{kpc}]' \
+	--subsample=1000
 
 #Metal rich G dwarf densities, flare
 $(OUTDIR)/flare_rich_g_hRhz.$(EXT): fitDensz.py Makefile
