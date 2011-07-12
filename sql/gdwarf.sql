@@ -27,7 +27,9 @@ primtarget, spp.sna as sna,s.run, s.rerun, s.camcol, s.field, s.obj
 into MyDB.gdwarf
 from  sppParams as spp, specObjAll as soa, star as s,  platex p
 where  p.programname like '%segue%'
-   and p.plate = soa.plate
-   and spp.specobjid = soa.specobjid and soa.bestobjid = s.objid
-   and s.psfMag_g-s.extinction_g-s.psfMag_r+s.extinction_r between 0.48
+and soa.primtarget = -2147221504
+--and ((soa.seguePrimTarget & 0x80040000) > 0)
+and p.plate = soa.plate
+and spp.specobjid = soa.specobjid and soa.bestobjid = s.objid
+and s.psfMag_g-s.extinction_g-s.psfMag_r+s.extinction_r between 0.48
 and 0.55
