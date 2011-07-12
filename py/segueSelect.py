@@ -516,7 +516,7 @@ def _add_velocities(raw):
 def _load_fits(file,ext=1):
     """Loads fits file's data and returns it as a numpy.recarray with lowercase field names"""
     hdulist= pyfits.open(file)
-    out= hdulist[1].data
+    out= hdulist[ext].data
     hdulist.close()
     return _as_recarray(out)
 

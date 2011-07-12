@@ -205,9 +205,7 @@ def _HWRLikeMinus(params,XYZ,R,
                                     epsrel=_EPSREL,epsabs=_EPSABS)[0]
     out*= Ap
     #Then evaluate the individual densities
-    hz= numpy.exp(params[0])
-    hR= numpy.exp(params[1])
-    out+= -numpy.sum(-(R-8.)/hR-numpy.fabs(XYZ[:,2])/hz+params[2])
+    out+= -numpy.sum(numpy.log(densfunc(R,XYZ[:,2],params)))
     if _DEBUG: print out, numpy.exp(params)
     return out
 
