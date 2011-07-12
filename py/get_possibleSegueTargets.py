@@ -58,7 +58,7 @@ def prepare_sql(plate):
     subprocess.call(["sed",'s/PLATEDEC/'+str(plate.dec).strip()+'/g','tmp1.sql'],stdout=output_f)
     output_f.close()
     output_f = open('tmp.sql', 'w')
-    dbname= 'platennn'+str(plate.plate)
+    dbname= 'platennnn'+str(plate.plate)
     d= ''
     for db in dbname:
         d+= db
