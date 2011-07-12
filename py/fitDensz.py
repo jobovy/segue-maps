@@ -52,36 +52,33 @@ def fitDensz(parser):
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
         if options.model.lower() == 'hwr':
             if options.metal == 'rich':
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.,0.05])
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.05])
             elif options.metal == 'poor':
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.,0.05])
+                params= numpy.array([numpy.log(1.2),numpy.log(2.5),0.05])
             else:
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.,0.05])
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.05])
             like_func= _HWRLikeMinus
             pdf_func= _HWRLike
             densfunc= _HWRDensity
             #Slice sampling keywords
-            step= [0.3,0.3,0.3,0.02]
-            create_method=['step_out','step_out','step_out','step_out']
-            isDomainFinite=[[False,True],[False,True],[False,False],
-                            [True,True]]
-            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],[0.,0.],
-                    [0.,1.]]
+            step= [0.3,0.3,0.02]
+            create_method=['step_out','step_out','step_out']
+            isDomainFinite=[[False,True],[False,True],[True,True]]
+            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],[0.,1.]]
         elif options.model.lower() == 'flare':
             if options.metal == 'rich':
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(len(rawdata.ra)*.5*.5*.1),numpy.log(2.5)])
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(2.5)])
             elif options.metal == 'poor':
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(len(rawdata.ra)*.5*.5*.1),numpy.log(2.5)])
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(2.5)])
             else:
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(len(rawdata.ra)/.5/.5/.1),numpy.log(2.5)])
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(2.5)])
             like_func= _FlareLikeMinus
             pdf_func= _FlareLike
             #Slice sampling keywords
-            step= [0.3,0.3,0.3,.3,0.02]
-            create_method=['step_out','step_out','step_out','step_out','step_out']
-            isDomainFinite=[[False,True],[False,True],[False,False],
-                            [False,True],[True,True]]
-            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],[0.,0.],
+            step= [0.3,0.3,0.3,.02]
+            create_method=['step_out','step_out','step_out','step_out']
+            isDomainFinite=[[False,True],[False,True],[False,True],[True,True]]
+            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
                     [0.,4.6051701859880918],[0.,1.]]
         #Load selection function
         if _VERBOSE:
@@ -105,13 +102,6 @@ def fitDensz(parser):
         else:
             feh= -0.5 
         colordist= _const_colordist
-        #Given all of this, estimate the normalizing factor
-        normint= _NormInt(params,XYZ,R,
-                          sf,plates,platelb[:,0],platelb[:,1],
-                          platebright,platefaint,Ap,
-                          grmin,grmax,rmin,rmax,feh,
-                          colordist,densfunc)
-        params[2]= numpy.log(numpy.exp(params[2])*len(rawdata.ra)/normint)
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
@@ -216,13 +206,14 @@ def _HWRLikeMinus(params,XYZ,R,
     """Minus log likelihood for the HWR model"""
     if params[0] > 4.6051701859880918 \
             or params[1] > 4.6051701859880918 \
-            or params[3] < 0. or params[3] > 1.:
+            or params[2] < 0. or params[2] > 1.:
         return numpy.finfo(numpy.dtype(numpy.float64)).max
     #First calculate the normalizing integral
     out= _NormInt(params,XYZ,R,
                   sf,plates,platel,plateb,platebright,platefaint,Ap,
                   grmin,grmax,rmin,rmax,feh,
                   colordist,densfunc)
+    out= len(R)*numpy.log(out)
     #Then evaluate the individual densities
     out+= -numpy.sum(numpy.log(densfunc(R,XYZ[:,2],params)))
     if _DEBUG: print out, numpy.exp(params)
@@ -238,7 +229,7 @@ def _HWRLikeNormInt(d,gr,colordist,l,b,params,densfunc):
     #dens= numpy.exp(params[2]-(R-8.)/numpy.exp(params[1])
     #                -numpy.fabs(XYZ[2])/numpy.exp(params[0]))
     #Jacobian
-    jac= d**2.*numpy.fabs(numpy.cos(b*_DEGTORAD))/R
+    jac= d**2.*numpy.fabs(numpy.cos(b*_DEGTORAD)) #/R
     return rhogr*dens*jac
 
 def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc):
@@ -253,7 +244,7 @@ def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc):
         #dens= numpy.exp(params[2]-(R-8.)/numpy.exp(params[1])
         #                -numpy.fabs(XYZ[2])/numpy.exp(params[0]))
         #Jacobian
-        jac= d**2.*numpy.fabs(numpy.cos(b[ii]*_DEGTORAD))/R
+        jac= d**2.*numpy.fabs(numpy.cos(b[ii]*_DEGTORAD)) #/R
         out+= rhogr*dens*jac*sf(plates[ii])
     return out
 
@@ -262,11 +253,10 @@ def _HWRDensity(R,Z,params):
     params= [hz,hR,Amplitude,Pbad]"""
     hR= numpy.exp(params[1])
     hz= numpy.exp(params[0])
-    return numpy.exp(params[2])\
-        *((1.-params[3])/(2.*hz*hR)\
-              *numpy.exp(-(R-8.)/numpy.exp(params[1])
-                          -numpy.fabs(Z)/numpy.exp(params[0]))\
-              +params[3]*R/(_DZ*8.))
+    return ((1.-params[2])/(2.*hz*hR)\
+                *numpy.exp(-(R-8.)/numpy.exp(params[1])
+                            -numpy.fabs(Z)/numpy.exp(params[0]))\
+                +params[2]*R/(_DZ*8.))
     
 def _const_colordist(gr):
     return 1./.07
