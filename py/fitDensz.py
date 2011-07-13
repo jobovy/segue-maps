@@ -285,7 +285,7 @@ def _HWRLikeNormInt(d,gr,colordist,l,b,params,densfunc):
     #dens= numpy.exp(params[2]-(R-8.)/numpy.exp(params[1])
     #                -numpy.fabs(XYZ[2])/numpy.exp(params[0]))
     #Jacobian
-    jac= d**2.*numpy.fabs(numpy.cos(b*_DEGTORAD)) #/R
+    jac= d**2. #*numpy.fabs(numpy.cos(b*_DEGTORAD)) #/R
     return rhogr*dens*jac
 
 def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc):
@@ -300,7 +300,7 @@ def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc):
         #dens= numpy.exp(params[2]-(R-8.)/numpy.exp(params[1])
         #                -numpy.fabs(XYZ[2])/numpy.exp(params[0]))
         #Jacobian
-        jac= d**2.*numpy.fabs(numpy.cos(b[ii]*_DEGTORAD)) #/R
+        jac= d**2. #*numpy.fabs(numpy.cos(b[ii]*_DEGTORAD)) #/R
         out+= rhogr*dens*jac*sf(plates[ii])
     return out
 
