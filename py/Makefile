@@ -21,6 +21,12 @@ $(OUTDIR)/HWR_rich_g_zfunc.$(EXT): fitDensz.py Makefile plotData.py
 	--xlabel='z\ [\mathrm{kpc}]' \
 	--ylabel='\ln \nu(z;R=8\ \mathrm{kpc})' # \
 #	--subsample=1000
+$(OUTDIR)/HWR_rich_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g.sav -o $@ \
+	-n 100 --plotrfunc \
+	--xlabel='r_0\ [\mathrm{mag}]' \
+	--ylabel='\mathrm{density}' # \
+#	--subsample=1000
 
 #Metal poor G dwarf densities
 $(OUTDIR)/HWR_poor_g_hRhz.$(EXT): fitDensz.py Makefile
@@ -35,6 +41,12 @@ $(OUTDIR)/HWR_poor_g_zfunc.$(EXT): fitDensz.py Makefile plotData.py
 	-n 100 --plotzfunc --metal=poor \
 	--xlabel='z\ [\mathrm{kpc}]' \
 	--ylabel='\ln \nu(z;R=8\ \mathrm{kpc})' # \
+#	--subsample=1000
+$(OUTDIR)/HWR_poor_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \
+	-n 100 --plotrfunc --metal=poor \
+	--xlabel='r_0\ [\mathrm{mag}]' \
+	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
 
 #Metal rich G dwarf densities, flare

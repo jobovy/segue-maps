@@ -44,6 +44,16 @@ def fitDensz(parser):
     indx= ['faint' in name for name in sf.platestr.programname]
     platefaint= numpy.array(indx,dtype='bool')
     Ap= math.pi*2.*(1.-numpy.cos(1.49*_DEGTORAD)) #SEGUE PLATE=1.49 deg radius
+    if options.sample.lower() == 'g':
+        grmin, grmax= 0.48, 0.55
+        rmin,rmax= 14.5, 20.2
+    if options.metal.lower() == 'rich':
+        feh= -0.15
+    elif options.metal.lower() == 'poor':
+        feh= -0.65
+    else:
+        feh= -0.5 
+    colordist= _const_colordist
     if os.path.exists(args[0]):#Load savefile
         savefile= open(args[0],'rb')
         params= pickle.load(savefile)
@@ -95,16 +105,6 @@ def fitDensz(parser):
             isDomainFinite=[[False,True],[False,True],[False,True],[True,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
                     [0.,4.6051701859880918],[0.,1.]]
-        if options.sample.lower() == 'g':
-            grmin, grmax= 0.48, 0.55
-            rmin,rmax= 14.5, 20.2
-        if options.metal.lower() == 'rich':
-            feh= -0.15
-        elif options.metal.lower() == 'poor':
-            feh= -0.65
-        else:
-            feh= -0.5 
-        colordist= _const_colordist
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
@@ -196,7 +196,100 @@ def fitDensz(parser):
         plotDensz(rawdata,sf,xrange=[zs[0],zs[-1]],normed=True,overplot=True,
                   color='b',db=15.)
         bovy_plot.bovy_end_print(options.plotfile)
+    if options.plotrfunc:
+        zs= numpy.linspace(rmin,rmax,1001)
+        #Plot the mean and std-dev from the posterior
+        zmean= numpy.zeros(len(zs))
+        nsigs= 3
+        zsigs= numpy.zeros((len(zs),2*nsigs))
+        fs= numpy.zeros((len(zs),len(samples)))
+        for ii in range(len(samples)):
+            thisparams= samples[ii]
+            fs[:,ii]= _predict_rdist(zs,densfunc,thisparams,rmin,rmax,platelb,
+                                     grmin,grmax,feh,sf,colordist)
+        #Record mean and std-devs
+        zmean[:]= numpy.mean(fs,axis=1)
+        norm= numpy.nansum(zmean*(zs[1]-zs[0]))
+        zmean/= norm
+        if options.xmin is None or options.xmax is None:
+            xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.1]
+        else:
+            xrange= [options.xmin,options.xmax]
+        if options.ymin is None or options.ymax is None:
+            yrange= [0.,1.2*numpy.amax(zmean)]
+        else:
+            yrange= [options.ymin,options.ymax]
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_plot(zs,zmean,'k-',xrange=xrange,yrange=yrange,
+                            xlabel=options.xlabel,
+                            ylabel=options.ylabel)
+        for ii in range(nsigs):
+            for jj in range(len(zs)):
+                thisf= sorted(fs[jj,:])
+                thiscut= 0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                zsigs[jj,2*ii]= thisf[int(math.ceil(thiscut*len(samples)))]
+                thiscut= 1.-thiscut
+                zsigs[jj,2*ii+1]= thisf[int(math.floor(thiscut*len(samples)))]
+        colord, cc= (1.-0.75)/nsigs, 1
+        nsigma= nsigs
+        pyplot.fill_between(zs,zsigs[:,0]/norm,zsigs[:,1]/norm,color='0.75')
+        while nsigma > 1:
+            pyplot.fill_between(zs,zsigs[:,cc+1]/norm,zsigs[:,cc-1]/norm,
+                                color='%f' % (.75+colord*cc))
+            pyplot.fill_between(zs,zsigs[:,cc]/norm,zsigs[:,cc+2]/norm,
+                                color='%f' % (.75+colord*cc))
+            cc+= 1.
+            nsigma-= 1
+        bovy_plot.bovy_plot(zs,zmean,'k-',overplot=True)
+        #Plot the data
+        hist= bovy_plot.bovy_hist(rawdata.dered_r,normed=True,bins=31,ec='k',
+                                  histtype='step',
+                                  overplot=True,range=xrange)
+        bovy_plot.bovy_end_print(options.plotfile)
 
+def _predict_rdist(rs,densfunc,params,rmin,rmax,platelb,grmin,grmax,
+                   feh,sf,colordist):
+    """Predict the r distribution for the sample"""
+    plates= sf.plates
+    out= numpy.zeros(len(rs))
+    for ii in range(len(plates)):
+        if 'faint' in sf.platestr[ii].programname:
+            out+= sf(plates[ii])*_predict_rdist_plate(rs,densfunc,params,17.8,
+                                                      rmax,platelb[ii,0],
+                                                      platelb[ii,1],
+                                                      grmin,grmax,
+                                                      feh,colordist)
+        else:
+            out+= sf(plates[ii])*_predict_rdist_plate(rs,densfunc,params,rmin,
+                                                      17.8,platelb[ii,0],
+                                                      platelb[ii,1],
+                                                      grmin,grmax,
+                                                      feh,colordist)
+    return out
+
+def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
+                         feh,colordist):
+    """Predict the r distribution for a plate"""
+    #BOVY: APPROXIMATELY INTEGRATE OVER GR
+    ngr= 11
+    grs= numpy.linspace(grmin,grmax,ngr)
+    out= numpy.zeros(len(rs))
+    norm= 0.
+    for jj in range(ngr):
+       #Calculate distances
+        ds= _ivezic_dist(grs[jj],rs,feh)
+        #Calculate (R,z)s
+        XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
+                                    numpy.array([b for ii in range(len(ds))]),
+                                    ds,degree=True)
+        XYZ= XYZ.astype(numpy.float64)
+        R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+        out+= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])
+        norm+= colordist(grs[jj])
+    out/= norm
+    out[(rs < rmin)]= 0.
+    out[(rs > rmax)]= 0.
+    return out
 
 def _NormInt(params,XYZ,R,
              sf,plates,platel,plateb,platebright,platefaint,Ap,
@@ -366,6 +459,9 @@ def get_options():
     parser.add_option("--plotRfunc",action="store_true", dest="plotRfunc",
                       default=False,
                       help="Plot the inferred rho(R) relation")
+    parser.add_option("--plotrfunc",action="store_true", dest="plotrfunc",
+                      default=False,
+                      help="Plot the inferred distribution of rs")
     return parser
 
 if __name__ == '__main__':

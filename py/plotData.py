@@ -41,6 +41,8 @@ def plotDensz(data,sf,xrange=[0.,2.],normed=True,overplot=False,bins=20,
             #Get the weight
             thissf= sf(data[ii].plate)
         jac= data[ii].dist**2. #*numpy.fabs(numpy.cos(data[ii].b*_DEGTORAD))
+        jac/= numpy.fabs(numpy.sin(data[ii].b*_DEGTORAD))
+        jac*= numpy.exp(-(R[ii]-8.)/2.75)
         #bin number
         thisbin= int(math.floor((numpy.fabs(data[ii].zc-xrange[0]))/dx))
         if thisbin > (bins-1): continue
