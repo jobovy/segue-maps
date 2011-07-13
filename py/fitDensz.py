@@ -10,6 +10,7 @@ from galpy.util import bovy_coords, bovy_plot, bovy_quadpack
 import bovy_mcmc
 from segueSelect import ivezic_dist_gr, segueSelect
 from fitSigz import readData
+from plotData import plotDensz
 _ERASESTR= "                                                                                "
 _VERBOSE=True
 _DEBUG=True
@@ -24,6 +25,25 @@ def fitDensz(parser):
     if len(args) == 0:
         parser.print_help()
         return
+    if options.model.lower() == 'hwr':
+        densfunc= _HWRDensity
+    #First read the data
+    if _VERBOSE:
+        print "Reading and parsing data ..."
+    XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
+                                            sample=options.sample)
+    #Load selection function
+    if _VERBOSE:
+        print "Loading selection function ..."
+    plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
+    sf= segueSelect(plates=plates)
+    platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
+                                     degree=True)
+    indx= [not 'faint' in name for name in sf.platestr.programname]
+    platebright= numpy.array(indx,dtype='bool')
+    indx= ['faint' in name for name in sf.platestr.programname]
+    platefaint= numpy.array(indx,dtype='bool')
+    Ap= math.pi*2.*(1.-numpy.cos(1.49*_DEGTORAD)) #SEGUE PLATE=1.49 deg radius
     if os.path.exists(args[0]):#Load savefile
         savefile= open(args[0],'rb')
         params= pickle.load(savefile)
@@ -35,11 +55,6 @@ def fitDensz(parser):
                 xs= numpy.array([s[ii] for s in samples])
                 print numpy.mean(xs), numpy.std(xs)
     else:
-        #First read the data
-        if _VERBOSE:
-            print "Reading and parsing data ..."
-        XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
-                                                sample=options.sample)
         #Subsample
         if not options.subsample is None:
             randindx= numpy.random.permutation(len(rawdata.ra))
@@ -80,18 +95,6 @@ def fitDensz(parser):
             isDomainFinite=[[False,True],[False,True],[False,True],[True,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
                     [0.,4.6051701859880918],[0.,1.]]
-        #Load selection function
-        if _VERBOSE:
-            print "Loading selection function ..."
-        plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
-        sf= segueSelect(plates=plates)
-        platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
-                                         degree=True)
-        indx= [not 'faint' in name for name in sf.platestr.programname]
-        platebright= numpy.array(indx,dtype='bool')
-        indx= ['faint' in name for name in sf.platestr.programname]
-        platefaint= numpy.array(indx,dtype='bool')
-        Ap= math.pi*2.*(1.-numpy.cos(1.49*_DEGTORAD)) #SEGUE PLATE=1.49 deg radius
         if options.sample.lower() == 'g':
             grmin, grmax= 0.48, 0.55
             rmin,rmax= 14.5, 20.2
@@ -141,11 +144,64 @@ def fitDensz(parser):
         pickle.dump(params,savefile)
         pickle.dump(samples,savefile)
         savefile.close()
+    #Plot
+    if options.plotzfunc:
+        zs= numpy.linspace(0.3,2.,1001)
+        #Plot the mean and std-dev from the posterior
+        zmean= numpy.zeros(len(zs))
+        nsigs= 3
+        zsigs= numpy.zeros((len(zs),2*nsigs))
+        fs= numpy.zeros((len(zs),len(samples)))
+        for ii in range(len(samples)):
+            thisparams= samples[ii]
+            fs[:,ii]= numpy.log(densfunc(8.,zs,thisparams))
+        #Record mean and std-devs
+        zmean[:]= numpy.mean(fs,axis=1)
+        norm= numpy.log(numpy.sum(numpy.exp(zmean)*(zs[1]-zs[0])))
+        zmean-= norm
+        if options.xmin is None or options.xmax is None:
+            xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.1]
+        else:
+            xrange= [options.xmin,options.xmax]
+        if options.ymin is None or options.ymax is None:
+            yrange= [numpy.amin(zmean)-1.,numpy.amax(zmean)+1.]
+        else:
+            yrange= [options.ymin,options.ymax]
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_plot(zs,zmean,'k-',xrange=xrange,yrange=yrange,
+                            xlabel=options.xlabel,
+                            ylabel=options.ylabel)
+        for ii in range(nsigs):
+            for jj in range(len(zs)):
+                thisf= sorted(fs[jj,:])
+                thiscut= 0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                zsigs[jj,2*ii]= thisf[int(math.ceil(thiscut*len(samples)))]
+                thiscut= 1.-thiscut
+                zsigs[jj,2*ii+1]= thisf[int(math.floor(thiscut*len(samples)))]
+        colord, cc= (1.-0.75)/nsigs, 1
+        nsigma= nsigs
+        pyplot.fill_between(zs,zsigs[:,0]-norm,zsigs[:,1]-norm,color='0.75')
+        while nsigma > 1:
+            pyplot.fill_between(zs,zsigs[:,cc+1]-norm,zsigs[:,cc-1]-norm,
+                                color='%f' % (.75+colord*cc))
+            pyplot.fill_between(zs,zsigs[:,cc]-norm,zsigs[:,cc+2]-norm,
+                                color='%f' % (.75+colord*cc))
+            cc+= 1.
+            nsigma-= 1
+        bovy_plot.bovy_plot(zs,zmean,'k-',overplot=True)
+        #Plot the data
+        plotDensz(rawdata,sf,xrange=[zs[0],zs[-1]],normed=True,overplot=True)
+        plotDensz(rawdata,sf,xrange=[zs[0],zs[-1]],normed=True,overplot=True,
+                  noweights=True,color='r')
+        plotDensz(rawdata,sf,xrange=[zs[0],zs[-1]],normed=True,overplot=True,
+                  color='b',db=15.)
+        bovy_plot.bovy_end_print(options.plotfile)
+
 
 def _NormInt(params,XYZ,R,
-                  sf,plates,platel,plateb,platebright,platefaint,Ap,
-                  grmin,grmax,rmin,rmax,feh,
-                  colordist,densfunc): 
+             sf,plates,platel,plateb,platebright,platefaint,Ap,
+             grmin,grmax,rmin,rmax,feh,
+             colordist,densfunc):
     out= 0.
     if _INTEGRATEPLATESEP:
         for ii in range(len(plates)):
@@ -304,9 +360,12 @@ def get_options():
                       help="xlabel")
     parser.add_option("--ylabel",dest='ylabel',default=None,
                       help="ylabel")
-    parser.add_option("--plotfunc",action="store_true", dest="plotfunc",
+    parser.add_option("--plotzfunc",action="store_true", dest="plotzfunc",
                       default=False,
-                      help="Plot samples from the inferred sigma_z(z) relation at R_0")
+                      help="Plot the inferred rho(z) relation")
+    parser.add_option("--plotRfunc",action="store_true", dest="plotRfunc",
+                      default=False,
+                      help="Plot the inferred rho(R) relation")
     return parser
 
 if __name__ == '__main__':

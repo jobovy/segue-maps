@@ -50,9 +50,9 @@ def plotSigzFunc(parser):
         for jj in range(len(zs)):
             thisf= sorted(fs[jj,:])
             thiscut= 0.5*special.erfc((ii+1.)/math.sqrt(2.))
-            zsigs[jj,2*ii]= thisf[int(math.ceil(thiscut*len(samples1)))]
+            zsigs[jj,2*ii]= thisf[int(math.floor(thiscut*len(samples1)))]
             thiscut= 1.-thiscut
-            zsigs[jj,2*ii+1]= thisf[int(math.ceil(thiscut*len(samples1)))]
+            zsigs[jj,2*ii+1]= thisf[int(math.floor(thiscut*len(samples1)))]
     colord, cc= (1.-0.75)/nsigs, 1
     nsigma= nsigs
     pyplot.fill_between(zs,zsigs[:,0],zsigs[:,1],color='0.75')
