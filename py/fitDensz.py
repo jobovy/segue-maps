@@ -364,7 +364,6 @@ def _NormInt(params,XYZ,R,
             else:
                 thisrmin= 17.8
                 thisrmax= rmax
-            print "BOVY: ADAPT FOR 'r' SELECTION"
             out+= bovy_quadpack.dblquad(_HWRLikeNormInt,grmin,grmax,
                                         lambda x: _ivezic_dist(x,thisrmin,feh),
                                         lambda x: _ivezic_dist(x,thisrmax,feh),
