@@ -8,7 +8,7 @@ from optparse import OptionParser
 from scipy import optimize, special
 from galpy.util import bovy_coords, bovy_plot, bovy_quadpack
 import bovy_mcmc
-from segueSelect import ivezic_dist_gr, segueSelect
+from segueSelect import ivezic_dist_gr, segueSelect, _gi_gr, _mr_gi
 from fitSigz import readData
 from plotData import plotDensz
 _ERASESTR= "                                                                                "
@@ -369,9 +369,9 @@ def _NormInt(params,XYZ,R,
                                         lambda x: _ivezic_dist(x,thisrmin,feh),
                                         lambda x: _ivezic_dist(x,thisrmax,feh),
                                         args=(colordist,platel[ii],plateb[ii],
-                                              params,densfunc),
-                                        epsrel=_EPSREL,epsabs=_EPSABS)[0]\
-                                        *sf(plates[ii])
+                                              params,densfunc,sf,plates[ii],
+                                              feh),
+                                        epsrel=_EPSREL,epsabs=_EPSABS)[0]
     else:
         #First bright plates
         brightplates= plates[platebright]
@@ -382,7 +382,8 @@ def _NormInt(params,XYZ,R,
                                     lambda x: _ivezic_dist(x,thisrmax,feh),
                                     args=(colordist,platel[platebright],
                                           plateb[platebright],
-                                          params,brightplates,sf,densfunc),
+                                          params,brightplates,sf,densfunc,
+                                          feh),
                                     epsrel=_EPSREL,epsabs=_EPSABS)[0]
         #then faint plates
         faintplates= plates[platefaint]
@@ -428,7 +429,11 @@ def _HWRLikeMinus(params,XYZ,R,
     if _DEBUG: print out, numpy.exp(params)
     return out
 
-def _HWRLikeNormInt(d,gr,colordist,l,b,params,densfunc):
+def _HWRLikeNormInt(d,gr,colordist,l,b,params,densfunc,sf,plate,feh):
+    #Go back to r
+    mr= _mr_gi(_gi_gr(gr),feh)
+    r= 5.*numpy.log10(d)+10.+mr
+    select= sf(plate,r=r)
     #Color density
     rhogr= colordist(gr)
     #Spatial density
@@ -438,11 +443,14 @@ def _HWRLikeNormInt(d,gr,colordist,l,b,params,densfunc):
     #dens= numpy.exp(params[2]-(R-8.)/numpy.exp(params[1])
     #                -numpy.fabs(XYZ[2])/numpy.exp(params[0]))
     #Jacobian
-    jac= d**2. #*numpy.fabs(numpy.cos(b*_DEGTORAD)) #/R
-    return rhogr*dens*jac
+    jac= d**2.
+    return rhogr*dens*jac*select
 
-def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc):
+def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc,feh):
     out= 0.
+    #Go back to r
+    mr= _mr_gi(_gi_gr(gr),feh)
+    r= 5.*numpy.log10(d)+10.+mr
     for ii in range(len(plates)):
         #Color density
         rhogr= colordist(gr)
@@ -453,9 +461,9 @@ def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc):
         #dens= numpy.exp(params[2]-(R-8.)/numpy.exp(params[1])
         #                -numpy.fabs(XYZ[2])/numpy.exp(params[0]))
         #Jacobian
+        select= sf(plates[ii],r=r)
         jac= d**2. #*numpy.fabs(numpy.cos(b[ii]*_DEGTORAD)) #/R
-        print "BOVY: ADAPT FOR 'r' SELECTION"
-        out+= rhogr*dens*jac*sf(plates[ii])
+        out+= rhogr*dens*jac*select
     return out
 
 def _HWRDensity(R,Z,params):
