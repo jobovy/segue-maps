@@ -28,6 +28,14 @@ $(OUTDIR)/HWR_rich_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
 
+#just bright
+$(OUTDIR)/HWR_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gbright.sav -o $@ \
+	-n 100 --plotrfunc --bright \
+	--xlabel='r_0\ [\mathrm{mag}]' \
+	--ylabel='\mathrm{density}' # \
+#	--subsample=1000
+
 #Metal poor G dwarf densities
 $(OUTDIR)/HWR_poor_g_hRhz.$(EXT): fitDensz.py Makefile
 	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \

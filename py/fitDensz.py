@@ -43,6 +43,31 @@ def fitDensz(parser):
     platebright= numpy.array(indx,dtype='bool')
     indx= ['faint' in name for name in sf.platestr.programname]
     platefaint= numpy.array(indx,dtype='bool')
+    if options.bright or options.faint:
+        indx= []
+        for ii in range(len(rawdata.ra)):
+            pindx= (sf.plates == rawdata[ii].plate)
+            if options.bright \
+                    and not 'faint' in sf.platestr[pindx].programname[0]:
+                indx.append(True)
+            elif options.faint \
+                    and 'faint' in sf.platestr[pindx].programname:
+                indx.append(True)
+            else:
+                indx.append(False)
+        indx= numpy.array(indx,dtype='bool')
+        rawdata= rawdata[indx]
+    if options.bright or options.faint:
+        #Reload selection function
+        plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
+        print plates
+        sf= segueSelect(plates=plates)
+        platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
+                                         degree=True)
+        indx= [not 'faint' in name for name in sf.platestr.programname]
+        platebright= numpy.array(indx,dtype='bool')
+        indx= ['faint' in name for name in sf.platestr.programname]
+        platefaint= numpy.array(indx,dtype='bool')
     Ap= math.pi*2.*(1.-numpy.cos(1.49*_DEGTORAD)) #SEGUE PLATE=1.49 deg radius
     if options.sample.lower() == 'g':
         grmin, grmax= 0.48, 0.55
@@ -462,6 +487,12 @@ def get_options():
     parser.add_option("--plotrfunc",action="store_true", dest="plotrfunc",
                       default=False,
                       help="Plot the inferred distribution of rs")
+    parser.add_option("--bright",action="store_true", dest="bright",
+                      default=False,
+                      help="Fit just the bright plates")
+    parser.add_option("--faint",action="store_true", dest="faint",
+                      default=False,
+                      help="Fit just the faint plates")
     return parser
 
 if __name__ == '__main__':
