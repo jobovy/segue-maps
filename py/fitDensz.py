@@ -473,7 +473,7 @@ def _HWRDensity(R,Z,params):
     return ((1.-params[2])/(2.*hz*hR)\
                 *numpy.exp(-(R-8.)/numpy.exp(params[1])
                             -numpy.fabs(Z)/numpy.exp(params[0]))\
-                +params[2]*R/(_DZ*8.))
+                +params[2]/(_DZ*8.))
     
 def _ConstDensity(R,Z,params):
     """Constant density"""
