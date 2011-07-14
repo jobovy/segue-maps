@@ -1,8 +1,9 @@
 import os, os.path
 import sys
 import copy
+import math
 import numpy
-from scipy import special
+from scipy import special, interpolate
 import pyfits
 try:
     from galpy.util import bovy_plot
@@ -14,6 +15,8 @@ try:
     _COORDSLOADED= True
 except ImportError:
     _COORDSLOADED= False
+_INTERPDEGREEBRIGHT= 1
+_INTERPDEGREEFAINT= 3
 _SEGUESELECTDIR=os.getenv('SEGUESELECTDIR')
 _GDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'gdwarfall_raw_nodups.fit')
 _GDWARFFILE= os.path.join(_SEGUESELECTDIR,'gdwarf_raw_nodups.fit')
@@ -24,8 +27,10 @@ class segueSelect:
     """Class that contains selection function for SEGUE targets"""
     def __init__(self,sample='G',remove_dups=True,plates=None,
                  select='all',
-                 type='constant',
-                 logg=True,ug=False,ri=False,sn=True,
+                 type='constant',dr=0.3,
+                 interp_degree_bright=_INTERPDEGREEBRIGHT,
+                 interp_degree_faint=_INTERPDEGREEFAINT,
+                 ug=False,ri=False,sn=True,
                  ebv=False):
         """
         NAME:
@@ -40,10 +45,11 @@ class segueSelect:
                    or 'faint'/'bright'plates only,
                    or plates '>1000' or '<2000'
            type= type of selection function to determine ('constant' for 
-                 constant per plate)
+                 constant per plate; 'r' universal function of r)
+           dr= when determining the selection function as a function of r,
+               binsize to use
 
            SPECTROSCOPIC SAMPLE SELECTION:
-              logg= if False, don't cut on logg
               ug= if True, cut on u-g
               ri= if True, cut on r-i
               sn= if False, don't cut on SN
@@ -123,6 +129,8 @@ class segueSelect:
         #Flesh out samples
         for plate in self.plates:
             if self.sample == 'g':
+                self.rmin= 14.5
+                self.rmax= 20.2
                 indx= ((self.platephot[str(plate)].field('g')\
                            -self.platephot[str(plate)].field('r')) < 0.55)\
                            *((self.platephot[str(plate)].field('g')\
@@ -130,6 +138,8 @@ class segueSelect:
                            *(self.platephot[str(plate)].field('r') < 20.2)\
                            *(self.platephot[str(plate)].field('r') > 14.5)
             elif self.sample == 'k':
+                self.rmin= 14.5
+                self.rmax= 19.
                 indx= ((self.platephot[str(plate)].field('g')\
                             -self.platephot[str(plate)].field('r')) > 0.55)\
                            *((self.platephot[str(plate)].field('g')\
@@ -149,20 +159,20 @@ class segueSelect:
         sys.stdout.flush()
         if sample.lower() == 'g':
             if select.lower() == 'all':
-                self.spec= read_gdwarfs(logg=logg,ug=ug,ri=ri,sn=ri,
-                                        ebv=ebv)
+                self.spec= read_gdwarfs(ug=ug,ri=ri,sn=sn,
+                                        ebv=ebv,nocoords=True)
             elif select.lower() == 'program':
                 self.spec= read_gdwarfs(file=_GDWARFFILE,
-                                        logg=logg,ug=ug,ri=ri,sn=ri,
-                                        ebv=ebv)                
+                                        ug=ug,ri=ri,sn=sn,
+                                        ebv=ebv,nocoords=True)
         elif sample.lower() == 'k':
             if select.lower() == 'all':
-                self.spec= read_kdwarfs(logg=logg,ug=ug,ri=ri,sn=ri,
-                                        ebv=ebv)
+                self.spec= read_kdwarfs(ug=ug,ri=ri,sn=sn,
+                                        ebv=ebv,nocoords=True)
             elif select.lower() == 'program':
                 self.spec= read_kdwarfs(file=_KDWARFFILE,
-                                        logg=logg,ug=ug,ri=ri,sn=ri,
-                                        ebv=ebv)
+                                        ug=ug,ri=ri,sn=sn,
+                                        ebv=ebv,nocoords=True)
         self.platespec= {}
         for plate in self.plates:
             #Find spectra for each plate
@@ -173,7 +183,9 @@ class segueSelect:
         #Determine selection function
         sys.stdout.write('\r'+"Determining selection function ...\r")
         sys.stdout.flush()
-        self._determine_select(type)
+        self._determine_select(type,dr=dr,
+                               interp_degree_bright=interp_degree_bright,
+                               interp_degree_faint=interp_degree_faint)
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         return None
@@ -192,20 +204,40 @@ class segueSelect:
            selection function
         HISTORY:
            2011-07-11 - Written - Bovy (NYU)
+        BUGS: BOVY
+           poorly written
+           determine first whether r is in the range for this plate
+           allow plate to be a single value, r many
         """
-        if self.type.lower() == 'constant':
-            try:
-                if isinstance(plate,(list,numpy.ndarray)):
-                    out= []
-                    for p in plate:
+        try:
+            if isinstance(plate,(list,numpy.ndarray)):
+                out= []
+                for ii in range(len(plate)):
+                    p= plate[ii]
+                    if self.type.lower() == 'constant':
                         out.append(self.weight[str(p)])
-                    if isinstance(plate,numpy.ndarray):
-                        out= numpy.array(out)
-                    return out
-                else:
+                    elif self.type.lower() == 'r':
+                        if r[ii] < 17.8 and r[ii] >= self.rmin:
+                            out.append(self.weight[str(p)]*self.s_one_r_bright_interpolate(r[ii])[0])
+                        elif r[ii] >= 17.8 and r[ii] <= self.rmax:
+                            out.append(self.weight[str(p)]*self.s_one_r_faint_interpolate(r[ii])) #different interpolator does not return array
+                        else:
+                            out.append(0.)
+                if isinstance(plate,numpy.ndarray):
+                    out= numpy.array(out)
+                return out
+            else:
+                if self.type.lower() == 'constant':
                     return self.weight[str(plate)]
-            except KeyError:
-                raise IOError("Requested plate %i either not loaded or it does not exist" % plate)
+                elif self.type.lower() == 'r':
+                    if r < 17.8 and r >= self.rmin:
+                        return self.weight[str(plate)]*self.s_one_r_bright_interpolate(r)[0]
+                    elif r >= 17.8 and r <= self.rmax:
+                        return self.weight[str(plate)]*self.s_one_r_faint_interpolate(r) #different interpolator does not return array
+                    else:
+                        return 0.
+        except KeyError:
+            raise IOError("Requested plate %i either not loaded or it does not exist" % plate)
 
     def plot(self,x='gr',y='r',plate='all',spec=False,scatterplot=True,
              bins=None,specbins=None,type=None):
@@ -307,7 +339,9 @@ class segueSelect:
                                 xrange=xrange,yrange=yrange)
         return None                
 
-    def _determine_select(self,type):
+    def _determine_select(self,type,dr=None,
+                          interp_degree_bright=_INTERPDEGREEBRIGHT,
+                          interp_degree_faint=_INTERPDEGREEFAINT):
         self.type= type
         #First determine the total weight for each plate
         self.weight= {}
@@ -316,6 +350,89 @@ class segueSelect:
             self.weight[str(plate)]= len(self.platespec[str(plate)])\
                 /float(len(self.platephot[str(plate)]))
         if type.lower() == 'constant':
+            return
+        if type.lower() == 'r':
+            #Determine the selection function in bins in r, for bright/faint
+            nbrightrbins= int(math.floor((17.8-self.rmin)/dr))+1
+            nfaintrbins= int(math.floor((self.rmax-17.8)/dr))+2
+            s_one_r_bright= numpy.zeros((nbrightrbins,len(self.plates)))
+            s_one_r_faint= numpy.zeros((nfaintrbins,len(self.plates)))
+            s_r_bright= numpy.zeros((nbrightrbins,len(self.plates)))
+            s_r_faint= numpy.zeros((nfaintrbins,len(self.plates)))
+            #Determine s_1(r) for each plate separately first
+            nbrightplates, nfaintplates= 0, 0
+            brightplateindx= numpy.empty(len(self.plates),dtype='bool') #BOVY: move this out of here
+            faintplateindx= numpy.empty(len(self.plates),dtype='bool')
+            weightbrights, weightfaints= 0., 0.
+            for ii in range(len(self.plates)):
+                plate= self.plates[ii]
+                if 'faint' in self.platestr[ii].programname: #faint plate
+                    thisrmin, thisrmax= 17.8, self.rmax+dr #slightly further to avoid out-of-range errors
+                    thisbins= nfaintrbins
+                    nfaintplates+= 1
+                    faintplateindx[ii]= True
+                    brightplateindx[ii]= False
+                else:
+                    thisrmin, thisrmax= self.rmin, 17.8
+                    thisbins= nbrightrbins
+                    nbrightplates+= 1
+                    faintplateindx[ii]= False
+                    brightplateindx[ii]= True
+                nspecr, edges = numpy.histogram(self.platespec[str(plate)].dered_r,bins=thisbins,range=[thisrmin,thisrmax])
+                nphotr, edges = numpy.histogram(self.platephot[str(plate)].r,
+                                                bins=thisbins,
+                                                range=[thisrmin,thisrmax])
+                nspecr= numpy.array(nspecr,dtype='float64')
+                nphotr= numpy.array(nphotr,dtype='float64')
+                nonzero= (nspecr > 0.)*(nphotr > 0.)
+                if 'faint' in self.platestr[ii].programname: #faint plate
+                    s_r_faint[nonzero,ii]= nspecr[nonzero].astype('float64')/nphotr[nonzero]
+                    weightfaints+= float(numpy.sum(nspecr))/float(numpy.sum(nphotr))
+                else: #bright plate
+                    s_r_bright[nonzero,ii]= nspecr[nonzero].astype('float64')/nphotr[nonzero]
+                    weightbrights+= float(numpy.sum(nspecr))/float(numpy.sum(nphotr))
+                nspecr/= float(numpy.sum(nspecr))
+                nphotr/= float(numpy.sum(nphotr))
+                if 'faint' in self.platestr[ii].programname: #faint plate
+                    s_one_r_faint[nonzero,ii]= nspecr[nonzero]/nphotr[nonzero]
+                else: #bright plate
+                    s_one_r_bright[nonzero,ii]= nspecr[nonzero]/nphotr[nonzero]
+            self.s_r_plate_bright= s_r_bright
+            self.s_r_plate_faint= s_r_faint
+            self.s_one_r_plate_bright= s_one_r_bright
+            self.s_one_r_plate_faint= s_one_r_faint
+            self.nbrightplates= nbrightplates
+            self.nfaintplates= nfaintplates
+            self.brightplateindx= brightplateindx
+            self.faintplateindx= faintplateindx
+            fromIndividual= False
+            if fromIndividual:
+                #Mean or median?
+                median= False
+                if median:
+                    self.s_one_r_bright= numpy.median(self.s_one_r_plate_bright[:,self.brightplateindx],axis=1)
+                    self.s_one_r_faint= numpy.median(self.s_one_r_plate_faint[:,self.faintplateindx],axis=1)
+                else:
+                    self.s_one_r_bright= numpy.sum(self.s_one_r_plate_bright,axis=1)/nbrightplates
+                    self.s_one_r_faint= numpy.sum(self.s_one_r_plate_faint,axis=1)/nfaintplates
+                print self.s_one_r_bright, self.s_one_r_faint
+            else:
+                self.s_one_r_bright= \
+                    numpy.sum(self.s_r_plate_bright[:,self.brightplateindx],axis=1)\
+                    /weightbrights
+                self.s_one_r_faint= \
+                    numpy.sum(self.s_r_plate_faint[:,self.faintplateindx],axis=1)\
+                    /weightfaints
+            self.interp_rs_bright= \
+                numpy.linspace(self.rmin+5.*dr/2.,17.8-5.*dr/2.,nbrightrbins-4)
+            self.s_one_r_bright_interpolate= interpolate.UnivariateSpline(\
+                self.interp_rs_bright,self.s_one_r_bright[2:-2],k=_INTERPDEGREEBRIGHT)
+            self.interp_rs_faint= \
+                numpy.linspace(17.8+1.*dr/2.,self.rmax+dr/2.,nfaintrbins)
+            self.s_one_r_faint_interpolate= interpolate.interp1d(\
+                self.interp_rs_faint,self.s_one_r_faint,#[1:len(self.s_one_r_faint)],
+                kind=_INTERPDEGREEFAINT,fill_value=self.s_one_r_faint[0],
+                bounds_error=False)
             return
 
 def ivezic_dist_gr(g,r,feh):
@@ -339,19 +456,20 @@ def ivezic_dist_gr(g,r,feh):
     derrs= ds/10. #BOVY: ASSUME 10% for now
     return (ds,derrs)
 
-def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
-                 ebv=False):
+def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
+                 ebv=False,nocoords=False):
     """
     NAME:
        read_gdwarfs
     PURPOSE:
        read the spectroscopic G dwarf sample
     INPUT:
-       logg= if False, don't cut on logg
+       logg= if True, cut on logg
        ug= if True, cut on u-g
        ri= if True, cut on r-i
        sn= if False, don't cut on SN
        ebv= if True, cut on E(B-V)
+       nocoords= if True, don't calculate distances or transform coordinates
     OUTPUT:
        cut data, returns numpy.recarray
     HISTORY:
@@ -387,25 +505,27 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
     if ebv:
         indx= (raw.field('ebv') < .3)
         raw= raw[indx]
+    if nocoords: return raw
     #BOVY: distances
     raw= _add_distances(raw)
     #velocities
     raw= _add_velocities(raw)
     return raw
 
-def read_kdwarfs(file=_KDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
-                 ebv=False):
+def read_kdwarfs(file=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
+                 ebv=False,nocoords=False):
     """
     NAME:
        read_kdwarfs
     PURPOSE:
        read the spectroscopic K dwarf sample
     INPUT:
-       logg= if False, don't cut on logg
+       logg= if True, cut on logg
        ug= if True, cut on u-g
        ri= if True, cut on r-i
        sn= if False, don't cut on SN
        ebv= if True, cut on E(B-V)
+       nocoords= if True, don't calculate distances or transform coordinates
     OUTPUT:
        cut data, returns numpy.recarray
     HISTORY:
@@ -441,6 +561,7 @@ def read_kdwarfs(file=_KDWARFALLFILE,logg=True,ug=False,ri=False,sn=True,
     if ebv:
         indx= (raw.field('ebv') < .3)
         raw= raw[indx]
+    if nocoords: return raw
     #BOVY: distances
     raw= _add_distances(raw)
     #velocities

@@ -36,7 +36,7 @@ def fitDensz(parser):
     if _VERBOSE:
         print "Loading selection function ..."
     plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
-    sf= segueSelect(plates=plates)
+    sf= segueSelect(plates=plates,type=options.sel)
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                      degree=True)
     indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -61,7 +61,7 @@ def fitDensz(parser):
         #Reload selection function
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
         print plates
-        sf= segueSelect(plates=plates)
+        sf= segueSelect(plates=plates,type=options.sel)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
         indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -225,6 +225,28 @@ def fitDensz(parser):
         zs= numpy.linspace(rmin,rmax,1001)
         #Plot the mean and std-dev from the posterior
         zmean= numpy.zeros(len(zs))
+        thisparams= []
+        for ii in range(len(params)):
+            xs= numpy.array([s[ii] for s in samples])
+            thisparams.append(numpy.mean(xs))
+        zmean= _predict_rdist(zs,densfunc,thisparams,rmin,rmax,platelb,
+                              grmin,grmax,feh,sf,colordist)
+        zmean_const= _predict_rdist(zs,_ConstDensity,
+                                    thisparams,rmin,rmax,platelb,
+                                    grmin,grmax,feh,sf,colordist)
+        if options.metal == 'rich':
+            zmean_twofifty= _predict_rdist(zs,densfunc,
+                                           [numpy.log(.25),
+                                            thisparams[1],thisparams[2]],
+                                           rmin,rmax,platelb,
+                                           grmin,grmax,feh,sf,colordist)
+        elif options.metal == 'poor':
+            zmean_twofifty= _predict_rdist(zs,densfunc,
+                                           [numpy.log(1.25),
+                                            thisparams[1],thisparams[2]],
+                                           rmin,rmax,platelb,
+                                           grmin,grmax,feh,sf,colordist)
+        """
         nsigs= 3
         zsigs= numpy.zeros((len(zs),2*nsigs))
         fs= numpy.zeros((len(zs),len(samples)))
@@ -234,8 +256,14 @@ def fitDensz(parser):
                                      grmin,grmax,feh,sf,colordist)
         #Record mean and std-devs
         zmean[:]= numpy.mean(fs,axis=1)
+        """
         norm= numpy.nansum(zmean*(zs[1]-zs[0]))
         zmean/= norm
+        from scipy import ndimage
+        ndimage.filters.gaussian_filter1d(zmean,0.2/(zs[1]-zs[0]),output=zmean)
+        norm_twofifty= numpy.nansum(zmean_twofifty*(zs[1]-zs[0]))
+        zmean_twofifty/= norm_twofifty
+        zmean_const/= zmean_const[0]/zmean[0]
         if options.xmin is None or options.xmax is None:
             xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.1]
         else:
@@ -248,6 +276,9 @@ def fitDensz(parser):
         bovy_plot.bovy_plot(zs,zmean,'k-',xrange=xrange,yrange=yrange,
                             xlabel=options.xlabel,
                             ylabel=options.ylabel)
+        bovy_plot.bovy_plot(zs,zmean_const,'k--',overplot=True)
+        bovy_plot.bovy_plot(zs,zmean_twofifty,'r--',overplot=True)
+        """
         for ii in range(nsigs):
             for jj in range(len(zs)):
                 thisf= sorted(fs[jj,:])
@@ -266,6 +297,7 @@ def fitDensz(parser):
             cc+= 1.
             nsigma-= 1
         bovy_plot.bovy_plot(zs,zmean,'k-',overplot=True)
+        """
         #Plot the data
         hist= bovy_plot.bovy_hist(rawdata.dered_r,normed=True,bins=31,ec='k',
                                   histtype='step',
@@ -279,13 +311,15 @@ def _predict_rdist(rs,densfunc,params,rmin,rmax,platelb,grmin,grmax,
     out= numpy.zeros(len(rs))
     for ii in range(len(plates)):
         if 'faint' in sf.platestr[ii].programname:
-            out+= sf(plates[ii])*_predict_rdist_plate(rs,densfunc,params,17.8,
-                                                      rmax,platelb[ii,0],
-                                                      platelb[ii,1],
-                                                      grmin,grmax,
-                                                      feh,colordist)
+            out+= sf(numpy.array([plates[ii] for jj in range(len(rs))]),
+                     r=rs)*_predict_rdist_plate(rs,densfunc,params,17.8,
+                                                rmax,platelb[ii,0],
+                                                platelb[ii,1],
+                                                grmin,grmax,
+                                                feh,colordist)
         else:
-            out+= sf(plates[ii])*_predict_rdist_plate(rs,densfunc,params,rmin,
+            out+= sf(numpy.array([plates[ii] for jj in range(len(rs))]),
+                     r=rs)*_predict_rdist_plate(rs,densfunc,params,rmin,
                                                       17.8,platelb[ii,0],
                                                       platelb[ii,1],
                                                       grmin,grmax,
@@ -330,6 +364,7 @@ def _NormInt(params,XYZ,R,
             else:
                 thisrmin= 17.8
                 thisrmax= rmax
+            print "BOVY: ADAPT FOR 'r' SELECTION"
             out+= bovy_quadpack.dblquad(_HWRLikeNormInt,grmin,grmax,
                                         lambda x: _ivezic_dist(x,thisrmin,feh),
                                         lambda x: _ivezic_dist(x,thisrmax,feh),
@@ -419,6 +454,7 @@ def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc):
         #                -numpy.fabs(XYZ[2])/numpy.exp(params[0]))
         #Jacobian
         jac= d**2. #*numpy.fabs(numpy.cos(b[ii]*_DEGTORAD)) #/R
+        print "BOVY: ADAPT FOR 'r' SELECTION"
         out+= rhogr*dens*jac*sf(plates[ii])
     return out
 
@@ -431,6 +467,10 @@ def _HWRDensity(R,Z,params):
                 *numpy.exp(-(R-8.)/numpy.exp(params[1])
                             -numpy.fabs(Z)/numpy.exp(params[0]))\
                 +params[2]*R/(_DZ*8.))
+    
+def _ConstDensity(R,Z,params):
+    """Constant density"""
+    return 1.
     
 def _const_colordist(gr):
     return 1./.07
@@ -450,6 +490,8 @@ def get_options():
                       help="Use 'G' or 'K' dwarf sample")
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
+    parser.add_option("--sel",dest='sel',default='r',
+                      help="Selection function to use ('constant', 'r')")
     parser.add_option("-n","--nsamples",dest='nsamples',type='int',
                       default=100,
                       help="Number of MCMC samples to use")

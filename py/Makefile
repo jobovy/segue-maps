@@ -8,28 +8,28 @@ $(OUTDIR)/HWR_rich_poor_g_func.$(EXT): plotSigzFunc.py
 	-o $@
 
 #Metal rich G dwarf densities
-$(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile
+$(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g.sav -o $@ \
 	--expd1 --expd2 -n 100 \
 	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
 	--xlabel='h_z\ [\mathrm{kpc}]' \
 	--ylabel='\nu(z;R=8\ [\mathrm{kpc}])' # \
 #	--subsample=1000
-$(OUTDIR)/HWR_rich_g_zfunc.$(EXT): fitDensz.py Makefile plotData.py
+$(OUTDIR)/HWR_rich_g_zfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g.sav -o $@ \
 	-n 100 --plotzfunc \
 	--xlabel='z\ [\mathrm{kpc}]' \
 	--ylabel='\ln \nu(z;R=8\ \mathrm{kpc})' # \
 #	--subsample=1000
-$(OUTDIR)/HWR_rich_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py
+$(OUTDIR)/HWR_rich_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g.sav -o $@ \
-	-n 100 --plotrfunc \
+	-n 100 --plotrfunc --sel=r \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
 
 #just bright
-$(OUTDIR)/HWR_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py
+$(OUTDIR)/HWR_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_gbright.sav -o $@ \
 	-n 100 --plotrfunc --bright \
 	--xlabel='r_0\ [\mathrm{mag}]' \
@@ -37,27 +37,27 @@ $(OUTDIR)/HWR_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py
 #	--subsample=1000
 
 #Metal poor G dwarf densities
-$(OUTDIR)/HWR_poor_g_hRhz.$(EXT): fitDensz.py Makefile
+$(OUTDIR)/HWR_poor_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \
 	--expd1 --expd2 -n 100 --metal=poor \
 	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
 	--xlabel='h_z\ [\mathrm{kpc}]' \
 	--ylabel='h_R [\mathrm{kpc}]' #\
 #	--subsample=1000
-$(OUTDIR)/HWR_poor_g_zfunc.$(EXT): fitDensz.py Makefile plotData.py
+$(OUTDIR)/HWR_poor_g_zfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \
 	-n 100 --plotzfunc --metal=poor \
 	--xlabel='z\ [\mathrm{kpc}]' \
 	--ylabel='\ln \nu(z;R=8\ \mathrm{kpc})' # \
 #	--subsample=1000
-$(OUTDIR)/HWR_poor_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py
+$(OUTDIR)/HWR_poor_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \
-	-n 100 --plotrfunc --metal=poor \
+	-n 100 --plotrfunc --metal=poor --sel=r \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
 #just bright
-$(OUTDIR)/HWR_poor_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py
+$(OUTDIR)/HWR_poor_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_gbright.sav -o $@ \
 	-n 100 --plotrfunc --bright --metal=poor \
 	--xlabel='r_0\ [\mathrm{mag}]' \
