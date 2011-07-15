@@ -439,10 +439,16 @@ def _HWRLikeMinus(params,XYZ,R,
                 or params[1] > 4.6051701859880918 \
                 or params[2] < 0. or params[2] > 1.:
             return numpy.finfo(numpy.dtype(numpy.float64)).max
-    elif densfunc == _FlareDensity or densfunc == _TwoVerticalDensity:
+    elif densfunc == _FlareDensity:
         if params[0] > 4.6051701859880918 \
                 or params[1] > 4.6051701859880918 \
                 or params[2] > 4.6051701859880918:
+            return numpy.finfo(numpy.dtype(numpy.float64)).max       
+    elif densfunc == _TwoVerticalDensity:
+        if params[0] > 4.6051701859880918 \
+                or params[1] > 4.6051701859880918 \
+                or params[2] > 4.6051701859880918 \
+                or params[3] < 0. or params[3] > 1.:
             return numpy.finfo(numpy.dtype(numpy.float64)).max       
     #First calculate the normalizing integral
     out= _NormInt(params,XYZ,R,
