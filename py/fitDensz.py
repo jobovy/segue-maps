@@ -30,6 +30,8 @@ def fitDensz(parser):
         densfunc= _HWRDensity
     elif options.model.lower() == 'flare':
         densfunc= _FlareDensity
+    elif options.model.lower() == 'tiedflare':
+        densfunc= _TiedFlareDensity
     elif options.model.lower() == 'twovertical':
         densfunc= _TwoVerticalDensity
     #First read the data
@@ -136,6 +138,19 @@ def fitDensz(parser):
             isDomainFinite=[[False,True],[False,True],[False,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
                     [0.,4.6051701859880918]]
+        elif options.model.lower() == 'tiedflare':
+            if options.metal == 'rich':
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5)])
+            elif options.metal == 'poor':
+                params= numpy.array([numpy.log(1.),numpy.log(2.5)])
+            else:
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5)])
+            densfunc= _TiedFlareDensity
+            #Slice sampling keywords
+            step= [0.3,0.3]
+            create_method=['step_out','step_out']
+            isDomainFinite=[[False,True],[False,True]]
+            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918]]
         elif options.model.lower() == 'twovertical':
             if options.metal == 'rich':
                 params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),0.025])
@@ -402,6 +417,10 @@ def _HWRLikeMinus(params,XYZ,R,
                 or params[1] > 4.6051701859880918 \
                 or params[2] > 4.6051701859880918:
             return numpy.finfo(numpy.dtype(numpy.float64)).max       
+    elif densfunc == _TiedFlareDensity:
+        if params[0] > 4.6051701859880918 \
+                or params[1] > 4.6051701859880918:
+            return numpy.finfo(numpy.dtype(numpy.float64)).max       
     elif densfunc == _TwoVerticalDensity:
         if params[0] > 4.6051701859880918 \
                 or params[1] > 4.6051701859880918 \
@@ -530,10 +549,18 @@ def _TwoVerticalDensity(R,Z,params):
 
 def _FlareDensity(R,Z,params):
     """Double exponential disk with flaring scale-height
-    params= [hz1,hflare,hR]"""
+    params= [hz,hflare,hR]"""
     hR= numpy.exp(params[2])
     hz= numpy.exp(params[0])
     hf= hz*numpy.exp((R-8.)/numpy.exp(params[1]))
+    return numpy.exp(-(R-8.)/hR)/hf*numpy.exp(-numpy.fabs(Z)/hf)
+
+def _TiedFlareDensity(R,Z,params):
+    """Double exponential disk with flaring scale-height equal to radial scale
+    params= [hz,,hR]"""
+    hR= numpy.exp(params[1])
+    hz= numpy.exp(params[0])
+    hf= hz*numpy.exp((R-8.)/hR)
     return numpy.exp(-(R-8.)/hR)/hf*numpy.exp(-numpy.fabs(Z)/hf)
     
 def _ConstDensity(R,Z,params):

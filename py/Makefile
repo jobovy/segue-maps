@@ -46,6 +46,15 @@ $(OUTDIR)/HWR_rich_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
+#Tied Flare model
+$(OUTDIR)/HWR_rich_g_tiedflare_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_tiedflare.sav -o $@ \
+	-n 100 --plotrfunc --sel=r \
+	--model=tiedflare \
+	--xlabel='r_0\ [\mathrm{mag}]' \
+	--ylabel='\mathrm{density}' # \
+#	--subsample=1000
 
 #just bright
 $(OUTDIR)/HWR_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
