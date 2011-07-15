@@ -18,6 +18,7 @@ _INTEGRATEPLATESEP= True
 _EPSREL=0.1
 _EPSABS=0.0
 _DEGTORAD=math.pi/180.
+_ZSUN=0.025 #Sun's offset from the plane toward the NGP in kpc
 _DZ=6.
 _DR=5.
 def fitDensz(parser):
@@ -27,6 +28,10 @@ def fitDensz(parser):
         return
     if options.model.lower() == 'hwr':
         densfunc= _HWRDensity
+    elif options.model.lower() == 'flare':
+        densfunc= _FlareDensity
+    elif options.model.lower() == 'twovertical':
+        densfunc= _TwoVerticalDensity
     #First read the data
     if _VERBOSE:
         print "Reading and parsing data ..."
@@ -100,6 +105,10 @@ def fitDensz(parser):
             rawdata= rawdata[randindx]
         XYZ= XYZ.astype(numpy.float64)
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+        XYZ[:,2]+= _ZSUN
+        #BOVY: Z here and other places
+        like_func= _HWRLikeMinus
+        pdf_func= _HWRLike
         if options.model.lower() == 'hwr':
             if options.metal == 'rich':
                 params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.0])
@@ -107,8 +116,6 @@ def fitDensz(parser):
                 params= numpy.array([numpy.log(1.2),numpy.log(2.5),0.0])
             else:
                 params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.0])
-            like_func= _HWRLikeMinus
-            pdf_func= _HWRLike
             densfunc= _HWRDensity
             #Slice sampling keywords
             step= [0.3,0.3,0.02]
@@ -119,13 +126,26 @@ def fitDensz(parser):
             if options.metal == 'rich':
                 params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(2.5)])
             elif options.metal == 'poor':
-                params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(2.5)])
+                params= numpy.array([numpy.log(1.),numpy.log(2.5),numpy.log(2.5)])
             else:
                 params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(2.5)])
-            like_func= _FlareLikeMinus
-            pdf_func= _FlareLike
+            densfunc= _FlareDensity
             #Slice sampling keywords
-            step= [0.3,0.3,0.3,.02]
+            step= [0.3,0.3,0.3]
+            create_method=['step_out','step_out','step_out']
+            isDomainFinite=[[False,True],[False,True],[False,True]]
+            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
+                    [0.,4.6051701859880918]]
+        elif options.model.lower() == 'twovertical':
+            if options.metal == 'rich':
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),0.])
+            elif options.metal == 'poor':
+                params= numpy.array([numpy.log(1.),numpy.log(2.),numpy.log(2.5),0.])
+            else:
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),0.])
+            densfunc= _TwoVerticalDensity
+            #Slice sampling keywords
+            step= [0.3,0.3,0.3]
             create_method=['step_out','step_out','step_out','step_out']
             isDomainFinite=[[False,True],[False,True],[False,True],[True,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
@@ -343,6 +363,7 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
                                     ds,degree=True)
         XYZ= XYZ.astype(numpy.float64)
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+        XYZ[:,2]+= _ZSUN
         out+= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])
         norm+= colordist(grs[jj])
     out/= norm
@@ -412,11 +433,17 @@ def _HWRLikeMinus(params,XYZ,R,
                   sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
                   grmin,grmax,rmin,rmax,feh,#sample definition
                   colordist,densfunc): #function that describes the color-distribution and function that describes the density
-    """Minus log likelihood for the HWR model"""
-    if params[0] > 4.6051701859880918 \
-            or params[1] > 4.6051701859880918 \
-            or params[2] < 0. or params[2] > 1.:
-        return numpy.finfo(numpy.dtype(numpy.float64)).max
+    """Minus log likelihood for all models"""
+    if densfunc == _HWRDensity:
+        if params[0] > 4.6051701859880918 \
+                or params[1] > 4.6051701859880918 \
+                or params[2] < 0. or params[2] > 1.:
+            return numpy.finfo(numpy.dtype(numpy.float64)).max
+    elif densfunc == _FlareDensity or densfunc == _TwoVerticalDensity:
+        if params[0] > 4.6051701859880918 \
+                or params[1] > 4.6051701859880918 \
+                or params[2] > 4.6051701859880918:
+            return numpy.finfo(numpy.dtype(numpy.float64)).max       
     #First calculate the normalizing integral
     out= _NormInt(params,XYZ,R,
                   sf,plates,platel,plateb,platebright,platefaint,Ap,
@@ -438,9 +465,10 @@ def _HWRLikeNormInt(d,gr,colordist,l,b,params,densfunc,sf,plate,feh):
     #Spatial density
     XYZ= bovy_coords.lbd_to_XYZ(l,b,d,degree=True)
     R= ((8.-XYZ[0])**2.+XYZ[1]**2.)**(0.5)
+    Z= XYZ[2]+_ZSUN
     dens= densfunc(R,XYZ[2],params)
     #dens= numpy.exp(params[2]-(R-8.)/numpy.exp(params[1])
-    #                -numpy.fabs(XYZ[2])/numpy.exp(params[0]))
+    #                -numpy.fabs(Z)/numpy.exp(params[0]))
     #Jacobian
     jac= d**2.
     return rhogr*dens*jac*select
@@ -455,25 +483,45 @@ def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc,feh):
         rhogr= colordist(gr)
         #Spatial density
         XYZ= bovy_coords.lbd_to_XYZ(l[ii],b[ii],d,degree=True)
+        Z= XYZ[2]+_ZSUN
         R= ((8.-XYZ[0])**2.+XYZ[1]**2.)**(0.5)
-        dens= densfunc(R,XYZ[2],params)
-        #dens= numpy.exp(params[2]-(R-8.)/numpy.exp(params[1])
-        #                -numpy.fabs(XYZ[2])/numpy.exp(params[0]))
+        dens= densfunc(R,Z,params)
         #Jacobian
         select= sf(plates[ii],r=r)
         jac= d**2. #*numpy.fabs(numpy.cos(b[ii]*_DEGTORAD)) #/R
         out+= rhogr*dens*jac*select
     return out
 
+###############################################################################
+#            DENSITY MODELS
+###############################################################################
 def _HWRDensity(R,Z,params):
     """Double exponential disk + constant,
-    params= [hz,hR,Amplitude,Pbad]"""
+    params= [hz,hR,Pbad]"""
     hR= numpy.exp(params[1])
     hz= numpy.exp(params[0])
     return ((1.-params[2])/(2.*hz*hR)\
-                *numpy.exp(-(R-8.)/numpy.exp(params[1])
+                *numpy.exp(-(R-8.)/hR
                             -numpy.fabs(Z)/numpy.exp(params[0]))\
                 +params[2]/(_DZ*8.))
+    
+def _TwoVerticalDensity(R,Z,params):
+    """Double exponential disk with two vertical scale-heights
+    params= [hz1,hz2,hR,Pbad]"""
+    hR= numpy.exp(params[2])
+    hz1= numpy.exp(params[0])
+    hz2= numpy.exp(params[1])
+    return numpy.exp(-(R-8.)/hR)*\
+        ((1.-params[3])/hz1*numpy.exp(-numpy.fabs(Z)/hz1)
+         +params[3]/hz2*numpy.exp(-numpy.fabs(Z)/hz2))
+
+def _FlareDensity(R,Z,params):
+    """Double exponential disk with flaring scale-height
+    params= [hz1,hflare,hR]"""
+    hR= numpy.exp(params[2])
+    hz= numpy.exp(params[0])
+    hf= hz*numpy.exp((R-8.)/numpy.exp(params[1]))
+    return numpy.exp(-(R-8.)/hR)/hf*numpy.exp(-numpy.fabs(Z)/hf)
     
 def _ConstDensity(R,Z,params):
     """Constant density"""

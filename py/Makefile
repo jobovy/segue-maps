@@ -28,6 +28,25 @@ $(OUTDIR)/HWR_rich_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
 
+#TwoVertical model
+$(OUTDIR)/HWR_rich_g_twovertical_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_twovertical.sav -o $@ \
+	-n 100 --plotrfunc --sel=r \
+	--model=twovertical \
+	--xlabel='r_0\ [\mathrm{mag}]' \
+	--ylabel='\mathrm{density}' # \
+#	--subsample=1000
+#Flare model
+$(OUTDIR)/HWR_rich_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_flare.sav -o $@ \
+	-n 100 --plotrfunc --sel=r \
+	--model=flare \
+	--xlabel='r_0\ [\mathrm{mag}]' \
+	--ylabel='\mathrm{density}' # \
+#	--subsample=1000
+
 #just bright
 $(OUTDIR)/HWR_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_gbright.sav -o $@ \
