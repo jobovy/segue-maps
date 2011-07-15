@@ -58,7 +58,7 @@ def fitDensz(parser):
                     and not 'faint' in sf.platestr[pindx].programname[0]:
                 indx.append(True)
             elif options.faint \
-                    and 'faint' in sf.platestr[pindx].programname:
+                    and 'faint' in sf.platestr[pindx].programname[0]:
                 indx.append(True)
             else:
                 indx.append(False)
@@ -339,55 +339,7 @@ def fitDensz(parser):
                                   overplot=True,range=xrange)
         bovy_plot.bovy_end_print(options.plotfile)
 
-###############################################################################
-#            FORWARD MODELING FOR MODEL--DATA COMPARISON
-###############################################################################
-def _predict_rdist(rs,densfunc,params,rmin,rmax,platelb,grmin,grmax,
-                   feh,sf,colordist):
-    """Predict the r distribution for the sample"""
-    plates= sf.plates
-    out= numpy.zeros(len(rs))
-    for ii in range(len(plates)):
-        if 'faint' in sf.platestr[ii].programname:
-            out+= sf(numpy.array([plates[ii] for jj in range(len(rs))]),
-                     r=rs)*_predict_rdist_plate(rs,densfunc,params,17.8,
-                                                rmax,platelb[ii,0],
-                                                platelb[ii,1],
-                                                grmin,grmax,
-                                                feh,colordist)
-        else:
-            out+= sf(numpy.array([plates[ii] for jj in range(len(rs))]),
-                     r=rs)*_predict_rdist_plate(rs,densfunc,params,rmin,
-                                                      17.8,platelb[ii,0],
-                                                      platelb[ii,1],
-                                                      grmin,grmax,
-                                                      feh,colordist)
-    return out
 
-def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
-                         feh,colordist):
-    """Predict the r distribution for a plate"""
-    #BOVY: APPROXIMATELY INTEGRATE OVER GR
-    ngr= 11
-    grs= numpy.linspace(grmin,grmax,ngr)
-    out= numpy.zeros(len(rs))
-    norm= 0.
-    for jj in range(ngr):
-       #Calculate distances
-        ds= _ivezic_dist(grs[jj],rs,feh)
-        #Calculate (R,z)s
-        XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
-                                    numpy.array([b for ii in range(len(ds))]),
-                                    ds,degree=True)
-        XYZ= XYZ.astype(numpy.float64)
-        R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
-        XYZ[:,2]+= _ZSUN
-        out+= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])
-        norm+= colordist(grs[jj])
-    out/= norm
-    out[(rs < rmin)]= 0.
-    out[(rs > rmax)]= 0.
-    return out
 
 ###############################################################################
 #            LIKELIHOOD AND MINUS LIKELIHOOD
