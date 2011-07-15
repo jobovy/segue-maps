@@ -138,11 +138,11 @@ def fitDensz(parser):
                     [0.,4.6051701859880918]]
         elif options.model.lower() == 'twovertical':
             if options.metal == 'rich':
-                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),0.])
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),0.025])
             elif options.metal == 'poor':
-                params= numpy.array([numpy.log(1.),numpy.log(2.),numpy.log(2.5),0.])
+                params= numpy.array([numpy.log(1.),numpy.log(2.),numpy.log(2.5),0.025])
             else:
-                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),0.])
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),0.025])
             densfunc= _TwoVerticalDensity
             #Slice sampling keywords
             step= [0.3,0.3,0.3]
