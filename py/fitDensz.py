@@ -145,7 +145,7 @@ def fitDensz(parser):
                 params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),0.025])
             densfunc= _TwoVerticalDensity
             #Slice sampling keywords
-            step= [0.3,0.3,0.3]
+            step= [0.3,0.3,0.3,0.025]
             create_method=['step_out','step_out','step_out','step_out']
             isDomainFinite=[[False,True],[False,True],[False,True],[True,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
