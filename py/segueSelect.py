@@ -45,7 +45,7 @@ class segueSelect:
                    or 'faint'/'bright'plates only,
                    or plates '>1000' or '<2000'
            type= type of selection function to determine ('constant' for 
-                 constant per plate; 'r' universal function of r)
+                 constant per plate; 'r' universal function of r FOR FAINT ONLY)
            dr= when determining the selection function as a function of r,
                binsize to use
 
@@ -218,7 +218,9 @@ class segueSelect:
                         out.append(self.weight[str(p)])
                     elif self.type.lower() == 'r':
                         if r[ii] < 17.8 and r[ii] >= self.rmin:
-                            out.append(self.weight[str(p)]*self.s_one_r_bright_interpolate(r[ii])[0])
+                            out.append(self.weight[str(p)])
+                            #BOVY: REMOVE R DEPENDENCE FOR NOW
+                            #out.append(self.weight[str(p)]*self.s_one_r_bright_interpolate(r[ii])[0])
                         elif r[ii] >= 17.8 and r[ii] <= self.rmax:
                             out.append(self.weight[str(p)]*self.s_one_r_faint_interpolate(r[ii])) #different interpolator does not return array
                         else:
@@ -231,7 +233,9 @@ class segueSelect:
                     return self.weight[str(plate)]
                 elif self.type.lower() == 'r':
                     if r < 17.8 and r >= self.rmin:
-                        return self.weight[str(plate)]*self.s_one_r_bright_interpolate(r)[0]
+                        return self.weight[str(plate)]
+                    ###BOVY: REMOVE R-DEPENDENCE FOR NOW
+                    #return self.weight[str(plate)]*self.s_one_r_bright_interpolate(r)[0]
                     elif r >= 17.8 and r <= self.rmax:
                         return self.weight[str(plate)]*self.s_one_r_faint_interpolate(r) #different interpolator does not return array
                     else:
