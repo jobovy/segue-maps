@@ -324,6 +324,9 @@ def fitDensz(parser):
                                   overplot=True,range=xrange)
         bovy_plot.bovy_end_print(options.plotfile)
 
+###############################################################################
+#            FORWARD MODELING FOR MODEL--DATA COMPARISON
+###############################################################################
 def _predict_rdist(rs,densfunc,params,rmin,rmax,platelb,grmin,grmax,
                    feh,sf,colordist):
     """Predict the r distribution for the sample"""
@@ -371,6 +374,54 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     out[(rs > rmax)]= 0.
     return out
 
+###############################################################################
+#            LIKELIHOOD AND MINUS LIKELIHOOD
+###############################################################################
+def _HWRLike(params,XYZ,R,
+             sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
+             grmin,grmax,rmin,rmax,feh,#sample definition
+             colordist,densfunc): #function that describes the color-distribution and the density
+    """log likelihood for the HWR model"""
+    return -_HWRLikeMinus(params,XYZ,R,sf,plates,platel,plateb,platebright,
+                          platefaint,Ap,
+                          grmin,grmax,rmin,rmax,feh,
+                          colordist,densfunc)
+
+def _HWRLikeMinus(params,XYZ,R,
+                  sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
+                  grmin,grmax,rmin,rmax,feh,#sample definition
+                  colordist,densfunc): #function that describes the color-distribution and function that describes the density
+    """Minus log likelihood for all models"""
+    if densfunc == _HWRDensity:
+        if params[0] > 4.6051701859880918 \
+                or params[1] > 4.6051701859880918 \
+                or params[2] < 0. or params[2] > 1.:
+            return numpy.finfo(numpy.dtype(numpy.float64)).max
+    elif densfunc == _FlareDensity:
+        if params[0] > 4.6051701859880918 \
+                or params[1] > 4.6051701859880918 \
+                or params[2] > 4.6051701859880918:
+            return numpy.finfo(numpy.dtype(numpy.float64)).max       
+    elif densfunc == _TwoVerticalDensity:
+        if params[0] > 4.6051701859880918 \
+                or params[1] > 4.6051701859880918 \
+                or params[2] > 4.6051701859880918 \
+                or params[3] < 0. or params[3] > 1.:
+            return numpy.finfo(numpy.dtype(numpy.float64)).max       
+    #First calculate the normalizing integral
+    out= _NormInt(params,XYZ,R,
+                  sf,plates,platel,plateb,platebright,platefaint,Ap,
+                  grmin,grmax,rmin,rmax,feh,
+                  colordist,densfunc)
+    out= len(R)*numpy.log(out)
+    #Then evaluate the individual densities
+    out+= -numpy.sum(numpy.log(densfunc(R,XYZ[:,2],params)))
+    if _DEBUG: print out, numpy.exp(params)
+    return out
+
+###############################################################################
+#            NORMALIZATION INTEGRAL
+###############################################################################
 def _NormInt(params,XYZ,R,
              sf,plates,platel,plateb,platebright,platefaint,Ap,
              grmin,grmax,rmin,rmax,feh,
@@ -419,48 +470,6 @@ def _NormInt(params,XYZ,R,
     out*= Ap
     return out
 
-def _HWRLike(params,XYZ,R,
-             sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
-             grmin,grmax,rmin,rmax,feh,#sample definition
-             colordist,densfunc): #function that describes the color-distribution and the density
-    """log likelihood for the HWR model"""
-    return -_HWRLikeMinus(params,XYZ,R,sf,plates,platel,plateb,platebright,
-                          platefaint,Ap,
-                          grmin,grmax,rmin,rmax,feh,
-                          colordist,densfunc)
-
-def _HWRLikeMinus(params,XYZ,R,
-                  sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
-                  grmin,grmax,rmin,rmax,feh,#sample definition
-                  colordist,densfunc): #function that describes the color-distribution and function that describes the density
-    """Minus log likelihood for all models"""
-    if densfunc == _HWRDensity:
-        if params[0] > 4.6051701859880918 \
-                or params[1] > 4.6051701859880918 \
-                or params[2] < 0. or params[2] > 1.:
-            return numpy.finfo(numpy.dtype(numpy.float64)).max
-    elif densfunc == _FlareDensity:
-        if params[0] > 4.6051701859880918 \
-                or params[1] > 4.6051701859880918 \
-                or params[2] > 4.6051701859880918:
-            return numpy.finfo(numpy.dtype(numpy.float64)).max       
-    elif densfunc == _TwoVerticalDensity:
-        if params[0] > 4.6051701859880918 \
-                or params[1] > 4.6051701859880918 \
-                or params[2] > 4.6051701859880918 \
-                or params[3] < 0. or params[3] > 1.:
-            return numpy.finfo(numpy.dtype(numpy.float64)).max       
-    #First calculate the normalizing integral
-    out= _NormInt(params,XYZ,R,
-                  sf,plates,platel,plateb,platebright,platefaint,Ap,
-                  grmin,grmax,rmin,rmax,feh,
-                  colordist,densfunc)
-    out= len(R)*numpy.log(out)
-    #Then evaluate the individual densities
-    out+= -numpy.sum(numpy.log(densfunc(R,XYZ[:,2],params)))
-    if _DEBUG: print out, numpy.exp(params)
-    return out
-
 def _HWRLikeNormInt(d,gr,colordist,l,b,params,densfunc,sf,plate,feh):
     #Go back to r
     mr= _mr_gi(_gi_gr(gr),feh)
@@ -472,9 +481,7 @@ def _HWRLikeNormInt(d,gr,colordist,l,b,params,densfunc,sf,plate,feh):
     XYZ= bovy_coords.lbd_to_XYZ(l,b,d,degree=True)
     R= ((8.-XYZ[0])**2.+XYZ[1]**2.)**(0.5)
     Z= XYZ[2]+_ZSUN
-    dens= densfunc(R,XYZ[2],params)
-    #dens= numpy.exp(params[2]-(R-8.)/numpy.exp(params[1])
-    #                -numpy.fabs(Z)/numpy.exp(params[0]))
+    dens= densfunc(R,Z,params)
     #Jacobian
     jac= d**2.
     return rhogr*dens*jac*select
@@ -494,7 +501,7 @@ def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc,feh):
         dens= densfunc(R,Z,params)
         #Jacobian
         select= sf(plates[ii],r=r)
-        jac= d**2. #*numpy.fabs(numpy.cos(b[ii]*_DEGTORAD)) #/R
+        jac= d**2.
         out+= rhogr*dens*jac*select
     return out
 
@@ -533,6 +540,9 @@ def _ConstDensity(R,Z,params):
     """Constant density"""
     return 1.
     
+###############################################################################
+#            COLOR DISTRIBUTIONS
+###############################################################################
 def _const_colordist(gr):
     return 1./.07
 
