@@ -24,7 +24,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
        sf - segueSelect instance
        colordist - color g-r distribution
        data - data recarray (.dered_r is used)
-       plate - plate number
+       plate - plate number(s), or 'all', 'faint', or 'bright'
        rmin, rmax= minimum and maximum r
        grmin, grmax= minimum and maximum g-r
        feh= metallicity to use in d->r
@@ -43,20 +43,45 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
     rs= numpy.linspace(rmin,rmax,_NRS)
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                      degree=True)
+    allplates, faintplates, brightplates = False, False, False
+    if isinstance(plate,str) and plate.lower() == 'all':
+        plate= sf.plates
+        allplates= True
+    elif isinstance(plate,str) and plate.lower() == 'bright':
+        plate= []
+        for ii in range(len(sf.plates)):
+            if not 'faint' in sf.platestr[ii].programname:
+                plate.append(sf.plates[ii])
+        brightplates= True
+    elif isinstance(plate,str) and plate.lower() == 'faint':
+        plate= []
+        for ii in range(len(sf.plates)):
+            if 'faint' in sf.platestr[ii].programname:
+                plate.append(sf.plates[ii])
+        faintplates= True
+    elif isinstance(plate,int):
+        plate= [plate]
     if isinstance(params,list): #list of samples
         pass
     else: #single value
-        #l and b?
-        pindx= (sf.plates == plate)
-        platel= platelb[pindx,0][0]
-        plateb= platelb[pindx,1][0]
-        rdist= _predict_rdist_plate(rs,densfunc,params,rmin,rmax,platel,
-                                    plateb,grmin,grmax,
-                                    feh,colordist,sf,plate)
-        if 'faint' in sf.platestr[pindx].programname[0]:
-            rdist[(rs < 17.8)]= 0.
-        else:
-            rdist[(rs > 17.8)]= 0.
+        rdist= numpy.zeros(_NRS)
+        platels, platebs= [], []
+        for p in plate:
+            #l and b?
+            pindx= (sf.plates == p)
+            platel= platelb[pindx,0][0]
+            plateb= platelb[pindx,1][0]
+            platels.append(platel)
+            platebs.append(plateb)
+            thisrdist= _predict_rdist_plate(rs,densfunc,params,rmin,rmax,
+                                            platel,
+                                            plateb,grmin,grmax,
+                                            feh,colordist,sf,p)
+            if 'faint' in sf.platestr[pindx].programname[0]:
+                thisrdist[(rs < 17.8)]= 0.
+            else:
+                thisrdist[(rs > 17.8)]= 0.
+            rdist+= thisrdist
         norm= numpy.nansum(rdist*(rs[1]-rs[0]))
         rdist/= norm
         if convolve > 0.:
@@ -71,18 +96,56 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
                             xlabel='$r_0\ [\mathrm{mag}]$',
                             ylabel='$\mathrm{density}$',overplot=overplot)
         #Plot the data
-        hist= bovy_plot.bovy_hist(data[(data.plate == plate)].dered_r,
+        data_dered_r= []
+        for p in plate:
+            data_dered_r.extend(data[(data.plate == p)].dered_r)
+        hist= bovy_plot.bovy_hist(data_dered_r,
                                   normed=True,bins=bins,ec='k',
                                   histtype='step',
                                   overplot=True,range=xrange)
-        bovy_plot.bovy_text(r'$\mathrm{plate}\ \ %i$' % plate
-                            +'\n'+
-                            '$%i \ \ \mathrm{stars}$' % 
-                            len(data[(data.plate == plate)])
-                            +'\n'+
-                            '$l = %i^\circ$' % int(platel)
-                            +'\n'+
-                            '$b = %i^\circ$' % int(plateb),top_right=True)
+        if len(plate) > 1 and len(plate) < 10:
+            platestr= '\mathrm{plates}\ \ '
+            for ii in range(len(plate)-1):
+                platestr= platestr+'%i, ' % plate[ii]
+            platestr+= '%i' % plate[-1]
+            lbstr= '$l = %i^\circ \pm %i^\circ$' % (int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
+                +'$b = %i^\circ \pm %i^\circ$' % (int(numpy.mean(platebs)),
+            int(numpy.std(platebs)))
+        elif allplates:
+            platestr= '\mathrm{all\ plates}'
+            bovy_plot.bovy_text(r'$'+platestr+'$'
+                                +'\n'+
+                                '$%i \ \ \mathrm{stars}$' % 
+                                len(data_dered_r),top_right=True)
+        elif brightplates:
+            platestr= '\mathrm{bright\ plates}'
+            bovy_plot.bovy_text(r'$'+platestr+'$'
+                                +'\n'+
+                                '$%i \ \ \mathrm{stars}$' % 
+                                len(data_dered_r),top_right=True)
+        elif faintplates:
+            platestr= '\mathrm{faint\ plates}'
+            bovy_plot.bovy_text(r'$'+platestr+'$'
+                                +'\n'+
+                                '$%i \ \ \mathrm{stars}$' % 
+                                len(data_dered_r),top_right=True)
+        elif len(plate) >= 10:
+            platestr= '\mathrm{many\ plates}'
+            lbstr= '$l = %i^\circ \pm %i^\circ$' % (
+                int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
+                +'$b = %i^\circ\pm%i^\circ$' % (int(numpy.mean(platebs)),
+            int(numpy.std(platebs)))
+        else:
+            platestr= '\mathrm{plate}\ \ %i' % plate[0]
+            lbstr= '$l = %i^\circ$' % int(platel)+'\n'\
+                +'$b = %i^\circ$' % int(plateb)           
+        if not (allplates or brightplates or faintplates):
+            bovy_plot.bovy_text(r'$'+platestr+'$'
+                                +'\n'+
+                                '$%i \ \ \mathrm{stars}$' % 
+                                len(data_dered_r)
+                                +'\n'+
+                                lbstr,top_right=True)
         return (rdist, hist[0], hist[1])
 
 ###############################################################################
