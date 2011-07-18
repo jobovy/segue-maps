@@ -243,10 +243,43 @@ class segueSelect:
         except KeyError:
             raise IOError("Requested plate %i either not loaded or it does not exist" % plate)
 
-    def plot(self,x='gr',y='r',plate='all',spec=False,scatterplot=True,
-             bins=None,specbins=None,type=None):
-        if isinstance(plate,str) and plate == 'all':
+    def plotColorMag(self,x='gr',y='r',plate='all',spec=False,scatterplot=True,
+                     bins=None,specbins=None):
+        """
+        NAME:
+           plotColorMag
+        PURPOSE:
+           plot the distribution of photometric/spectroscopic objects in color
+           magnitude (or color-color) space
+        INPUT:
+           x= what to plot on the x-axis (combinations of ugriz as 'g', 
+               or 'gr')
+           y= what to plot on the y-axis (combinations of ugriz as 'g',  
+               or 'gr')
+           plate= plate(s) to plot, int or list/array, 'all', 'bright', 'faint'
+           spec= if True, overlay spectroscopic objects as red contours and 
+                 histograms
+           scatterplot= if False, regular scatterplot, 
+                        if True, hogg_scatterplot
+           bins= number of bins to use in the histogram(s)
+           specbins= number of bins to use in histograms of spectropscopic 
+                     objects
+       OUTPUT:
+        HISTORY:
+           2011-07-13 - Written - Bovy (NYU)
+        """
+        if isinstance(plate,str) and plate.lower() == 'all':
             plate= self.plates
+        elif isinstance(plate,str) and plate.lower() == 'bright':
+            plate= []
+            for ii in range(len(self.plates)):
+                if not 'faint' in self.platestr[ii].programname:
+                    plate.append(self.plates[ii])
+        elif isinstance(plate,str) and plate.lower() == 'faint':
+            plate= []
+            for ii in range(len(self.plates)):
+                if 'faint' in self.platestr[ii].programname:
+                    plate.append(self.plates[ii])
         elif isinstance(plate,(list,numpy.ndarray)):
             plate=plate
         else:
@@ -257,14 +290,6 @@ class segueSelect:
             p=plate[ii]
             thisplatephot= self.platephot[str(p)]
             thisplatespec= self.platespec[str(p)]
-            if not type is None:
-                pindx= (self.platestr.field('plate') == p)
-            if not type is None and type.lower() == 'bright':
-                if 'faint' in self.platestr[pindx].field('programname')[0]:
-                    continue
-            elif not type is None and type.lower() == 'faint':
-                if not 'faint' in self.platestr[pindx].field('programname')[0]:
-                    continue
             if len(x) > 1: #Color
                 xs.extend(thisplatephot.field(x[0])\
                               -thisplatephot.field(x[1])) #dereddened
