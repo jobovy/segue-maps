@@ -210,7 +210,11 @@ class segueSelect:
            allow plate to be a single value, r many
         """
         try:
-            if isinstance(plate,(list,numpy.ndarray)):
+            if isinstance(plate,(list,numpy.ndarray)) \
+                    or isinstance(r,(list,numpy.ndarray)):
+                if isinstance(r,(list,numpy.ndarray)) \
+                        and isinstance(plate,int):
+                    plate= [plate for ii in range(len(r))]
                 out= []
                 for ii in range(len(plate)):
                     p= plate[ii]
@@ -242,6 +246,42 @@ class segueSelect:
                         return 0.
         except KeyError:
             raise IOError("Requested plate %i either not loaded or it does not exist" % plate)
+
+    def plot(self,x='r',y='sf',plate='a bright plate',overplot=False):
+        """
+        NAME:
+           plot
+        PURPOSE:
+           plot the derived selection function
+        INPUT:
+           x= what to plot on the x-axis (e.g., 'r')
+           y= what to plot on the y-axis (default function value)
+           plate= plate to plot (number or 'a bright plate' (default), 'a faint plate')
+           overplot= if True, overplot
+        OUTPUT:
+           plot to output
+        HISTORY:
+           2011-07-18 - Written - Bovy (NYU)
+        """
+        _NXS= 1001
+        if isinstance(plate,str) and plate.lower() == 'a bright plate':
+            plate= 2964
+        elif isinstance(plate,str) and plate.lower() == 'a faint plate':
+            plate= 2965
+        if x.lower() == 'r':
+            xs= numpy.linspace(self.rmin,self.rmax,_NXS)
+            xrange= [self.rmin,self.rmax]
+            xlabel= r'$r_0\ [\mathrm{mag}]$'
+        #Evaluate selection function
+        zs= self(plate,r=xs)
+        if y.lower() == 'sf':
+            ys= zs
+            ylabel= r'$\mathrm{selection\ function}$'
+            yrange= [0.,1.2*numpy.amax(ys)]
+        bovy_plot.bovy_plot(xs,ys,'k-',xrange=xrange,yrange=yrange,
+                            xlabel=xlabel,ylabel=ylabel,
+                            overplot=overplot)
+        return None
 
     def plotColorMag(self,x='gr',y='r',plate='all',spec=False,scatterplot=True,
                      bins=None,specbins=None):
