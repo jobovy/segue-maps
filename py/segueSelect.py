@@ -25,7 +25,7 @@ _KDWARFFILE= os.path.join(_SEGUESELECTDIR,'kdwarf_raw_nodups.fit')
 _ERASESTR= "                                                                                "
 class segueSelect:
     """Class that contains selection function for SEGUE targets"""
-    def __init__(self,sample='G',remove_dups=True,plates=None,
+    def __init__(self,sample='G',plates=None,
                  select='all',
                  type='constant',dr=0.3,
                  interp_degree_bright=_INTERPDEGREEBRIGHT,
@@ -61,7 +61,8 @@ class segueSelect:
         """
         self.sample=sample.lower()
         #Load plates
-        self.platestr= _load_fits(os.path.join(_SEGUESELECTDIR,'segueplates.fits'))
+        self.platestr= _load_fits(os.path.join(_SEGUESELECTDIR,
+                                               'segueplates.fits'))
         if plates is None:
             self.plates= list(self.platestr.plate)
         else:
@@ -95,19 +96,18 @@ class segueSelect:
         if 2560 in self.plates:
             self.plates.remove(2560)
         if 2799 in self.plates:
-            self.plates.remove(2799)           
+            self.plates.remove(2799)
         if 2550 in self.plates:
-            self.plates.remove(2550)           
-        if remove_dups:
-            #Remove duplicate plates
-            self.plates= numpy.array(sorted(list(set(self.plates))))
-            #Match platestr to plates again
-            allIndx= numpy.arange(len(self.platestr),dtype='int')
-            reIndx= numpy.zeros(len(self.plates),dtype='int')-1
-            for ii in range(len(self.plates)):
-                indx= (self.platestr.field('plate') == self.plates[ii])
-                reIndx[ii]= (allIndx[indx][0])
-            self.platestr= self.platestr[reIndx]
+            self.plates.remove(2550)
+        #Remove duplicate plates
+        self.plates= numpy.array(sorted(list(set(self.plates))))
+        #Match platestr to plates again
+        allIndx= numpy.arange(len(self.platestr),dtype='int')
+        reIndx= numpy.zeros(len(self.plates),dtype='int')-1
+        for ii in range(len(self.plates)):
+            indx= (self.platestr.field('plate') == self.plates[ii])
+            reIndx[ii]= (allIndx[indx][0])
+        self.platestr= self.platestr[reIndx]
         #load the photometry for the SEGUE plates
         self.platephot= {}
         for ii in range(len(self.plates)):
