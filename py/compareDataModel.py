@@ -152,7 +152,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
                         rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=-0.15,
                         vsx='|sinb|',
                         xrange=None,yrange=None,
-                        overplot=False,color='k',marker='v'):
+                        overplot=False,color='k',marker='v',cumul=False,
+                        runavg=0):
     """
     NAME:
        comparernumberPlate
@@ -173,6 +174,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
        overplot= if True, overplot
        color= color for model
        marker= marker
+       cumul= if True, plot cumulative distribution
+       runavg= if > 0, also plot a running average (only for cumul=False)
     OUTPUT:
        plot to output
        return numbers, data_numbers, xs
@@ -253,22 +256,39 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
         numbers/= norm
         if xrange is None:
             xrange= [numpy.amin(xs)-addx,numpy.amax(xs)+addx]
-        if yrange is None:
+        if yrange is None and not cumul:
             yrange= [0.,1.2*numpy.amax(numbers)]
-        bovy_plot.bovy_plot(xs,numbers,marker=marker,color=color,ls='none',
-                            xrange=xrange,yrange=yrange,
-                            xlabel=xlabel,
-                            ylabel='$\mathrm{relative\ number}$',
-                            overplot=overplot)
-        #Plot the data
+        if yrange is None and cumul:
+            yrange=[0.,1.1]
+        #The data
         data_numbers= []
         for p in plate:
             data_numbers.append(numpy.sum((data.plate == p)))
         data_numbers= numpy.array(data_numbers,dtype='float')
         nstars= numpy.sum(data_numbers)
         data_numbers/= nstars
-        bovy_plot.bovy_plot(xs,data_numbers,ls='none',
-                            marker='o',color='k',
+        #Sort the data and note the sort index
+        sortindx= numpy.argsort(data_numbers)
+        data_numbers= data_numbers[sortindx]
+        numbers= numbers[sortindx]
+        if cumul:
+            data_numbers= numpy.cumsum(data_numbers)
+            numbers= numpy.cumsum(numbers)
+        xs= numpy.arange(len(plate))
+        bovy_plot.bovy_plot(xs,numbers,marker=marker,color=color,ls='none',
+                            yrange=yrange,
+                            xlabel=r'$\mathrm{plates\ sorted\ by\ number}$',
+                            ylabel='$\mathrm{relative\ number}$',
+                            overplot=overplot)
+        if runavg > 0 and not cumul:
+            from matplotlib import mlab
+            running_avg= mlab.movavg(numbers,runavg)
+            runavg_xs= numpy.arange(len(running_avg))
+            runavg_xs+= (len(numbers)-len(running_avg))/2
+            bovy_plot.bovy_plot(runavg_xs,running_avg,color=color,ls='-',
+                                overplot=True)
+        bovy_plot.bovy_plot(xs,data_numbers,ls='-',
+                            marker='.',color='k',
                             overplot=True)
         if len(plate) > 1 and len(plate) < 10:
             platestr= '\mathrm{plates}\ \ '
@@ -283,19 +303,19 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
             bovy_plot.bovy_text(r'$'+platestr+'$'
                                 +'\n'+
                                 '$%i \ \ \mathrm{stars}$' % 
-                                nstars,top_right=True)
+                                nstars,top_left=True)
         elif brightplates:
             platestr= '\mathrm{bright\ plates}'
             bovy_plot.bovy_text(r'$'+platestr+'$'
                                 +'\n'+
                                 '$%i \ \ \mathrm{stars}$' % 
-                                nstars,top_right=True)
+                                nstars,top_left=True)
         elif faintplates:
             platestr= '\mathrm{faint\ plates}'
             bovy_plot.bovy_text(r'$'+platestr+'$'
                                 +'\n'+
                                 '$%i \ \ \mathrm{stars}$' % 
-                                nstars,top_right=True)
+                                nstars,top_left=True)
         elif len(plate) >= 10:
             platestr= '\mathrm{many\ plates}'
             lbstr= '$l = %i^\circ \pm %i^\circ$' % (
@@ -312,7 +332,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
                                 '$%i \ \ \mathrm{stars}$' % 
                                 nstars
                                 +'\n'+
-                                lbstr,top_right=True)
+                                lbstr,top_left=True)
         return (numbers, data_numbers, xs)
     
 
