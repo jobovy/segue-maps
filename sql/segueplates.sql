@@ -1,0 +1,1 @@
+select plate,mjd,ra,dec,programname, sn1_0, sn1_1, sn1_2, sn2_0, sn2_1, sn2_2 from plateX where programname like 'segue%' into mydb.segueplates
