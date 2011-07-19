@@ -60,7 +60,7 @@ def plot_snvsr(options,args):
     if options.faint:
         xlegend, ylegend, dy= 19.1, 45., -3.
     else:
-        xlegend, ylegend, dy= 16.15, 140., -8.
+        xlegend, ylegend, dy= 16.15, 135., -9.
     for ii in range(nbins-1):
         bovy_plot.bovy_text(xlegend,ylegend+dy*ii,
                             r'$%5.1f < \mathrm{plateSN\_r} \leq %5.1f$' %(binedges[ii], binedges[ii+1]),color=bincolors[ii])
