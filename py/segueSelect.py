@@ -31,9 +31,9 @@ class segueSelect:
     """Class that contains selection function for SEGUE targets"""
     def __init__(self,sample='G',plates=None,
                  select='all',
-                 type_bright='constant',dr_bright=0.3,
+                 type_bright='constant',dr_bright=0.05,
                  interp_degree_bright=_INTERPDEGREEBRIGHT,
-                 type_faint='r',dr_faint=0.3,
+                 type_faint='r',dr_faint=0.05,
                  interp_degree_faint=_INTERPDEGREEFAINT,
                  ug=False,ri=False,sn=True,
                  ebv=False):
@@ -276,15 +276,17 @@ class segueSelect:
             elif self.type_bright.lower() == 'constant':
                 return self.weight[str(plate)]
             elif self.type_bright.lower() == 'r':
-                return self.weight[str(plate)]\
-                    *self.s_one_r_bright_interpolate(r)
+                soner= interpolate.splev(r,self.s_one_r_bright_interpolate)
+                if soner < 0.: return 0.
+                else: return self.weight[str(plate)]*soner
         else:
             if r < 17.8 or r > self.rmax: return 0.
             elif self.type_faint.lower() == 'constant':
                 return self.weight[str(plate)]
             elif self.type_faint.lower() == 'r':
-                return self.weight[str(plate)]\
-                    *self.s_one_r_faint_interpolate(r)
+                soner= interpolate.splev(r,self.s_one_r_faint_interpolate)
+                if soner < 0.: return 0.
+                else: return self.weight[str(plate)]*soner
 
     def plot(self,x='r',y='sf',plate='a bright plate',overplot=False):
         """
@@ -486,7 +488,7 @@ class segueSelect:
             s_one_r= numpy.zeros((nrbins,len(self.plates)))
             s_r= numpy.zeros((nrbins,len(self.plates)))
             #Determine s_1(r) for each plate separately first
-            weights= 0.
+            weights= numpy.zeros(len(self.plates))
             if not bright:
                 thisrmin, thisrmax= 17.8, self.rmax+dr/2. #slightly further to avoid out-of-range errors
             else:
@@ -506,7 +508,7 @@ class segueSelect:
                 nphotr= numpy.array(nphotr,dtype='float64')
                 nonzero= (nspecr > 0.)*(nphotr > 0.)
                 s_r[nonzero,ii]= nspecr[nonzero].astype('float64')/nphotr[nonzero]
-                weights+= float(numpy.sum(nspecr))/float(numpy.sum(nphotr))
+                weights[ii]= float(numpy.sum(nspecr))/float(numpy.sum(nphotr))
                 nspecr/= float(numpy.sum(nspecr))
                 nphotr/= float(numpy.sum(nphotr))
                 s_one_r[nonzero,ii]= nspecr[nonzero]/nphotr[nonzero]
@@ -529,34 +531,68 @@ class segueSelect:
                 if median:
                     s_one_r= numpy.median(s_one_r_plate[:,plateindx],axis=1)
                 else:
-                    s_one_r= numpy.sum(s_one_r_plate,axis=1)/self.nbrightplates
+                    if bright:
+                        s_one_r= numpy.sum(s_one_r_plate,axis=1)/self.nbrightplates
+                    else:
+                        s_one_r= numpy.sum(s_one_r_plate,axis=1)/self.nfaintplates
             else:
                 s_one_r= \
                     numpy.sum(s_r_plate[:,plateindx],axis=1)\
-                    /weights
+                    /numpy.sum(weights)
             if bright:
                 self.s_one_r_bright= s_one_r
                 self.s_r_bright= s_r
             else:
                 self.s_one_r_faint= s_one_r
                 self.s_r_faint= s_r
+            #Bootstrap an uncertainty on the selection function
+            if bright: nplates= self.nbrightplates
+            else: nplates= self.nfaintplates
+            jack_samples= numpy.zeros((nplates,len(s_one_r)))
+            for jj in range(nplates):
+                boot_indx= numpy.array([True for ii in range(nplates)],\
+                                           dtype='bool')
+                boot_indx[jj]= False
+                if fromIndividual:
+                    #Mean or median?
+                    if median:
+                        jack_samples[jj,:]= numpy.median(s_one_r_plate[:,plateindx[boot_indx]],
+                                              axis=1)
+                    else:
+                        jack_samples[jj,:]= numpy.sum(s_one_r_plate[:,plateindx[boot_indx]],
+                                           axis=1)/nplates
+                else:
+                    jack_samples[jj,:]= \
+                        numpy.sum(s_r_plate[:,plateindx[boot_indx]],axis=1)\
+                        /numpy.sum(weights[plateindx[boot_indx]])
+            #Compute jackknife uncertainties
+            s_one_r_err= numpy.sqrt((nplates-1)*numpy.var(jack_samples,
+                                                                 axis=0))
+            if bright:
+                self.s_one_r_jack_samples_bright= jack_samples
+                self.s_one_r_err_bright= s_one_r_err
+            else:
+                self.s_one_r_jack_samples_faint= jack_samples
+                self.s_one_r_err_faint= s_one_r_err
             #Spline interpolate
             if bright:
+                w= numpy.zeros(len(self.s_one_r_bright))+0.0001
+                w[(self.s_one_r_err_bright > 0.)]= \
+                    1./self.s_one_r_err_bright[(self.s_one_r_err_bright > 0.)]
                 self.interp_rs_bright= \
                     numpy.linspace(self.rmin+1.*dr/2.,17.8-1.*dr/2.,nrbins)
-                self.s_one_r_bright_interpolate= interpolate.interp1d(\
+                self.s_one_r_bright_interpolate= interpolate.splrep(\
                     self.interp_rs_bright,self.s_one_r_bright,
-                    kind=interp_degree,
-                    fill_value=self.s_one_r_bright[-1],
-                    bounds_error=False)
+                    k=interp_degree,w=w)
             else:
+                w= numpy.zeros(len(self.s_one_r_faint))+0.0001
+                w[(self.s_one_r_err_faint > 0.)]= \
+                    1./self.s_one_r_err_faint[(self.s_one_r_err_faint > 0.)]
                 self.interp_rs_faint= \
                     numpy.linspace(17.8+1.*dr/2.,self.rmax+dr/2.,nrbins)
-                self.s_one_r_faint_interpolate= interpolate.interp1d(\
+                self.s_one_r_faint_interpolate= interpolate.splrep(\
                     self.interp_rs_faint,self.s_one_r_faint,
-                    kind=interp_degree,
-                    fill_value=self.s_one_r_faint[0],
-                    bounds_error=False)
+                    k=interp_degree,w=w)
             return None
 
 def ivezic_dist_gr(g,r,feh):
