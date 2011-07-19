@@ -16,7 +16,7 @@ try:
 except ImportError:
     _COORDSLOADED= False
 ########################SELECTION FUNCTION DETERMINATION#######################
-_INTERPDEGREEBRIGHT= 1
+_INTERPDEGREEBRIGHT= 3
 _INTERPDEGREEFAINT= 3
 _BINEDGES_G_FAINT= [0.,50.,70.,85.,200000000.]
 _BINEDGES_G_BRIGHT= [0.,75.,150.,300.,200000000.]
@@ -130,7 +130,21 @@ class segueSelect:
             if 'faint' in self.platestr[ii].programname:
                 self.platebright[str(p)]= False
             else:
-                self.platebright[str(p)]= True            
+                self.platebright[str(p)]= True
+        #Also build bright/faint index
+        brightplateindx= numpy.empty(len(self.plates),dtype='bool') #BOVY: move this out of here
+        faintplateindx= numpy.empty(len(self.plates),dtype='bool')
+        for ii in range(len(self.plates)):
+            if 'faint' in self.platestr[ii].programname: #faint plate
+                faintplateindx[ii]= True
+                brightplateindx[ii]= False 
+            else:
+                faintplateindx[ii]= False
+                brightplateindx[ii]= True
+        self.faintplateindx= faintplateindx
+        self.brightplateindx= brightplateindx
+        self.nbrightplates= numpy.sum(self.brightplateindx)
+        self.nfaintplates= numpy.sum(self.faintplateindx)
         #load the photometry for the SEGUE plates
         self.platephot= {}
         for ii in range(len(self.plates)):
@@ -206,9 +220,10 @@ class segueSelect:
         #Determine selection function
         sys.stdout.write('\r'+"Determining selection function ...\r")
         sys.stdout.flush()
-        self._determine_select(type,dr=dr,
-                               interp_degree_bright=interp_degree_bright,
-                               interp_degree_faint=interp_degree_faint)
+        self._determine_select(bright=True,type=type_bright,dr=dr_bright,
+                               interp_degree=interp_degree_bright)
+        self._determine_select(bright=False,type=type_faint,dr=dr_faint,
+                               interp_degree=interp_degree_faint)
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         return None
@@ -227,52 +242,49 @@ class segueSelect:
            selection function
         HISTORY:
            2011-07-11 - Written - Bovy@MPIA (NYU)
-        BUGS: BOVY
-           poorly written
-           determine first whether r is in the range for this plate
-           allow plate to be a single value, r many
         """
-        try:
-            if isinstance(plate,(list,numpy.ndarray)) \
-                    or isinstance(r,(list,numpy.ndarray)):
-                if isinstance(r,(list,numpy.ndarray)) \
-                        and isinstance(plate,int):
-                    plate= [plate for ii in range(len(r))]
-                out= []
-                for ii in range(len(plate)):
-                    p= plate[ii]
-                    if self.type.lower() == 'constant':
-                        out.append(self.weight[str(p)])
-                    elif self.type.lower() == 'r':
-                        if r[ii] < 17.8 and not self.platebright[str(p)]:
-                            out.append(0.)
-                        elif r[ii] >= 17.8 and self.platebright[str(p)]:
-                            out.append(0.)
-                        elif r[ii] < 17.8 and r[ii] >= self.rmin:
-                            out.append(self.weight[str(p)])
-                            #BOVY: REMOVE R DEPENDENCE FOR NOW
-                            #out.append(self.weight[str(p)]*self.s_one_r_bright_interpolate(r[ii])[0])
-                        elif r[ii] >= 17.8 and r[ii] <= self.rmax:
-                            out.append(self.weight[str(p)]*self.s_one_r_faint_interpolate(r[ii])) #different interpolator does not return array
-                        else:
-                            out.append(0.)
-                if isinstance(plate,numpy.ndarray):
-                    out= numpy.array(out)
-                return out
-            else:
-                if self.type.lower() == 'constant':
-                    return self.weight[str(plate)]
-                elif self.type.lower() == 'r':
-                    if r < 17.8 and r >= self.rmin:
-                        return self.weight[str(plate)]
-                    ###BOVY: REMOVE R-DEPENDENCE FOR NOW
-                    #return self.weight[str(plate)]*self.s_one_r_bright_interpolate(r)[0]
-                    elif r >= 17.8 and r <= self.rmax:
-                        return self.weight[str(plate)]*self.s_one_r_faint_interpolate(r) #different interpolator does not return array
-                    else:
-                        return 0.
-        except KeyError:
-            raise IOError("Requested plate %i either not loaded or it does not exist" % plate)
+        #Handle input
+        if isinstance(plate,int) \
+                and (isinstance(r,(int,float)) or r is None): #Scalar input
+            plate= [plate]
+            r= [r]
+            scalarOut= True
+        elif isinstance(plate,int) and isinstance(r,(list,numpy.ndarray)):
+            plate= [plate for ii in range(len(r))]
+            scalarOut= False
+        else:
+            scalarOut= False
+        out= []
+        for ii in range(len(plate)):
+            p= plate[ii]
+            out.append(self._call_single(p,r[ii]))
+        if isinstance(plate,numpy.ndarray):
+            out= numpy.array(out)
+        if scalarOut:
+            return out[0]
+        else:
+            return out
+
+    def _call_single(self,plate,r):
+        """Call the selection function for a single object"""
+        #First check whether this plate exists
+        if not plate in self.plates: return 0.
+        #First determine whether this is a bright or a faint plate
+        bright= self.platebright[str(plate)] #Short-cut
+        if bright:
+            if r > 17.8 or r < self.rmin: return 0.
+            elif self.type_bright.lower() == 'constant':
+                return self.weight[str(plate)]
+            elif self.type_bright.lower() == 'r':
+                return self.weight[str(plate)]\
+                    *self.s_one_r_bright_interpolate(r)
+        else:
+            if r < 17.8 or r > self.rmax: return 0.
+            elif self.type_faint.lower() == 'constant':
+                return self.weight[str(plate)]
+            elif self.type_faint.lower() == 'r':
+                return self.weight[str(plate)]\
+                    *self.s_one_r_faint_interpolate(r)
 
     def plot(self,x='r',y='sf',plate='a bright plate',overplot=False):
         """
@@ -448,105 +460,104 @@ class segueSelect:
                                 xrange=xrange,yrange=yrange)
         return None                
 
-    def _determine_select(self,type,dr=None,
-                          interp_degree_bright=_INTERPDEGREEBRIGHT,
-                          interp_degree_faint=_INTERPDEGREEFAINT):
-        self.type= type
+    def _determine_select(self,bright=True,type=None,dr=None,
+                          interp_degree=_INTERPDEGREEBRIGHT):
+        """Function that actually determines the selection function"""
+        if bright:
+            self.type_bright= type
+            plateindx= self.brightplateindx
+        else:
+            self.type_faint= type
+            plateindx= self.faintplateindx
         #First determine the total weight for each plate
-        self.weight= {}
+        if not hasattr(self,'weight'): self.weight= {}
         for ii in range(len(self.plates)):
+            if bright and 'faint' in self.platestr[ii].programname: continue
+            elif not bright \
+                    and not 'faint' in self.platestr[ii].programname: continue
             plate= self.plates[ii]
             self.weight[str(plate)]= len(self.platespec[str(plate)])\
                 /float(len(self.platephot[str(plate)]))
         if type.lower() == 'constant':
-            return
+            return #We're done!
         if type.lower() == 'r':
             #Determine the selection function in bins in r, for bright/faint
-            nbrightrbins= int(math.floor((17.8-self.rmin)/dr))+1
-            nfaintrbins= int(math.floor((self.rmax-17.8)/dr))+2
-            s_one_r_bright= numpy.zeros((nbrightrbins,len(self.plates)))
-            s_one_r_faint= numpy.zeros((nfaintrbins,len(self.plates)))
-            s_r_bright= numpy.zeros((nbrightrbins,len(self.plates)))
-            s_r_faint= numpy.zeros((nfaintrbins,len(self.plates)))
+            nrbins= int(math.floor((17.8-self.rmin)/dr))+1
+            s_one_r= numpy.zeros((nrbins,len(self.plates)))
+            s_r= numpy.zeros((nrbins,len(self.plates)))
             #Determine s_1(r) for each plate separately first
-            nbrightplates, nfaintplates= 0, 0
-            brightplateindx= numpy.empty(len(self.plates),dtype='bool') #BOVY: move this out of here
-            faintplateindx= numpy.empty(len(self.plates),dtype='bool')
-            weightbrights, weightfaints= 0., 0.
+            weights= 0.
+            if not bright:
+                thisrmin, thisrmax= 17.8, self.rmax+dr/2. #slightly further to avoid out-of-range errors
+            else:
+                thisrmin, thisrmax= self.rmin-dr/2., 17.8 #slightly further to avoid out-of-range errors
             for ii in range(len(self.plates)):
                 plate= self.plates[ii]
-                if 'faint' in self.platestr[ii].programname: #faint plate
-                    thisrmin, thisrmax= 17.8, self.rmax+dr #slightly further to avoid out-of-range errors
-                    thisbins= nfaintrbins
-                    nfaintplates+= 1
-                    faintplateindx[ii]= True
-                    brightplateindx[ii]= False
-                else:
-                    thisrmin, thisrmax= self.rmin, 17.8
-                    thisbins= nbrightrbins
-                    nbrightplates+= 1
-                    faintplateindx[ii]= False
-                    brightplateindx[ii]= True
-                nspecr, edges = numpy.histogram(self.platespec[str(plate)].dered_r,bins=thisbins,range=[thisrmin,thisrmax])
+                if bright and 'faint' in self.platestr[ii].programname: 
+                    continue
+                elif not bright \
+                        and not 'faint' in self.platestr[ii].programname: 
+                    continue
+                nspecr, edges = numpy.histogram(self.platespec[str(plate)].dered_r,bins=nrbins,range=[thisrmin,thisrmax])
                 nphotr, edges = numpy.histogram(self.platephot[str(plate)].r,
-                                                bins=thisbins,
+                                                bins=nrbins,
                                                 range=[thisrmin,thisrmax])
                 nspecr= numpy.array(nspecr,dtype='float64')
                 nphotr= numpy.array(nphotr,dtype='float64')
                 nonzero= (nspecr > 0.)*(nphotr > 0.)
-                if 'faint' in self.platestr[ii].programname: #faint plate
-                    s_r_faint[nonzero,ii]= nspecr[nonzero].astype('float64')/nphotr[nonzero]
-                    weightfaints+= float(numpy.sum(nspecr))/float(numpy.sum(nphotr))
-                else: #bright plate
-                    s_r_bright[nonzero,ii]= nspecr[nonzero].astype('float64')/nphotr[nonzero]
-                    weightbrights+= float(numpy.sum(nspecr))/float(numpy.sum(nphotr))
+                s_r[nonzero,ii]= nspecr[nonzero].astype('float64')/nphotr[nonzero]
+                weights+= float(numpy.sum(nspecr))/float(numpy.sum(nphotr))
                 nspecr/= float(numpy.sum(nspecr))
                 nphotr/= float(numpy.sum(nphotr))
-                if 'faint' in self.platestr[ii].programname: #faint plate
-                    s_one_r_faint[nonzero,ii]= nspecr[nonzero]/nphotr[nonzero]
-                else: #bright plate
-                    s_one_r_bright[nonzero,ii]= nspecr[nonzero]/nphotr[nonzero]
-            self.s_r_plate_rs_bright= \
-                numpy.linspace(self.rmin+dr/2.,17.8-dr/2.,nbrightrbins)
-            self.s_r_plate_rs_faint= \
-                numpy.linspace(17.8+dr/2.,self.rmax-dr/2.,nfaintrbins)
-            self.s_r_plate_bright= s_r_bright
-            self.s_r_plate_faint= s_r_faint
-            self.s_one_r_plate_bright= s_one_r_bright
-            self.s_one_r_plate_faint= s_one_r_faint
-            self.nbrightplates= nbrightplates
-            self.nfaintplates= nfaintplates
-            self.brightplateindx= brightplateindx
-            self.faintplateindx= faintplateindx
+                s_one_r[nonzero,ii]= nspecr[nonzero]/nphotr[nonzero]
+            if bright:
+                self.s_r_plate_rs_bright= \
+                    numpy.linspace(self.rmin+dr/2.,17.8-dr/2.,nrbins)
+                self.s_r_plate_bright= s_r
+                self.s_one_r_plate_bright= s_one_r
+            else:
+                self.s_r_plate_rs_faint= \
+                    numpy.linspace(17.8+dr/2.,self.rmax-dr/2.,nrbins)
+                self.s_r_plate_faint= s_r
+                self.s_one_r_plate_faint= s_one_r
+            s_one_r_plate= s_one_r
+            s_r_plate= s_r
             fromIndividual= False
             if fromIndividual:
                 #Mean or median?
                 median= False
                 if median:
-                    self.s_one_r_bright= numpy.median(self.s_one_r_plate_bright[:,self.brightplateindx],axis=1)
-                    self.s_one_r_faint= numpy.median(self.s_one_r_plate_faint[:,self.faintplateindx],axis=1)
+                    s_one_r= numpy.median(s_one_r_plate[:,plateindx],axis=1)
                 else:
-                    self.s_one_r_bright= numpy.sum(self.s_one_r_plate_bright,axis=1)/nbrightplates
-                    self.s_one_r_faint= numpy.sum(self.s_one_r_plate_faint,axis=1)/nfaintplates
-                print self.s_one_r_bright, self.s_one_r_faint
+                    s_one_r= numpy.sum(s_one_r_plate,axis=1)/self.nbrightplates
             else:
-                self.s_one_r_bright= \
-                    numpy.sum(self.s_r_plate_bright[:,self.brightplateindx],axis=1)\
-                    /weightbrights
-                self.s_one_r_faint= \
-                    numpy.sum(self.s_r_plate_faint[:,self.faintplateindx],axis=1)\
-                    /weightfaints
-            self.interp_rs_bright= \
-                numpy.linspace(self.rmin+5.*dr/2.,17.8-5.*dr/2.,nbrightrbins-4)
-            self.s_one_r_bright_interpolate= interpolate.UnivariateSpline(\
-                self.interp_rs_bright,self.s_one_r_bright[2:-2],k=_INTERPDEGREEBRIGHT)
-            self.interp_rs_faint= \
-                numpy.linspace(17.8+1.*dr/2.,self.rmax+dr/2.,nfaintrbins)
-            self.s_one_r_faint_interpolate= interpolate.interp1d(\
-                self.interp_rs_faint,self.s_one_r_faint,#[1:len(self.s_one_r_faint)],
-                kind=_INTERPDEGREEFAINT,fill_value=self.s_one_r_faint[0],
-                bounds_error=False)
-            return
+                s_one_r= \
+                    numpy.sum(s_r_plate[:,plateindx],axis=1)\
+                    /weights
+            if bright:
+                self.s_one_r_bright= s_one_r
+                self.s_r_bright= s_r
+            else:
+                self.s_one_r_faint= s_one_r
+                self.s_r_faint= s_r
+            #Spline interpolate
+            if bright:
+                self.interp_rs_bright= \
+                    numpy.linspace(self.rmin+1.*dr/2.,17.8-1.*dr/2.,nrbins)
+                self.s_one_r_bright_interpolate= interpolate.interp1d(\
+                    self.interp_rs_bright,self.s_one_r_bright,
+                    kind=interp_degree,
+                    fill_value=self.s_one_r_bright[-1],
+                    bounds_error=False)
+            else:
+                self.interp_rs_faint= \
+                    numpy.linspace(17.8+1.*dr/2.,self.rmax+dr/2.,nrbins)
+                self.s_one_r_faint_interpolate= interpolate.interp1d(\
+                    self.interp_rs_faint,self.s_one_r_faint,
+                    kind=interp_degree,
+                    fill_value=self.s_one_r_faint[0],
+                    bounds_error=False)
+            return None
 
 def ivezic_dist_gr(g,r,feh):
     """
