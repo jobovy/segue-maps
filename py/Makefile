@@ -93,6 +93,14 @@ $(OUTDIR)/Flare_rich_fakeflare_g_rfunc.$(EXT): fitDensz.py Makefile \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
+$(OUTDIR)/HWR_rich_fakeflare_g_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_fakeflare_g.sav -o $@ \
+	-n 100 --plotrfunc --sel=r --fake -i fakeThinFlare.sav \
+	--xlabel='r_0\ [\mathrm{mag}]' \
+	--ylabel='\mathrm{density}' # \
+#	--subsample=1000
 
 
 #Metal poor G dwarf densities
