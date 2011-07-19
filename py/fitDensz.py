@@ -15,8 +15,8 @@ _ERASESTR= "                                                                    
 _VERBOSE=True
 _DEBUG=True
 _INTEGRATEPLATESEP= True
-_EPSREL= 1.45e-08
-_EPSABS= 1.45e-08
+_EPSREL= 0.01 #1.45e-08
+_EPSABS= 0. #1.45e-08
 _DEGTORAD=math.pi/180.
 _ZSUN=0.025 #Sun's offset from the plane toward the NGP in kpc
 _DZ=6.
@@ -34,16 +34,44 @@ def fitDensz(parser):
         densfunc= _TiedFlareDensity
     elif options.model.lower() == 'twovertical':
         densfunc= _TwoVerticalDensity
+    if options.metal.lower() == 'rich':
+        feh= -0.15
+    elif options.metal.lower() == 'poor':
+        feh= -0.65
+    else:
+        feh= -0.5 
     #First read the data
     if _VERBOSE:
         print "Reading and parsing data ..."
-    XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
-                                            sample=options.sample)
+    if options.fake:
+        fakefile= open(options.fakefile,'rb')
+        fakedata= pickle.load(fakefile)
+        fakefile.close()
+        #Calculate distance based on random g-r
+        ds, ls, bs= [], [], []
+        for ii in range(len(fakedata)):
+            if options.sample.lower() == 'g':
+                gr= numpy.random.uniform()*0.07+0.48
+            ds.append(_ivezic_dist(gr,fakedata[ii][0],feh))
+            ls.append(fakedata[ii][1])
+            bs.append(fakedata[ii][2])
+        ds= numpy.array(ds)
+        ls= numpy.array(ls)
+        bs= numpy.array(bs)
+        XYZ= bovy_coords.lbd_to_XYZ(ls,bs,ds,degree=True)                      
+    else:
+        XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
+                                                sample=options.sample)
     #Load selection function
     if _VERBOSE:
         print "Loading selection function ..."
-    plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
-    sf= segueSelect(plates=plates,type=options.sel)
+    if options.fake:
+        plates= None
+    else:
+        plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
+    sf= segueSelect(plates=plates,type=options.sel,sample=options.sample)
+    if options.fake:
+        plates= sf.plates
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                      degree=True)
     indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -86,12 +114,6 @@ def fitDensz(parser):
     if options.sample.lower() == 'g':
         grmin, grmax= 0.48, 0.55
         rmin,rmax= 14.5, 20.2
-    if options.metal.lower() == 'rich':
-        feh= -0.15
-    elif options.metal.lower() == 'poor':
-        feh= -0.65
-    else:
-        feh= -0.5 
     colordist= _const_colordist
     if os.path.exists(args[0]):#Load savefile
         savefile= open(args[0],'rb')
@@ -592,6 +614,11 @@ def get_options():
     parser.add_option("--faint",action="store_true", dest="faint",
                       default=False,
                       help="Fit just the faint plates")
+    parser.add_option("--fake",action="store_true", dest="fake",
+                      default=False,
+                      help="Data is fake")
+    parser.add_option("-i",dest='fakefile',
+                      help="Pickle file with the fake data")
     return parser
 
 if __name__ == '__main__':

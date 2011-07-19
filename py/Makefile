@@ -65,6 +65,17 @@ $(OUTDIR)/HWR_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
 
+
+#Fake data
+$(OUTDIR)/HWR_rich_fakeg_rfunc.$(EXT): fitDensz.py Makefile plotData.py \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_fakeg.sav -o $@ \
+	-n 100 --plotrfunc --sel=r --fake -i fakeThinDblExp.sav \
+	--xlabel='r_0\ [\mathrm{mag}]' \
+	--ylabel='\mathrm{density}' # \
+#	--subsample=1000
+
+
 #Metal poor G dwarf densities
 $(OUTDIR)/HWR_poor_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \
