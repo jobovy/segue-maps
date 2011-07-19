@@ -244,7 +244,7 @@ class segueSelect:
            2011-07-11 - Written - Bovy@MPIA (NYU)
         """
         #Handle input
-        if isinstance(plate,(numpy.int,int)) \
+        if isinstance(plate,(numpy.int16,int)) \
                 and (isinstance(r,(int,float)) or r is None): #Scalar input
             plate= [plate]
             r= [r]
