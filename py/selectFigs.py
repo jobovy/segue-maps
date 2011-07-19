@@ -14,9 +14,14 @@ def selectFigs(parser):
 def plot_snvsr(options,args):
     """Plot the SN versus r for faint/bright plates and different samples"""
     sf= segueSelect.segueSelect(sn=False,sample=options.sample,
-                                plates=None)
+                                plates='>2900')
     if options.sample.lower() == 'g' and options.faint:
         binedges= segueSelect._BINEDGES_G_FAINT
+        nbins= len(binedges)-1
+        bincolors= ['%f' % (0.25 + 0.5/(nbins-1)*ii) for ii in range(nbins)]
+        bincolors= ['b','g','y','r','m'] #'c' at beginning
+    elif options.sample.lower() == 'g' and not options.faint:
+        binedges= segueSelect._BINEDGES_G_BRIGHT
         nbins= len(binedges)-1
         bincolors= ['%f' % (0.25 + 0.5/(nbins-1)*ii) for ii in range(nbins)]
         bincolors= ['b','g','y','r','m'] #'c' at beginning
@@ -27,6 +32,12 @@ def plot_snvsr(options,args):
         bovy_plot.bovy_plot([0.,0.],[0.,0.],
                             xrange=[17.7,sf.rmax+0.1],
                             yrange=[0.,50.],
+                            xlabel=r'$r_0\ [\mathrm{mag}]$',
+                            ylabel=r'$S/N$')
+    else:
+        bovy_plot.bovy_plot([0.,0.],[0.,0.],
+                            xrange=[self.rmin-0.1,17.9],
+                            yrange=[0.,100.],
                             xlabel=r'$r_0\ [\mathrm{mag}]$',
                             ylabel=r'$S/N$')
     for ii in range(len(sf.plates)):
@@ -48,6 +59,8 @@ def plot_snvsr(options,args):
     #Legend
     if options.faint:
         xlegend, ylegend, dy= 19., 45., -3.
+    else:
+        xlegend, ylegend, dy= 16.5, 95., -6.
     for ii in range(nbins-1):
         bovy_plot.bovy_text(xlegend,ylegend+dy*ii,
                             r'$%5.2f < \mathrm{plateSN\_r} \leq %5.2f$' %(binedges[ii], binedges[ii+1]),color=bincolors[ii])
