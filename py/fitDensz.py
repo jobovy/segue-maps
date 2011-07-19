@@ -5,7 +5,7 @@ import numpy
 import cPickle as pickle
 from matplotlib import pyplot
 from optparse import OptionParser
-from scipy import optimize, special
+from scipy import optimize, special, integrate
 from galpy.util import bovy_coords, bovy_plot, bovy_quadpack
 import bovy_mcmc
 from segueSelect import ivezic_dist_gr, segueSelect, _gi_gr, _mr_gi
@@ -15,8 +15,8 @@ _ERASESTR= "                                                                    
 _VERBOSE=True
 _DEBUG=True
 _INTEGRATEPLATESEP= True
-_EPSREL=0.1
-_EPSABS=0.0
+_EPSREL= 1.45e-08
+_EPSABS= 1.45e-08
 _DEGTORAD=math.pi/180.
 _ZSUN=0.025 #Sun's offset from the plane toward the NGP in kpc
 _DZ=6.
@@ -64,10 +64,17 @@ def fitDensz(parser):
                 indx.append(False)
         indx= numpy.array(indx,dtype='bool')
         rawdata= rawdata[indx]
-    if options.bright or options.faint:
+        #Also cut the data > or < than 17.8       
+        if options.bright:
+            dataindx= (rawdata.dered_r < 17.8)
+        elif options.faint:
+            dataindx= (rawdata.dered_r > 17.8)
+        rawdata= rawdata[dataindx]
+        XYZ= XYZ[dataindx,:]
+        vxvyvz= vxvyvz[dataindx,:]
+        cov_vxvyvz= cov_vxvyvz[dataindx,:]
         #Reload selection function
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
-        print plates
         sf= segueSelect(plates=plates,type=options.sel)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
@@ -108,7 +115,6 @@ def fitDensz(parser):
         XYZ= XYZ.astype(numpy.float64)
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
         XYZ[:,2]+= _ZSUN
-        #BOVY: Z here and other places
         like_func= _HWRLikeMinus
         pdf_func= _HWRLike
         if options.model.lower() == 'hwr':
@@ -436,7 +442,8 @@ def _NormInt(params,XYZ,R,
                                     lambda x: _ivezic_dist(x,thisrmax,feh),
                                     args=(colordist,platel[platefaint],
                                           plateb[platefaint],
-                                          params,faintplates,sf,densfunc),
+                                          params,faintplates,sf,densfunc,
+                                          feh),
                                     epsrel=_EPSREL,epsabs=_EPSABS)[0]
     out*= Ap
     return out
