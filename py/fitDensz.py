@@ -69,7 +69,7 @@ def fitDensz(parser):
         plates= None
     else:
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
-    sf= segueSelect(plates=plates,type=options.sel,sample=options.sample)
+    sf= segueSelect(plates=plates,type_faint=options.sel,sample=options.sample)
     if options.fake:
         plates= sf.plates
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
@@ -103,7 +103,7 @@ def fitDensz(parser):
         cov_vxvyvz= cov_vxvyvz[dataindx,:]
         #Reload selection function
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
-        sf= segueSelect(plates=plates,type=options.sel)
+        sf= segueSelect(plates=plates,type_faint=options.sel)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
         indx= [not 'faint' in name for name in sf.platestr.programname]
