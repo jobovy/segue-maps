@@ -18,6 +18,7 @@ except ImportError:
 ########################SELECTION FUNCTION DETERMINATION#######################
 _INTERPDEGREEBRIGHT= 1
 _INTERPDEGREEFAINT= 3
+_BINEDGES_G_FAINT= [0.,50.,70.,85.,200000000.]
 ###############################FILENAMES#######################################
 _SEGUESELECTDIR=os.getenv('SEGUESELECTDIR')
 _GDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'gdwarfall_raw_nodups.fit')
