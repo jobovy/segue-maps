@@ -15,8 +15,10 @@ try:
     _COORDSLOADED= True
 except ImportError:
     _COORDSLOADED= False
+########################SELECTION FUNCTION DETERMINATION#######################
 _INTERPDEGREEBRIGHT= 1
 _INTERPDEGREEFAINT= 3
+###############################FILENAMES#######################################
 _SEGUESELECTDIR=os.getenv('SEGUESELECTDIR')
 _GDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'gdwarfall_raw_nodups.fit')
 _GDWARFFILE= os.path.join(_SEGUESELECTDIR,'gdwarf_raw_nodups.fit')
