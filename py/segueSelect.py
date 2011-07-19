@@ -31,8 +31,9 @@ class segueSelect:
     """Class that contains selection function for SEGUE targets"""
     def __init__(self,sample='G',plates=None,
                  select='all',
-                 type='constant',dr=0.3,
+                 type_bright='constant',dr_bright=0.3,
                  interp_degree_bright=_INTERPDEGREEBRIGHT,
+                 type_faint='r',dr_faint=0.3,
                  interp_degree_faint=_INTERPDEGREEFAINT,
                  ug=False,ri=False,sn=True,
                  ebv=False):
@@ -42,16 +43,22 @@ class segueSelect:
         PURPOSE:
            load the selection function for this sample
         INPUT:
-           sample= sample to load ('G' or 'K', 'GK' loads all BOVY: GK NOT IMPLEMENTED)
+           sample= sample to load ('FG', 'G', or 'K')
            select= 'all' selects all SEGUE stars in the color-range; 
                    'program' only selects program stars
            plates= if set, only consider this plate, or list of plates,
                    or 'faint'/'bright'plates only,
                    or plates '>1000' or '<2000'
-           type= type of selection function to determine ('constant' for 
-                 constant per plate; 'r' universal function of r FOR FAINT ONLY)
-           dr= when determining the selection function as a function of r,
-               binsize to use
+
+           SELECTION FUNCTION DETERMINATION:
+              type_bright= type of selection function to determine 
+                   'constant' for constant per plate; 
+                   'r' universal function of r
+              dr_bright= when determining the selection function as a function 
+                         of r, binsize to use
+              interp_degree_bright= when spline-interpolating, degree to use
+              type_faint=, faint_dr, interp_degree_bright= same as the 
+                  corresponding keywords for bright
 
            SPECTROSCOPIC SAMPLE SELECTION:
               ug= if True, cut on u-g
@@ -61,7 +68,7 @@ class segueSelect:
         OUTPUT:
            object
         HISTORY:
-           2011-07-08 - Written - Bovy (NYU)
+           2011-07-08 - Written - Bovy@MPIA (NYU)
         """
         self.sample=sample.lower()
         #Load plates
@@ -219,7 +226,7 @@ class segueSelect:
         OUTPUT:
            selection function
         HISTORY:
-           2011-07-11 - Written - Bovy (NYU)
+           2011-07-11 - Written - Bovy@MPIA (NYU)
         BUGS: BOVY
            poorly written
            determine first whether r is in the range for this plate
@@ -281,7 +288,7 @@ class segueSelect:
         OUTPUT:
            plot to output
         HISTORY:
-           2011-07-18 - Written - Bovy (NYU)
+           2011-07-18 - Written - Bovy@MPIA (NYU)
         """
         _NXS= 1001
         if isinstance(plate,str) and plate.lower() == 'a bright plate':
@@ -339,7 +346,7 @@ class segueSelect:
                      objects
        OUTPUT:
         HISTORY:
-           2011-07-13 - Written - Bovy (NYU)
+           2011-07-13 - Written - Bovy@MPIA (NYU)
         """
         if isinstance(plate,str) and plate.lower() == 'all':
             plate= self.plates
@@ -552,7 +559,7 @@ def ivezic_dist_gr(g,r,feh):
     OUTPUT:
        (dist,disterr) arrays in kpc
     HISTORY:
-       2011-07-11 - Written - Bovy (NYU)
+       2011-07-11 - Written - Bovy@MPIA (NYU)
     """
     #First distances, then uncertainties
     gi= _gi_gr(g-r)
@@ -579,7 +586,7 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     OUTPUT:
        cut data, returns numpy.recarray
     HISTORY:
-       2011-07-08 - Written - Bovy (NYU)
+       2011-07-08 - Written - Bovy@MPIA (NYU)
     """
     raw= _load_fits(file)
     #First cut on r
@@ -635,7 +642,7 @@ def read_kdwarfs(file=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     OUTPUT:
        cut data, returns numpy.recarray
     HISTORY:
-       2011-07-11 - Written - Bovy (NYU)
+       2011-07-11 - Written - Bovy@MPIA (NYU)
     """
     raw= _load_fits(file)
     #First cut on r
