@@ -63,6 +63,10 @@ class segueSelect:
         #Load plates
         self.platestr= _load_fits(os.path.join(_SEGUESELECTDIR,
                                                'segueplates.fits'))
+        #Add platesn_r to platestr
+        platesn_r= (self.platestr.sn1_1+self.platestr.sn2_1)/2.
+        self.platestr= _append_field_recarray(self.platestr,
+                                              'platesn_r',platesn_r)
         if plates is None:
             self.plates= list(self.platestr.plate)
         else:
@@ -108,6 +112,14 @@ class segueSelect:
             indx= (self.platestr.field('plate') == self.plates[ii])
             reIndx[ii]= (allIndx[indx][0])
         self.platestr= self.platestr[reIndx]
+        #Build bright/faint dict
+        self.platebright= {}
+        for ii in range(len(self.plates)):
+            p= self.plates[ii]
+            if 'faint' in self.platestr[ii].programname:
+                self.platebright[str(p)]= False
+            else:
+                self.platebright[str(p)]= True            
         #load the photometry for the SEGUE plates
         self.platephot= {}
         for ii in range(len(self.plates)):
@@ -221,7 +233,11 @@ class segueSelect:
                     if self.type.lower() == 'constant':
                         out.append(self.weight[str(p)])
                     elif self.type.lower() == 'r':
-                        if r[ii] < 17.8 and r[ii] >= self.rmin:
+                        if r[ii] < 17.8 and not self.platebright[str(p)]:
+                            out.append(0.)
+                        elif r[ii] >= 17.8 and self.platebright[str(p)]:
+                            out.append(0.)
+                        elif r[ii] < 17.8 and r[ii] >= self.rmin:
                             out.append(self.weight[str(p)])
                             #BOVY: REMOVE R DEPENDENCE FOR NOW
                             #out.append(self.weight[str(p)]*self.s_one_r_bright_interpolate(r[ii])[0])
@@ -281,6 +297,19 @@ class segueSelect:
         bovy_plot.bovy_plot(xs,ys,'k-',xrange=xrange,yrange=yrange,
                             xlabel=xlabel,ylabel=ylabel,
                             overplot=overplot)
+        #Also plot data
+        if self.type.lower() == 'r':
+            pindx= (self.plates == plate)
+            if self.platebright[str(plate)]:
+                bovy_plot.bovy_plot(self.s_r_plate_rs_bright,
+                                    self.s_r_plate_bright[:,pindx],
+                                    color='k',
+                                    marker='o',ls='none',overplot=True)
+            else:
+                bovy_plot.bovy_plot(self.s_r_plate_rs_faint,
+                                    self.s_r_plate_faint[:,pindx],
+                                    color='k',
+                                    marker='o',ls='none',overplot=True)
         return None
 
     def plotColorMag(self,x='gr',y='r',plate='all',spec=False,scatterplot=True,
@@ -466,6 +495,10 @@ class segueSelect:
                     s_one_r_faint[nonzero,ii]= nspecr[nonzero]/nphotr[nonzero]
                 else: #bright plate
                     s_one_r_bright[nonzero,ii]= nspecr[nonzero]/nphotr[nonzero]
+            self.s_r_plate_rs_bright= \
+                numpy.linspace(self.rmin+dr/2.,17.8-dr/2.,nbrightrbins)
+            self.s_r_plate_rs_faint= \
+                numpy.linspace(17.8+dr/2.,self.rmax-dr/2.,nfaintrbins)
             self.s_r_plate_bright= s_r_bright
             self.s_r_plate_faint= s_r_faint
             self.s_one_r_plate_bright= s_one_r_bright
