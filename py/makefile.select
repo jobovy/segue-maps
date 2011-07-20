@@ -4,17 +4,22 @@ OUTDIR=../figs
 all :$(OUTDIR)/platesn_r_snx_y.$(EXT) \
      $(OUTDIR)/snvsr_faint_g.$(EXT) \
      $(OUTDIR)/snvsr_bright_g.$(EXT) \
+     $(OUTDIR)/snvsr_faint_k.$(EXT) \
      $(OUTDIR)/snvsr_bright_k.$(EXT) \
      $(OUTDIR)/soner_g.$(EXT) \
      $(OUTDIR)/soner_platesn_faint_g.$(EXT) \
      $(OUTDIR)/soner_platesn_bright_g.$(EXT) \
-     $(OUTDIR)/soner_k.$(EXT)
+     $(OUTDIR)/soner_k.$(EXT) \
+     $(OUTDIR)/soner_platesn_faint_k.$(EXT) \
+     $(OUTDIR)/soner_platesn_bright_k.$(EXT)
 
 $(OUTDIR)/platesn_r_snx_y.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t platesn
 
 $(OUTDIR)/snvsr_faint_g.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t snvsr --faint
+$(OUTDIR)/snvsr_faint_k.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t snvsr --faint --sample=k
 $(OUTDIR)/snvsr_bright_g.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t snvsr
 $(OUTDIR)/snvsr_bright_k.$(EXT): segueSelect.py selectFigs.py
@@ -29,3 +34,9 @@ $(OUTDIR)/soner_platesn_faint_g.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --faint
 $(OUTDIR)/soner_platesn_bright_g.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t soner_platesn
+
+
+$(OUTDIR)/soner_platesn_faint_k.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --faint --sample=k
+$(OUTDIR)/soner_platesn_bright_k.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --sample=k

@@ -36,12 +36,14 @@ def plot_soner_platesn(options,args):
     #This is just to get rmin and rmax consistently
     allsf= segueSelect.segueSelect(sn=True,sample=options.sample,
                                 plates=None,type_faint='constant')
-    if options.sample.lower() == 'g' and options.faint:
+    #if options.sample.lower() == 'g' and options.faint:
+    if options.faint:
         binedges= segueSelect._BINEDGES_G_FAINT
         nbins= len(binedges)-1
         bincolors= ['%f' % (0.25 + 0.5/(nbins-1)*ii) for ii in range(nbins)]
         bincolors= ['b','g','y','r','m'] #'c' at beginning
-    elif options.sample.lower() == 'g' and not options.faint:
+    #elif options.sample.lower() == 'g' and not options.faint:
+    elif not options.faint:
         binedges= segueSelect._BINEDGES_G_BRIGHT
         nbins= len(binedges)-1
         bincolors= ['%f' % (0.25 + 0.5/(nbins-1)*ii) for ii in range(nbins)]
@@ -87,7 +89,7 @@ def plot_soner_platesn(options,args):
                         overplot=True)
     #Legend
     if options.faint:
-        xlegend, ylegend, dy= 19.1, 3.15, -.21
+        xlegend, ylegend, dy= (allsf.rmax-1.2/(20.3-17.8)*(allsf.rmax+0.1-17.8)), 3.15,-.21
     else:
         xlegend, ylegend, dy= 16.15, 3.15, -.21
     for ii in range(nbins-1):
@@ -148,7 +150,7 @@ def plot_snvsr(options,args):
     bovy_plot.bovy_plot([sf.rmin-0.1,sf.rmax+0.1],[15.,15.],'k--',overplot=True)
     #Legend
     if options.faint:
-        xlegend, ylegend, dy= 19.1, 45., -3.
+        xlegend, ylegend, dy= (sf.rmax-1.2/(20.3-17.8)*(sf.rmax+0.1-17.8)), 45., -3.
     else:
         xlegend, ylegend, dy= 16.15, 135., -9.
     for ii in range(nbins-1):

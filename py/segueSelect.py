@@ -389,7 +389,7 @@ class segueSelect:
             plate= 2964
         elif isinstance(plate,str) and plate.lower() == 'a faint plate':
             plate= 2965
-        xs= numpy.linspace(self.rmin,self.rmax,_NXS)
+        xs= numpy.linspace(self.rmin+0.001,self.rmax-0.001,_NXS)
         if xrange is None: xrange= [self.rmin,self.rmax]
         xlabel= r'$r_0\ [\mathrm{mag}]$'
         #Evaluate selection function
