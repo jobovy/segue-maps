@@ -3,7 +3,7 @@ import sys
 import copy
 import math
 import numpy
-from scipy import special, interpolate
+from scipy import special, interpolate, optimize, maxentropy
 import pyfits
 try:
     from galpy.util import bovy_plot
@@ -32,8 +32,10 @@ class segueSelect:
     def __init__(self,sample='G',plates=None,
                  select='all',
                  type_bright='constant',dr_bright=0.05,
+                 interp_type_bright='tanh',
                  interp_degree_bright=_INTERPDEGREEBRIGHT,
-                 type_faint='r',dr_faint=0.05,
+                 type_faint='r',dr_faint=0.2,
+                 interp_type_faint='tanh',
                  interp_degree_faint=_INTERPDEGREEFAINT,
                  ug=False,ri=False,sn=True,
                  ebv=False):
@@ -57,8 +59,10 @@ class segueSelect:
               dr_bright= when determining the selection function as a function 
                          of r, binsize to use
               interp_degree_bright= when spline-interpolating, degree to use
-              type_faint=, faint_dr, interp_degree_bright= same as the 
-                  corresponding keywords for bright
+              interp_type_bright= type of interpolation to use ('tanh' or 
+                                   'spline')
+              type_faint=, faint_dr, interp_degree_bright, interp_type+faint
+              = same as the corresponding keywords for bright
 
            SPECTROSCOPIC SAMPLE SELECTION:
               ug= if True, cut on u-g
@@ -221,9 +225,11 @@ class segueSelect:
         sys.stdout.write('\r'+"Determining selection function ...\r")
         sys.stdout.flush()
         self._determine_select(bright=True,type=type_bright,dr=dr_bright,
-                               interp_degree=interp_degree_bright)
+                               interp_degree=interp_degree_bright,
+                               interp_type= interp_type_bright)
         self._determine_select(bright=False,type=type_faint,dr=dr_faint,
-                               interp_degree=interp_degree_faint)
+                               interp_degree=interp_degree_faint,
+                               interp_type=interp_type_faint)
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         return None
@@ -276,17 +282,33 @@ class segueSelect:
             elif self.type_bright.lower() == 'constant':
                 return self.weight[str(plate)]
             elif self.type_bright.lower() == 'r':
-                soner= interpolate.splev(r,self.s_one_r_bright_interpolate)
-                if soner < 0.: return 0.
-                else: return self.weight[str(plate)]*soner
+                if self.interp_type_bright.lower() == 'spline':
+                    soner= interpolate.splev(r,self.s_one_r_bright_interpolate)
+                    if soner < 0.: return 0.
+                    else: return self.weight[str(plate)]*soner
+                elif self.interp_type_faint.lower() == 'tanh':
+                    return _sf_tanh(r,self.s_one_r_tanh_params_bright)\
+                        *self.weight[str(plate)] 
         else:
             if r < 17.8 or r > self.rmax: return 0.
             elif self.type_faint.lower() == 'constant':
                 return self.weight[str(plate)]
             elif self.type_faint.lower() == 'r':
-                soner= interpolate.splev(r,self.s_one_r_faint_interpolate)
-                if soner < 0.: return 0.
-                else: return self.weight[str(plate)]*soner
+                if self.interp_type_faint.lower() == 'spline':
+                    if r < self.s_one_r_faint_minxo:
+                        return numpy.exp(_linear_func(r,
+                                                      self.s_one_r_faint_minderiv,
+                                                      self.s_one_r_faint_minxo,
+                                                      self.s_one_r_faint_minyo))\
+                                                      *self.weight[str(plate)]
+                    else:
+                        soner= numpy.exp(\
+                            interpolate.splev(r,self.s_one_r_faint_interpolate))
+                        if soner < 0.: return 0.
+                        else: return self.weight[str(plate)]*soner
+                elif self.interp_type_faint.lower() == 'tanh':
+                    return _sf_tanh(r,self.s_one_r_tanh_params_faint)\
+                        *self.weight[str(plate)]
 
     def plot(self,x='r',y='sf',plate='a bright plate',overplot=False):
         """
@@ -330,11 +352,66 @@ class segueSelect:
                                     self.s_r_plate_bright[:,pindx],
                                     color='k',
                                     marker='o',ls='none',overplot=True)
+                
             else:
                 bovy_plot.bovy_plot(self.s_r_plate_rs_faint,
                                     self.s_r_plate_faint[:,pindx],
                                     color='k',
                                     marker='o',ls='none',overplot=True)
+        return None
+
+    def plot_s_one_r(self,plate='a bright plate',overplot=False):
+        """
+        NAME:
+           plot_s_one_r
+        PURPOSE:
+           plot the derived selection function s_1(r)
+        INPUT:
+           plate= plate to plot (number or 'a bright plate' (default), 
+                                 'a faint plate')
+           overplot= if True, overplot
+        OUTPUT:
+           plot to output
+        HISTORY:
+           2011-07-20 - Written - Bovy@MPIA (NYU)
+        """
+        _NXS= 1001
+        if isinstance(plate,str) and plate.lower() == 'a bright plate':
+            plate= 2964
+        elif isinstance(plate,str) and plate.lower() == 'a faint plate':
+            plate= 2965
+        xs= numpy.linspace(self.rmin,self.rmax,_NXS)
+        xrange= [self.rmin,self.rmax]
+        xlabel= r'$r_0\ [\mathrm{mag}]$'
+        #Evaluate selection function
+        ys= numpy.array(self(plate,r=xs))/self.weight[str(plate)]
+        ylabel= r'$r\ \mathrm{dependence\ of\ selection\ function}$'
+        yrange= [0.,1.2*numpy.amax(ys)]
+        bovy_plot.bovy_plot(xs,ys,'k-',xrange=xrange,yrange=yrange,
+                            xlabel=xlabel,ylabel=ylabel,
+                            overplot=overplot)
+        #Also plot data
+        from matplotlib.pyplot import errorbar
+        if self.platebright[str(plate)]:
+            bovy_plot.bovy_plot(self.s_r_plate_rs_bright,
+                                self.s_one_r_bright,
+                                color='k',
+                                marker='o',ls='none',overplot=True)
+            errorbar(self.s_r_plate_rs_bright,
+                     self.s_one_r_bright,
+                     self.s_one_r_err_bright,
+                     xerr= numpy.zeros(len(self.interp_rs_bright))+(self.interp_rs_bright[1]-self.interp_rs_bright[0])/2.,
+                     fmt=None,ecolor='k')
+        else:
+            bovy_plot.bovy_plot(self.s_r_plate_rs_faint,
+                                self.s_one_r_faint,
+                                color='k',
+                                marker='o',ls='none',overplot=True)
+            errorbar(self.s_r_plate_rs_faint,
+                     self.s_one_r_faint,
+                     self.s_one_r_err_faint,
+                     xerr= numpy.zeros(len(self.interp_rs_faint))+(self.interp_rs_faint[1]-self.interp_rs_faint[0])/2.,
+                     fmt=None,ecolor='k')
         return None
 
     def plotColorMag(self,x='gr',y='r',plate='all',spec=False,scatterplot=True,
@@ -463,7 +540,8 @@ class segueSelect:
         return None                
 
     def _determine_select(self,bright=True,type=None,dr=None,
-                          interp_degree=_INTERPDEGREEBRIGHT):
+                          interp_degree=_INTERPDEGREEBRIGHT,
+                          interp_type='tanh'):
         """Function that actually determines the selection function"""
         if bright:
             self.type_bright= type
@@ -568,32 +646,97 @@ class segueSelect:
             #Compute jackknife uncertainties
             s_one_r_err= numpy.sqrt((nplates-1)*numpy.var(jack_samples,
                                                                  axis=0))
+            s_one_r_err[(s_one_r_err == 0.)]= 0.001
             if bright:
                 self.s_one_r_jack_samples_bright= jack_samples
                 self.s_one_r_err_bright= s_one_r_err
             else:
                 self.s_one_r_jack_samples_faint= jack_samples
                 self.s_one_r_err_faint= s_one_r_err
-            #Spline interpolate
+            if bright: self.interp_type_bright= interp_type
+            else: self.interp_type_faint= interp_type
             if bright:
                 w= numpy.zeros(len(self.s_one_r_bright))+0.0001
                 w[(self.s_one_r_err_bright > 0.)]= \
                     1./self.s_one_r_err_bright[(self.s_one_r_err_bright > 0.)]
                 self.interp_rs_bright= \
                     numpy.linspace(self.rmin+1.*dr/2.,17.8-1.*dr/2.,nrbins)
-                self.s_one_r_bright_interpolate= interpolate.splrep(\
-                    self.interp_rs_bright,self.s_one_r_bright,
-                    k=interp_degree,w=w)
+                if interp_type.lower() == 'spline':
+                   #Spline interpolate
+                    self.s_one_r_bright_interpolate= interpolate.splrep(\
+                        self.interp_rs_bright,self.s_one_r_bright,
+                        k=interp_degree,w=w)
+                elif interp_type.lower() == 'tanh':
+                    #Fit a tanh to s_1(r)
+                    params= numpy.array([17.7,numpy.log(0.1),
+                                         numpy.log(3.)])
+                    params= optimize.fmin_powell(_sf_tanh_minusloglike,
+                                                 params,
+                                                 args=(self.interp_rs_bright,
+                                                       self.s_one_r_bright,
+                                                       self.s_one_r_err_bright,
+                                      numpy.zeros(len(self.interp_rs_bright))+(self.interp_rs_bright[1]-self.interp_rs_bright[0])/2.))
+                    self.s_one_r_tanh_params_bright= params
             else:
-                w= numpy.zeros(len(self.s_one_r_faint))+0.0001
-                w[(self.s_one_r_err_faint > 0.)]= \
-                    1./self.s_one_r_err_faint[(self.s_one_r_err_faint > 0.)]
+                w= numpy.zeros(len(self.s_one_r_faint))+10000.
+                yfunc= numpy.zeros(len(w))-20.
+                nonzero= (self.s_one_r_faint > 0.)
+                w[nonzero]= \
+                    self.s_one_r_faint[nonzero]/self.s_one_r_err_faint[nonzero]
+                yfunc[nonzero]= numpy.log(self.s_one_r_faint[nonzero])
                 self.interp_rs_faint= \
-                    numpy.linspace(17.8+1.*dr/2.,self.rmax+dr/2.,nrbins)
-                self.s_one_r_faint_interpolate= interpolate.splrep(\
-                    self.interp_rs_faint,self.s_one_r_faint,
-                    k=interp_degree,w=w)
+                    numpy.linspace(17.8+1.*dr/2.,self.rmax-dr/2.,nrbins)
+                if interp_type.lower() == 'spline':
+                    self.s_one_r_faint_interpolate= interpolate.splrep(\
+                        self.interp_rs_faint,yfunc,
+                        k=interp_degree,w=w)
+                    #Continue along the derivative for out of bounds
+                    minderiv= interpolate.splev(self.interp_rs_faint[0],
+                                                self.s_one_r_faint_interpolate,
+                                                der=1)
+                    self.s_one_r_faint_minderiv= minderiv
+                    self.s_one_r_faint_minxo= self.interp_rs_faint[0]
+                    self.s_one_r_faint_minyo= yfunc[0]
+                elif interp_type.lower() == 'tanh':
+                    #Fit a tanh to s_1(r)
+                    params= numpy.array([18.7,numpy.log(0.1),
+                                         numpy.log(3.)])
+                    params= optimize.fmin_powell(_sf_tanh_minusloglike,
+                                                 params,
+                                                 args=(self.interp_rs_faint,
+                                                       self.s_one_r_faint,
+                                                       self.s_one_r_err_faint,
+                                                       numpy.zeros(len(self.interp_rs_faint))+(self.interp_rs_faint[1]-self.interp_rs_faint[0])/2.))
+                    self.s_one_r_tanh_params_faint= params
             return None
+
+def _sf_tanh(r,params):
+    """Tanh description of the selection,
+    params=[rcentral,logsigmar,logconstant]"""
+    return math.exp(params[2])/2.*(1.-numpy.tanh((r-params[0])/math.exp(params[1])))
+
+def _sf_tanh_minusloglike(params,rs,sfs,sferrs,rerrs=None):
+    #return 0.5*numpy.sum((sfs-_sf_tanh(rs,params))**2./2./sferrs**2.)
+    #Robust
+    if rerrs is None:
+        return 0.5*numpy.sum(numpy.fabs((sfs-_sf_tanh(rs,params))/sferrs))
+    else:
+        ngrid= 21
+        nsigma= 3.
+        grid= numpy.linspace(-nsigma,nsigma,ngrid)
+        presum= numpy.fabs(grid)
+        out= 0.
+        for ii in range(len(rs)):
+            thisgrid= grid*rerrs[ii]+rs[ii]
+            out+= maxentropy.logsumexp(presum+numpy.fabs(sfs[ii]-_sf_tanh(thisgrid,
+                                                                          params))/\
+                                                                   sferrs[ii])
+        return out
+            
+
+def _linear_func(x,deriv,xo,yo):
+    """Evaluate a linear function"""
+    return deriv*(x-xo)+yo
 
 def ivezic_dist_gr(g,r,feh):
     """
