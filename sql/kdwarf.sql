@@ -31,6 +31,6 @@ and p.plate = soa.plate
 and soa.primtarget = -2147450880
 and spp.specobjid = soa.specobjid and soa.bestobjid = s.objid
 --and s.objid = pm.objid
-and s.psfMag_r-s.extinction_r between 14.5 and 19.0
-and s.psfMag_g-s.extinction_g-s.psfMag_r+s.extinction_r between 0.55 and 0.75 
+--and s.psfMag_r-s.extinction_r between 14.5 and 19.0
+and s.psfMag_g-s.extinction_g-s.psfMag_r+s.extinction_r between .5 and .8
 --and pm.pmRaErr > 0. and spp.SNR > 15.0

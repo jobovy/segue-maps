@@ -30,6 +30,3 @@ where  p.programname like '%segue%'
    and p.plate = soa.plate
    and soa.primtarget = -2147483136
    and spp.specobjid = soa.specobjid and soa.bestobjid = s.objid
-   and s.psfMag_g-s.extinction_g-s.psfMag_r+s.extinction_r between 0.2
-and 0.48						   
-    and s.psfMag_g-s.extinction_g < 20.2
