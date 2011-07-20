@@ -69,13 +69,13 @@ def plot_soner_platesn(options,args):
         bovy_plot.bovy_plot([0.,0.],[0.,0.],
                             xrange=[17.7,allsf.rmax+0.1],
                             yrange=yrange,
-                            xlabel=r'$r_0\ [\mathrm{mag}]$',
+                            xlabel=r'$r\ [\mathrm{mag}]$',
                             ylabel= r'$r\ \mathrm{dependence\ of\ selection\ function}$')
     else:
         bovy_plot.bovy_plot([0.,0.],[0.,0.],
                             xrange=[allsf.rmin-0.1,17.9],
                             yrange=[0.,3.5],
-                            xlabel=r'$r_0\ [\mathrm{mag}]$',
+                            xlabel=r'$r\ [\mathrm{mag}]$',
                             ylabel= r'$r\ \mathrm{dependence\ of\ selection\ function}$')
     for bb in range(nbins):
         theseplates= []
@@ -147,13 +147,13 @@ def plot_snvsr(options,args):
         bovy_plot.bovy_plot([0.,0.],[0.,0.],
                             xrange=[17.7,sf.rmax+0.1],
                             yrange=[0.,50.],
-                            xlabel=r'$r_0\ [\mathrm{mag}]$',
+                            xlabel=r'$r\ [\mathrm{mag}]$',
                             ylabel=r'$S/N$')
     else:
         bovy_plot.bovy_plot([0.,0.],[0.,0.],
                             xrange=[sf.rmin-0.1,17.9],
                             yrange=[0.,150.],
-                            xlabel=r'$r_0\ [\mathrm{mag}]$',
+                            xlabel=r'$r\ [\mathrm{mag}]$',
                             ylabel=r'$S/N$')
     for ii in range(len(sf.plates)):
         plate= sf.plates[ii]
@@ -166,7 +166,7 @@ def plot_snvsr(options,args):
         #Plot these data
         plotindx= (sf.spec.plate == plate)
         if numpy.sum(plotindx) == 0: continue
-        bovy_plot.bovy_plot(sf.spec[plotindx].dered_r,
+        bovy_plot.bovy_plot(sf.spec[plotindx].r,
                             sf.spec[plotindx].sna,
                             color=bincolors[kk],marker=',',ls='none',
                             overplot=True)

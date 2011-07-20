@@ -391,7 +391,7 @@ class segueSelect:
             plate= 2965
         xs= numpy.linspace(self.rmin+0.001,self.rmax-0.001,_NXS)
         if xrange is None: xrange= [self.rmin,self.rmax]
-        xlabel= r'$r_0\ [\mathrm{mag}]$'
+        xlabel= r'$r\ [\mathrm{mag}]$'
         #Evaluate selection function
         ys= numpy.array(self(plate,r=xs))/self.weight[str(plate)]
         ylabel= r'$r\ \mathrm{dependence\ of\ selection\ function}$'
