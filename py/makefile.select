@@ -3,7 +3,8 @@ OUTDIR=../figs
 
 all :$(OUTDIR)/platesn_r_snx_y.$(EXT) \
      $(OUTDIR)/snvsr_faint_g.$(EXT) \
-     $(OUTDIR)/snvsr_bright_g.$(EXT)
+     $(OUTDIR)/snvsr_bright_g.$(EXT) \
+     $(OUTDIR)/soner_g.$(EXT)
 
 $(OUTDIR)/platesn_r_snx_y.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t platesn
@@ -12,3 +13,6 @@ $(OUTDIR)/snvsr_faint_g.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t snvsr --faint
 $(OUTDIR)/snvsr_bright_g.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t snvsr
+
+$(OUTDIR)/soner_g.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t soner

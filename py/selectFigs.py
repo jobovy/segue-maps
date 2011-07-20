@@ -10,6 +10,17 @@ def selectFigs(parser):
         plot_platesn(options,args)
     elif options.type.lower() == 'snvsr':
         plot_snvsr(options,args)
+    elif options.type.lower() == 'soner':
+        plot_soner(options,args)
+
+def plot_soner(options,args):
+    """Plot the r dependence of the selection function"""
+    sf= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                plates=None,type_bright='r')
+    bovy_plot.bovy_print()
+    sf.plot_s_one_r('a faint plate',overplot=False)
+    sf.plot_s_one_r('a bright plate',overplot=True)
+    bovy_plot.bovy_end_print(options.plotfile)
 
 def plot_snvsr(options,args):
     """Plot the SN versus r for faint/bright plates and different samples"""
