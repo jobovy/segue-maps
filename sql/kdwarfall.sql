@@ -1,5 +1,5 @@
 select spp.mjd, spp.plate, spp.fiberID,
-s.ra as RA, s.dec as Dec, s.b as b, s.l as l, 
+s.ra as RA, s.dec as Dec, s.b as b, s.l as l, spp.ebv,
 s.psfMag_u as u, s.extinction_u as ext_u, 
 s.psfMag_u-s.extinction_u as dered_u, s.psfMagErr_u as u_err,     
 s.psfMag_g as g, s.extinction_g as ext_g, 
