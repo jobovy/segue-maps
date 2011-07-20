@@ -61,7 +61,7 @@ class segueSelect:
               interp_degree_bright= when spline-interpolating, degree to use
               interp_type_bright= type of interpolation to use ('tanh' or 
                                    'spline')
-              type_faint=, faint_dr, interp_degree_bright, interp_type+faint
+              type_faint=, faint_dr, interp_degree_bright, interp_type_faint
               = same as the corresponding keywords for bright
 
            SPECTROSCOPIC SAMPLE SELECTION:
