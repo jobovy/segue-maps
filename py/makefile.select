@@ -7,36 +7,58 @@ all :$(OUTDIR)/platesn_r_snx_y.$(EXT) \
      $(OUTDIR)/snvsr_faint_k.$(EXT) \
      $(OUTDIR)/snvsr_bright_k.$(EXT) \
      $(OUTDIR)/soner_g.$(EXT) \
+     $(OUTDIR)/soner_gprogram.$(EXT) \
      $(OUTDIR)/soner_platesn_faint_g.$(EXT) \
      $(OUTDIR)/soner_platesn_bright_g.$(EXT) \
+     $(OUTDIR)/soner_platesn_faint_gprogram.$(EXT) \
+     $(OUTDIR)/soner_platesn_bright_gprogram.$(EXT) \
      $(OUTDIR)/soner_k.$(EXT) \
+     $(OUTDIR)/soner_kprogram.$(EXT) \
      $(OUTDIR)/soner_platesn_faint_k.$(EXT) \
-     $(OUTDIR)/soner_platesn_bright_k.$(EXT)
+     $(OUTDIR)/soner_platesn_bright_k.$(EXT) \
+     $(OUTDIR)/soner_platesn_faint_kprogram.$(EXT) \
+     $(OUTDIR)/soner_platesn_bright_kprogram.$(EXT)
 
+#####################################G STARS###################################
 $(OUTDIR)/platesn_r_snx_y.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t platesn
 
 $(OUTDIR)/snvsr_faint_g.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t snvsr --faint
-$(OUTDIR)/snvsr_faint_k.$(EXT): segueSelect.py selectFigs.py
-	$(PYTHON) selectFigs.py -o $@ -t snvsr --faint --sample=k
 $(OUTDIR)/snvsr_bright_g.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t snvsr
-$(OUTDIR)/snvsr_bright_k.$(EXT): segueSelect.py selectFigs.py
-	$(PYTHON) selectFigs.py -o $@ -t snvsr --sample=k
 
 $(OUTDIR)/soner_g.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t soner
-$(OUTDIR)/soner_k.$(EXT): segueSelect.py selectFigs.py
-	$(PYTHON) selectFigs.py -o $@ -t soner --sample=k
+$(OUTDIR)/soner_gprogram.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t soner --program
 
 $(OUTDIR)/soner_platesn_faint_g.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --faint
 $(OUTDIR)/soner_platesn_bright_g.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t soner_platesn
+$(OUTDIR)/soner_platesn_faint_gprogram.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --faint --program
+$(OUTDIR)/soner_platesn_bright_gprogram.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --program
 
+
+#####################################K STARS###################################
+$(OUTDIR)/snvsr_faint_k.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t snvsr --faint --sample=k
+$(OUTDIR)/snvsr_bright_k.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t snvsr --sample=k
+
+$(OUTDIR)/soner_k.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t soner --sample=k
+$(OUTDIR)/soner_kprogram.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t soner --sample=k --program
 
 $(OUTDIR)/soner_platesn_faint_k.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --faint --sample=k
 $(OUTDIR)/soner_platesn_bright_k.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --sample=k
+$(OUTDIR)/soner_platesn_faint_kprogram.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --faint --sample=k --program
+$(OUTDIR)/soner_platesn_bright_kprogram.$(EXT): segueSelect.py selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --sample=k --program

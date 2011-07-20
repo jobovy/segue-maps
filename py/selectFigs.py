@@ -17,9 +17,11 @@ def selectFigs(parser):
 
 def plot_soner(options,args):
     """Plot the r dependence of the selection function"""
+    if options.program: select= 'program'
+    else: select= 'all'
     sf= segueSelect.segueSelect(sn=True,sample=options.sample,
                                 plates=None,type_bright='r',
-                                type_faint='r',select='all',
+                                type_faint='r',select=select,
                                 dr_bright=0.05,dr_faint=0.2,robust_bright=True)
     if options.sample.lower() == 'k':
         yrange= [0.,2.]
@@ -33,10 +35,19 @@ def plot_soner(options,args):
 def plot_soner_platesn(options,args):
     """Plot the r dependence of the selection function as a function of 
     plateSN"""
+    if options.program: select= 'program'
+    else: select= 'all'
     #This is just to get rmin and rmax consistently
     allsf= segueSelect.segueSelect(sn=True,sample=options.sample,
-                                plates=None,type_faint='constant')
+                                   plates=None,type_faint='constant',
+                                   select=select)
     #if options.sample.lower() == 'g' and options.faint:
+    if options.sample.lower() == 'k' and options.program:
+        dr_bright= 0.4
+        dr_faint= 0.5
+    else:
+        dr_bright= 0.2
+        dr_faint= 0.2
     if options.faint:
         binedges= segueSelect._BINEDGES_G_FAINT
         nbins= len(binedges)-1
@@ -82,14 +93,20 @@ def plot_soner_platesn(options,args):
             sf= segueSelect.segueSelect(sn=True,sample=options.sample,
                                         plates=theseplates,
                                         type_bright='constant',type_faint='r',
-                                        dr_faint=0.2)
+                                        dr_bright=dr_bright,
+                                        dr_faint=dr_faint,select=select)
         else:
             sf= segueSelect.segueSelect(sn=True,sample=options.sample,
                                         plates=theseplates,
                                         type_bright='r',type_faint='constant',
-                                        dr_bright=0.2,robust_bright=True)
+                                        dr_bright=dr_bright,
+                                        dr_faint=dr_faint,robust_bright=True,
+                                        select=select)
         #Plot
-        sf.plot_s_one_r(theseplates[0],color=bincolors[bb],
+        #Find a plate with non-zero weight to plot
+        pp= 0
+        while sf.weight[str(theseplates[pp])] == 0.: pp+= 1
+        sf.plot_s_one_r(theseplates[pp],color=bincolors[bb],
                         overplot=True)
     #Legend
     if options.faint:
@@ -108,8 +125,10 @@ def plot_soner_platesn(options,args):
 
 def plot_snvsr(options,args):
     """Plot the SN versus r for faint/bright plates and different samples"""
+    if options.program: select= 'program'
+    else: select= 'all'
     sf= segueSelect.segueSelect(sn=False,sample=options.sample,
-                                plates=None,select='all')
+                                plates=None,select=select)
     #if options.sample.lower() == 'g' and options.faint:
     if options.faint:
         binedges= segueSelect._BINEDGES_G_FAINT
@@ -210,6 +229,9 @@ def get_options():
     parser.add_option("--faint",action="store_true", dest="faint",
                       default=False,
                       help="Use faint plates when a distinction between bright and faint needs to made")
+    parser.add_option("--program",action="store_true", dest="program",
+                      default=False,
+                      help="Just use program stars")
     return parser
 
 if __name__ == '__main__':
