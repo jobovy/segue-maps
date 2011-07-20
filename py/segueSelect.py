@@ -34,11 +34,13 @@ class segueSelect:
                  type_bright='constant',dr_bright=0.05,
                  interp_type_bright='tanh',
                  interp_degree_bright=_INTERPDEGREEBRIGHT,
+                 robust_bright=True,
                  type_faint='r',dr_faint=0.2,
                  interp_type_faint='tanh',
                  interp_degree_faint=_INTERPDEGREEFAINT,
+                 robust_faint=True,
                  ug=False,ri=False,sn=True,
-                 ebv=False):
+                 ebv=True):
         """
         NAME:
            __init__
@@ -61,14 +63,16 @@ class segueSelect:
               interp_degree_bright= when spline-interpolating, degree to use
               interp_type_bright= type of interpolation to use ('tanh' or 
                                    'spline')
-              type_faint=, faint_dr, interp_degree_bright, interp_type_faint
+              robust_bright= perform any fit robustly
+              type_faint=, faint_dr, interp_degree_bright, interp_type_faint,
+              robust_faint
               = same as the corresponding keywords for bright
 
            SPECTROSCOPIC SAMPLE SELECTION:
               ug= if True, cut on u-g
               ri= if True, cut on r-i
               sn= if False, don't cut on SN
-              ebv= if True, cut on E(B-V)
+              ebv= if False, don't cut on E(B-V) < 0.3
         OUTPUT:
            object
         HISTORY:
@@ -226,10 +230,12 @@ class segueSelect:
         sys.stdout.flush()
         self._determine_select(bright=True,type=type_bright,dr=dr_bright,
                                interp_degree=interp_degree_bright,
-                               interp_type= interp_type_bright)
+                               interp_type= interp_type_bright,
+                               robust=robust_bright)
         self._determine_select(bright=False,type=type_faint,dr=dr_faint,
                                interp_degree=interp_degree_faint,
-                               interp_type=interp_type_faint)
+                               interp_type=interp_type_faint,
+                               robust=robust_faint)
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         return None
@@ -255,7 +261,8 @@ class segueSelect:
             plate= [plate]
             r= [r]
             scalarOut= True
-        elif isinstance(plate,int) and isinstance(r,(list,numpy.ndarray)):
+        elif isinstance(plate,(numpy.int16,int)) \
+                and isinstance(r,(list,numpy.ndarray)):
             plate= [plate for ii in range(len(r))]
             scalarOut= False
         else:
@@ -286,7 +293,7 @@ class segueSelect:
                     soner= interpolate.splev(r,self.s_one_r_bright_interpolate)
                     if soner < 0.: return 0.
                     else: return self.weight[str(plate)]*soner
-                elif self.interp_type_faint.lower() == 'tanh':
+                elif self.interp_type_bright.lower() == 'tanh':
                     return _sf_tanh(r,self.s_one_r_tanh_params_bright)\
                         *self.weight[str(plate)] 
         else:
@@ -360,7 +367,8 @@ class segueSelect:
                                     marker='o',ls='none',overplot=True)
         return None
 
-    def plot_s_one_r(self,plate='a bright plate',overplot=False):
+    def plot_s_one_r(self,plate='a bright plate',overplot=False,color='k',
+                     xrange=None,yrange=None):
         """
         NAME:
            plot_s_one_r
@@ -370,6 +378,7 @@ class segueSelect:
            plate= plate to plot (number or 'a bright plate' (default), 
                                  'a faint plate')
            overplot= if True, overplot
+           xrange=, yrange=
         OUTPUT:
            plot to output
         HISTORY:
@@ -381,13 +390,13 @@ class segueSelect:
         elif isinstance(plate,str) and plate.lower() == 'a faint plate':
             plate= 2965
         xs= numpy.linspace(self.rmin,self.rmax,_NXS)
-        xrange= [self.rmin,self.rmax]
+        if xrange is None: xrange= [self.rmin,self.rmax]
         xlabel= r'$r_0\ [\mathrm{mag}]$'
         #Evaluate selection function
         ys= numpy.array(self(plate,r=xs))/self.weight[str(plate)]
         ylabel= r'$r\ \mathrm{dependence\ of\ selection\ function}$'
-        yrange= [0.,1.2*numpy.amax(ys)]
-        bovy_plot.bovy_plot(xs,ys,'k-',xrange=xrange,yrange=yrange,
+        if yrange is None: yrange= [0.,1.2*numpy.amax(ys)]
+        bovy_plot.bovy_plot(xs,ys,color+'-',xrange=xrange,yrange=yrange,
                             xlabel=xlabel,ylabel=ylabel,
                             overplot=overplot)
         #Also plot data
@@ -395,23 +404,23 @@ class segueSelect:
         if self.platebright[str(plate)]:
             bovy_plot.bovy_plot(self.s_r_plate_rs_bright,
                                 self.s_one_r_bright,
-                                color='k',
+                                color=color,
                                 marker='o',ls='none',overplot=True)
             errorbar(self.s_r_plate_rs_bright,
                      self.s_one_r_bright,
                      self.s_one_r_err_bright,
                      xerr= numpy.zeros(len(self.interp_rs_bright))+(self.interp_rs_bright[1]-self.interp_rs_bright[0])/2.,
-                     fmt=None,ecolor='k')
+                     fmt=None,ecolor=color)
         else:
             bovy_plot.bovy_plot(self.s_r_plate_rs_faint,
                                 self.s_one_r_faint,
-                                color='k',
+                                color=color,
                                 marker='o',ls='none',overplot=True)
             errorbar(self.s_r_plate_rs_faint,
                      self.s_one_r_faint,
                      self.s_one_r_err_faint,
                      xerr= numpy.zeros(len(self.interp_rs_faint))+(self.interp_rs_faint[1]-self.interp_rs_faint[0])/2.,
-                     fmt=None,ecolor='k')
+                     fmt=None,ecolor=color)
         return None
 
     def plotColorMag(self,x='gr',y='r',plate='all',spec=False,scatterplot=True,
@@ -541,7 +550,8 @@ class segueSelect:
 
     def _determine_select(self,bright=True,type=None,dr=None,
                           interp_degree=_INTERPDEGREEBRIGHT,
-                          interp_type='tanh'):
+                          interp_type='tanh',
+                          robust=False):
         """Function that actually determines the selection function"""
         if bright:
             self.type_bright= type
@@ -627,6 +637,8 @@ class segueSelect:
             if bright: nplates= self.nbrightplates
             else: nplates= self.nfaintplates
             jack_samples= numpy.zeros((nplates,len(s_one_r)))
+            jack_s_r_plate= s_r_plate[:,plateindx]
+            jack_s_r_weights= weights[plateindx]
             for jj in range(nplates):
                 boot_indx= numpy.array([True for ii in range(nplates)],\
                                            dtype='bool')
@@ -641,12 +653,12 @@ class segueSelect:
                                            axis=1)/nplates
                 else:
                     jack_samples[jj,:]= \
-                        numpy.sum(s_r_plate[:,plateindx[boot_indx]],axis=1)\
-                        /numpy.sum(weights[plateindx[boot_indx]])
+                        numpy.sum(jack_s_r_plate[:,boot_indx],axis=1)\
+                        /numpy.sum(jack_s_r_weights[boot_indx])
             #Compute jackknife uncertainties
             s_one_r_err= numpy.sqrt((nplates-1)*numpy.var(jack_samples,
                                                                  axis=0))
-            s_one_r_err[(s_one_r_err == 0.)]= 0.001
+            s_one_r_err[(s_one_r_err == 0.)]= 0.01
             if bright:
                 self.s_one_r_jack_samples_bright= jack_samples
                 self.s_one_r_err_bright= s_one_r_err
@@ -675,7 +687,8 @@ class segueSelect:
                                                  args=(self.interp_rs_bright,
                                                        self.s_one_r_bright,
                                                        self.s_one_r_err_bright,
-                                      numpy.zeros(len(self.interp_rs_bright))+(self.interp_rs_bright[1]-self.interp_rs_bright[0])/2.))
+                                      numpy.zeros(len(self.interp_rs_bright))+(self.interp_rs_bright[1]-self.interp_rs_bright[0])/2.,
+                                                       robust))
                     self.s_one_r_tanh_params_bright= params
             else:
                 w= numpy.zeros(len(self.s_one_r_faint))+10000.
@@ -706,7 +719,7 @@ class segueSelect:
                                                  args=(self.interp_rs_faint,
                                                        self.s_one_r_faint,
                                                        self.s_one_r_err_faint,
-                                                       numpy.zeros(len(self.interp_rs_faint))+(self.interp_rs_faint[1]-self.interp_rs_faint[0])/2.))
+                                                       numpy.zeros(len(self.interp_rs_faint))+(self.interp_rs_faint[1]-self.interp_rs_faint[0])/2.,robust))
                     self.s_one_r_tanh_params_faint= params
             return None
 
@@ -715,22 +728,33 @@ def _sf_tanh(r,params):
     params=[rcentral,logsigmar,logconstant]"""
     return math.exp(params[2])/2.*(1.-numpy.tanh((r-params[0])/math.exp(params[1])))
 
-def _sf_tanh_minusloglike(params,rs,sfs,sferrs,rerrs=None):
+def _sf_tanh_minusloglike(params,rs,sfs,sferrs,rerrs=None,robust=False):
     #return 0.5*numpy.sum((sfs-_sf_tanh(rs,params))**2./2./sferrs**2.)
     #Robust
     if rerrs is None:
-        return 0.5*numpy.sum(numpy.fabs((sfs-_sf_tanh(rs,params))/sferrs))
+        if robust:
+            return numpy.sum(numpy.fabs((sfs-_sf_tanh(rs,params))/sferrs))
+        else:
+            return numpy.sum((sfs-_sf_tanh(rs,params))**2./2./sferrs**2.)
     else:
         ngrid= 21
         nsigma= 3.
         grid= numpy.linspace(-nsigma,nsigma,ngrid)
-        presum= numpy.fabs(grid)
+        if robust:
+            presum= numpy.fabs(grid)
+        else:
+            presum= grid**2./2.
         out= 0.
         for ii in range(len(rs)):
             thisgrid= grid*rerrs[ii]+rs[ii]
-            out+= maxentropy.logsumexp(presum+numpy.fabs(sfs[ii]-_sf_tanh(thisgrid,
-                                                                          params))/\
-                                                                   sferrs[ii])
+            if robust:
+                out+= maxentropy.logsumexp(presum+numpy.fabs(sfs[ii]-_sf_tanh(thisgrid,
+                                                                              params))/\
+                                               sferrs[ii])
+            else:
+                out+= maxentropy.logsumexp(presum+(sfs[ii]-_sf_tanh(thisgrid,
+                                                                    params))**2./2./\
+                                               sferrs[ii]**2.)
         return out
             
 

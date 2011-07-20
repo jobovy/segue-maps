@@ -12,20 +12,30 @@ def selectFigs(parser):
         plot_snvsr(options,args)
     elif options.type.lower() == 'soner':
         plot_soner(options,args)
+    elif options.type.lower() == 'soner_platesn':
+        plot_soner_platesn(options,args)
 
 def plot_soner(options,args):
     """Plot the r dependence of the selection function"""
     sf= segueSelect.segueSelect(sn=True,sample=options.sample,
-                                plates=None,type_bright='r')
+                                plates=None,type_bright='r',
+                                type_faint='r',select='all',
+                                dr_bright=0.05,dr_faint=0.2,robust_bright=True)
+    if options.sample.lower() == 'k':
+        yrange= [0.,2.]
+    else:
+        yrange= None
     bovy_plot.bovy_print()
-    sf.plot_s_one_r('a faint plate',overplot=False)
+    sf.plot_s_one_r('a faint plate',overplot=False,yrange=yrange)
     sf.plot_s_one_r('a bright plate',overplot=True)
     bovy_plot.bovy_end_print(options.plotfile)
 
-def plot_snvsr(options,args):
-    """Plot the SN versus r for faint/bright plates and different samples"""
-    sf= segueSelect.segueSelect(sn=False,sample=options.sample,
-                                plates=None)
+def plot_soner_platesn(options,args):
+    """Plot the r dependence of the selection function as a function of 
+    plateSN"""
+    #This is just to get rmin and rmax consistently
+    allsf= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                plates=None,type_faint='constant')
     if options.sample.lower() == 'g' and options.faint:
         binedges= segueSelect._BINEDGES_G_FAINT
         nbins= len(binedges)-1
@@ -36,7 +46,76 @@ def plot_snvsr(options,args):
         nbins= len(binedges)-1
         bincolors= ['%f' % (0.25 + 0.5/(nbins-1)*ii) for ii in range(nbins)]
         bincolors= ['b','g','y','r','m'] #'c' at beginning
-    binedges
+    #Establish selection function for each bin, plot
+    bovy_plot.bovy_print()
+    if options.faint:
+        bovy_plot.bovy_plot([0.,0.],[0.,0.],
+                            xrange=[17.7,allsf.rmax+0.1],
+                            yrange=[0.,3.5],
+                            xlabel=r'$r_0\ [\mathrm{mag}]$',
+                            ylabel= r'$r\ \mathrm{dependence\ of\ selection\ function}$')
+    else:
+        bovy_plot.bovy_plot([0.,0.],[0.,0.],
+                            xrange=[allsf.rmin-0.1,17.9],
+                            yrange=[0.,3.5],
+                            xlabel=r'$r_0\ [\mathrm{mag}]$',
+                            ylabel= r'$r\ \mathrm{dependence\ of\ selection\ function}$')
+    for bb in range(nbins):
+        theseplates= []
+        for ii in range(len(allsf.plates)):
+            plate= allsf.plates[ii]
+            if not options.faint and 'faint' in allsf.platestr[ii].programname: continue
+            elif options.faint and not 'faint' in allsf.platestr[ii].programname: continue
+            #What SN bin is this plate in
+            kk= 0
+            while kk < nbins and allsf.platestr[ii].platesn_r > binedges[kk+1]:
+                kk+=1
+            if kk != bb: continue
+            theseplates.append(plate)
+        if options.faint:
+            sf= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                        plates=theseplates,
+                                        type_bright='constant',type_faint='r',
+                                        dr_faint=0.2)
+        else:
+            sf= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                        plates=theseplates,
+                                        type_bright='r',type_faint='constant',
+                                        dr_bright=0.2,robust_bright=True)
+        #Plot
+        sf.plot_s_one_r(theseplates[0],color=bincolors[bb],
+                        overplot=True)
+    #Legend
+    if options.faint:
+        xlegend, ylegend, dy= 19.1, 3.15, -.21
+    else:
+        xlegend, ylegend, dy= 16.15, 3.15, -.21
+    for ii in range(nbins-1):
+        bovy_plot.bovy_text(xlegend,ylegend+dy*ii,
+                            r'$%5.1f < \mathrm{plateSN\_r} \leq %5.1f$' %(binedges[ii], binedges[ii+1]),color=bincolors[ii])
+    ii= nbins-1
+    bovy_plot.bovy_text(xlegend,ylegend+dy*ii,
+                        r'$%5.1f < \mathrm{plateSN\_r}$' %binedges[ii],
+                        color=bincolors[ii])
+    bovy_plot.bovy_end_print(options.plotfile)
+
+
+def plot_snvsr(options,args):
+    """Plot the SN versus r for faint/bright plates and different samples"""
+    sf= segueSelect.segueSelect(sn=False,sample=options.sample,
+                                plates=None,select='all')
+    #if options.sample.lower() == 'g' and options.faint:
+    if options.faint:
+        binedges= segueSelect._BINEDGES_G_FAINT
+        nbins= len(binedges)-1
+        bincolors= ['%f' % (0.25 + 0.5/(nbins-1)*ii) for ii in range(nbins)]
+        bincolors= ['b','g','y','r','m'] #'c' at beginning
+    #elif options.sample.lower() == 'g' and not options.faint:
+    elif not options.faint:
+        binedges= segueSelect._BINEDGES_G_BRIGHT
+        nbins= len(binedges)-1
+        bincolors= ['%f' % (0.25 + 0.5/(nbins-1)*ii) for ii in range(nbins)]
+        bincolors= ['b','g','y','r','m'] #'c' at beginning
     #Plot all plates
     bovy_plot.bovy_print()
     if options.faint:
@@ -66,7 +145,7 @@ def plot_snvsr(options,args):
                             sf.spec[plotindx].sna,
                             color=bincolors[kk],marker=',',ls='none',
                             overplot=True)
-    bovy_plot.bovy_plot([sf.rmin-0.1,sf.rmax+0.1],[10.,10.],'k--',overplot=True)
+    bovy_plot.bovy_plot([sf.rmin-0.1,sf.rmax+0.1],[15.,15.],'k--',overplot=True)
     #Legend
     if options.faint:
         xlegend, ylegend, dy= 19.1, 45., -3.
