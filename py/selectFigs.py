@@ -51,9 +51,13 @@ def plot_soner_platesn(options,args):
     #Establish selection function for each bin, plot
     bovy_plot.bovy_print()
     if options.faint:
+        if options.sample.lower() == 'k':
+            yrange=[0.,2.5]
+        else:
+            yrange= [0.,3.5]
         bovy_plot.bovy_plot([0.,0.],[0.,0.],
                             xrange=[17.7,allsf.rmax+0.1],
-                            yrange=[0.,3.5],
+                            yrange=yrange,
                             xlabel=r'$r_0\ [\mathrm{mag}]$',
                             ylabel= r'$r\ \mathrm{dependence\ of\ selection\ function}$')
     else:
@@ -89,7 +93,7 @@ def plot_soner_platesn(options,args):
                         overplot=True)
     #Legend
     if options.faint:
-        xlegend, ylegend, dy= (allsf.rmax-1.2/(20.3-17.8)*(allsf.rmax+0.1-17.8)), 3.15,-.21
+        xlegend, ylegend, dy= (allsf.rmax-1.2/(20.3-17.8)*(allsf.rmax+0.1-17.8)), yrange[1]/3.5*3.15,-(yrange[1]/3.5*.21)
     else:
         xlegend, ylegend, dy= 16.15, 3.15, -.21
     for ii in range(nbins-1):
