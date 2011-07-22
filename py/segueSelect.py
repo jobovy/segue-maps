@@ -3,7 +3,7 @@ import sys
 import copy
 import math
 import numpy
-from scipy import special, interpolate, optimize, maxentropy
+from scipy import special, interpolate, optimize, maxentropy, stats
 import pyfits
 try:
     from galpy.util import bovy_plot
@@ -316,6 +316,119 @@ class segueSelect:
                 elif self.interp_type_faint.lower() == 'tanh':
                     return _sf_tanh(r,self.s_one_r_tanh_params_faint)\
                         *self.weight[str(plate)]
+
+    def check_consistency(self,plate):
+        """
+        NAME:
+           check_consistency
+        PURPOSE:
+           calculate the KS probability that this plate is consistent with 
+           being drawn from the underlying photometrix sample using our model
+           for the selection function
+        INPUT:
+           pate - plate number(s), 'all', 'bright', or 'faint'
+        OUTPUT:
+           KS probability or list/array of such numbers
+        HISTORY:
+           2011-07-21 - Written - Bovy@MPIA (NYU)
+        """
+        #Handle input
+        scalarOut= False
+        if isinstance(plate,str) and plate.lower() == 'all':
+            plate= self.plates
+        elif isinstance(plate,str) and plate.lower() == 'bright':
+            plate= self.plates[self.brightplateindx]
+        elif isinstance(plate,str) and plate.lower() == 'faint':
+            plate= self.plates[self.faintplateindx]
+        if isinstance(plate,(numpy.int16,int)): #Scalar input
+            plate= [plate]
+            scalarOut= True
+        out= []
+        for p in plate:
+            out.append(self._check_consistency_single(p))
+        if scalarOut: return out[0]
+        elif isinstance(plate,numpy.ndarray): return numpy.array(out)
+        else: return out
+
+    def _check_consistency_single(self,plate):
+        """check_consistency for a single plate"""
+        photr,specr,fn1,fn2= self._plate_rcdfs(plate)
+        if photr is None:
+            return -1
+        j1, j2, i= 0, 0, 0
+        id1= range(len(photr)+len(specr))
+        id2= range(len(photr)+len(specr))
+        while j1 < len(photr) and j2 < len(specr):
+            d1= photr[j1]
+            d2= specr[j2]
+            if d1 <= d2: j1+= 1
+            if d2 <= d1: j2+= 1
+            id1[i]= j1
+            id2[i]= j2
+            i+= 1
+        id1= id1[0:i-1]
+        id2= id2[0:i-1]
+        D= numpy.amax(numpy.fabs(fn1[id1]-fn2[id2]))
+        neff= len(photr)*len(specr)/float(len(photr)+len(specr))
+        return stats.ksone.sf(D,neff)
+
+    def _plate_rcdfs(self,plate):
+        #Load photometry and spectroscopy for this plate
+        thisplatephot= self.platephot[str(plate)]
+        thisplatespec= self.platespec[str(plate)]
+        #Cut to bright or faint part
+        if self.platebright[str(plate)]:
+            thisplatespec= thisplatespec[(thisplatespec.dered_r < 17.8)\
+                                             *(thisplatespec.dered_r > self.rmin)]
+        else:
+            thisplatespec= thisplatespec[(thisplatespec.dered_r < self.rmax)\
+                                             *(thisplatespec.dered_r > 17.8)]
+        if len(thisplatespec.dered_r) == 0: return (None,None,None,None)
+        #Calculate selection function weights for the photometry
+        w= numpy.zeros(len(thisplatephot.r))
+        for ii in range(len(w)):
+            w[ii]= self(plate,r=thisplatephot[ii].r)
+        #Calculate KS test statistic
+        sortindx_phot= numpy.argsort(thisplatephot.r)
+        sortindx_spec= numpy.argsort(thisplatespec.dered_r)
+        sortphot= thisplatephot[sortindx_phot]
+        sortspec= thisplatespec[sortindx_spec]
+        w= w[sortindx_phot]
+        fn1= numpy.cumsum(w)/numpy.sum(w)
+        fn2= numpy.ones(len(sortindx_spec))
+        fn2= numpy.cumsum(fn2)
+        fn2/= fn2[-1]
+        return (sortphot.r,sortspec.dered_r,fn1,fn2)
+
+    def plot_plate_rcdf(self,plate,overplot=False,xrange=None,yrange=None,
+                        photcolor='k',speccolor='r'):
+        """
+        NAME:
+           plot_plate_rcdf
+        PURPOSE:
+           plot the r-band magnitude CDF for the photometric sample * selection
+           function model and for the spectroscopic sample for a single plate
+        INPUT:
+           plate - plate to plot
+           overplot= of True, overplot
+           xrange=, yrange=
+           photcolor=, speccolor= color to use
+        OUTPUT:
+           plot
+        HISTORY:
+           2011-07-21 - Written - Bovy@MPIA (NYU)
+        """
+        photr,specr,fn1,fn2= self._plate_rcdfs(plate)
+        if photr is None:
+            print "Plate %i has no spectroscopic data ..." % plate
+            print "Returning ..."
+            return None           
+        if xrange is None: xrange= [nu.amin([nu.amin(photr),nu.amin(specr)])-0.1,
+                                    nu.amax([nu.amax(photr),nu.amax(specr)])+0.1]
+        if yrange is None: yrange= [0.,1.1]
+        bovy_plot.bovy_plot(photr,fn1,photcolor+'-',overplot=overplot)
+        bovy_plot.bovy_plot(specr,fn2,speccolor+'-',overplot=True)
+        return None
 
     def plot(self,x='r',y='sf',plate='a bright plate',overplot=False):
         """

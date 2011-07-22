@@ -12,12 +12,17 @@ all :$(OUTDIR)/platesn_r_snx_y.$(EXT) \
      $(OUTDIR)/soner_platesn_bright_g.$(EXT) \
      $(OUTDIR)/soner_platesn_faint_gprogram.$(EXT) \
      $(OUTDIR)/soner_platesn_bright_gprogram.$(EXT) \
+     $(OUTDIR)/ks_g.$(EXT) \
+     $(OUTDIR)/colormag_g.$(EXT) \
+     $(OUTDIR)/colormag_sn_g.$(EXT) \
      $(OUTDIR)/soner_k.$(EXT) \
      $(OUTDIR)/soner_kprogram.$(EXT) \
      $(OUTDIR)/soner_platesn_faint_k.$(EXT) \
      $(OUTDIR)/soner_platesn_bright_k.$(EXT) \
      $(OUTDIR)/soner_platesn_faint_kprogram.$(EXT) \
-     $(OUTDIR)/soner_platesn_bright_kprogram.$(EXT)
+     $(OUTDIR)/soner_platesn_bright_kprogram.$(EXT) \
+     $(OUTDIR)/colormag_k.$(EXT) \
+     $(OUTDIR)/colormag_sn_k.$(EXT)
 
 #####################################G STARS###################################
 $(OUTDIR)/platesn_r_snx_y.$(EXT): segueSelect.py selectFigs.py
@@ -42,6 +47,15 @@ $(OUTDIR)/soner_platesn_faint_gprogram.$(EXT): segueSelect.py selectFigs.py
 $(OUTDIR)/soner_platesn_bright_gprogram.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --program
 
+$(OUTDIR)/ks_g.$(EXT): selectFigs.py segueSelect.py
+	$(PYTHON) selectFigs.py -o $@ -t ks
+
+$(OUTDIR)/colormag_g.$(EXT): selectFigs.py segueSelect.py
+	$(PYTHON) selectFigs.py -o $@ -t colormag
+$(OUTDIR)/colormag_sn_g.$(EXT): selectFigs.py segueSelect.py
+	$(PYTHON) selectFigs.py -o $@ -t colormag --sn
+
+
 
 #####################################K STARS###################################
 $(OUTDIR)/snvsr_faint_k.$(EXT): segueSelect.py selectFigs.py
@@ -62,3 +76,9 @@ $(OUTDIR)/soner_platesn_faint_kprogram.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --faint --sample=k --program
 $(OUTDIR)/soner_platesn_bright_kprogram.$(EXT): segueSelect.py selectFigs.py
 	$(PYTHON) selectFigs.py -o $@ -t soner_platesn --sample=k --program
+
+$(OUTDIR)/colormag_k.$(EXT): selectFigs.py segueSelect.py
+	$(PYTHON) selectFigs.py -o $@ -t colormag --sample=k
+$(OUTDIR)/colormag_sn_k.$(EXT): selectFigs.py segueSelect.py
+	$(PYTHON) selectFigs.py -o $@ -t colormag --sn --sample=k
+

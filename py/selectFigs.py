@@ -14,6 +14,67 @@ def selectFigs(parser):
         plot_soner(options,args)
     elif options.type.lower() == 'soner_platesn':
         plot_soner_platesn(options,args)
+    elif options.type.lower() == 'ks':
+        plot_ks(options,args)
+    elif options.type.lower() == 'colormag':
+        plot_colormag(options,args)
+
+def plot_colormag(options,args):
+    """Plot the sample in color-magnitude space"""
+    if options.program: select= 'program'
+    else: select= 'all'
+    sf= segueSelect.segueSelect(sample=options.sample,
+                                type_bright='constant',
+                                type_faint='constant',select=select,
+                                sn=options.sn)
+    bins, specbins= 101, 31
+    bovy_plot.bovy_print()
+    sf.plotColorMag(spec=True,bins=bins,specbins=specbins)
+    bovy_plot.bovy_end_print(options.plotfile)    
+
+def plot_ks(options,args):
+    """Calculate and histogram the KS test for each plate"""
+    if options.program: select= 'program'
+    else: select= 'all'
+    plates= None #[2964,2965] #For testing
+    sfconst= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                     plates=plates,type_bright='constant',
+                                     type_faint='constant',select=select)
+    sfr= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                 plates=plates,type_bright='r',
+                                 type_faint='r',select=select,
+                                 dr_bright=0.05,dr_faint=0.2,
+                                 robust_bright=True)
+    ksconst_bright= sfconst.check_consistency('bright')
+    ksconst_faint= sfconst.check_consistency('faint')
+    ksr_bright= sfr.check_consistency('bright')
+    ksr_faint= sfr.check_consistency('faint')
+    #Plot
+    bins=21
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_hist(ksconst_bright,range=[0.,1.],bins=bins,
+                        xlabel=r'$\mathrm{KS\ probability\ that\ the\ spectroscopic\ sample}$'+'\n'+r'$\mathrm{was\ drawn\ from\ the\ photometric\ sample}$'+'\n'+r'$\times\ \mathrm{the\ model\ selection\ function}$',
+                        ylabel=r'$\mathrm{Number\ of\ plates}$',
+                        ec='r',ls='dashed',histtype='step')
+    bovy_plot.bovy_hist(ksr_bright,range=[0.,1.],bins=bins,overplot=True,
+                        ec='orange',ls='dashed',histtype='step')
+    bovy_plot.bovy_hist(ksconst_faint,range=[0.,1.],bins=bins,overplot=True,
+                        ec='r',ls='solid',histtype='step')
+    bovy_plot.bovy_hist(ksr_faint,range=[0.,1.],bins=bins,overplot=True,
+                        ec='orange',ls='solid',histtype='step')
+    xlegend, ylegend, dy= 0.55, 140., -10.
+    bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{constant}$',color='r')
+    bovy_plot.bovy_text(xlegend,ylegend+dy,r'$r\ \mathrm{dependent}$',color='orange')
+    bovy_plot.bovy_text(xlegend,ylegend+2.*dy,r'$\mathrm{plateSN\_r},r\ \mathrm{dependent}$',color='g')
+    xlegend, ylegend, dy= 0.55, 105., -10.
+    bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend,ylegend],'k--',
+                        overplot=True)
+    bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{bright}$')
+    bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend+dy,ylegend+dy],'k-',
+                        overplot=True)
+    bovy_plot.bovy_text(xlegend,ylegend+dy,r'$\mathrm{faint}$')
+    bovy_plot.bovy_end_print(options.plotfile)
+
 
 def plot_soner(options,args):
     """Plot the r dependence of the selection function"""
@@ -232,6 +293,9 @@ def get_options():
     parser.add_option("--program",action="store_true", dest="program",
                       default=False,
                       help="Just use program stars")
+    parser.add_option("--sn",action="store_true", dest="sn",
+                      default=False,
+                      help="Cut on S/N")
     return parser
 
 if __name__ == '__main__':
