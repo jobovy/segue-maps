@@ -210,7 +210,7 @@ class segueSelect:
                                    -self.platephot[str(plate)].field('r')) < 0.48)\
                                    *(self.platephot[str(plate)].field('r') < 20.)\
                                    *(self.platephot[str(plate)].field('r') > 14.5)
-                self.platephot[str(plate)]= self.platephot[str(plate)][indx]
+            self.platephot[str(plate)]= self.platephot[str(plate)][indx]
         #Now load the spectroscopic data
         self.select= select
         if _platespec is None:
