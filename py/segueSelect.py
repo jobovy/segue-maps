@@ -33,12 +33,12 @@ class segueSelect:
     """Class that contains selection function for SEGUE targets"""
     def __init__(self,sample='G',plates=None,
                  select='all',
-                 type_bright='constant',dr_bright=0.05,
+                 type_bright='constant',dr_bright=None,
                  interp_type_bright='tanh',
                  interp_degree_bright=_INTERPDEGREEBRIGHT,
                  robust_bright=True,
                  binedges_bright=_BINEDGES_G_BRIGHT,
-                 type_faint='r',dr_faint=0.2,
+                 type_faint='r',dr_faint=None,
                  interp_type_faint='tanh',
                  interp_degree_faint=_INTERPDEGREEFAINT,
                  robust_faint=True,
@@ -84,6 +84,23 @@ class segueSelect:
         HISTORY:
            2011-07-08 - Written - Bovy@MPIA (NYU)
         """
+        #Set options
+        if dr_bright is None:
+            if type_bright.lower() == 'r':
+                dr_bright= 0.05
+            elif type_bright.lower() == 'platesn_r':
+                if sample.lower() == 'k':
+                    dr_bright= 0.4
+                elif sample.lower() == 'g':
+                    dr_bright= 0.2
+        if dr_faint is None:
+            if type_faint.lower() == 'r':
+                dr_faint= 0.2
+            elif type_faint.lower() == 'platesn_r':
+                if sample.lower() == 'g':
+                    dr_faint= 0.2
+                elif sample.lower() == 'k':
+                    dr_faint= 0.5
         self.sample=sample.lower()
         #Load plates
         self.platestr= _load_fits(os.path.join(_SEGUESELECTDIR,
