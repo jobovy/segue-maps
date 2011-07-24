@@ -3,6 +3,7 @@ import math
 import numpy
 from optparse import OptionParser
 from galpy.util import bovy_plot
+from matplotlib import pyplot
 import segueSelect
 def selectFigs(parser):
     (options,args)= parser.parse_args()
@@ -36,7 +37,7 @@ def plot_ks(options,args):
     """Calculate and histogram the KS test for each plate"""
     if options.program: select= 'program'
     else: select= 'all'
-    plates= None #[2964,2965] #For testing
+    plates= None #'>2800' #For testing
     sfconst= segueSelect.segueSelect(sn=True,sample=options.sample,
                                      plates=plates,type_bright='constant',
                                      type_faint='constant',select=select)
@@ -45,23 +46,50 @@ def plot_ks(options,args):
                                  type_faint='r',select=select,
                                  dr_bright=0.05,dr_faint=0.2,
                                  robust_bright=True)
+    if options.sample.lower() == 'k' and options.program:
+        dr_bright= 0.4
+        dr_faint= 0.5
+    else:
+        dr_bright= 0.2
+        dr_faint= 0.2
+    sfplatesn_r= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                         plates=plates,type_bright='platesn_r',
+                                         type_faint='platesn_r',select=select,
+                                         dr_bright=dr_bright,
+                                         dr_faint=dr_faint,
+                                         robust_bright=True)
+    print "constant, bright"
     ksconst_bright= sfconst.check_consistency('bright')
+    print "constant, faint"
     ksconst_faint= sfconst.check_consistency('faint')
+    print "r, bright"
     ksr_bright= sfr.check_consistency('bright')
+    print "r, faint"
     ksr_faint= sfr.check_consistency('faint')
+    print "platesnr, bright"
+    ksplatesn_r_bright= sfplatesn_r.check_consistency('bright')
+    print "platesnr, faint"
+    ksplatesn_r_faint= sfplatesn_r.check_consistency('faint')
     #Plot
     bins=21
+    range= [(0.001-1./bins)/(1.+1./bins),1.]
     bovy_plot.bovy_print()
-    bovy_plot.bovy_hist(ksconst_bright,range=[0.,1.],bins=bins,
+    bovy_plot.bovy_hist(ksconst_bright,range=range,bins=bins,
                         xlabel=r'$\mathrm{KS\ probability\ that\ the\ spectroscopic\ sample}$'+'\n'+r'$\mathrm{was\ drawn\ from\ the\ photometric\ sample}$'+'\n'+r'$\times\ \mathrm{the\ model\ selection\ function}$',
                         ylabel=r'$\mathrm{Number\ of\ plates}$',
                         ec='r',ls='dashed',histtype='step')
-    bovy_plot.bovy_hist(ksr_bright,range=[0.,1.],bins=bins,overplot=True,
+    bovy_plot.bovy_hist(ksr_bright,range=range,bins=bins,overplot=True,
                         ec='orange',ls='dashed',histtype='step')
-    bovy_plot.bovy_hist(ksconst_faint,range=[0.,1.],bins=bins,overplot=True,
+    bovy_plot.bovy_hist(ksplatesn_r_bright,
+                        range=range,bins=bins,overplot=True,
+                        ec='g',ls='dashed',histtype='step')
+    bovy_plot.bovy_hist(ksconst_faint,range=range,bins=bins,overplot=True,
                         ec='r',ls='solid',histtype='step')
-    bovy_plot.bovy_hist(ksr_faint,range=[0.,1.],bins=bins,overplot=True,
+    bovy_plot.bovy_hist(ksr_faint,range=range,bins=bins,overplot=True,
                         ec='orange',ls='solid',histtype='step')
+    bovy_plot.bovy_hist(ksplatesn_r_faint,
+                        range=range,bins=bins,overplot=True,
+                        ec='g',ls='solid',histtype='step')
     xlegend, ylegend, dy= 0.55, 140., -10.
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{constant}$',color='r')
     bovy_plot.bovy_text(xlegend,ylegend+dy,r'$r\ \mathrm{dependent}$',color='orange')
@@ -126,7 +154,7 @@ def plot_soner_platesn(options,args):
         if options.sample.lower() == 'k':
             yrange=[0.,2.5]
         else:
-            yrange= [0.,3.5]
+            yrange= [0.,4.]
         bovy_plot.bovy_plot([0.,0.],[0.,0.],
                             xrange=[17.7,allsf.rmax+0.1],
                             yrange=yrange,

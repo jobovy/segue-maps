@@ -24,6 +24,8 @@ _BINEDGES_G_BRIGHT= [0.,75.,150.,300.,200000000.]
 _SEGUESELECTDIR=os.getenv('SEGUESELECTDIR')
 _GDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'gdwarfall_raw_nodups.fit')
 _GDWARFFILE= os.path.join(_SEGUESELECTDIR,'gdwarf_raw_nodups.fit')
+_FGSTARALLFILE= os.path.join(_SEGUESELECTDIR,'fgstarall_raw_nodups.fit')
+_FGSTARFILE= os.path.join(_SEGUESELECTDIR,'fgstar_raw_nodups.fit')
 _KDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'kdwarfall_raw_nodups.fit')
 _KDWARFFILE= os.path.join(_SEGUESELECTDIR,'kdwarf_raw_nodups.fit')
 _ERASESTR= "                                                                                "
@@ -35,19 +37,22 @@ class segueSelect:
                  interp_type_bright='tanh',
                  interp_degree_bright=_INTERPDEGREEBRIGHT,
                  robust_bright=True,
+                 binedges_bright=_BINEDGES_G_BRIGHT,
                  type_faint='r',dr_faint=0.2,
                  interp_type_faint='tanh',
                  interp_degree_faint=_INTERPDEGREEFAINT,
                  robust_faint=True,
+                 binedges_faint=_BINEDGES_G_FAINT,
                  ug=False,ri=False,sn=True,
-                 ebv=True):
+                 ebv=True,
+                 _platephot=None,_platespec=None,_spec=None):
         """
         NAME:
            __init__
         PURPOSE:
            load the selection function for this sample
         INPUT:
-           sample= sample to load ('FG', 'G', or 'K')
+           sample= sample to load ('FG', 'G', or 'K') BOVY: FG
            select= 'all' selects all SEGUE stars in the color-range; 
                    'program' only selects program stars
            plates= if set, only consider this plate, or list of plates,
@@ -58,6 +63,7 @@ class segueSelect:
               type_bright= type of selection function to determine 
                    'constant' for constant per plate; 
                    'r' universal function of r
+                   'plateSN_r' function of r for plates in ranges in plateSN_r
               dr_bright= when determining the selection function as a function 
                          of r, binsize to use
               interp_degree_bright= when spline-interpolating, degree to use
@@ -154,88 +160,109 @@ class segueSelect:
         self.nbrightplates= numpy.sum(self.brightplateindx)
         self.nfaintplates= numpy.sum(self.faintplateindx)
         #load the photometry for the SEGUE plates
-        self.platephot= {}
-        for ii in range(len(self.plates)):
-            plate= self.plates[ii]
-            sys.stdout.write('\r'+"Loading photometry for plate %i" % plate)
+        if _platephot is None:
+            self.platephot= {}
+            for ii in range(len(self.plates)):
+                plate= self.plates[ii]
+                sys.stdout.write('\r'+"Loading photometry for plate %i" % plate)
+                sys.stdout.flush()
+                platefile= os.path.join(_SEGUESELECTDIR,'segueplates',
+                                        '%i.fit' % plate)
+                self.platephot[str(plate)]= _load_fits(platefile)
+                #Split into bright and faint
+                if 'faint' in self.platestr[ii].programname:
+                    indx= (self.platephot[str(plate)].field('r') > 17.8)
+                    self.platephot[str(plate)]= self.platephot[str(plate)][indx]
+                else:
+                    indx= (self.platephot[str(plate)].field('r') < 17.8)
+                    self.platephot[str(plate)]= self.platephot[str(plate)][indx]
+            sys.stdout.write('\r'+_ERASESTR+'\r')
             sys.stdout.flush()
-            platefile= os.path.join(_SEGUESELECTDIR,'segueplates',
-                                    '%i.fit' % plate)
-            self.platephot[str(plate)]= _load_fits(platefile)
-            #Split into bright and faint
-            if 'faint' in self.platestr[ii].programname:
-                indx= (self.platephot[str(plate)].field('r') > 17.8)
-                self.platephot[str(plate)]= self.platephot[str(plate)][indx]
-            else:
-                indx= (self.platephot[str(plate)].field('r') < 17.8)
-                self.platephot[str(plate)]= self.platephot[str(plate)][indx]
-        sys.stdout.write('\r'+_ERASESTR+'\r')
-        sys.stdout.flush()
+        else:
+            self.platephot= _platephot
         #Flesh out samples
         for plate in self.plates:
             if self.sample == 'g':
                 self.rmin= 14.5
                 self.rmax= 20.2
                 indx= ((self.platephot[str(plate)].field('g')\
-                           -self.platephot[str(plate)].field('r')) < 0.55)\
-                           *((self.platephot[str(plate)].field('g')\
-                           -self.platephot[str(plate)].field('r')) > 0.48)\
-                           *(self.platephot[str(plate)].field('r') < 20.2)\
-                           *(self.platephot[str(plate)].field('r') > 14.5)
+                            -self.platephot[str(plate)].field('r')) < 0.55)\
+                            *((self.platephot[str(plate)].field('g')\
+                                   -self.platephot[str(plate)].field('r')) > 0.48)\
+                                   *(self.platephot[str(plate)].field('r') < 20.2)\
+                                   *(self.platephot[str(plate)].field('r') > 14.5)
             elif self.sample == 'k':
                 self.rmin= 14.5
                 self.rmax= 19.
                 indx= ((self.platephot[str(plate)].field('g')\
                             -self.platephot[str(plate)].field('r')) > 0.55)\
-                           *((self.platephot[str(plate)].field('g')\
-                           -self.platephot[str(plate)].field('r')) < 0.75)\
-                           *(self.platephot[str(plate)].field('r') < 19.)\
-                           *(self.platephot[str(plate)].field('r') > 14.5)
-            if self.sample == 'gk':
+                            *((self.platephot[str(plate)].field('g')\
+                                   -self.platephot[str(plate)].field('r')) < 0.75)\
+                                   *(self.platephot[str(plate)].field('r') < 19.)\
+                                   *(self.platephot[str(plate)].field('r') > 14.5)
+                self.platephot[str(plate)]= self.platephot[str(plate)][indx]
+            elif self.sample == 'fg':
+                self.rmin= 14.5
+                self.rmax= 20.
                 indx= ((self.platephot[str(plate)].field('g')\
-                           -self.platephot[str(plate)].field('r')) < 0.75)\
-                           *((self.platephot[str(plate)].field('g')\
-                           -self.platephot[str(plate)].field('r')) > 0.48)\
-                           *(self.platephot[str(plate)].field('r') < 20.2)\
-                           *(self.platephot[str(plate)].field('r') > 14.5)
-            self.platephot[str(plate)]= self.platephot[str(plate)][indx]
+                            -self.platephot[str(plate)].field('r')) > 0.2)\
+                            *((self.platephot[str(plate)].field('g')\
+                                   -self.platephot[str(plate)].field('r')) < 0.48)\
+                                   *(self.platephot[str(plate)].field('r') < 20.)\
+                                   *(self.platephot[str(plate)].field('r') > 14.5)
+                self.platephot[str(plate)]= self.platephot[str(plate)][indx]
         #Now load the spectroscopic data
-        sys.stdout.write('\r'+"Reading and parsing spectroscopic data ...\r")
-        sys.stdout.flush()
-        if sample.lower() == 'g':
-            if select.lower() == 'all':
-                self.spec= read_gdwarfs(ug=ug,ri=ri,sn=sn,
-                                        ebv=ebv,nocoords=True)
-            elif select.lower() == 'program':
-                self.spec= read_gdwarfs(file=_GDWARFFILE,
-                                        ug=ug,ri=ri,sn=sn,
-                                        ebv=ebv,nocoords=True)
-        elif sample.lower() == 'k':
-            if select.lower() == 'all':
-                self.spec= read_kdwarfs(ug=ug,ri=ri,sn=sn,
-                                        ebv=ebv,nocoords=True)
-            elif select.lower() == 'program':
-                self.spec= read_kdwarfs(file=_KDWARFFILE,
-                                        ug=ug,ri=ri,sn=sn,
-                                        ebv=ebv,nocoords=True)
-        self.platespec= {}
-        for plate in self.plates:
-            #Find spectra for each plate
-            indx= (self.spec.field('plate') == plate)
-            self.platespec[str(plate)]= self.spec[indx]
-        sys.stdout.write('\r'+_ERASESTR+'\r')
-        sys.stdout.flush()
+        self.select= select
+        if _platespec is None:
+            sys.stdout.write('\r'+"Reading and parsing spectroscopic data ...\r")
+            sys.stdout.flush()
+            if sample.lower() == 'g':
+                if select.lower() == 'all':
+                    self.spec= read_gdwarfs(ug=ug,ri=ri,sn=sn,
+                                            ebv=ebv,nocoords=True)
+                elif select.lower() == 'program':
+                    self.spec= read_gdwarfs(file=_GDWARFFILE,
+                                            ug=ug,ri=ri,sn=sn,
+                                            ebv=ebv,nocoords=True)
+            elif sample.lower() == 'k':
+                if select.lower() == 'all':
+                    self.spec= read_kdwarfs(ug=ug,ri=ri,sn=sn,
+                                            ebv=ebv,nocoords=True)
+                elif select.lower() == 'program':
+                    self.spec= read_kdwarfs(file=_KDWARFFILE,
+                                            ug=ug,ri=ri,sn=sn,
+                                            ebv=ebv,nocoords=True)
+            elif sample.lower() == 'fg':
+                if select.lower() == 'all':
+                    self.spec= read_fgstars(ug=ug,ri=ri,sn=sn,
+                                            ebv=ebv,nocoords=True)
+                elif select.lower() == 'program':
+                    self.spec= read_fgstars(file=_FGSTARFILE,
+                                            ug=ug,ri=ri,sn=sn,
+                                            ebv=ebv,nocoords=True)
+            self.platespec= {}
+            for plate in self.plates:
+                #Find spectra for each plate
+                indx= (self.spec.field('plate') == plate)
+                self.platespec[str(plate)]= self.spec[indx]
+            sys.stdout.write('\r'+_ERASESTR+'\r')
+            sys.stdout.flush()
+        else:
+            self.platespec= _platespec
+            self.spec= _spec
         #Determine selection function
         sys.stdout.write('\r'+"Determining selection function ...\r")
         sys.stdout.flush()
         self._determine_select(bright=True,type=type_bright,dr=dr_bright,
                                interp_degree=interp_degree_bright,
                                interp_type= interp_type_bright,
-                               robust=robust_bright)
+                               robust=robust_bright,
+                               binedges=binedges_bright)
         self._determine_select(bright=False,type=type_faint,dr=dr_faint,
                                interp_degree=interp_degree_faint,
                                interp_type=interp_type_faint,
-                               robust=robust_faint)
+                               robust=robust_faint,
+                               binedges=binedges_faint)
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         return None
@@ -296,6 +323,8 @@ class segueSelect:
                 elif self.interp_type_bright.lower() == 'tanh':
                     return _sf_tanh(r,self.s_one_r_tanh_params_bright)\
                         *self.weight[str(plate)] 
+            elif self.type_bright.lower() == 'platesn_r':
+                return self.platesn_sfs_bright[self.platesn_platebin_dict_bright[str(plate)]](plate,r=r)
         else:
             if r < 17.8 or r > self.rmax: return 0.
             elif self.type_faint.lower() == 'constant':
@@ -316,6 +345,8 @@ class segueSelect:
                 elif self.interp_type_faint.lower() == 'tanh':
                     return _sf_tanh(r,self.s_one_r_tanh_params_faint)\
                         *self.weight[str(plate)]
+            elif self.type_faint.lower() == 'platesn_r':
+                return self.platesn_sfs_faint[self.platesn_platebin_dict_faint[str(plate)]](plate,r=r)
 
     def check_consistency(self,plate):
         """
@@ -664,7 +695,8 @@ class segueSelect:
     def _determine_select(self,bright=True,type=None,dr=None,
                           interp_degree=_INTERPDEGREEBRIGHT,
                           interp_type='tanh',
-                          robust=False):
+                          robust=False,
+                          binedges=None):
         """Function that actually determines the selection function"""
         if bright:
             self.type_bright= type
@@ -672,6 +704,55 @@ class segueSelect:
         else:
             self.type_faint= type
             plateindx= self.faintplateindx
+        if type.lower() == 'platesn_r': #plateSN_r dependent r selection
+            #Divide up plates in bins
+            nbins= len(binedges)-1
+            plate_in_bins= [[] for ii in range(nbins)]
+            platebin_dict= {}
+            theseplates= self.plates[plateindx]
+            thisplatestr= self.platestr[plateindx]
+            for ii in range(len(theseplates)):
+                kk= 0
+                while kk < nbins \
+                        and thisplatestr[ii].platesn_r > binedges[kk+1]:
+                    kk+=1
+                plate_in_bins[kk].append(theseplates[ii])
+                #Also create dictionary with bin for each plate
+                platebin_dict[str(theseplates[ii])]= kk              
+            #For each set of plates, instantiate new selection object
+            platesn_sfs= []
+            for kk in range(nbins):
+                if bright:
+                    type_faint= 'constant'
+                    type_bright= 'r'
+                else:
+                    type_faint= 'r'
+                    type_bright= 'constant'
+                platesn_sfs.append(segueSelect(sample=self.sample,
+                                               plates=plate_in_bins[kk],
+                                               select=self.select,
+                                               type_bright=type_bright,
+                                               dr_bright=dr,
+                                               interp_type_bright='tanh',
+                                               interp_degree_bright=interp_degree,
+                                               robust_bright=robust,
+                                               type_faint=type_faint,
+                                               dr_faint=dr,
+                                               interp_type_faint='tanh',
+                                               interp_degree_faint=interp_degree,
+                                               robust_faint=robust,
+                                               _platephot=copy.copy(self.platephot),
+                                               _platespec=copy.copy(self.platespec)
+                                               ,_spec=copy.copy(self.spec)))
+            if bright:
+                self.platesn_plate_in_bins_bright= plate_in_bins
+                self.platesn_platebin_dict_bright= platebin_dict
+                self.platesn_sfs_bright= platesn_sfs
+            else:
+                self.platesn_plate_in_bins_faint= plate_in_bins
+                self.platesn_sfs_faint= platesn_sfs
+                self.platesn_platebin_dict_faint= platebin_dict
+            return None #Done here!
         #First determine the total weight for each plate
         if not hasattr(self,'weight'): self.weight= {}
         for ii in range(len(self.plates)):
@@ -992,6 +1073,62 @@ def read_kdwarfs(file=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
             *((raw.field('dered_u')-raw.field('dered_g')) > .6)
         raw= raw[indx]
     if ri: #BOVY: UPDATE FOR K
+        indx= ((raw.field('dered_r')-raw.field('dered_i')) < .4)\
+            *((raw.field('dered_r')-raw.field('dered_i')) > -.1)
+        raw= raw[indx]
+    if sn:
+        indx= (raw.field('sna') > 15.)
+        raw= raw[indx]
+    if ebv:
+        indx= (raw.field('ebv') < .3)
+        raw= raw[indx]
+    if nocoords: return raw
+    #BOVY: distances
+    raw= _add_distances(raw)
+    #velocities
+    raw= _add_velocities(raw)
+    return raw
+
+def read_fgstars(file=_FGSTARALLFILE,logg=False,ug=False,ri=False,sn=True,
+                 ebv=False,nocoords=False):
+    """
+    NAME:
+       read_fgstars
+    PURPOSE:
+       read the spectroscopic F/G star sample
+    INPUT:
+       logg= if True, cut on logg
+       ug= if True, cut on u-g
+       ri= if True, cut on r-i
+       sn= if False, don't cut on SN
+       ebv= if True, cut on E(B-V)
+       nocoords= if True, don't calculate distances or transform coordinates
+    OUTPUT:
+       cut data, returns numpy.recarray
+    HISTORY:
+       2011-07-23 - Written - Bovy@MPIA (NYU)
+    """
+    raw= _load_fits(file)
+    #First cut on r
+    indx= (raw.field('dered_r') < 20.)*(raw.field('dered_r') > 14.5)
+    raw= raw[indx]
+    #Then cut on g-r
+    indx= ((raw.field('dered_g')-raw.field('dered_r')) < 0.48)\
+        *((raw.field('dered_g')-raw.field('dered_r')) > .2)
+    raw= raw[indx]
+    #Cut on velocity errs
+    indx= (raw.field('pmra_err') > 0.)*(raw.field('pmdec_err') > 0.)\
+        *(raw.field('vr_err') > 0.)
+    raw= raw[indx]
+    #Cut on logg?
+    if logg:
+        indx= (raw.field('logga') > 3.75)
+        raw= raw[indx]
+    if ug: #BOVY UPDATE FOR F/G
+        indx= ((raw.field('dered_u')-raw.field('dered_g')) < 2.)\
+            *((raw.field('dered_u')-raw.field('dered_g')) > .6)
+        raw= raw[indx]
+    if ri: #BOVY: UPDATE FOR F/G
         indx= ((raw.field('dered_r')-raw.field('dered_i')) < .4)\
             *((raw.field('dered_r')-raw.field('dered_i')) > -.1)
         raw= raw[indx]
