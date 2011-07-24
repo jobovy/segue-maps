@@ -69,7 +69,8 @@ def fitDensz(parser):
         plates= None
     else:
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
-    sf= segueSelect(plates=plates,type_faint=options.sel,sample=options.sample)
+    sf= segueSelect(plates=plates,type_faint=options.sel_faint,
+                    sample=options.sample,type_bright=options.sel_bright)
     if options.fake:
         plates= sf.plates
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
@@ -103,7 +104,8 @@ def fitDensz(parser):
         cov_vxvyvz= cov_vxvyvz[dataindx,:]
         #Reload selection function
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
-        sf= segueSelect(plates=plates,type_faint=options.sel)
+        sf= segueSelect(plates=plates,type_faint=options.sel_faint,
+                        type_bright=options.type_bright,sample=options.sample)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
         indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -569,8 +571,10 @@ def get_options():
                       help="Use 'G' or 'K' dwarf sample")
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
-    parser.add_option("--sel",dest='sel',default='r',
-                      help="Selection function to use ('constant', 'r')")
+    parser.add_option("--sel_bright",dest='sel_bright',default='constant',
+                      help="Selection function to use ('constant', 'r', 'platesn_r')")
+    parser.add_option("--sel_faint",dest='sel_faint',default='platesn_r',
+                      help="Selection function to use ('constant', 'r', 'platesn_r')")
     parser.add_option("-n","--nsamples",dest='nsamples',type='int',
                       default=100,
                       help="Number of MCMC samples to use")
