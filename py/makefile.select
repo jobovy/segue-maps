@@ -2,10 +2,10 @@ EXT=png
 OUTDIR=../figs
 
 all :$(OUTDIR)/platesn_r_snx_y.$(EXT) \
-     $(OUTDIR)/snvsr_faint_g.$(EXT) \
+    g k
+
+g :$(OUTDIR)/snvsr_faint_g.$(EXT) \
      $(OUTDIR)/snvsr_bright_g.$(EXT) \
-     $(OUTDIR)/snvsr_faint_k.$(EXT) \
-     $(OUTDIR)/snvsr_bright_k.$(EXT) \
      $(OUTDIR)/soner_g.$(EXT) \
      $(OUTDIR)/soner_gprogram.$(EXT) \
      $(OUTDIR)/soner_platesn_faint_g.$(EXT) \
@@ -13,16 +13,22 @@ all :$(OUTDIR)/platesn_r_snx_y.$(EXT) \
      $(OUTDIR)/soner_platesn_faint_gprogram.$(EXT) \
      $(OUTDIR)/soner_platesn_bright_gprogram.$(EXT) \
      $(OUTDIR)/ks_g.$(EXT) \
+     $(OUTDIR)/ks_gprogram.$(EXT) \
      $(OUTDIR)/colormag_g.$(EXT) \
-     $(OUTDIR)/colormag_sn_g.$(EXT) \
-     $(OUTDIR)/soner_k.$(EXT) \
+     $(OUTDIR)/colormag_sn_g.$(EXT)
+
+k :$(OUTDIR)/soner_k.$(EXT) \
+     $(OUTDIR)/snvsr_faint_k.$(EXT) \
+     $(OUTDIR)/snvsr_bright_k.$(EXT) \
      $(OUTDIR)/soner_kprogram.$(EXT) \
      $(OUTDIR)/soner_platesn_faint_k.$(EXT) \
      $(OUTDIR)/soner_platesn_bright_k.$(EXT) \
      $(OUTDIR)/soner_platesn_faint_kprogram.$(EXT) \
      $(OUTDIR)/soner_platesn_bright_kprogram.$(EXT) \
      $(OUTDIR)/colormag_k.$(EXT) \
-     $(OUTDIR)/colormag_sn_k.$(EXT)
+     $(OUTDIR)/colormag_sn_k.$(EXT) \
+     $(OUTDIR)/ks_k.$(EXT) \
+     $(OUTDIR)/ks_kprogram.$(EXT)
 
 #####################################G STARS###################################
 $(OUTDIR)/platesn_r_snx_y.$(EXT): segueSelect.py selectFigs.py
@@ -49,6 +55,8 @@ $(OUTDIR)/soner_platesn_bright_gprogram.$(EXT): segueSelect.py selectFigs.py
 
 $(OUTDIR)/ks_g.$(EXT): selectFigs.py segueSelect.py
 	$(PYTHON) selectFigs.py -o $@ -t ks
+$(OUTDIR)/ks_gprogram.$(EXT): selectFigs.py segueSelect.py
+	$(PYTHON) selectFigs.py -o $@ -t ks --program
 
 $(OUTDIR)/colormag_g.$(EXT): selectFigs.py segueSelect.py
 	$(PYTHON) selectFigs.py -o $@ -t colormag
@@ -82,3 +90,7 @@ $(OUTDIR)/colormag_k.$(EXT): selectFigs.py segueSelect.py
 $(OUTDIR)/colormag_sn_k.$(EXT): selectFigs.py segueSelect.py
 	$(PYTHON) selectFigs.py -o $@ -t colormag --sn --sample=k
 
+$(OUTDIR)/ks_k.$(EXT): selectFigs.py segueSelect.py
+	$(PYTHON) selectFigs.py -o $@ -t ks --sample=k
+$(OUTDIR)/ks_kprogram.$(EXT): selectFigs.py segueSelect.py
+	$(PYTHON) selectFigs.py -o $@ -t ks --program --sample=k
