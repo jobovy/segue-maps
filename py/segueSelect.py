@@ -200,7 +200,6 @@ class segueSelect:
                                    -self.platephot[str(plate)].field('r')) < 0.75)\
                                    *(self.platephot[str(plate)].field('r') < 19.)\
                                    *(self.platephot[str(plate)].field('r') > 14.5)
-                self.platephot[str(plate)]= self.platephot[str(plate)][indx]
             elif self.sample == 'fg':
                 self.rmin= 14.5
                 self.rmax= 20.
