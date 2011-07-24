@@ -316,9 +316,17 @@ class segueSelect:
                 return self.weight[str(plate)]
             elif self.type_bright.lower() == 'r':
                 if self.interp_type_bright.lower() == 'spline':
-                    soner= interpolate.splev(r,self.s_one_r_bright_interpolate)
-                    if soner < 0.: return 0.
-                    else: return self.weight[str(plate)]*soner
+                    if r < self.s_one_r_bright_minxo:
+                        return numpy.exp(_linear_func(r,
+                                                      self.s_one_r_bright_minderiv,
+                                                      self.s_one_r_bright_minxo,
+                                                      self.s_one_r_bright_minyo))\
+                                                      *self.weight[str(plate)]
+                    else:
+                        soner= numpy.exp(\
+                            interpolate.splev(r,self.s_one_r_bright_interpolate))
+                        if soner < 0.: return 0.
+                        else: return self.weight[str(plate)]*soner
                 elif self.interp_type_bright.lower() == 'tanh':
                     return _sf_tanh(r,self.s_one_r_tanh_params_bright)\
                         *self.weight[str(plate)] 
@@ -861,16 +869,25 @@ class segueSelect:
             if bright: self.interp_type_bright= interp_type
             else: self.interp_type_faint= interp_type
             if bright:
-                w= numpy.zeros(len(self.s_one_r_bright))+0.0001
-                w[(self.s_one_r_err_bright > 0.)]= \
-                    1./self.s_one_r_err_bright[(self.s_one_r_err_bright > 0.)]
+                w= numpy.zeros(len(self.s_one_r_bright))+10000.
+                yfunc= numpy.zeros(len(w))-20.
+                nonzero= (self.s_one_r_bright > 0.)
+                w[nonzero]= \
+                    self.s_one_r_bright[nonzero]/self.s_one_r_err_bright[nonzero]
+                yfunc[nonzero]= numpy.log(self.s_one_r_bright[nonzero])
                 self.interp_rs_bright= \
                     numpy.linspace(self.rmin+1.*dr/2.,17.8-1.*dr/2.,nrbins)
                 if interp_type.lower() == 'spline':
-                   #Spline interpolate
                     self.s_one_r_bright_interpolate= interpolate.splrep(\
-                        self.interp_rs_bright,self.s_one_r_bright,
+                        self.interp_rs_bright,yfunc,
                         k=interp_degree,w=w)
+                    #Continue along the derivative for out of bounds
+                    minderiv= interpolate.splev(self.interp_rs_bright[0],
+                                                self.s_one_r_bright_interpolate,
+                                                der=1)
+                    self.s_one_r_bright_minderiv= minderiv
+                    self.s_one_r_bright_minxo= self.interp_rs_bright[0]
+                    self.s_one_r_bright_minyo= yfunc[0]
                 elif interp_type.lower() == 'tanh':
                     #Fit a tanh to s_1(r)
                     params= numpy.array([17.7,numpy.log(0.1),
