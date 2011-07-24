@@ -567,6 +567,11 @@ class segueSelect:
         bovy_plot.bovy_plot(xs,ys,color+'-',xrange=xrange,yrange=yrange,
                             xlabel=xlabel,ylabel=ylabel,
                             overplot=overplot)
+        pindx= (self.plates == plate)
+        if (self.brightplateindx[pindx][0] \
+                and self.type_bright.lower() != 'r')\
+                or (self.faintplateindx[pindx][0] \
+                        and self.type_faint.lower() != 'r'): return
         #Also plot data
         from matplotlib.pyplot import errorbar
         if self.platebright[str(plate)]:
