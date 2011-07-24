@@ -188,7 +188,7 @@ class segueSelect:
                 self.platephot[str(plate)]= _load_fits(platefile)
                 #Split into bright and faint
                 if 'faint' in self.platestr[ii].programname:
-                    indx= (self.platephot[str(plate)].field('r') > 17.8)
+                    indx= (self.platephot[str(plate)].field('r') >= 17.8)
                     self.platephot[str(plate)]= self.platephot[str(plate)][indx]
                 else:
                     indx= (self.platephot[str(plate)].field('r') < 17.8)
@@ -328,7 +328,7 @@ class segueSelect:
         #First determine whether this is a bright or a faint plate
         bright= self.platebright[str(plate)] #Short-cut
         if bright:
-            if r > 17.8 or r < self.rmin: return 0.
+            if r >= 17.8 or r < self.rmin: return 0.
             elif self.type_bright.lower() == 'constant':
                 return self.weight[str(plate)]
             elif self.type_bright.lower() == 'r':
@@ -437,7 +437,7 @@ class segueSelect:
                                              *(thisplatespec.dered_r > self.rmin)]
         else:
             thisplatespec= thisplatespec[(thisplatespec.dered_r < self.rmax)\
-                                             *(thisplatespec.dered_r > 17.8)]
+                                             *(thisplatespec.dered_r >= 17.8)]
         if len(thisplatespec.dered_r) == 0: return (None,None,None,None)
         #Calculate selection function weights for the photometry
         w= numpy.zeros(len(thisplatephot.r))
@@ -1282,3 +1282,29 @@ def _gi_gr(gr):
     BOVY: JUST USES LINEAR APPROXIMATION VALID FOR < M0"""
     ri= (gr-0.07)/2.34
     return gr+ri
+
+
+############################CLEAN UP PHOTOMETRY################################
+def _cleanup_photometry():
+    #Load plates
+    platestr= _load_fits(os.path.join(_SEGUESELECTDIR,
+                                      'segueplates.fits'))
+    plates= list(platestr.plate)
+    for ii in range(len(plates)):
+        plate= plates[ii]
+        platefile= os.path.join(_SEGUESELECTDIR,'segueplates',
+                                '%i.fit' % plate)
+        try:
+            platephot= _load_fits(platefile)
+        except AttributeError:
+            continue
+        #Split into bright and faint
+        if 'faint' in platestr[ii].programname:
+            indx= (platephot.field('r') >= 17.8)
+            platephot= platephot[indx]
+        else:
+            indx= (platephot.field('r') < 17.8)
+            platephot= platephot[indx]
+        #Save
+        pyfits.writeto(platefile,platephot,clobber=True)
+    
