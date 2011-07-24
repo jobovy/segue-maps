@@ -29,7 +29,9 @@ def fakeDensData(parser):
         densfunc= _TwoVerticalDensity
         params= numpy.log(numpy.array([0.3,0.8,2.5,1.05]))
     #Load selection function
-    sf= segueSelect.segueSelect(type=options.sel,sample=options.sample)
+    sf= segueSelect.segueSelect(type_bright=options.sel_bright,
+                                type_faint=options.sel_faint,
+                                sample=options.sample)
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                      degree=True)
     if options.sample.lower() == 'g':
@@ -42,23 +44,26 @@ def fakeDensData(parser):
     colordist= _const_colordist
     #Calculate the r-distribution for each plate
     nrs= 1001
+    ngr= 11
     rs= numpy.linspace(rmin,rmax,nrs)
-    rdists= numpy.zeros((len(sf.plates),nrs))
+    rdists= numpy.zeros((len(sf.plates),nrs,ngr))
     for ii in range(len(sf.plates)):
-        rdists[ii,:]= _predict_rdist_plate(rs,densfunc,params,rmin,rmax,
-                                           platelb[ii,0],platelb[ii,1],
-                                           grmin,grmax,
-                                           feh,colordist,sf,sf.plates[ii])
+        rdists[ii,:,:]= _predict_rdist_plate(rs,densfunc,params,rmin,rmax,
+                                             platelb[ii,0],platelb[ii,1],
+                                             grmin,grmax,
+                                             feh,colordist,sf,sf.plates[ii],
+                                             dontmarginalizecolor=True)
         if 'faint' in sf.platestr[ii].programname:
-            rdists[ii,(rs < 17.8)]= 0.
+            rdists[ii,(rs < 17.8),:]= 0.
         elif not 'faint' in sf.platestr[ii].programname:
-            rdists[ii,(rs > 17.8)]= 0.
-    numbers= numpy.sum(rdists,axis=1)
+            rdists[ii,(rs > 17.8),:]= 0.
+    numbers= numpy.sum(rdists,axis=2)
+    numbers= numpy.sum(numbers,axis=1)
     numbers= numpy.cumsum(numbers)
     numbers/= numbers[-1]
     rdists= numpy.cumsum(rdists,axis=1)
     for ii in range(len(sf.plates)):
-        rdists[ii,:]/= rdists[ii,-1]
+        rdists[ii,:,:]/= rdists[ii,-1,:]
     #Now sample until we're done
     out= []
     while len(out) < options.nsamples:
@@ -67,9 +72,11 @@ def fakeDensData(parser):
         kk= 0
         while numbers[kk] < ran: kk+= 1
         #plate==kk, now sample from the rdist of this plate
+        #first sample a color, assuming constant
+        gr=  int(numpy.floor(numpy.random.uniform()*ngr))
         ran= numpy.random.uniform()
         jj= 0
-        while rdists[kk,jj] < ran: jj+= 1
+        while rdists[kk,jj,gr] < ran: jj+= 1
         #r=jj
         out.append([rs[jj],platelb[kk,0],platelb[kk,1]])
     #Save as pickle
@@ -86,10 +93,12 @@ def get_options():
                       help="Use 'G' or 'K' dwarf sample")
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
-    parser.add_option("--sel",dest='sel',default='r',
-                      help="Selection function to use ('constant', 'r')")
+    parser.add_option("--sel_bright",dest='sel_bright',default='constant',
+                      help="Selection function to use ('constant', 'r', 'platesn_r')")
+    parser.add_option("--sel_faint",dest='sel_faint',default='r',
+                      help="Selection function to use ('constant', 'r', 'platesn_r')")
     parser.add_option("-n","--nsamples",dest='nsamples',type='int',
-                      default=10000,
+                      default=5000,
                       help="Number of fake data points to return")
     return parser
 

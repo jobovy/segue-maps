@@ -362,12 +362,15 @@ def _predict_rdist(rs,densfunc,params,rmin,rmax,platelb,grmin,grmax,
     return out
 
 def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
-                         feh,colordist,sf,plate):
+                         feh,colordist,sf,plate,dontmarginalizecolor=False):
     """Predict the r distribution for a plate"""
     #BOVY: APPROXIMATELY INTEGRATE OVER GR
     ngr= 11
     grs= numpy.linspace(grmin,grmax,ngr)
-    out= numpy.zeros(len(rs))
+    if dontmarginalizecolor:
+        out= numpy.zeros((len(rs),ngr))
+    else:
+        out= numpy.zeros(len(rs))
     norm= 0.
     for jj in range(ngr):
        #Calculate distances
@@ -379,11 +382,20 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
         XYZ= XYZ.astype(numpy.float64)
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
         XYZ[:,2]+= _ZSUN
-        out+= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])
+        if dontmarginalizecolor:
+            out[:,jj]= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])
+        else:
+            out+= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])
         norm+= colordist(grs[jj])
     select= sf(numpy.array([plate for jj in range(len(rs))]),r=rs)
-    out*= select
-    out/= norm
-    out[(rs < rmin)]= 0.
-    out[(rs > rmax)]= 0.
+    if dontmarginalizecolor:
+        for jj in range(ngr):
+            out[:,jj]*= select
+            out[(rs < rmin),jj]= 0.
+            out[(rs > rmax),jj]= 0.
+    else:
+        out*= select
+        out/= norm
+        out[(rs < rmin)]= 0.
+        out[(rs > rmax)]= 0.
     return out
