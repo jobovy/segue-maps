@@ -78,7 +78,7 @@ $(OUTDIR)/HWR_rich_fakedblexp_g_rfunc.$(EXT): fitDensz.py Makefile \
 $(OUTDIR)/Flare_rich_fakedblexp_g_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py \
 	segueSelect.py
-	$(PYTHON) fitDensz.py HWR_dens_rich_fakedblexp_g.sav -o $@ \
+	$(PYTHON) fitDensz.py Flare_dens_rich_fakedblexp_g.sav -o $@ \
 	-n 100 --plotrfunc --sel=r --fake -i fakeThinDblExp.sav \
 	--model=flare \
 	--xlabel='r_0\ [\mathrm{mag}]' \
