@@ -78,7 +78,7 @@ def fakeDensData(parser):
         jj= 0
         while rdists[kk,jj,gr] < ran: jj+= 1
         #r=jj
-        out.append([rs[jj],platelb[kk,0],platelb[kk,1]])
+        out.append([rs[jj],gr,platelb[kk,0],platelb[kk,1]])
     #Save as pickle
     savefile= open(args[0],'wb')
     pickle.dump(out,savefile)

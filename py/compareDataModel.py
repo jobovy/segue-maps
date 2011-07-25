@@ -92,7 +92,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
             ndimage.filters.gaussian_filter1d(rdist,convolve/(rs[1]-rs[0]),
                                               output=rdist)
         if xrange is None:
-            xrange= [numpy.amin(rs)-0.2,numpy.amax(rs)+0.45]
+            xrange= [numpy.amin(rs)-0.2,numpy.amax(rs)+0.6]
         if yrange is None:
             yrange= [0.,1.6*numpy.amax(rdist)]
         bovy_plot.bovy_plot(rs,rdist,ls=ls,color=color,

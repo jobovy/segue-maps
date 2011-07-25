@@ -50,11 +50,9 @@ def fitDensz(parser):
         #Calculate distance based on random g-r
         ds, ls, bs= [], [], []
         for ii in range(len(fakedata)):
-            if options.sample.lower() == 'g':
-                gr= numpy.random.uniform()*0.07+0.48
-            ds.append(_ivezic_dist(gr,fakedata[ii][0],feh))
-            ls.append(fakedata[ii][1])
-            bs.append(fakedata[ii][2])
+            ds.append(_ivezic_dist(fakedata[ii][1],fakedata[ii][0],feh))
+            ls.append(fakedata[ii][2])
+            bs.append(fakedata[ii][3])
         ds= numpy.array(ds)
         ls= numpy.array(ls)
         bs= numpy.array(bs)

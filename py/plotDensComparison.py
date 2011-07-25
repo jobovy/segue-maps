@@ -31,9 +31,11 @@ def compareGRichRdist(options,args):
         bovy_plot.bovy_print()
         compareDataModel.comparerdistPlate(model1,params1,sf,_const_colordist,
                                            data,plate,color='k',
+                                           rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
                                            bins=bins,ls='-')
         compareDataModel.comparerdistPlate(model2,params2,sf,_const_colordist,
                                            data,plate,color='k',bins=bins,
+                                           rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
                                            overplot=True,ls='--')
         bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_rich_l%i_b%i_bright.ps' % (ls[ii],bs[ii])))
         #Faint
@@ -43,9 +45,11 @@ def compareGRichRdist(options,args):
         bovy_plot.bovy_print()
         compareDataModel.comparerdistPlate(model1,params1,sf,_const_colordist,
                                            data,plate,color='k',
+                                           rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
                                            bins=bins,ls='-')
         compareDataModel.comparerdistPlate(model2,params2,sf,_const_colordist,
                                            data,plate,color='k',bins=bins,
+                                           rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
                                            overplot=True,ls='--')
         bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_rich_l%i_b%i_faint.ps' % (ls[ii],bs[ii])))
     return None
