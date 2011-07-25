@@ -23,7 +23,7 @@ $(OUTDIR)/HWR_rich_g_zfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.
 #	--subsample=1000
 $(OUTDIR)/HWR_rich_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g.sav -o $@ \
-	-n 100 --plotrfunc --sel=r \
+	-n 100 --plotrfunc \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
@@ -32,7 +32,7 @@ $(OUTDIR)/HWR_rich_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.
 $(OUTDIR)/HWR_rich_g_twovertical_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_twovertical.sav -o $@ \
-	-n 100 --plotrfunc --sel=r \
+	-n 100 --plotrfunc \
 	--model=twovertical \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
@@ -41,7 +41,7 @@ $(OUTDIR)/HWR_rich_g_twovertical_rfunc.$(EXT): fitDensz.py Makefile \
 $(OUTDIR)/HWR_rich_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_flare.sav -o $@ \
-	-n 100 --plotrfunc --sel=r \
+	-n 100 --plotrfunc \
 	--model=flare \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
@@ -50,7 +50,7 @@ $(OUTDIR)/HWR_rich_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 $(OUTDIR)/HWR_rich_g_tiedflare_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_tiedflare.sav -o $@ \
-	-n 100 --plotrfunc --sel=r \
+	-n 100 --plotrfunc \
 	--model=tiedflare \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
@@ -60,7 +60,7 @@ $(OUTDIR)/HWR_rich_g_tiedflare_rfunc.$(EXT): fitDensz.py Makefile \
 $(OUTDIR)/HWR_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_gbright.sav -o $@ \
-	-n 100 --plotrfunc --bright --sel=r \
+	-n 100 --plotrfunc --bright \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
@@ -71,7 +71,7 @@ $(OUTDIR)/HWR_rich_fakedblexp_g_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_fakedblexp_g.sav -o $@ \
-	-n 100 --plotrfunc --sel=r --fake -i fakeThinDblExp.sav \
+	-n 100 --plotrfunc --sel_faint=r --fake -i fakeThinDblExp.sav \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
@@ -79,7 +79,7 @@ $(OUTDIR)/Flare_rich_fakedblexp_g_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py Flare_dens_rich_fakedblexp_g.sav -o $@ \
-	-n 100 --plotrfunc --sel=r --fake -i fakeThinDblExp.sav \
+	-n 100 --plotrfunc --sel_faint=r --fake -i fakeThinDblExp.sav \
 	--model=flare \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
@@ -88,7 +88,7 @@ $(OUTDIR)/Flare_rich_fakeflare_g_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_fakedblexp_g.sav -o $@ \
-	-n 100 --plotrfunc --sel=r --fake -i fakeThinFlare.sav \
+	-n 100 --plotrfunc --sel_faint=r --fake -i fakeThinFlare.sav \
 	--model=flare \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
@@ -97,7 +97,7 @@ $(OUTDIR)/HWR_rich_fakeflare_g_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_fakeflare_g.sav -o $@ \
-	-n 100 --plotrfunc --sel=r --fake -i fakeThinFlare.sav \
+	-n 100 --plotrfunc --sel_faint=r --fake -i fakeThinFlare.sav \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
@@ -119,7 +119,7 @@ $(OUTDIR)/HWR_poor_g_zfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.
 #	--subsample=1000
 $(OUTDIR)/HWR_poor_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \
-	-n 100 --plotrfunc --metal=poor --sel=r \
+	-n 100 --plotrfunc --metal=poor \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
@@ -127,7 +127,7 @@ $(OUTDIR)/HWR_poor_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.
 $(OUTDIR)/HWR_poor_g_twovertical_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_twovertical.sav -o $@ \
-	-n 100 --plotrfunc --sel=r --metal=poor \
+	-n 100 --plotrfunc --metal=poor \
 	--model=twovertical \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
@@ -136,7 +136,7 @@ $(OUTDIR)/HWR_poor_g_twovertical_rfunc.$(EXT): fitDensz.py Makefile \
 $(OUTDIR)/HWR_poor_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_flare.sav -o $@ \
-	-n 100 --plotrfunc --sel=r --metal=poor \
+	-n 100 --plotrfunc --metal=poor \
 	--model=flare \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
