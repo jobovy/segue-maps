@@ -48,14 +48,16 @@ def fitDensz(parser):
         fakedata= pickle.load(fakefile)
         fakefile.close()
         #Calculate distance based on random g-r
-        ds, ls, bs= [], [], []
+        ds, ls, bs, rs= [], [], [], []
         for ii in range(len(fakedata)):
             ds.append(_ivezic_dist(fakedata[ii][1],fakedata[ii][0],feh))
             ls.append(fakedata[ii][2])
             bs.append(fakedata[ii][3])
+            rs.append(fakedata[ii][0])
         ds= numpy.array(ds)
         ls= numpy.array(ls)
         bs= numpy.array(bs)
+        rs= numpy.array(rs)
         XYZ= bovy_coords.lbd_to_XYZ(ls,bs,ds,degree=True)                      
     else:
         XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
@@ -112,7 +114,21 @@ def fitDensz(parser):
         platefaint= numpy.array(indx,dtype='bool')
     if (options.bright or options.faint) and options.fake:
         if options.bright:
-            pass
+            indx= (rs < 17.8)
+            XYZ= XYZ[indx,:]
+            plates= sf.plates[sf.brightplateindx]
+        elif options.faint:
+            indx= (rs >= 17.8)
+            XYZ= XYZ[indx,:]
+            plates= sf.plates[sf.faintplateindx]
+        sf= segueSelect(plates=plates,type_faint=options.sel_faint,
+                        type_bright=options.sel_bright,sample=options.sample)
+        platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
+                                         degree=True)
+        indx= [not 'faint' in name for name in sf.platestr.programname]
+        platebright= numpy.array(indx,dtype='bool')
+        indx= ['faint' in name for name in sf.platestr.programname]
+        platefaint= numpy.array(indx,dtype='bool')
     Ap= math.pi*2.*(1.-numpy.cos(1.49*_DEGTORAD)) #SEGUE PLATE=1.49 deg radius
     if options.sample.lower() == 'g':
         grmin, grmax= 0.48, 0.55
