@@ -5,6 +5,7 @@ _NRS= 1001
 import numpy
 from scipy import ndimage
 from galpy.util import bovy_coords, bovy_plot
+import matplotlib
 from fitDensz import _ivezic_dist, _ZSUN
 ###############################################################################
 #   Density
@@ -90,7 +91,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
         if xrange is None:
             xrange= [numpy.amin(rs)-0.2,numpy.amax(rs)+0.1]
         if yrange is None:
-            yrange= [0.,1.2*numpy.amax(rdist)]
+            yrange= [0.,1.6*numpy.amax(rdist)]
         bovy_plot.bovy_plot(rs,rdist,ls='-',color=color,
                             xrange=xrange,yrange=yrange,
                             xlabel='$r_0\ [\mathrm{mag}]$',
@@ -146,6 +147,55 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
                                 len(data_dered_r)
                                 +'\n'+
                                 lbstr,top_right=True)
+            #Overplot direction in (R,z) plane
+            ax= matplotlib.pyplot.gca()
+            yrange= ax.get_ylim()
+            dy= yrange[1]-yrange[0]
+            rx, ry,dr, dz= xrange[1]-1.9, yrange[1]-0.5*dy, 2., 0.4*dy
+            #x-axis
+            bovy_plot.bovy_plot([rx-0.2,rx-0.2+dr],
+                                [ry,ry],
+                                'k-',overplot=True)
+            #y-axis
+            bovy_plot.bovy_plot([rx,rx],
+                                [ry-dz/2.,ry+dz/2.],
+                                'k-',overplot=True)
+            #Draw los
+            gr= (grmax+grmin)/2.
+            dmin, dmax= _ivezic_dist(gr,rmin,feh), _ivezic_dist(gr,rmax,feh)
+            ds= numpy.linspace(dmin,dmax,101)
+            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels) for ii in range(len(ds))]),
+                                         numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
+                                         ds,degree=True).astype('float')
+            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+            zs= xyzs[:,2]/8.*dz/2.+ry
+            bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
+            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels)+numpy.std(platels) for ii in range(len(ds))]),
+                                         numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
+                                         ds,degree=True).astype('float')
+            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+            zs= xyzs[:,2]/8.*dz/2.+ry
+            bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels)-numpy.std(platels) for ii in range(len(ds))]),
+                                         numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
+                                         ds,degree=True).astype('float')
+            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+            zs= xyzs[:,2]/8.*dz/2.+ry
+            bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels) for ii in range(len(ds))]),
+                                         numpy.array([numpy.mean(platebs)+numpy.std(platebs) for ii in range(len(ds))]),
+                                         ds,degree=True).astype('float')
+            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+            zs= xyzs[:,2]/8.*dz/2.+ry
+            bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels) for ii in range(len(ds))]),
+                                         numpy.array([numpy.mean(platebs)-numpy.std(platebs) for ii in range(len(ds))]),
+                                         ds,degree=True).astype('float')
+            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+            zs= xyzs[:,2]/8.*dz/2.+ry
+            bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+            bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
+            bovy_plot.bovy_text(rx-0.2,ry+3./4.*dz/2.,r'$z$')
         return (rdist, hist[0], hist[1])
 
 def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
