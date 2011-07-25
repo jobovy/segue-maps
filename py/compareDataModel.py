@@ -92,7 +92,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
             ndimage.filters.gaussian_filter1d(rdist,convolve/(rs[1]-rs[0]),
                                               output=rdist)
         if xrange is None:
-            xrange= [numpy.amin(rs)-0.2,numpy.amax(rs)+0.3]
+            xrange= [numpy.amin(rs)-0.2,numpy.amax(rs)+0.45]
         if yrange is None:
             yrange= [0.,1.6*numpy.amax(rdist)]
         bovy_plot.bovy_plot(rs,rdist,ls=ls,color=color,
@@ -134,7 +134,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
                                 '$%i \ \ \mathrm{stars}$' % 
                                 len(data_dered_r),top_right=True)
         elif len(plate) >= 9:
-            platestr= '> 8\ \mathrm{plates}'
+            platestr= '%i\ \mathrm{plates}' % len(plate)
             lbstr= '$l = %i^\circ \pm %i^\circ$' % (
                 int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
                 +'$b = %i^\circ\pm%i^\circ$' % (int(numpy.mean(platebs)),
@@ -163,6 +163,8 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
             bovy_plot.bovy_plot([rx,rx],
                                 [ry-dz/2.,ry+dz/2.],
                                 'k-',overplot=True)
+            #Sun's position
+            bovy_plot.bovy_plot([rx+dr/2.],[ry],'ko',overplot=True)
             #Draw los
             gr= (grmax+grmin)/2.
             if allbright:
@@ -376,7 +378,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
                                 '$%i \ \ \mathrm{stars}$' % 
                                 nstars,top_left=True)
         elif len(plate) >= 9:
-            platestr= '> 8\ \mathrm{plates}'
+            platestr= '%i\ \mathrm{plates}' % len(plate)
             lbstr= '$l = %i^\circ \pm %i^\circ$' % (
                 int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
                 +'$b = %i^\circ\pm%i^\circ$' % (int(numpy.mean(platebs)),
