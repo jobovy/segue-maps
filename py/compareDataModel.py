@@ -13,7 +13,7 @@ from fitDensz import _ivezic_dist, _ZSUN, _DEGTORAD
 def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
                       rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=-0.15,
                       convolve=0.,xrange=None,yrange=None,
-                      overplot=False,bins=21,color='k'):
+                      overplot=False,bins=21,color='k',ls='-'):
     """
     NAME:
        comparerdistPlate
@@ -95,7 +95,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
             xrange= [numpy.amin(rs)-0.2,numpy.amax(rs)+0.3]
         if yrange is None:
             yrange= [0.,1.6*numpy.amax(rdist)]
-        bovy_plot.bovy_plot(rs,rdist,ls='-',color=color,
+        bovy_plot.bovy_plot(rs,rdist,ls=ls,color=color,
                             xrange=xrange,yrange=yrange,
                             xlabel='$r_0\ [\mathrm{mag}]$',
                             ylabel='$\mathrm{density}$',overplot=overplot)
@@ -134,7 +134,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
                                 '$%i \ \ \mathrm{stars}$' % 
                                 len(data_dered_r),top_right=True)
         elif len(plate) >= 9:
-            platestr= '\mathrm{many\ plates}'
+            platestr= '> 8\ \mathrm{plates}'
             lbstr= '$l = %i^\circ \pm %i^\circ$' % (
                 int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
                 +'$b = %i^\circ\pm%i^\circ$' % (int(numpy.mean(platebs)),
@@ -376,7 +376,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
                                 '$%i \ \ \mathrm{stars}$' % 
                                 nstars,top_left=True)
         elif len(plate) >= 9:
-            platestr= '\mathrm{many\ plates}'
+            platestr= '> 8\ \mathrm{plates}'
             lbstr= '$l = %i^\circ \pm %i^\circ$' % (
                 int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
                 +'$b = %i^\circ\pm%i^\circ$' % (int(numpy.mean(platebs)),
