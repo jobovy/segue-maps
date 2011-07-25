@@ -105,7 +105,7 @@ def fitDensz(parser):
         #Reload selection function
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
         sf= segueSelect(plates=plates,type_faint=options.sel_faint,
-                        type_bright=options.type_bright,sample=options.sample)
+                        type_bright=options.sel_bright,sample=options.sample)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
         indx= [not 'faint' in name for name in sf.platestr.programname]
