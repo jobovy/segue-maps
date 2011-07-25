@@ -28,6 +28,8 @@ def fitDensz(parser):
         return
     if options.model.lower() == 'hwr':
         densfunc= _HWRDensity
+    elif options.model.lower() == 'dblexp':
+        densfunc= _DblExpDensity
     elif options.model.lower() == 'flare':
         densfunc= _FlareDensity
     elif options.model.lower() == 'tiedflare':
@@ -97,7 +99,7 @@ def fitDensz(parser):
         if options.bright:
             dataindx= (rawdata.dered_r < 17.8)
         elif options.faint:
-            dataindx= (rawdata.dered_r > 17.8)
+            dataindx= (rawdata.dered_r >= 17.8)
         rawdata= rawdata[dataindx]
         XYZ= XYZ[dataindx,:]
         vxvyvz= vxvyvz[dataindx,:]
@@ -171,6 +173,19 @@ def fitDensz(parser):
             create_method=['step_out','step_out','step_out']
             isDomainFinite=[[False,True],[False,True],[True,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],[0.,1.]]
+        elif options.model.lower() == 'dblexp':
+            if options.metal == 'rich':
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5)])
+            elif options.metal == 'poor':
+                params= numpy.array([numpy.log(1.),numpy.log(2.5)])
+            else:
+                params= numpy.array([numpy.log(0.3),numpy.log(2.5)])
+            densfunc= _DblExpDensity
+            #Slice sampling keywords
+            step= [0.3,0.3]
+            create_method=['step_out','step_out']
+            isDomainFinite=[[False,True],[False,True]]
+            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918]]
         elif options.model.lower() == 'flare':
             if options.metal == 'rich':
                 params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(2.5)])
@@ -251,6 +266,8 @@ def fitDensz(parser):
         pickle.dump(params,savefile)
         pickle.dump(samples,savefile)
         savefile.close()
+    return
+
     #Plot
     if options.plotzfunc:
         zs= numpy.linspace(0.3,2.,1001)
@@ -536,6 +553,13 @@ def _HWRDensity(R,Z,params):
                 *numpy.exp(-(R-8.)/hR
                             -numpy.fabs(Z)/numpy.exp(params[0]))\
                 +params[2]/(_DZ*8.))
+
+def _DblExpDensity(R,Z,params):
+    """Double exponential disk
+    params= [hz,hR]"""
+    hR= numpy.exp(params[1])
+    return numpy.exp(-(R-8.)/hR
+                      -numpy.fabs(Z)/numpy.exp(params[0]))
     
 def _TwoVerticalDensity(R,Z,params):
     """Double exponential disk with two vertical scale-heights
