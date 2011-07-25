@@ -45,6 +45,7 @@ def fakeDensData(parser):
     #Calculate the r-distribution for each plate
     nrs= 1001
     ngr= 11
+    grs= numpy.linspace(grmin,grmax,ngr)
     rs= numpy.linspace(rmin,rmax,nrs)
     rdists= numpy.zeros((len(sf.plates),nrs,ngr))
     for ii in range(len(sf.plates)):
@@ -56,7 +57,7 @@ def fakeDensData(parser):
         if 'faint' in sf.platestr[ii].programname:
             rdists[ii,(rs < 17.8),:]= 0.
         elif not 'faint' in sf.platestr[ii].programname:
-            rdists[ii,(rs > 17.8),:]= 0.
+            rdists[ii,(rs >= 17.8),:]= 0.
     numbers= numpy.sum(rdists,axis=2)
     numbers= numpy.sum(numbers,axis=1)
     numbers= numpy.cumsum(numbers)
@@ -78,7 +79,7 @@ def fakeDensData(parser):
         jj= 0
         while rdists[kk,jj,gr] < ran: jj+= 1
         #r=jj
-        out.append([rs[jj],gr,platelb[kk,0],platelb[kk,1]])
+        out.append([rs[jj],grs[gr],platelb[kk,0],platelb[kk,1]])
     #Save as pickle
     savefile= open(args[0],'wb')
     pickle.dump(out,savefile)
