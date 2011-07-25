@@ -439,7 +439,6 @@ def similarPlatesDirection(l,b,dr,sf,data,bright=True,faint=True):
                                   racen,deccen) for ii in range(len(plates))]
         indx= (cosdist >= cosdr)
         theseplates= plates[indx]
-        print theseplates
         if sorted(theseplates) == sorted(finalplates): iterating= False
         finalplates= theseplates
         racen= numpy.mean(platestr[indx].ra)*_DEGTORAD

@@ -13,21 +13,42 @@ def compareGRichRdist(options,args):
     params1=  numpy.array([-1.20815403035,0.981614534466,-0.130775138707])
     params2= numpy.log(numpy.array([0.3,2.45,1.]))
     #Load sf
-    sf= segueSelect.segueSelect(sample=options.sample,sn=True)
+    sf= segueSelect.segueSelect(sample=options.sample,sn=True,
+                                type_bright='constant',
+                                type_faint='r')
     #Load data
     XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
                                          sample=options.sample)
     #We do bright/faint for 4 directions
-    plate= compareDataModel.similarPlatesDirection(180.,0.,20.,sf,data,
-                                                   faint=False)
+    ls= [180,180,45,45]
+    bs= [0,90,-23,23]
     bins= 21
-    bovy_plot.bovy_print()
-    compareDataModel.comparerdistPlate(model1,params1,sf,_const_colordist,
-                                       data,plate,color='k',bins=bins,ls='-')
-    compareDataModel.comparerdistPlate(model2,params2,sf,_const_colordist,
-                                       data,plate,color='k',bins=bins,
-                                       overplot=True,ls='--')
-    bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_rich_l180_b0.eps'))
+    for ii in range(len(ls)):
+        #Bright
+        plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
+                                                       sf,data,
+                                                       faint=False)
+        bovy_plot.bovy_print()
+        compareDataModel.comparerdistPlate(model1,params1,sf,_const_colordist,
+                                           data,plate,color='k',
+                                           bins=bins,ls='-')
+        compareDataModel.comparerdistPlate(model2,params2,sf,_const_colordist,
+                                           data,plate,color='k',bins=bins,
+                                           overplot=True,ls='--')
+        bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_rich_l%i_b%i_bright.ps' % (ls[ii],bs[ii])))
+        #Faint
+        plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
+                                                       sf,data,
+                                                       bright=False)
+        bovy_plot.bovy_print()
+        compareDataModel.comparerdistPlate(model1,params1,sf,_const_colordist,
+                                           data,plate,color='k',
+                                           bins=bins,ls='-')
+        compareDataModel.comparerdistPlate(model2,params2,sf,_const_colordist,
+                                           data,plate,color='k',bins=bins,
+                                           overplot=True,ls='--')
+        bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_rich_l%i_b%i_faint.ps' % (ls[ii],bs[ii])))
+    return None
 
 def get_options():
     usage = "usage: %prog [options] <savedir>\n\nsavedir= name of the directory that the comparisons will be saved to"
