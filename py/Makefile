@@ -75,6 +75,14 @@ $(OUTDIR)/HWR_rich_fakedblexp_g_rfunc.$(EXT): fitDensz.py Makefile \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
+$(OUTDIR)/HWR_rich_fakedblexp_gbright_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_fakedblexp_gbright.sav -o $@ \
+	-n 100 --plotrfunc --sel_faint=r --fake -i fakeThinDblExp.sav \
+	--xlabel='r_0\ [\mathrm{mag}]' --bright \
+	--ylabel='\mathrm{density}' # \
+#	--subsample=1000
 $(OUTDIR)/Flare_rich_fakedblexp_g_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py \
 	segueSelect.py

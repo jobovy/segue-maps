@@ -176,6 +176,16 @@ class segueSelect:
         self.brightplateindx= brightplateindx
         self.nbrightplates= numpy.sum(self.brightplateindx)
         self.nfaintplates= numpy.sum(self.faintplateindx)
+        #Set r limits
+        if self.sample == 'g':
+            self.rmin= 14.5
+            self.rmax= 20.2
+        elif self.sample == 'k':
+            self.rmin= 14.5
+            self.rmax= 19.
+        elif self.sample == 'fg':
+            self.rmin= 14.5
+            self.rmax= 20.
         #load the photometry for the SEGUE plates
         if _platephot is None:
             self.platephot= {}
@@ -200,8 +210,6 @@ class segueSelect:
         #Flesh out samples
         for plate in self.plates:
             if self.sample == 'g':
-                self.rmin= 14.5
-                self.rmax= 20.2
                 indx= ((self.platephot[str(plate)].field('g')\
                             -self.platephot[str(plate)].field('r')) < 0.55)\
                             *((self.platephot[str(plate)].field('g')\
@@ -209,8 +217,6 @@ class segueSelect:
                                    *(self.platephot[str(plate)].field('r') < 20.2)\
                                    *(self.platephot[str(plate)].field('r') > 14.5)
             elif self.sample == 'k':
-                self.rmin= 14.5
-                self.rmax= 19.
                 indx= ((self.platephot[str(plate)].field('g')\
                             -self.platephot[str(plate)].field('r')) > 0.55)\
                             *((self.platephot[str(plate)].field('g')\
@@ -218,8 +224,6 @@ class segueSelect:
                                    *(self.platephot[str(plate)].field('r') < 19.)\
                                    *(self.platephot[str(plate)].field('r') > 14.5)
             elif self.sample == 'fg':
-                self.rmin= 14.5
-                self.rmax= 20.
                 indx= ((self.platephot[str(plate)].field('g')\
                             -self.platephot[str(plate)].field('r')) > 0.2)\
                             *((self.platephot[str(plate)].field('g')\
@@ -269,16 +273,18 @@ class segueSelect:
         #Determine selection function
         sys.stdout.write('\r'+"Determining selection function ...\r")
         sys.stdout.flush()
-        self._determine_select(bright=True,type=type_bright,dr=dr_bright,
-                               interp_degree=interp_degree_bright,
-                               interp_type= interp_type_bright,
-                               robust=robust_bright,
-                               binedges=binedges_bright)
-        self._determine_select(bright=False,type=type_faint,dr=dr_faint,
-                               interp_degree=interp_degree_faint,
-                               interp_type=interp_type_faint,
-                               robust=robust_faint,
-                               binedges=binedges_faint)
+        if not numpy.sum(self.brightplateindx) == 0:
+            self._determine_select(bright=True,type=type_bright,dr=dr_bright,
+                                   interp_degree=interp_degree_bright,
+                                   interp_type= interp_type_bright,
+                                   robust=robust_bright,
+                                   binedges=binedges_bright)
+        if not numpy.sum(self.faintplateindx) == 0:
+            self._determine_select(bright=False,type=type_faint,dr=dr_faint,
+                                   interp_degree=interp_degree_faint,
+                                   interp_type=interp_type_faint,
+                                   robust=robust_faint,
+                                   binedges=binedges_faint)
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         return None
