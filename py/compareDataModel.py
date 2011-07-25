@@ -6,7 +6,7 @@ import numpy
 from scipy import ndimage
 from galpy.util import bovy_coords, bovy_plot
 import matplotlib
-from fitDensz import _ivezic_dist, _ZSUN
+from fitDensz import _ivezic_dist, _ZSUN, _DEGTORAD
 ###############################################################################
 #   Density
 ###############################################################################
@@ -62,6 +62,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
         faintplates= True
     elif isinstance(plate,int):
         plate= [plate]
+    allfaint, allbright= True, True
     if isinstance(params,list): #list of samples
         pass
     else: #single value
@@ -80,8 +81,10 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
                                             feh,colordist,sf,p)
             if 'faint' in sf.platestr[pindx].programname[0]:
                 thisrdist[(rs < 17.8)]= 0.
+                allbright= False
             else:
                 thisrdist[(rs > 17.8)]= 0.
+                allfaint= False
             rdist+= thisrdist
         norm= numpy.nansum(rdist*(rs[1]-rs[0]))
         rdist/= norm
@@ -89,7 +92,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
             ndimage.filters.gaussian_filter1d(rdist,convolve/(rs[1]-rs[0]),
                                               output=rdist)
         if xrange is None:
-            xrange= [numpy.amin(rs)-0.2,numpy.amax(rs)+0.1]
+            xrange= [numpy.amin(rs)-0.2,numpy.amax(rs)+0.3]
         if yrange is None:
             yrange= [0.,1.6*numpy.amax(rdist)]
         bovy_plot.bovy_plot(rs,rdist,ls='-',color=color,
@@ -104,7 +107,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
                                   normed=True,bins=bins,ec='k',
                                   histtype='step',
                                   overplot=True,range=xrange)
-        if len(plate) > 1 and len(plate) < 10:
+        if len(plate) > 1 and len(plate) < 9:
             platestr= '\mathrm{plates}\ \ '
             for ii in range(len(plate)-1):
                 platestr= platestr+'%i, ' % plate[ii]
@@ -130,7 +133,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
                                 +'\n'+
                                 '$%i \ \ \mathrm{stars}$' % 
                                 len(data_dered_r),top_right=True)
-        elif len(plate) >= 10:
+        elif len(plate) >= 9:
             platestr= '\mathrm{many\ plates}'
             lbstr= '$l = %i^\circ \pm %i^\circ$' % (
                 int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
@@ -151,7 +154,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
             ax= matplotlib.pyplot.gca()
             yrange= ax.get_ylim()
             dy= yrange[1]-yrange[0]
-            rx, ry,dr, dz= xrange[1]-1.9, yrange[1]-0.5*dy, 2., 0.4*dy
+            rx, ry,dr, dz= xrange[1]-2.1, yrange[1]-0.5*dy, 2., 0.4*dy
             #x-axis
             bovy_plot.bovy_plot([rx-0.2,rx-0.2+dr],
                                 [ry,ry],
@@ -162,14 +165,14 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
                                 'k-',overplot=True)
             #Draw los
             gr= (grmax+grmin)/2.
-            dmin, dmax= _ivezic_dist(gr,rmin,feh), _ivezic_dist(gr,rmax,feh)
+            if allbright:
+                thisrmin= rmin
+                thisrmax= 17.8
+            if allfaint:
+                thisrmin= 17.8
+                thisrmax= rmax
+            dmin, dmax= _ivezic_dist(gr,thisrmin,feh), _ivezic_dist(gr,thisrmax,feh)
             ds= numpy.linspace(dmin,dmax,101)
-            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels) for ii in range(len(ds))]),
-                                         numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
-                                         ds,degree=True).astype('float')
-            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
-            zs= xyzs[:,2]/8.*dz/2.+ry
-            bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
             xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels)+numpy.std(platels) for ii in range(len(ds))]),
                                          numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
                                          ds,degree=True).astype('float')
@@ -194,6 +197,12 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
             rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
             zs= xyzs[:,2]/8.*dz/2.+ry
             bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels) for ii in range(len(ds))]),
+                                         numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
+                                         ds,degree=True).astype('float')
+            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+            zs= xyzs[:,2]/8.*dz/2.+ry
+            bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
             bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
             bovy_plot.bovy_text(rx-0.2,ry+3./4.*dz/2.,r'$z$')
         return (rdist, hist[0], hist[1])
@@ -340,7 +349,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
         bovy_plot.bovy_plot(xs,data_numbers,ls='-',
                             marker='.',color='k',
                             overplot=True)
-        if len(plate) > 1 and len(plate) < 10:
+        if len(plate) > 1 and len(plate) < 9:
             platestr= '\mathrm{plates}\ \ '
             for ii in range(len(plate)-1):
                 platestr= platestr+'%i, ' % plate[ii]
@@ -366,7 +375,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
                                 +'\n'+
                                 '$%i \ \ \mathrm{stars}$' % 
                                 nstars,top_left=True)
-        elif len(plate) >= 10:
+        elif len(plate) >= 9:
             platestr= '\mathrm{many\ plates}'
             lbstr= '$l = %i^\circ \pm %i^\circ$' % (
                 int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
@@ -384,6 +393,58 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
                                 +'\n'+
                                 lbstr,top_left=True)
         return (numbers, data_numbers, xs)
+    
+
+###############################################################################
+#   Good sets of plates to run comparerdistPlate for
+###############################################################################
+def similarPlatesDirection(l,b,dr,sf,data,bright=True,faint=True):
+    """
+    NAME:
+       similarPlatesDirection
+    PURPOSE:
+       Find good sets of plates to run comparerdistPlate for
+    INPUT:
+       l,b - desired (l,b) center, but only start of iteration
+       dr - radius of circle to consider plates in (deg)
+       sf - segueSelect instance
+       data - data recarray (.dered_r is used)
+       bright=, faint= if false, don't include bright/faint plates 
+                       (default: all)
+    OUTPUT:
+      list of plates that can be sent to comparerdistPlate
+    HISTORY:
+       2011-07-25 - Written - Bovy (NYU)
+    """
+    lrad= l*_DEGTORAD
+    brad= b*_DEGTORAD
+    racen, deccen= bovy_coords.lb_to_radec(lrad,brad)
+    drrad= dr*_DEGTORAD
+    cosdr= numpy.cos(drrad)
+    if bright and faint:
+        plates= sf.plates
+        platestr= sf.platestr
+    elif bright:
+        plates= sf.plates[sf.brightplateindx]
+        platestr= sf.platestr[sf.brightplateindx]
+    elif faint:
+        plates= sf.plates[sf.faintplateindx]
+        platestr= sf.platestr[sf.faintplateindx]
+    iterating= True
+    finalplates= []
+    while iterating:
+        #Calculate distance between current center and all plates
+        cosdist= [cos_sphere_dist(platestr[ii].ra*_DEGTORAD,
+                                  platestr[ii].dec*_DEGTORAD,
+                                  racen,deccen) for ii in range(len(plates))]
+        indx= (cosdist >= cosdr)
+        theseplates= plates[indx]
+        print theseplates
+        if sorted(theseplates) == sorted(finalplates): iterating= False
+        finalplates= theseplates
+        racen= numpy.mean(platestr[indx].ra)*_DEGTORAD
+        deccen= numpy.mean(platestr[indx].dec)*_DEGTORAD
+    return finalplates
     
 
 ###############################################################################
@@ -449,3 +510,26 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
         out[(rs < rmin)]= 0.
         out[(rs > rmax)]= 0.
     return out
+
+def cos_sphere_dist(theta,phi,theta_o,phi_o):
+    """
+    NAME:
+       cos_sphere_dist
+    PURPOSE:
+       computes the cosine of the spherical distance between two
+       points on the sphere
+    INPUT:
+       theta  - polar angle [0,pi]
+       phi    - azimuth [0,2pi]
+       theta  - polar angle of center of the disk
+       phi_0  - azimuth of the center of the disk
+    OUTPUT:
+       cos of spherical distance
+    HISTORY:
+       2010-04-29 -Written - Bovy (NYU)
+    """
+    return (numpy.sin(theta)*numpy.sin(theta_o)*(numpy.cos(phi_o)*\
+                                                     numpy.cos(phi)+
+                                                 numpy.sin(phi_o)\
+                                                     *numpy.sin(phi))+
+            numpy.cos(theta_o)*numpy.cos(theta))
