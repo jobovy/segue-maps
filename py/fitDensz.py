@@ -79,9 +79,9 @@ def fitDensz(parser):
     platebright= numpy.array(indx,dtype='bool')
     indx= ['faint' in name for name in sf.platestr.programname]
     platefaint= numpy.array(indx,dtype='bool')
-    if options.bright or options.faint:
+    if (options.bright or options.faint) and not options.fake:
         indx= []
-        for ii in range(len(rawdata.ra)):
+        for ii in range(len(XYZ[:,0])):
             pindx= (sf.plates == rawdata[ii].plate)
             if options.bright \
                     and not 'faint' in sf.platestr[pindx].programname[0]:
@@ -112,6 +112,9 @@ def fitDensz(parser):
         platebright= numpy.array(indx,dtype='bool')
         indx= ['faint' in name for name in sf.platestr.programname]
         platefaint= numpy.array(indx,dtype='bool')
+    if (options.bright or options.faint) and options.fake:
+        if options.bright:
+            pass
     Ap= math.pi*2.*(1.-numpy.cos(1.49*_DEGTORAD)) #SEGUE PLATE=1.49 deg radius
     if options.sample.lower() == 'g':
         grmin, grmax= 0.48, 0.55
