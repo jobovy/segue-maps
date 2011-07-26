@@ -49,21 +49,24 @@ def fitDensz(parser):
         fakefile= open(options.fakefile,'rb')
         fakedata= pickle.load(fakefile)
         fakefile.close()
-        #Calculate distance based on random g-r
+        #Calculate distance
         ds, ls, bs, rs= [], [], [], []
         for ii in range(len(fakedata)):
             ds.append(_ivezic_dist(fakedata[ii][1],fakedata[ii][0],feh))
             ls.append(fakedata[ii][2])
             bs.append(fakedata[ii][3])
             rs.append(fakedata[ii][0])
+            grs.append(fakefata[ii][1])
         ds= numpy.array(ds)
         ls= numpy.array(ls)
         bs= numpy.array(bs)
         rs= numpy.array(rs)
+        grs= numpy.array(grs)
         XYZ= bovy_coords.lbd_to_XYZ(ls,bs,ds,degree=True)                      
     else:
         XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
                                                 sample=options.sample)
+        grs= rawdata.dered_g-rawdata.dered_r
     #Load selection function
     if _VERBOSE:
         print "Loading selection function ..."
@@ -135,7 +138,13 @@ def fitDensz(parser):
     if options.sample.lower() == 'g':
         grmin, grmax= 0.48, 0.55
         rmin,rmax= 14.5, 20.2
-    colordist= _const_colordist
+    if options.colordist.lower() == 'constant':
+        colordist= _const_colordist
+    elif options.colordist.lower() == 'binned':
+        #Bin the colors
+        nbins= 16
+        hist,edges= numpy.histogram(grs,range=[grmin,grmax],bins=nbins)
+        colordist= ColorDistBinned(hist,edges)
     if os.path.exists(args[0]):#Load savefile
         savefile= open(args[0],'rb')
         params= pickle.load(savefile)
@@ -597,6 +606,18 @@ def _ConstDensity(R,Z,params):
 def _const_colordist(gr):
     return 1./.07
 
+class ColorDistBinned:
+    """Color distribution from a binned representation"""
+    def __init__(self,hist,edges):
+        self.hist= hist/(numpy.sum(hist)*(edges[1]-edges[0])) #normalized
+        self.edges= edges
+        return
+
+    def __call__(self,gr):
+        #Find bin that contains this gr
+        bb= int(numpy.floor((gr-self.edges[0])/(self.edges[1]-self.edges[0])))
+        return self.hist[bb]
+
 def _ivezic_dist(gr,r,feh):
     d,derr= ivezic_dist_gr(gr+r,r,feh)
     return d
@@ -616,6 +637,8 @@ def get_options():
                       help="Selection function to use ('constant', 'r', 'platesn_r')")
     parser.add_option("--sel_faint",dest='sel_faint',default='platesn_r',
                       help="Selection function to use ('constant', 'r', 'platesn_r')")
+    parser.add_option("--colordist",dest='colordist',default='constant',
+                      help="Color distribution to use ('constant', 'binned')")
     parser.add_option("-n","--nsamples",dest='nsamples',type='int',
                       default=100,
                       help="Number of MCMC samples to use")
