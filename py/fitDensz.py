@@ -67,11 +67,92 @@ def fitDensz(parser):
         XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
                                                 sample=options.sample)
         grs= rawdata.dered_g-rawdata.dered_r
+    #Cut on platesn
+    if not options.minplatesn is None:
+        segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
+                                                   'segueplates_ksg.fits'))
+        platesn_r= (segueplatestr.sn1_1+segueplatestr.sn2_1)/2.
+        indx= (platesn_r >= options.minplatesn)
+        plates= segueplatestr.plate[indx]
+        #Data
+        dataindx= []
+        for ii in range(len(XYZ[:,0])):
+            if rawdata[ii].plate in plates: dataindx.append(True)
+            else: dataindx.append(False)
+        dataindx= numpy.array(dataindx,dtype='bool')
+        rawdata= rawdata[dataindx]
+        XYZ= XYZ[dataindx,:]
+        vxvyvz= vxvyvz[dataindx,:]
+        cov_vxvyvz= cov_vxvyvz[dataindx,:]     
+    else: plates= None
+    #Cut on KS
+    if not options.minks is None:
+        print "WARNING: MINKS ONL WORKS FOR G"
+        segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
+                                                   'segueplates_ksg.fits'))
+        if not options.minplatesn is None:
+            platesn_r= (segueplatestr.sn1_1+segueplatestr.sn2_1)/2.
+            indx= (platesn_r >= options.minplatesn)
+            plates= segueplatestr[indx].plate
+        else: plates= segueplatestr.plate
+        #Cut on KS
+        indx= []
+        for ii in range(len(plates)):
+            if options.sel_bright.lower() == 'constant' \
+                    and not 'faint' in segueplatestr[ii].programname:
+                if segueplatestr[ii].ksconst_g_all >= options.minks:
+                    indx.append(True)
+                else:
+                    indx.append(False)
+            elif options.sel_bright.lower() == 'r' \
+                    and not 'faint' in segueplatestr[ii].programname:
+                if segueplatestr[ii].ksr_g_all >= options.minks:
+                    indx.append(True)
+                else:
+                    indx.append(False)
+            elif options.sel_bright.lower() == 'platesn_r' \
+                    and not 'faint' in segueplatestr[ii].programname:
+                if segueplatestr[ii].ksplatesn_r_g_all >= options.minks:
+                    indx.append(True)
+                else:
+                    indx.append(False)
+            if options.sel_faint.lower() == 'constant' \
+                    and 'faint' in segueplatestr[ii].programname:
+                if segueplatestr[ii].ksconst_g_all >= options.minks:
+                    indx.append(True)
+                else:
+                    indx.append(False)
+            elif options.sel_faint.lower() == 'r' \
+                    and 'faint' in segueplatestr[ii].programname:
+                if segueplatestr[ii].ksr_g_all >= options.minks:
+                    indx.append(True)
+                else:
+                    indx.append(False)
+            elif options.sel_faint.lower() == 'platesn_r' \
+                    and 'faint' in segueplatestr[ii].programname:
+                if segueplatestr[ii].ksplatesn_r_g_all >= options.minks:
+                    indx.append(True)
+                else:
+                    indx.append(False)
+        indx= numpy.array(indx,dtype='bool')
+        plates= plates[indx]
+        #Data
+        dataindx= []
+        for ii in range(len(XYZ[:,0])):
+            if rawdata[ii].plate in plates: dataindx.append(True)
+            else: dataindx.append(False)
+        dataindx= numpy.array(dataindx,dtype='bool')
+        rawdata= rawdata[dataindx]
+        XYZ= XYZ[dataindx,:]
+        vxvyvz= vxvyvz[dataindx,:]
+        cov_vxvyvz= cov_vxvyvz[dataindx,:]     
     #Load selection function
     if _VERBOSE:
         print "Loading selection function ..."
     if options.fake:
         plates= None
+    elif not options.platesn is None or not options.minks is None:
+        pass
     else:
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
     sf= segueSelect(plates=plates,type_faint=options.sel_faint,
@@ -98,6 +179,9 @@ def fitDensz(parser):
                 indx.append(False)
         indx= numpy.array(indx,dtype='bool')
         rawdata= rawdata[indx]
+        XYZ= XYZ[indx,:]
+        vxvyvz= vxvyvz[indx,:]
+        cov_vxvyvz= cov_vxvyvz[indx,:]
         #Also cut the data > or < than 17.8       
         if options.bright:
             dataindx= (rawdata.dered_r < 17.8)
@@ -639,6 +723,12 @@ def get_options():
                       help="Selection function to use ('constant', 'r', 'platesn_r')")
     parser.add_option("--colordist",dest='colordist',default='constant',
                       help="Color distribution to use ('constant', 'binned')")
+    parser.add_option("--minplatesn",dest='minplatesn',type='float',
+                      default=None,
+                      help="If set, only consider plates with this minimal platesn_r")
+    parser.add_option("--minks",dest='minks',type='float',
+                      default=None,
+                      help="If set, only consider plates with this minimal spectro-photo KS value")
     parser.add_option("-n","--nsamples",dest='nsamples',type='int',
                       default=100,
                       help="Number of MCMC samples to use")
