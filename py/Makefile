@@ -10,7 +10,7 @@ $(OUTDIR)/HWR_rich_poor_g_func.$(EXT): plotSigzFunc.py
 #Metal rich G dwarf densities
 $(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g.sav -o $@ \
-	--expd1 --expd2 -n 100 --colordist=binned \
+	--expd1 --expd2 -n 100 \
 	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
 	--xlabel='h_z\ [\mathrm{kpc}]' \
 	--ylabel='\nu(z;R=8\ [\mathrm{kpc}])' # \
@@ -27,6 +27,34 @@ $(OUTDIR)/HWR_rich_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
+
+#Binned color distribution
+$(OUTDIR)/HWR_rich_g_colorbinned_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_colorbinned.sav -o $@ \
+	--expd1 --expd2 -n 100 --colordist=binned \
+	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
+	--xlabel='h_z\ [\mathrm{kpc}]' \
+	--ylabel='\nu(z;R=8\ [\mathrm{kpc}])' # \
+#	--subsample=1000
+
+
+#Min KS
+$(OUTDIR)/HWR_rich_g_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_minks_0.1.sav -o $@ \
+	--expd1 --expd2 -n 100 --minks=0.1\
+	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
+	--xlabel='h_z\ [\mathrm{kpc}]' \
+	--ylabel='\nu(z;R=8\ [\mathrm{kpc}])' # \
+#	--subsample=1000
+#Min plateSN_r
+$(OUTDIR)/HWR_rich_g_minplatesn70_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_minks_0.1.sav -o $@ \
+	--expd1 --expd2 -n 100 --minplatesn=70\
+	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
+	--xlabel='h_z\ [\mathrm{kpc}]' \
+	--ylabel='\nu(z;R=8\ [\mathrm{kpc}])' # \
+#	--subsample=1000
+
 
 #TwoVertical model
 $(OUTDIR)/HWR_rich_g_twovertical_rfunc.$(EXT): fitDensz.py Makefile \
