@@ -76,6 +76,7 @@ def fitDensz(parser):
         platesn_r= (segueplatestr.sn1_1+segueplatestr.sn2_1)/2.
         indx= (platesn_r >= options.minplatesn)
         plates= segueplatestr.plate[indx]
+        segueplatestr= segueplatestr[indx]
         #Data
         dataindx= []
         for ii in range(len(XYZ[:,0])):
@@ -89,13 +90,14 @@ def fitDensz(parser):
     else: plates= None
     #Cut on KS
     if not options.minks is None:
-        print "WARNING: MINKS ONL WORKS FOR G-ALL"
+        print "WARNING: MINKS ONLY WORKS FOR G-ALL"
         segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
                                                    'segueplates_ksg.fits'))
         if not options.minplatesn is None:
             platesn_r= (segueplatestr.sn1_1+segueplatestr.sn2_1)/2.
             indx= (platesn_r >= options.minplatesn)
             plates= segueplatestr.plate[indx]
+            segueplatestr= segueplatestr[indx]
         else: plates= segueplatestr.plate
         #Cut on KS
         indx= []
@@ -118,7 +120,7 @@ def fitDensz(parser):
                     indx.append(True)
                 else:
                     indx.append(False)
-            if options.sel_faint.lower() == 'constant' \
+            elif options.sel_faint.lower() == 'constant' \
                     and 'faint' in segueplatestr.programname[ii]:
                 if segueplatestr.ksconst_g_all[ii] >= options.minks:
                     indx.append(True)
@@ -138,6 +140,7 @@ def fitDensz(parser):
                     indx.append(False)
         indx= numpy.array(indx,dtype='bool')
         plates= plates[indx]
+        segueplatestr= segueplatestr[indx]
         #Data
         dataindx= []
         for ii in range(len(XYZ[:,0])):
@@ -148,6 +151,7 @@ def fitDensz(parser):
         XYZ= XYZ[dataindx,:]
         vxvyvz= vxvyvz[dataindx,:]
         cov_vxvyvz= cov_vxvyvz[dataindx,:,:]     
+        print "%i plates, %i stars" %(len(plates),len(XYZ[:,0]))
     #Load selection function
     if _VERBOSE:
         print "Loading selection function ..."

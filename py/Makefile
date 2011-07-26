@@ -46,10 +46,17 @@ $(OUTDIR)/HWR_rich_g_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	--xlabel='h_z\ [\mathrm{kpc}]' \
 	--ylabel='\nu(z;R=8\ [\mathrm{kpc}])' # \
 #	--subsample=1000
+$(OUTDIR)/HWR_rich_g_minks0.000001_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_minks_0.01.sav -o $@ \
+	--expd1 --expd2 -n 100 --minks=0.000001 \
+	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
+	--xlabel='h_z\ [\mathrm{kpc}]' \
+	--ylabel='\nu(z;R=8\ [\mathrm{kpc}])' # \
+#	--subsample=1000
 #Min plateSN_r
 $(OUTDIR)/HWR_rich_g_minplatesn70_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_minks_0.1.sav -o $@ \
-	--expd1 --expd2 -n 100 --minplatesn=7\
+	--expd1 --expd2 -n 100 --minplatesn=70 \
 	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
 	--xlabel='h_z\ [\mathrm{kpc}]' \
 	--ylabel='\nu(z;R=8\ [\mathrm{kpc}])' # \
