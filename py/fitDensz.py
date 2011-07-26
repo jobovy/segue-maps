@@ -151,19 +151,16 @@ def fitDensz(parser):
         XYZ= XYZ[dataindx,:]
         vxvyvz= vxvyvz[dataindx,:]
         cov_vxvyvz= cov_vxvyvz[dataindx,:,:]     
-        print "%i plates, %i stars" %(len(plates),len(XYZ[:,0]))
     #Load selection function
     if _VERBOSE:
         print "Loading selection function ..."
     if options.fake:
         plates= None
-    elif not options.minplatesn is None or not options.minks is None:
-        pass
     else:
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
+    print "Using %i plates, %i stars ..." %(len(plates),len(XYZ[:,0]))
     sf= segueSelect(plates=plates,type_faint=options.sel_faint,
                     sample=options.sample,type_bright=options.sel_bright)
-    plates= sf.plates
     if options.fake:
         plates= sf.plates
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,

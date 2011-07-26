@@ -1320,7 +1320,7 @@ def _cleanup_photometry():
         pyfits.writeto(platefile,platephot,clobber=True)
     
 #########################ADD KS VALUES TO PLATES###############################
-def _add_ks(outfile,sample='g',select='all',program=False):
+def _add_ks(outfile,sample='g',select='all'):
     """Add the KS probability to the segueplates file"""
     #Load plates
     platestr= _load_fits(os.path.join(_SEGUESELECTDIR,
@@ -1335,7 +1335,7 @@ def _add_ks(outfile,sample='g',select='all',program=False):
                      type_faint='r',select=select,
                      dr_bright=0.05,dr_faint=0.2,
                      robust_bright=True)
-    if sample.lower() == 'k' and program:
+    if sample.lower() == 'k' and select.lower() == 'program':
         dr_bright= 0.4
         dr_faint= 0.5
     else:
