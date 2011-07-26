@@ -1319,3 +1319,58 @@ def _cleanup_photometry():
         #Save
         pyfits.writeto(platefile,platephot,clobber=True)
     
+#########################ADD KS VALUES TO PLATES###############################
+def _add_ks(outfile,sample='g',select='all',program=False):
+    """Add the KS probability to the segueplates file"""
+    #Load plates
+    platestr= _load_fits(os.path.join(_SEGUESELECTDIR,
+                                      'segueplates.fits'))
+    plates= list(platestr.plate)
+    #Load selection functions
+    sfconst= segueSelect(sn=True,sample=sample,
+                         type_bright='constant',
+                         type_faint='constant',select=select)
+    sfr= segueSelect(sn=True,sample=sample,
+                     type_bright='r',
+                     type_faint='r',select=select,
+                     dr_bright=0.05,dr_faint=0.2,
+                     robust_bright=True)
+    if sample.lower() == 'k' and program:
+        dr_bright= 0.4
+        dr_faint= 0.5
+    else:
+        dr_bright= 0.2
+        dr_faint= 0.2
+    sfplatesn_r= segueSelect(sn=True,sample=sample,
+                             type_bright='platesn_r',
+                             type_faint='platesn_r',select=select,
+                             dr_bright=dr_bright,
+                             dr_faint=dr_faint,
+                             robust_bright=True)
+    #Calculate KS for each plate
+    nplates= len(plates)
+    ksconst= numpy.zeros(nplates)
+    ksr= numpy.zeros(nplates)
+    ksplatesn_r= numpy.zeros(nplates)
+    for ii in range(nplates):
+        plate= plates[ii]
+        sys.stdout.write('\r'+"Working on plate %i" % plate)
+        sys.stdout.flush()
+        try:
+            ksconst[ii]= sfconst.check_consistency(plate)
+        except KeyError:
+            continue
+        ksr[ii]= sfr.check_consistency(plate)
+        ksplatesn_r[ii]= sfplatesn_r.check_consistency(plate)
+    sys.stdout.write('\r'+_ERASESTR+'\r')
+    sys.stdout.flush()
+    #Add to platestr
+    platestr= _append_field_recarray(platestr,'ksconst_'+sample+'_'+select,
+                                     ksconst)
+    platestr= _append_field_recarray(platestr,'ksr_'+sample+'_'+select,
+                                     ksr)
+    platestr= _append_field_recarray(platestr,'ksplatesn_r_'+sample+'_'+select,
+                                     ksplatesn_r)
+    #Save
+    pyfits.writeto(outfile,platestr,clobber=True)
+    return
