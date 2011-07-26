@@ -6,9 +6,11 @@ import cPickle as pickle
 from matplotlib import pyplot
 from optparse import OptionParser
 from scipy import optimize, special, integrate
+import pyfits
 from galpy.util import bovy_coords, bovy_plot, bovy_quadpack
 import bovy_mcmc
-from segueSelect import ivezic_dist_gr, segueSelect, _gi_gr, _mr_gi
+from segueSelect import ivezic_dist_gr, segueSelect, _gi_gr, _mr_gi, \
+    _SEGUESELECTDIR
 from fitSigz import readData
 from plotData import plotDensz
 _ERASESTR= "                                                                                "
@@ -83,54 +85,54 @@ def fitDensz(parser):
         rawdata= rawdata[dataindx]
         XYZ= XYZ[dataindx,:]
         vxvyvz= vxvyvz[dataindx,:]
-        cov_vxvyvz= cov_vxvyvz[dataindx,:]     
+        cov_vxvyvz= cov_vxvyvz[dataindx,:,:]     
     else: plates= None
     #Cut on KS
     if not options.minks is None:
-        print "WARNING: MINKS ONL WORKS FOR G"
+        print "WARNING: MINKS ONL WORKS FOR G-ALL"
         segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
                                                    'segueplates_ksg.fits'))
         if not options.minplatesn is None:
             platesn_r= (segueplatestr.sn1_1+segueplatestr.sn2_1)/2.
             indx= (platesn_r >= options.minplatesn)
-            plates= segueplatestr[indx].plate
+            plates= segueplatestr.plate[indx]
         else: plates= segueplatestr.plate
         #Cut on KS
         indx= []
         for ii in range(len(plates)):
             if options.sel_bright.lower() == 'constant' \
-                    and not 'faint' in segueplatestr[ii].programname:
-                if segueplatestr[ii].ksconst_g_all >= options.minks:
+                    and not 'faint' in segueplatestr.programname[ii]:
+                if segueplatestr.ksconst_g_all[ii] >= options.minks:
                     indx.append(True)
                 else:
                     indx.append(False)
             elif options.sel_bright.lower() == 'r' \
-                    and not 'faint' in segueplatestr[ii].programname:
-                if segueplatestr[ii].ksr_g_all >= options.minks:
+                    and not 'faint' in segueplatestr.programname[ii]:
+                if segueplatestr.ksr_g_all[ii] >= options.minks:
                     indx.append(True)
                 else:
                     indx.append(False)
             elif options.sel_bright.lower() == 'platesn_r' \
-                    and not 'faint' in segueplatestr[ii].programname:
-                if segueplatestr[ii].ksplatesn_r_g_all >= options.minks:
+                    and not 'faint' in segueplatestr.programname[ii]:
+                if segueplatestr.ksplatesn_r_g_all[ii] >= options.minks:
                     indx.append(True)
                 else:
                     indx.append(False)
             if options.sel_faint.lower() == 'constant' \
-                    and 'faint' in segueplatestr[ii].programname:
-                if segueplatestr[ii].ksconst_g_all >= options.minks:
+                    and 'faint' in segueplatestr.programname[ii]:
+                if segueplatestr.ksconst_g_all[ii] >= options.minks:
                     indx.append(True)
                 else:
                     indx.append(False)
             elif options.sel_faint.lower() == 'r' \
-                    and 'faint' in segueplatestr[ii].programname:
-                if segueplatestr[ii].ksr_g_all >= options.minks:
+                    and 'faint' in segueplatestr.programname[ii]:
+                if segueplatestr.ksr_g_all[ii] >= options.minks:
                     indx.append(True)
                 else:
                     indx.append(False)
             elif options.sel_faint.lower() == 'platesn_r' \
-                    and 'faint' in segueplatestr[ii].programname:
-                if segueplatestr[ii].ksplatesn_r_g_all >= options.minks:
+                    and 'faint' in segueplatestr.programname[ii]:
+                if segueplatestr.ksplatesn_r_g_all[ii] >= options.minks:
                     indx.append(True)
                 else:
                     indx.append(False)
@@ -145,18 +147,19 @@ def fitDensz(parser):
         rawdata= rawdata[dataindx]
         XYZ= XYZ[dataindx,:]
         vxvyvz= vxvyvz[dataindx,:]
-        cov_vxvyvz= cov_vxvyvz[dataindx,:]     
+        cov_vxvyvz= cov_vxvyvz[dataindx,:,:]     
     #Load selection function
     if _VERBOSE:
         print "Loading selection function ..."
     if options.fake:
         plates= None
-    elif not options.platesn is None or not options.minks is None:
+    elif not options.minplatesn is None or not options.minks is None:
         pass
     else:
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
     sf= segueSelect(plates=plates,type_faint=options.sel_faint,
                     sample=options.sample,type_bright=options.sel_bright)
+    plates= sf.plates
     if options.fake:
         plates= sf.plates
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
@@ -181,7 +184,7 @@ def fitDensz(parser):
         rawdata= rawdata[indx]
         XYZ= XYZ[indx,:]
         vxvyvz= vxvyvz[indx,:]
-        cov_vxvyvz= cov_vxvyvz[indx,:]
+        cov_vxvyvz= cov_vxvyvz[indx,:,:]
         #Also cut the data > or < than 17.8       
         if options.bright:
             dataindx= (rawdata.dered_r < 17.8)
@@ -190,7 +193,7 @@ def fitDensz(parser):
         rawdata= rawdata[dataindx]
         XYZ= XYZ[dataindx,:]
         vxvyvz= vxvyvz[dataindx,:]
-        cov_vxvyvz= cov_vxvyvz[dataindx,:]
+        cov_vxvyvz= cov_vxvyvz[dataindx,:,:]
         #Reload selection function
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
         sf= segueSelect(plates=plates,type_faint=options.sel_faint,

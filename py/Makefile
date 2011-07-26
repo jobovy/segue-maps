@@ -74,6 +74,14 @@ $(OUTDIR)/HWR_rich_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
+#Min KS
+$(OUTDIR)/HWR_rich_g_flare_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_flare_minks_0.1.sav -o $@ \
+	--expd1 --expd2 -n 100 --minks=0.1 --model=flare \
+	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
+	--xlabel='h_z\ [\mathrm{kpc}]' \
+	--ylabel='\nu(z;R=8\ [\mathrm{kpc}])' # \
+#	--subsample=1000
 #Tied Flare model
 $(OUTDIR)/HWR_rich_g_tiedflare_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
@@ -190,6 +198,14 @@ $(OUTDIR)/HWR_poor_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 	--model=flare \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
+#	--subsample=1000
+#Min KS
+$(OUTDIR)/HWR_poor_g_flare_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_g_flare_minks_0.1.sav -o $@ \
+	--expd1 --expd2 -n 100 --minks=0.1 --model=flare --metal=poor \
+	--xmin=0. --xmax=25. --ymin=0. --ymax=30. \
+	--xlabel='h_z\ [\mathrm{kpc}]' \
+	--ylabel='\nu(z;R=8\ [\mathrm{kpc}])' # \
 #	--subsample=1000
 #just bright
 $(OUTDIR)/HWR_poor_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
