@@ -74,7 +74,7 @@ def fitDensz(parser):
         segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
                                                    'segueplates_ksg.fits'))
         platesn_r= (segueplatestr.sn1_1+segueplatestr.sn2_1)/2.
-        indx= (platesn_r >= options.minplatesn)
+        indx= (platesn_r >= options.minplatesn)*(platesn_r <= options.maxplatesn)
         plates= segueplatestr.plate[indx]
         segueplatestr= segueplatestr[indx]
         #Data
@@ -87,7 +87,6 @@ def fitDensz(parser):
         XYZ= XYZ[dataindx,:]
         vxvyvz= vxvyvz[dataindx,:]
         cov_vxvyvz= cov_vxvyvz[dataindx,:,:]     
-    else: plates= None
     #Cut on KS
     if not options.minks is None:
         print "WARNING: MINKS ONLY WORKS FOR G-ALL"
@@ -95,7 +94,7 @@ def fitDensz(parser):
                                                    'segueplates_ksg.fits'))
         if not options.minplatesn is None:
             platesn_r= (segueplatestr.sn1_1+segueplatestr.sn2_1)/2.
-            indx= (platesn_r >= options.minplatesn)
+            indx= (platesn_r >= options.minplatesn)*(platesn_r <= options.maxplatesn)
             plates= segueplatestr.plate[indx]
             segueplatestr= segueplatestr[indx]
         else: plates= segueplatestr.plate
@@ -730,6 +729,9 @@ def get_options():
     parser.add_option("--minplatesn",dest='minplatesn',type='float',
                       default=None,
                       help="If set, only consider plates with this minimal platesn_r")
+    parser.add_option("--maxplatesn",dest='maxplatesn',type='float',
+                      default=100000000000,
+                      help="If set, only consider plates with this maximal platesn_r")
     parser.add_option("--minks",dest='minks',type='float',
                       default=None,
                       help="If set, only consider plates with this minimal spectro-photo KS value")
