@@ -730,9 +730,9 @@ def get_options():
                       help="Use 'G' or 'K' dwarf sample")
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
-    parser.add_option("--sel_bright",dest='sel_bright',default='constant',
+    parser.add_option("--sel_bright",dest='sel_bright',default='sharprcut',
                       help="Selection function to use ('constant', 'r', 'platesn_r')")
-    parser.add_option("--sel_faint",dest='sel_faint',default='platesn_r',
+    parser.add_option("--sel_faint",dest='sel_faint',default='sharprcut',
                       help="Selection function to use ('constant', 'r', 'platesn_r')")
     parser.add_option("--colordist",dest='colordist',default='constant',
                       help="Color distribution to use ('constant', 'binned')")
