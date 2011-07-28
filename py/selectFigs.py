@@ -140,6 +140,9 @@ def plot_ks(options,args):
                                          dr_bright=dr_bright,
                                          dr_faint=dr_faint,
                                          robust_bright=True)
+    sfsharp= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                     plates=plates,type_bright='sharprcut',
+                                     type_faint='sharprcut',select=select)
     print "constant, bright"
     ksconst_bright= sfconst.check_consistency('bright')
     print "constant, faint"
@@ -152,6 +155,10 @@ def plot_ks(options,args):
     ksplatesn_r_bright= sfplatesn_r.check_consistency('bright')
     print "platesnr, faint"
     ksplatesn_r_faint= sfplatesn_r.check_consistency('faint')
+    print "sharprcut, bright"
+    kssharp_bright= sfplatesn_r.check_consistency('bright')
+    print "sharprcut, faint"
+    kssharp_faint= sfplatesn_r.check_consistency('faint')
     #Plot
     bins=21
     range= [(0.001-1./bins)/(1.+1./bins),1.]
@@ -164,6 +171,9 @@ def plot_ks(options,args):
                         ec='orange',ls='dashed',histtype='step')
     bovy_plot.bovy_hist(ksplatesn_r_bright,
                         range=range,bins=bins,overplot=True,
+                        ec='y',ls='dashed',histtype='step')
+    bovy_plot.bovy_hist(kssharp_bright,
+                        range=range,bins=bins,overplot=True,
                         ec='g',ls='dashed',histtype='step')
     bovy_plot.bovy_hist(ksconst_faint,range=range,bins=bins,overplot=True,
                         ec='r',ls='solid',histtype='step')
@@ -171,12 +181,16 @@ def plot_ks(options,args):
                         ec='orange',ls='solid',histtype='step')
     bovy_plot.bovy_hist(ksplatesn_r_faint,
                         range=range,bins=bins,overplot=True,
+                        ec='y',ls='solid',histtype='step')
+    bovy_plot.bovy_hist(kssharp_faint,
+                        range=range,bins=bins,overplot=True,
                         ec='g',ls='solid',histtype='step')
     xlegend, ylegend, dy= 0.55, 140., -10.
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{constant}$',color='r')
     bovy_plot.bovy_text(xlegend,ylegend+dy,r'$r\ \mathrm{dependent}$',color='orange')
-    bovy_plot.bovy_text(xlegend,ylegend+2.*dy,r'$\mathrm{plateSN\_r},r\ \mathrm{dependent}$',color='g')
-    xlegend, ylegend, dy= 0.55, 105., -10.
+    bovy_plot.bovy_text(xlegend,ylegend+2.*dy,r'$\mathrm{plateSN\_r},r\ \mathrm{dependent}$',color='y')
+    bovy_plot.bovy_text(xlegend,ylegend+3.*dy,r'$\mathrm{sharp}\ r\ \mathrm{cut}$',color='g')
+    xlegend, ylegend, dy= 0.55, 95., -10.
     bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend,ylegend],'k--',
                         overplot=True)
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{bright}$')
