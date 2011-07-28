@@ -156,9 +156,9 @@ def plot_ks(options,args):
     print "platesnr, faint"
     ksplatesn_r_faint= sfplatesn_r.check_consistency('faint')
     print "sharprcut, bright"
-    kssharp_bright= sfplatesn_r.check_consistency('bright')
+    kssharp_bright= sfsharp.check_consistency('bright')
     print "sharprcut, faint"
-    kssharp_faint= sfplatesn_r.check_consistency('faint')
+    kssharp_faint= sfsharp.check_consistency('faint')
     #Plot
     bins=21
     range= [(0.001-1./bins)/(1.+1./bins),1.]
