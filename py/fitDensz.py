@@ -571,12 +571,18 @@ def _NormInt(params,XYZ,R,
     if _INTEGRATEPLATESEP:
         for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
-            if platebright[ii]:
+            if platebright[ii] and not sf.type_bright.lower() == 'sharprcut':
                 thisrmin= rmin
                 thisrmax= 17.8
-            else:
+            elif platebright[ii] and sf.type_bright.lower() == 'sharprcut':
+                thisrmin= rmin
+                thisrmax= sf.rcuts[str(sf.plates[ii])]
+            elif not sf.type_faint.lower() == 'sharprcut':
                 thisrmin= 17.8
                 thisrmax= rmax
+            elif sf.type_faint.lower() == 'sharprcut':
+                thisrmin= 17.8
+                thisrmax= sf.rcuts[str(sf.plates[ii])]
             out+= bovy_quadpack.dblquad(_HWRLikeNormInt,grmin,grmax,
                                         lambda x: _ivezic_dist(x,thisrmin,feh),
                                         lambda x: _ivezic_dist(x,thisrmax,feh),
