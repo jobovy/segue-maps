@@ -22,6 +22,53 @@ def selectFigs(parser):
         plot_colormag(options,args)
     elif options.type.lower() == 'platesn_lb':
         plot_platesn_lb(options,args)
+    elif options.type.lower() == 'ks_lb':
+        plot_ks_lb(options,args)
+        
+def plot_ks_lb(options,args):
+    """Plot KS value vs. lb"""
+    segueplatestr= segueSelect._load_fits(os.path.join(segueSelect._SEGUESELECTDIR,
+                                                       'segueplates_ksg.fits'))
+    #Plot
+    if options.bright:
+        #select bright plates only
+        brightplateindx= numpy.array([not 'faint' in segueplatestr[ii].programname \
+                                          for ii in range(len(segueplatestr))],
+                                     dtype='bool')
+        segueplatestr= segueplatestr[brightplateindx]
+        if options.sel_bright.lower() == 'constant':
+            plotthis= segueplatestr.ksconst_g_all
+        elif options.sel_bright.lower() == 'r':
+            plotthis= segueplatestr.ksr_g_all
+        if options.sel_bright.lower() == 'platesn_r':
+            plotthis= segueplatestr.ksplatesn_r_g_all
+    else:
+        #select faint plates only
+        faintplateindx= numpy.array(['faint' in segueplatestr[ii].programname \
+                                         for ii in range(len(segueplatestr))],
+                                    dtype='bool')
+        segueplatestr= segueplatestr[faintplateindx]
+        if options.sel_faint.lower() == 'constant':
+            plotthis= segueplatestr.ksconst_g_all
+        elif options.sel_faint.lower() == 'r':
+            plotthis= segueplatestr.ksr_g_all
+        if options.sel_faint.lower() == 'platesn_r':
+            plotthis= segueplatestr.ksplatesn_r_g_all
+    indx= (plotthis >= 0.)
+    segueplatestr= segueplatestr[indx]
+    plotthis= plotthis[indx]
+    crange=[0.,numpy.amax(plotthis)]
+    platelb= bovy_coords.radec_to_lb(segueplatestr.ra,segueplatestr.dec,
+                                     degree=True)
+    cmap= pyplot.cm.jet
+    bovy_plot.bovy_print(fig_width=10)
+    bovy_plot.bovy_plot(platelb[:,0],platelb[:,1],scatter=True,colorbar=True,
+                        c=plotthis,xlabel=r'$l\ [\mathrm{deg}]$',
+                        ylabel=r'$b\ [\mathrm{deg}]$',cmap=cmap,
+                        clabel=r'$\mathrm{KS\ probability}$',
+                        crange=crange,
+                        xrange=[0.,360.],yrange=[-90.,90.])
+    bovy_plot.bovy_end_print(options.plotfile)
 
 def plot_platesn_lb(options,args):
     """Plot platesn vs ls"""
@@ -362,6 +409,10 @@ def get_options():
     parser.add_option("--bright",action="store_true", dest="bright",
                       default=False,
                       help="Use bright plates")
+    parser.add_option("--sel_bright",dest='sel_bright',default='constant',
+                      help="Selection function to use ('constant', 'r', 'platesn_r')")
+    parser.add_option("--sel_faint",dest='sel_faint',default='platesn_r',
+                      help="Selection function to use ('constant', 'r', 'platesn_r')")
     return parser
 
 if __name__ == '__main__':

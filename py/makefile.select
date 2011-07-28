@@ -16,6 +16,8 @@ g :$(OUTDIR)/snvsr_faint_g.$(EXT) \
      $(OUTDIR)/soner_platesn_bright_gprogram.$(EXT) \
      $(OUTDIR)/ks_g.$(EXT) \
      $(OUTDIR)/ks_gprogram.$(EXT) \
+     $(OUTDIR)/ks_lb_gbright.$(EXT) \
+     $(OUTDIR)/ks_lb_gfaint.$(EXT) \
      $(OUTDIR)/colormag_g.$(EXT) \
      $(OUTDIR)/colormag_sn_g.$(EXT)
 
@@ -69,7 +71,12 @@ $(OUTDIR)/colormag_g.$(EXT): selectFigs.py segueSelect.py
 $(OUTDIR)/colormag_sn_g.$(EXT): selectFigs.py segueSelect.py
 	$(PYTHON) selectFigs.py -o $@ -t colormag --sn
 
-
+$(OUTDIR)/ks_lb_gbright.$(EXT): selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t ks_lb --bright --sel_bright=constant \
+	--sel_faint=platesn_r
+$(OUTDIR)/ks_lb_gfaint.$(EXT): selectFigs.py
+	$(PYTHON) selectFigs.py -o $@ -t ks_lb --sel_bright=constant \
+	--sel_faint=platesn_r
 
 #####################################K STARS###################################
 $(OUTDIR)/snvsr_faint_k.$(EXT): segueSelect.py selectFigs.py
