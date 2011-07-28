@@ -70,11 +70,23 @@ def fitDensz(parser):
                                                 sample=options.sample)
         grs= rawdata.dered_g-rawdata.dered_r
     #Cut on platesn
-    if not options.minplatesn is None:
+    if not options.minplatesn_bright is None:
         segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
                                                    'segueplates_ksg.fits'))
         platesn_r= (segueplatestr.sn1_1+segueplatestr.sn2_1)/2.
-        indx= (platesn_r >= options.minplatesn)*(platesn_r <= options.maxplatesn)
+        indx= []
+        for ii in range(len(segueplatestr.plate)):
+            if not 'faint' in segueplatestr.programname \
+                    and platesn_r[ii] >= options.minplatesn_bright \
+                    and platesn_r[ii] <= options.maxplatesn_bright:
+                indx.append(True)
+            elif 'faint' in segueplatestr.programname \
+                    and platesn_r[ii] >= options.minplatesn_faint \
+                    and platesn_r[ii] <= options.maxplatesn_faint:
+                indx.append(True)
+            else:
+                indx.append(False)
+        indx= numpy.array(indx,dtype='bool')
         plates= segueplatestr.plate[indx]
         segueplatestr= segueplatestr[indx]
         #Data
@@ -93,8 +105,6 @@ def fitDensz(parser):
         segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
                                                    'segueplates_ksg.fits'))
         if not options.minplatesn is None:
-            platesn_r= (segueplatestr.sn1_1+segueplatestr.sn2_1)/2.
-            indx= (platesn_r >= options.minplatesn)*(platesn_r <= options.maxplatesn)
             plates= segueplatestr.plate[indx]
             segueplatestr= segueplatestr[indx]
         else: plates= segueplatestr.plate
@@ -726,10 +736,16 @@ def get_options():
                       help="Selection function to use ('constant', 'r', 'platesn_r')")
     parser.add_option("--colordist",dest='colordist',default='constant',
                       help="Color distribution to use ('constant', 'binned')")
-    parser.add_option("--minplatesn",dest='minplatesn',type='float',
+    parser.add_option("--minplatesn_bright",dest='minplatesn_bright',type='float',
                       default=None,
                       help="If set, only consider plates with this minimal platesn_r")
-    parser.add_option("--maxplatesn",dest='maxplatesn',type='float',
+    parser.add_option("--maxplatesn_bright",dest='maxplatesn_bright',type='float',
+                      default=100000000000,
+                      help="If set, only consider plates with this maximal platesn_r")
+    parser.add_option("--minplatesn_faint",dest='minplatesn_faint',type='float',
+                      default=0.,
+                      help="If set, only consider plates with this minimal platesn_r")
+    parser.add_option("--maxplatesn_faint",dest='maxplatesn_faint',type='float',
                       default=100000000000,
                       help="If set, only consider plates with this maximal platesn_r")
     parser.add_option("--minks",dest='minks',type='float',
