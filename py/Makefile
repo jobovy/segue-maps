@@ -142,6 +142,13 @@ $(OUTDIR)/TwoVertical_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile \
 	--xlabel='r_0\ [\mathrm{mag}]' \
 	--ylabel='\mathrm{density}' # \
 #	--subsample=1000
+$(OUTDIR)/Flare_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py Flare_dens_rich_gbright.sav -o $@ \
+	-n 100 --plotrfunc --bright --model=flare \
+	--xlabel='r_0\ [\mathrm{mag}]' \
+	--ylabel='\mathrm{density}' # \
+#	--subsample=1000
 $(OUTDIR)/DblExp_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py DblExp_dens_rich_gbright.sav -o $@ \
