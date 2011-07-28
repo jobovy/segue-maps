@@ -2,7 +2,8 @@ import os, os.path
 import math
 import numpy
 from optparse import OptionParser
-from galpy.util import bovy_plot
+import pyfits
+from galpy.util import bovy_plot, bovy_coords
 from matplotlib import pyplot
 import segueSelect
 def selectFigs(parser):
@@ -19,7 +20,41 @@ def selectFigs(parser):
         plot_ks(options,args)
     elif options.type.lower() == 'colormag':
         plot_colormag(options,args)
+    elif options.type.lower() == 'platesn_lb':
+        plot_platesn_lb(options,args)
 
+def plot_platesn_lb(options,args):
+    """Plot platesn vs ls"""
+    platestr= segueSelect._load_fits(os.path.join(segueSelect._SEGUESELECTDIR,
+                                                  'segueplates_ksg.fits'))
+    if options.bright:
+        #select bright plates only
+        brightplateindx= numpy.array([not 'faint' in platestr[ii].programname \
+                                          for ii in range(len(platestr))],
+                                     dtype='bool')
+        platestr= platestr[brightplateindx]
+        platesn_r= (platestr.sn1_1+platestr.sn2_1)/2.
+        crange=[numpy.amin(platesn_r),350]
+    else:
+        #select faint plates only
+        faintplateindx= numpy.array(['faint' in platestr[ii].programname \
+                                         for ii in range(len(platestr))],
+                                    dtype='bool')
+        platestr= platestr[faintplateindx]
+        platesn_r= (platestr.sn1_1+platestr.sn2_1)/2.
+        crange=[numpy.amin(platesn_r),100]
+    platelb= bovy_coords.radec_to_lb(platestr.ra,platestr.dec,
+                                     degree=True)
+    cmap= pyplot.cm.jet
+    bovy_plot.bovy_print(fig_width=10)
+    bovy_plot.bovy_plot(platelb[:,0],platelb[:,1],scatter=True,colorbar=True,
+                        c=platesn_r,xlabel=r'$l\ [\mathrm{deg}]$',
+                        ylabel=r'$b\ [\mathrm{deg}]$',cmap=cmap,
+                        clabel=r'$\mathrm{plateSN\_r}$',
+                        crange=crange,
+                        xrange=[0.,360.],yrange=[-90.,90.])
+    bovy_plot.bovy_end_print(options.plotfile)
+   
 def plot_colormag(options,args):
     """Plot the sample in color-magnitude space"""
     if options.program: select= 'program'
@@ -324,6 +359,9 @@ def get_options():
     parser.add_option("--sn",action="store_true", dest="sn",
                       default=False,
                       help="Cut on S/N")
+    parser.add_option("--bright",action="store_true", dest="bright",
+                      default=False,
+                      help="Use bright plates")
     return parser
 
 if __name__ == '__main__':
