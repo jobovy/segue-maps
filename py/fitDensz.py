@@ -76,11 +76,11 @@ def fitDensz(parser):
         platesn_r= (segueplatestr.sn1_1+segueplatestr.sn2_1)/2.
         indx= []
         for ii in range(len(segueplatestr.plate)):
-            if not 'faint' in segueplatestr.programname \
+            if not 'faint' in segueplatestr.programname[ii] \
                     and platesn_r[ii] >= options.minplatesn_bright \
                     and platesn_r[ii] <= options.maxplatesn_bright:
                 indx.append(True)
-            elif 'faint' in segueplatestr.programname \
+            elif 'faint' in segueplatestr.programname[ii] \
                     and platesn_r[ii] >= options.minplatesn_faint \
                     and platesn_r[ii] <= options.maxplatesn_faint:
                 indx.append(True)
@@ -104,7 +104,7 @@ def fitDensz(parser):
         print "WARNING: MINKS ONLY WORKS FOR G-ALL"
         segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
                                                    'segueplates_ksg.fits'))
-        if not options.minplatesn is None:
+        if not options.minplatesn_bright is None:
             plates= segueplatestr.plate[indx]
             segueplatestr= segueplatestr[indx]
         else: plates= segueplatestr.plate
