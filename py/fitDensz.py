@@ -576,13 +576,13 @@ def _NormInt(params,XYZ,R,
                 thisrmax= 17.8
             elif platebright[ii] and sf.type_bright.lower() == 'sharprcut':
                 thisrmin= rmin
-                thisrmax= sf.rcuts[str(sf.plates[ii])]
+                thisrmax= numpy.amin([sf.rcuts[str(plates[ii])],17.8])
             elif not sf.type_faint.lower() == 'sharprcut':
                 thisrmin= 17.8
                 thisrmax= rmax
             elif sf.type_faint.lower() == 'sharprcut':
                 thisrmin= 17.8
-                thisrmax= sf.rcuts[str(sf.plates[ii])]
+                thisrmax= numpy.amin([sf.rcuts[str(plates[ii])],rmax])
             out+= bovy_quadpack.dblquad(_HWRLikeNormInt,grmin,grmax,
                                         lambda x: _ivezic_dist(x,thisrmin,feh),
                                         lambda x: _ivezic_dist(x,thisrmax,feh),
