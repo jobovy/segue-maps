@@ -64,6 +64,7 @@ class segueSelect:
                    'constant' for constant per plate; 
                    'r' universal function of r
                    'plateSN_r' function of r for plates in ranges in plateSN_r
+                   'sharprcut' sharp cut in r for each plate, at the r-band mag of the faintest object on this plate
               dr_bright= when determining the selection function as a function 
                          of r, binsize to use
               interp_degree_bright= when spline-interpolating, degree to use
@@ -355,6 +356,12 @@ class segueSelect:
                         *self.weight[str(plate)] 
             elif self.type_bright.lower() == 'platesn_r':
                 return self.platesn_sfs_bright[self.platesn_platebin_dict_bright[str(plate)]](plate,r=r)
+            elif self.type_bright.lower() == 'sharprcut':
+                if r <= self.rcuts[str(plate)]:
+                    return self.weight[str(plate)]\
+                        *self.rcuts_correct[str(plate)]
+                else:
+                    return 0.
         else:
             if r < 17.8 or r > self.rmax: return 0.
             elif self.type_faint.lower() == 'constant':
@@ -377,6 +384,12 @@ class segueSelect:
                         *self.weight[str(plate)]
             elif self.type_faint.lower() == 'platesn_r':
                 return self.platesn_sfs_faint[self.platesn_platebin_dict_faint[str(plate)]](plate,r=r)
+            elif self.type_faint.lower() == 'sharprcut':
+                if r <= self.rcuts[str(plate)]:
+                    return self.weight[str(plate)]\
+                        *self.rcuts_correct[str(plate)]
+                else:
+                    return 0.
 
     def check_consistency(self,plate):
         """
@@ -799,6 +812,22 @@ class segueSelect:
                 /float(len(self.platephot[str(plate)]))
         if type.lower() == 'constant':
             return #We're done!
+        if type.lower() == 'sharprcut':
+            #For each plate cut at the location of the faintest object
+            if not hasattr(self,'rcuts'): self.rcuts= {}
+            if not hasattr(self,'rcuts_correct'): self.rcuts_correct= {}
+            for ii in range(len(self.plates)):
+                if bright and 'faint' in self.platestr[ii].programname: continue
+                elif not bright \
+                        and not 'faint' in self.platestr[ii].programname: continue
+                p= self.plates[ii]
+                if self.weight[str(p)] == 0.:
+                    self.rcuts[str(p)]= 0.
+                    self.rcuts_correct[str(p)]= 0.
+                    continue
+                self.rcuts[str(p)]= numpy.amax(self.platespec[str(p)].dered_r)
+                self.rcuts_correct[str(p)]= float(len(self.platephot[str(p)]))/\
+                    float(numpy.sum((self.platephot[str(p)].r <= self.rcuts[str(p)])))
         if type.lower() == 'r':
             #Determine the selection function in bins in r, for bright/faint
             nrbins= int(math.floor((17.8-self.rmin)/dr))+1
