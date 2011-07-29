@@ -752,7 +752,7 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
                                     ds,degree=True)
         XYZ= XYZ.astype(numpy.float64)
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
-        XYZ[:,2]+= _ZSUN
+        #XYZ[:,2]+= _ZSUN #Not here because this is model
         select= numpy.array(sf(plate,r=rs))
         out+= ds**2.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])\
             *select/numpy.fabs(numpy.sin(b*_DEGTORAD))

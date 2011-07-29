@@ -16,8 +16,10 @@ def compareGRichRdist(options,args):
         params1=  numpy.array([-1.20172829533,1.01068814092,-0.0464210825653])
         params2= numpy.array([-1.10521544525,0.945523259073,0.00824201794418])
     else:
-        params1=  numpy.array([0.187391923558,0.71285154528,1.30084421599])
-        params2= numpy.array([0.108148171668,2.46676108062,0.00206572947631])
+        #params1=  numpy.array([0.187391923558,0.71285154528,1.30084421599])
+        #params2= numpy.array([0.108148171668,2.46676108062,0.00206572947631])
+        params1=  numpy.array([-0.187391923558,0.71285154528,1.30084421599])
+        params2= numpy.array([-0.108148171668,2.46676108062,0.00206572947631])
     #Load sf
     sf= segueSelect.segueSelect(sample=options.sample,sn=True,
                                 type_bright='sharprcut',
