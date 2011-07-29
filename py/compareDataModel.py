@@ -321,11 +321,11 @@ def comparezdistPlate(densfunc,params,sf,colordist,data,plate,
         #Plot the data
         data_z= []
         for p in plate:
-            data_z.extend(data[(data.plate == p)].zc)
+            data_z.extend(numpy.fabs(data[(data.plate == p)].zc))
         hist= bovy_plot.bovy_hist(data_z,
                                   normed=True,bins=bins,ec='k',
                                   histtype='step',
-                                  overplot=True,range=xrange)
+                                  overplot=True,range=[zmin,zmax])
         if len(plate) > 1 and len(plate) < 9:
             platestr= '\mathrm{plates}\ \ '
             for ii in range(len(plate)-1):
@@ -373,7 +373,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,data,plate,
             ax= matplotlib.pyplot.gca()
             yrange= ax.get_ylim()
             dy= yrange[1]-yrange[0]
-            xfac= 1.//(20.8-14.5)*(xrange[1]-xrange[0])
+            xfac= 1./(20.8-14.5)*(xrange[1]-xrange[0])
             rx, ry,dr, dz= xrange[1]-2.1*xfac,yrange[1]-0.5*dy, 2.*xfac, 0.4*dy
             #x-axis
             bovy_plot.bovy_plot([rx-0.2*xfac,rx-0.2*xfac+dr],
@@ -426,7 +426,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,data,plate,
             zs= xyzs[:,2]/8.*dz/2.+ry
             bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
             bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
-            bovy_plot.bovy_text(rx-0.2,ry+3./4.*dz/2.,r'$z$')
+            bovy_plot.bovy_text(rx-0.2*xfac,ry+3./4.*dz/2.,r'$z$')
         return (zdist, hist[0], hist[1])
 
 def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
@@ -733,19 +733,16 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     return out
 
 def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
-                         feh,colordist,sf,plate,dontmarginalizecolor=False):
+                         feh,colordist,sf,plate):
     """Predict the Z distribution for a plate"""
     #BOVY: APPROXIMATELY INTEGRATE OVER GR
     ngr= 11
     grs= numpy.linspace(grmin,grmax,ngr)
-    if dontmarginalizecolor:
-        out= numpy.zeros((len(zs),ngr))
-    else:
-        out= numpy.zeros(len(zs))
+    out= numpy.zeros(len(zs))
     norm= 0.
     for jj in range(ngr):
         #What rs do these zs correspond to
-        ds= zs/numpy.sin(b*_DEGTORAD)
+        ds= zs/numpy.fabs(numpy.sin(b*_DEGTORAD))
         gi= _gi_gr(grs[jj])
         mr= _mr_gi(gi,feh)
         rs= 5.*numpy.log10(ds)+10.+mr
@@ -757,14 +754,10 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
         XYZ[:,2]+= _ZSUN
         select= numpy.array(sf(plate,r=rs))
-        if dontmarginalizecolor:
-            out[:,jj]= ds**2.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])\
-                *select
-        else:
-            out+= ds**2.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])\
-                *select
+        out+= ds**2.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])\
+            *select/numpy.fabs(numpy.sin(b*_DEGTORAD))
         norm+= colordist(grs[jj])
-        out/= norm
+    out/= norm
     return out
 
 def cos_sphere_dist(theta,phi,theta_o,phi_o):
