@@ -23,35 +23,46 @@ def compareGRichRdist(options,args):
     ls= [180,180,45,45]
     bs= [0,90,-23,23]
     bins= 21
+    #Set up comparison
+    if options.type == 'r':
+        compare_func= compareDataModel.comparerdistPlate
+    elif options.type == 'z':
+        compare_func= compareDataModel.comparezdistPlate
     for ii in range(len(ls)):
         #Bright
         plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
                                                        sf,data,
                                                        faint=False)
         bovy_plot.bovy_print()
-        compareDataModel.comparerdistPlate(model1,params1,sf,_const_colordist,
-                                           data,plate,color='k',
-                                           rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
-                                           bins=bins,ls='-')
-        compareDataModel.comparerdistPlate(model2,params2,sf,_const_colordist,
-                                           data,plate,color='k',bins=bins,
-                                           rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
-                                           overplot=True,ls='--')
-        bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_rich_l%i_b%i_bright.ps' % (ls[ii],bs[ii])))
+        compare_func(model1,params1,sf,_const_colordist,
+                     data,plate,color='k',
+                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
+                     bins=bins,ls='-')
+        compare_func(model2,params2,sf,_const_colordist,
+                     data,plate,color='k',bins=bins,
+                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
+                     overplot=True,ls='--')
+        if options.type == 'r':
+            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_rich_l%i_b%i_bright.ps' % (ls[ii],bs[ii])))
+        else:
+            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_rich_zdist_l%i_b%i_bright.ps' % (ls[ii],bs[ii])))
         #Faint
         plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
                                                        sf,data,
                                                        bright=False)
         bovy_plot.bovy_print()
-        compareDataModel.comparerdistPlate(model1,params1,sf,_const_colordist,
-                                           data,plate,color='k',
-                                           rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
-                                           bins=bins,ls='-')
-        compareDataModel.comparerdistPlate(model2,params2,sf,_const_colordist,
-                                           data,plate,color='k',bins=bins,
-                                           rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
-                                           overplot=True,ls='--')
-        bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_rich_l%i_b%i_faint.ps' % (ls[ii],bs[ii])))
+        compare_func(model1,params1,sf,_const_colordist,
+                     data,plate,color='k',
+                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
+                     bins=bins,ls='-')
+        compare_func(model2,params2,sf,_const_colordist,
+                     data,plate,color='k',bins=bins,
+                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
+                     overplot=True,ls='--')
+        if options.type == 'r':
+            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_rich_l%i_b%i_faint.ps' % (ls[ii],bs[ii])))
+        elif options.type == 'z':
+            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_rich_zdist_l%i_b%i_faint.ps' % (ls[ii],bs[ii])))
     return None
 
 def get_options():
@@ -61,6 +72,8 @@ def get_options():
                       help="Use 'G' or 'K' dwarf sample")
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
+    parser.add_option("-t","--type",dest='type',default='r',
+                      help="Type of comparison to make ('r', 'z')")
     return parser
 
 
