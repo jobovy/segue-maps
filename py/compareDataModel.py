@@ -313,7 +313,6 @@ def comparezdistPlate(densfunc,params,sf,colordist,data,plate,
             xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.3]
         if yrange is None:
             yrange= [0.,1.6*numpy.amax(zdist)]
-        print zdist
         bovy_plot.bovy_plot(zs,zdist,ls=ls,color=color,
                             xrange=xrange,yrange=yrange,
                             xlabel='$Z\ [\mathrm{kpc}]$',

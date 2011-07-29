@@ -24,6 +24,10 @@ def compareGRichRdist(options,args):
     sf= segueSelect.segueSelect(sample=options.sample,sn=True,
                                 type_bright='sharprcut',
                                 type_faint='sharprcut')
+    if options.metal.lower() == 'rich':
+        feh= -0.15
+    elif options.metal.lower() == 'poor':
+        feh= -0.65
     #Load data
     XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
                                          sample=options.sample)
@@ -44,11 +48,11 @@ def compareGRichRdist(options,args):
         bovy_plot.bovy_print()
         compare_func(model1,params1,sf,_const_colordist,
                      data,plate,color='k',
-                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
+                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=feh,
                      bins=bins,ls='-')
         compare_func(model2,params2,sf,_const_colordist,
                      data,plate,color='k',bins=bins,
-                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
+                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=feh,
                      overplot=True,ls='--')
         if options.type == 'r':
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_l%i_b%i_bright.' % (ls[ii],bs[ii]))+ext)
@@ -61,11 +65,11 @@ def compareGRichRdist(options,args):
         bovy_plot.bovy_print()
         compare_func(model1,params1,sf,_const_colordist,
                      data,plate,color='k',
-                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
+                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=feh,
                      bins=bins,ls='-')
         compare_func(model2,params2,sf,_const_colordist,
                      data,plate,color='k',bins=bins,
-                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
+                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=feh,
                      overplot=True,ls='--')
         if options.type == 'r':
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
