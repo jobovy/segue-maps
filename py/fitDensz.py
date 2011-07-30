@@ -1,7 +1,9 @@
 import sys
 import os, os.path
+import re
 import math
 import numpy
+import scipy
 from scipy import interpolate
 import cPickle as pickle
 from matplotlib import pyplot
@@ -16,6 +18,12 @@ from segueSelect import ivezic_dist_gr, segueSelect, _gi_gr, _mr_gi, \
     _SEGUESELECTDIR
 from fitSigz import readData
 from plotData import plotDensz
+#Scipy version
+try:
+    sversion=re.split(r'\.',scipy.__version__)
+    _SCIPYVERSION=float(sversion[0])+float(sversion[1])/10.
+except:
+    raise ImportError( "scipy.__version__ not understood, contact developer, send scipy.__version__")
 _ERASESTR= "                                                                                "
 _VERBOSE=True
 _DEBUG=True
@@ -26,6 +34,8 @@ _DEGTORAD=math.pi/180.
 _ZSUN=0.025 #Sun's offset from the plane toward the NGP in kpc
 _DZ=6.
 _DR=5.
+_NGR= 11
+_NFEH= 11
 def fitDensz(parser):
     (options,args)= parser.parse_args()
     if len(args) == 0:
@@ -43,8 +53,10 @@ def fitDensz(parser):
         densfunc= _TwoVerticalDensity
     if options.metal.lower() == 'rich':
         feh= -0.15
+        fehrange= [-0.4,0.5]
     elif options.metal.lower() == 'poor':
         feh= -0.65
+        fehrange= [-1.5,-0.5]
     else:
         feh= -0.5 
     #First read the data
@@ -72,6 +84,26 @@ def fitDensz(parser):
         XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
                                                 sample=options.sample)
         grs= rawdata.dered_g-rawdata.dered_r
+    #Load model distributions
+    if options.sample.lower() == 'g':
+        colorrange=[0.48,0.55]
+    elif options.sample.lower() == 'k':
+        colorrange=[0.55,0.75]
+    #FeH
+    fehdist= DistSpline(*numpy.histogram(rawdata.feh,bins=11,range=fehrange),
+                         xrange=fehrange)
+    #Color
+    if options.colordist.lower() == 'constant':
+        colordist= _const_colordist
+    elif options.colordist.lower() == 'binned':
+        #Bin the colors
+        nbins= 16
+        hist,edges= numpy.histogram(grs,range=[grmin,grmax],bins=nbins)
+        colordist= DistBinned(hist,edges)
+    elif options.colordist.lower() == 'spline':
+        colordist= DistSpline(*numpy.histogram(rawdata.dered_g-rawdata.dered_r,
+                                           bins=9,range=colorrange),
+                           xrange=colorrange)
     #Cut on platesn
     if not options.minplatesn_bright is None:
         segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
@@ -238,13 +270,6 @@ def fitDensz(parser):
     if options.sample.lower() == 'g':
         grmin, grmax= 0.48, 0.55
         rmin,rmax= 14.5, 20.2
-    if options.colordist.lower() == 'constant':
-        colordist= _const_colordist
-    elif options.colordist.lower() == 'binned':
-        #Bin the colors
-        nbins= 16
-        hist,edges= numpy.histogram(grs,range=[grmin,grmax],bins=nbins)
-        colordist= DistBinned(hist,edges)
     if os.path.exists(args[0]):#Load savefile
         savefile= open(args[0],'rb')
         params= pickle.load(savefile)
@@ -336,16 +361,28 @@ def fitDensz(parser):
             isDomainFinite=[[False,True],[False,True],[False,True],[True,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
                     [0.,4.6051701859880918],[0.,1.]]
+        #Integration argument based on scipy version
+        usertol= (_SCIPYVERSION >= 0.9)
+        #Integration grid when binning
+        grs= numpy.linspace(grmin,grmax,_NGR)
+        fehs= numpy.linspace(fehrange[0],fehrange[1],_NFEH)
+        rhogr= numpy.array([colordist(gr) for gr in grs])
+        rhofeh= numpy.array([fehdist(feh) for feh in fehs])
+        mr= numpy.zeros((_NGR,_NFEH))
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
         params= optimize.fmin_powell(like_func,params,
                                      args=(XYZ,R,
-                                           sf,plates,platelb[:,0],
+                                           sf,sf.plates,platelb[:,0],
                                            platelb[:,1],platebright,
                                            platefaint,Ap,
                                            grmin,grmax,rmin,rmax,
-                                           feh,colordist,densfunc))
+                                           fehrange[0],fehrange[1],
+                                           feh,colordist,densfunc,
+                                           fehdist,options.dontmargfeh,
+                                           options.dontbincolorfeh,usertol,
+                                           grs,fehs,rhogr,rhofeh,mr))
         if _VERBOSE:
             print "Optimal likelihood:", params
         #Now sample
@@ -355,11 +392,15 @@ def fitDensz(parser):
                                      step,
                                      pdf_func,
                                      (XYZ,R,
-                                      sf,plates,platelb[:,0],
+                                      sf,sf.plates,platelb[:,0],
                                       platelb[:,1],platebright,
                                       platefaint,Ap,
                                       grmin,grmax,rmin,rmax,
-                                      feh,colordist,densfunc),
+                                      fehrange[0],fehrange[1],
+                                      feh,colordist,densfunc,
+                                      fehdist,options.dontmargfeh,
+                                      options.donbincolorfeh,usertol,
+                                      grs,fehs,rhogr,rhofeh,mr),
                                      create_method=create_method,
                                      isDomainFinite=isDomainFinite,
                                      domain=domain,
@@ -519,18 +560,22 @@ def fitDensz(parser):
 ###############################################################################
 def _HWRLike(params,XYZ,R,
              sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
-             grmin,grmax,rmin,rmax,feh,#sample definition
-             colordist,densfunc): #function that describes the color-distribution and the density
+             grmin,grmax,rmin,rmax,fehmin,fehmax,feh,#sample definition
+             colordist,densfunc,fehdist,dontmargfeh, #function that describes the color-distribution, the density, the [Fe/H] distribution, and whether to marginalize over it
+             dontbincolorfeh,usertol,
+             grs,fehs,rhogr,rhofeh,mr):
     """log likelihood for the HWR model"""
     return -_HWRLikeMinus(params,XYZ,R,sf,plates,platel,plateb,platebright,
                           platefaint,Ap,
-                          grmin,grmax,rmin,rmax,feh,
-                          colordist,densfunc)
+                          grmin,grmax,rmin,rmax,fehmin,fehmax,feh,
+                          colordist,densfunc,fehdist,dontmargfeh,dontbincolorfeh,usertol,grs,fehs,rhogr,rhofeh,mr)
 
 def _HWRLikeMinus(params,XYZ,R,
                   sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
-                  grmin,grmax,rmin,rmax,feh,#sample definition
-                  colordist,densfunc): #function that describes the color-distribution and function that describes the density
+                  grmin,grmax,rmin,rmax,fehmin,fehmax,feh,#sample definition
+                  colordist,densfunc,fehdist,dontmargfeh, #function that describes the color-distribution and function that describes the density and that that describes the metallicity distribution, and whether to marginalize over that
+                  dontbincolorfeh,usertol,
+                  grs,fehs,rhogr,rhofeh,mr):
     """Minus log likelihood for all models"""
     if densfunc == _HWRDensity:
         if params[0] > 4.6051701859880918 \
@@ -555,8 +600,9 @@ def _HWRLikeMinus(params,XYZ,R,
     #First calculate the normalizing integral
     out= _NormInt(params,XYZ,R,
                   sf,plates,platel,plateb,platebright,platefaint,Ap,
-                  grmin,grmax,rmin,rmax,feh,
-                  colordist,densfunc)
+                  grmin,grmax,rmin,rmax,fehmin,fehmax,feh,
+                  colordist,densfunc,fehdist,dontmargfeh,dontbincolorfeh,
+                  usertol,grs,fehs,rhogr,rhofeh,mr)
     out= len(R)*numpy.log(out)
     #Then evaluate the individual densities
     out+= -numpy.sum(numpy.log(densfunc(R,XYZ[:,2],params)))
@@ -568,16 +614,17 @@ def _HWRLikeMinus(params,XYZ,R,
 ###############################################################################
 def _NormInt(params,XYZ,R,
              sf,plates,platel,plateb,platebright,platefaint,Ap,
-             grmin,grmax,rmin,rmax,feh,
-             colordist,densfunc):
+             grmin,grmax,rmin,rmax,fehmin,fehmax,feh,
+             colordist,densfunc,fehdist,dontmargfeh,dontbincolorfeh,usertol,
+             grs,fehs,rhogr,rhofeh,mr):
     out= 0.
     if _INTEGRATEPLATESEP:
         for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
-            if platebright[ii] and not sf.type_bright.lower() == 'sharprcut':
+            if sf.platebright[str(plates[ii])] and not sf.type_bright.lower() == 'sharprcut':
                 thisrmin= rmin
                 thisrmax= 17.8
-            elif platebright[ii] and sf.type_bright.lower() == 'sharprcut':
+            elif sf.platebright[str(plates[ii])] and sf.type_bright.lower() == 'sharprcut':
                 thisrmin= rmin
                 thisrmax= numpy.amin([sf.rcuts[str(plates[ii])],17.8])
             elif not sf.type_faint.lower() == 'sharprcut':
@@ -586,14 +633,68 @@ def _NormInt(params,XYZ,R,
             elif sf.type_faint.lower() == 'sharprcut':
                 thisrmin= 17.8
                 thisrmax= numpy.amin([sf.rcuts[str(plates[ii])],rmax])
-            out+= bovy_quadpack.dblquad(_HWRLikeNormInt,grmin,grmax,
-                                        lambda x: _ivezic_dist(x,thisrmin,feh),
-                                        lambda x: _ivezic_dist(x,thisrmax,feh),
+            if dontmargfeh and dontbincolorfeh:
+                out+= bovy_quadpack.dblquad(_HWRLikeNormInt,grmin,grmax,
+                                            lambda x: _ivezic_dist(x,thisrmin,feh),
+                                            lambda x: _ivezic_dist(x,thisrmax,feh),
+                                            args=(colordist,platel[ii],plateb[ii],
+                                                  params,densfunc,sf,plates[ii],
+                                                  feh),
+                                            epsrel=_EPSREL,epsabs=_EPSABS)[0]
+            elif not dontmargfeh and dontbincolorfeh:
+                out+= integrate.tplquad(_HWRLikeNormIntFeH,grmin,grmax,
+                                        lambda x: fehmin,
+                                        lambda x: fehmax,
+                                        lambda x,y: _ivezic_dist(x,thisrmin,y),
+                                        lambda x,y: _ivezic_dist(x,thisrmax,y),
                                         args=(colordist,platel[ii],plateb[ii],
                                               params,densfunc,sf,plates[ii],
-                                              feh),
+                                              fehdist),
                                         epsrel=_EPSREL,epsabs=_EPSABS)[0]
+            elif dontmargfeh and not dontbincolorfeh:
+                pass
+            else: #Marginalize over FeH by binning
+                for kk in range(_NGR):
+                    for jj in range(_NFEH):
+                        mr[kk,jj]= _mr_gi(_gi_gr(grs[kk]),fehs[jj])
+                #Calculate sequence of one-d integrals
+                for kk in range(_NGR):
+                    for jj in range(_NFEH):
+                        if usertol:
+                            out+= integrate.quadrature(_HWRLikeNormIntFeH1D,
+                                                       _ivezic_dist(grs[kk],
+                                                                    thisrmin,
+                                                                    fehs[jj]),
+                                                       _ivezic_dist(grs[kk],
+                                                                    thisrmax,
+                                                                    fehs[jj]),
+                                                       args=(mr[kk,jj],
+                                                             platel[ii],
+                                                             plateb[ii],params,
+                                                             densfunc,sf,
+                                                             plates[ii]),
+                                                       tol=_EPSABS,
+                                                       rtol=_EPSREL,
+                                                       vec_func=True)[0]\
+                                                       *rhogr[kk]*rhofeh[jj]
+                        else:
+                            out+= integrate.quadrature(_HWRLikeNormIntFeH1D,
+                                                       _ivezic_dist(grs[kk],
+                                                                    thisrmin,
+                                                                    fehs[jj]),
+                                                       _ivezic_dist(grs[kk],
+                                                                    thisrmax,
+                                                                    fehs[jj]),
+                                                       args=(mr[kk,jj],
+                                                             platel[ii],
+                                                             plateb[ii],params,
+                                                             densfunc,sf,
+                                                             plates[ii]),
+                                                       tol=_EPSABS,
+                                                       vec_func=True)[0]\
+                                                       *rhogr[kk]*rhofeh[jj]
     else:
+        print "WARNING: MARGINALIZING OVER FEH NOT IMPLEMENTED FOR GLOBAL NORMALIZATION INTEGRATION"
         #First bright plates
         brightplates= plates[platebright]
         thisrmin= rmin
@@ -636,6 +737,41 @@ def _HWRLikeNormInt(d,gr,colordist,l,b,params,densfunc,sf,plate,feh):
     #Jacobian
     jac= d**2.
     return rhogr*dens*jac*select
+
+def _HWRLikeNormIntFeH(d,feh,gr,colordist,l,b,params,densfunc,sf,plate,
+                       fehdist):
+    #Go back to r
+    mr= _mr_gi(_gi_gr(gr),feh)
+    r= 5.*numpy.log10(d)+10.+mr
+    select= sf(plate,r=r)
+    #Color density
+    rhogr= colordist(gr)
+    rhofeh= fehdist(feh)
+    #Spatial density
+    XYZ= bovy_coords.lbd_to_XYZ(l,b,d,degree=True)
+    R= ((8.-XYZ[0])**2.+XYZ[1]**2.)**(0.5)
+    Z= XYZ[2]+_ZSUN
+    dens= densfunc(R,Z,params)
+    #Jacobian
+    jac= d**2.
+    return rhogr*dens*jac*select*rhofeh
+
+def _HWRLikeNormIntFeH1D(d,mr,l,b,params,densfunc,sf,plate):
+    #Go back to r
+    r= 5.*numpy.log10(d)+10.+mr
+    select= sf(plate,r=r)
+    #Spatial density
+    XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(d))]),
+                                numpy.array([b for ii in range(len(d))]),
+                                d,degree=True)
+    #XYZ= XYZ.astype('float')
+    R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+    Z= XYZ[:,2]+_ZSUN
+    dens= densfunc(R,Z,params)
+    #Jacobian
+    jac= d**2.
+    #print numpy.sum(dens), numpy.sum(jac), numpy.sum(select), numpy.sum(dens*jac*select)
+    return dens*jac*select
 
 def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc,feh):
     out= 0.
@@ -807,8 +943,10 @@ def get_options():
                       help="Selection function to use ('constant', 'r', 'platesn_r')")
     parser.add_option("--sel_faint",dest='sel_faint',default='sharprcut',
                       help="Selection function to use ('constant', 'r', 'platesn_r')")
-    parser.add_option("--colordist",dest='colordist',default='constant',
-                      help="Color distribution to use ('constant', 'binned')")
+    parser.add_option("--colordist",dest='colordist',default='spline',
+                      help="Color distribution to use ('constant', 'binned','spline')")
+    parser.add_option("--fehdist",dest='colordist',default='spline',
+                      help="[Fe/H] distribution to use ('spline')")
     parser.add_option("--minplatesn_bright",dest='minplatesn_bright',type='float',
                       default=None,
                       help="If set, only consider plates with this minimal platesn_r")
@@ -870,6 +1008,13 @@ def get_options():
     parser.add_option("--fake",action="store_true", dest="fake",
                       default=False,
                       help="Data is fake")
+    parser.add_option("--dontmargfeh",action="store_true", dest="dontmargfeh",
+                      default=False,
+                      help="Don't marginalize over metallicity")
+    parser.add_option("--dontbincolorfeh",action="store_true", 
+                      dest="dontbincolorfeh",
+                      default=False,
+                      help="Don't compute the integral over color and metallicity by binning")
     parser.add_option("-i",dest='fakefile',
                       help="Pickle file with the fake data")
     return parser

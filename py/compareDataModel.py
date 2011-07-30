@@ -774,24 +774,25 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     fehs= numpy.linspace(fehmin,fehmax,nfeh)
     out= numpy.zeros(len(zs))
     norm= 0.
+    ds= zs/numpy.fabs(numpy.sin(b*_DEGTORAD))
     for kk in range(nfeh):
         for jj in range(ngr):
             #What rs do these zs correspond to
-            ds= zs/numpy.fabs(numpy.sin(b*_DEGTORAD))
             gi= _gi_gr(grs[jj])
             mr= _mr_gi(gi,fehs[kk])
             rs= 5.*numpy.log10(ds)+10.+mr
-            #Calculate (R,z)s
-            XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
-                                        numpy.array([b for ii in range(len(ds))]),
-                                        ds,degree=True)
-            XYZ= XYZ.astype(numpy.float64)
-            R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
-            #XYZ[:,2]+= _ZSUN #Not here because this is model
             select= numpy.array(sf(plate,r=rs))
-            out+= ds**2.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])\
+            out+= colordist(grs[jj])\
                 *select/numpy.fabs(numpy.sin(b*_DEGTORAD))*fehdist(fehs[kk])
             norm+= colordist(grs[jj])*fehdist(fehs[kk])
+    #Calculate (R,z)s
+    XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
+                                numpy.array([b for ii in range(len(ds))]),
+                                ds,degree=True)
+    XYZ= XYZ.astype(numpy.float64)
+    R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+    #XYZ[:,2]+= _ZSUN #Not here because this is model
+    out*= ds**2.*densfunc(R,XYZ[:,2],params)
     out/= norm
     return out
 

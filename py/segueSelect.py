@@ -313,8 +313,26 @@ class segueSelect:
             scalarOut= True
         elif isinstance(plate,(numpy.int16,int)) \
                 and isinstance(r,(list,numpy.ndarray)):
-            plate= [plate for ii in range(len(r))]
-            scalarOut= False
+            #Special case this for optimization if sharprcut
+            if self.type_bright.lower() == 'sharprcut' \
+                    and self.type_faint.lower() == 'sharprcut':
+                bright= self.platebright[str(plate)] #Short-cut
+                nout= len(r)
+                if isinstance(r,list): thisr= numpy.array(r)
+                else: thisr= r
+                out= numpy.zeros(nout)
+                if bright:
+                    indx= (thisr >= 14.5)*(thisr <= numpy.amin([self.rcuts[str(plate)],17.8]))
+                else:
+                    indx= (thisr >= 17.8)*(thisr <= numpy.amin([self.rcuts[str(plate)],self.rmax]))
+                if numpy.sum(indx) == 0: return out
+                out[indx]= self.weight[str(plate)]\
+                    *self.rcuts_correct[str(plate)]
+                if isinstance(r,list): return list(out)
+                else: return out
+            else:
+                plate= [plate for ii in range(len(r))]
+                scalarOut= False
         else:
             scalarOut= False
         out= []
