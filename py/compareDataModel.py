@@ -453,7 +453,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             zs= xyzs[:,2]/8.*dz/2.+ry
             bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
             bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
-            bovy_plot.bovy_text(rx-0.2*xfac,ry+3./4.*dz/2.,r'$Z$')
+            bovy_plot.bovy_text(rx-0.25*xfac,ry+3./4.*dz/2.,r'$Z$')
         return (zdist, hist[0], hist[1])
 
 def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
@@ -887,4 +887,4 @@ def _add_coordinset(rx=None,ry=None,rmin=14.5,rmax=19.5,feh=-0.15,
     zs= xyzs[:,2]/8.*dz/2.+ry
     bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
     bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
-    bovy_plot.bovy_text(rx-0.2*xfac,ry+3./4.*dz/2.,r'$Z$')
+    bovy_plot.bovy_text(rx-0.25*xfac,ry+3./4.*dz/2.,r'$Z$')
