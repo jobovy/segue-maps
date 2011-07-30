@@ -200,7 +200,8 @@ def fitDensz(parser):
         plates= None
     else:
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
-    print "Using %i plates, %i stars ..." %(len(plates),len(XYZ[:,0]))
+    if not options.bright and not options.faint:
+        print "Using %i plates, %i stars ..." %(len(plates),len(XYZ[:,0]))
     sf= segueSelect(plates=plates,type_faint=options.sel_faint,
                     sample=options.sample,type_bright=options.sel_bright)
     if options.fake:
@@ -264,6 +265,8 @@ def fitDensz(parser):
         platebright= numpy.array(indx,dtype='bool')
         indx= ['faint' in name for name in sf.platestr.programname]
         platefaint= numpy.array(indx,dtype='bool')
+    if options.bright or options.faint:
+        print "Using %i plates, %i stars ..." %(len(plates),len(XYZ[:,0]))
     Ap= math.pi*2.*(1.-numpy.cos(1.49*_DEGTORAD)) #SEGUE PLATE=1.49 deg radius
     if options.sample.lower() == 'g':
         grmin, grmax= 0.48, 0.55

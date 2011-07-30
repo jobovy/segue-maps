@@ -314,9 +314,9 @@ class segueSelect:
         elif isinstance(plate,(numpy.int16,int)) \
                 and isinstance(r,(list,numpy.ndarray)):
             #Special case this for optimization if sharprcut
-            if self.type_bright.lower() == 'sharprcut' \
-                    and self.type_faint.lower() == 'sharprcut':
-                bright= self.platebright[str(plate)] #Short-cut
+            bright= self.platebright[str(plate)] #Short-cut
+            if (bright and self.type_bright.lower() == 'sharprcut') \
+                    or (not bright and self.type_faint.lower() == 'sharprcut'):
                 nout= len(r)
                 if isinstance(r,list): thisr= numpy.array(r)
                 else: thisr= r
