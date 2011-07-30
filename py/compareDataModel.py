@@ -781,3 +781,73 @@ def cos_sphere_dist(theta,phi,theta_o,phi_o):
                                                  numpy.sin(phi_o)\
                                                      *numpy.sin(phi))+
             numpy.cos(theta_o)*numpy.cos(theta))
+
+def _add_coordinset(rx=None,ry=None,rmin=14.5,rmax=19.5,feh=-0.15,
+                    allbright=False,allfaint=False,platels=None,
+                    platebs=None,grmin=0.48,grmax=0.55):
+    #Overplot direction in (R,z) plane
+    ax= matplotlib.pyplot.gca()
+    xrange= ax.get_xlim()
+    yrange= ax.get_ylim()
+    dy= yrange[1]-yrange[0]
+    xfac= 1./(20.8-14.5)*(xrange[1]-xrange[0])
+    if rx is None:
+        rx= xrange[1]-2.1*xfac
+    if ry is None:
+        ry= yrange[1]-0.5*dy
+    dr, dz= 2.*xfac, 0.4*dy
+    #x-axis
+    bovy_plot.bovy_plot([rx-0.2*xfac,rx-0.2*xfac+dr],
+                        [ry,ry],
+                        'k-',overplot=True)
+    #y-axis
+    bovy_plot.bovy_plot([rx,rx],
+                        [ry-dz/2.,ry+dz/2.],
+                        'k-',overplot=True)
+    #Sun's position
+    bovy_plot.bovy_plot([rx+dr/2.],[ry],'ko',overplot=True)
+    #Draw los
+    gr= (grmax+grmin)/2.
+    if allbright:
+        thisrmin= rmin
+        thisrmax= 17.8
+    elif allfaint:
+        thisrmin= 17.8
+        thisrmax= rmax
+    else:
+        thisrmin= rmin
+        thisrmax= rmax
+    dmin, dmax= _ivezic_dist(gr,thisrmin,feh), _ivezic_dist(gr,thisrmax,feh)
+    ds= numpy.linspace(dmin,dmax,101)
+    xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels)+numpy.std(platels) for ii in range(len(ds))]),
+                                 numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
+                                 ds,degree=True).astype('float')
+    rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+    zs= xyzs[:,2]/8.*dz/2.+ry
+    bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+    xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels)-numpy.std(platels) for ii in range(len(ds))]),
+                                 numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
+                                 ds,degree=True).astype('float')
+    rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+    zs= xyzs[:,2]/8.*dz/2.+ry
+    bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+    xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels) for ii in range(len(ds))]),
+                                 numpy.array([numpy.mean(platebs)+numpy.std(platebs) for ii in range(len(ds))]),
+                                 ds,degree=True).astype('float')
+    rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+    zs= xyzs[:,2]/8.*dz/2.+ry
+    bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+    xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels) for ii in range(len(ds))]),
+                                 numpy.array([numpy.mean(platebs)-numpy.std(platebs) for ii in range(len(ds))]),
+                                 ds,degree=True).astype('float')
+    rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+    zs= xyzs[:,2]/8.*dz/2.+ry
+    bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+    xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels) for ii in range(len(ds))]),
+                                 numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
+                                 ds,degree=True).astype('float')
+    rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+    zs= xyzs[:,2]/8.*dz/2.+ry
+    bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
+    bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
+    bovy_plot.bovy_text(rx-0.2*xfac,ry+3./4.*dz/2.,r'$z$')
