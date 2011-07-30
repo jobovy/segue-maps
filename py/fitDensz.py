@@ -11,8 +11,6 @@ from optparse import OptionParser
 from scipy import optimize, special, integrate
 import pyfits
 from galpy.util import bovy_coords, bovy_plot, bovy_quadpack
-from extreme_deconvolution import extreme_deconvolution
-import xdtarget
 import bovy_mcmc
 from segueSelect import ivezic_dist_gr, segueSelect, _gi_gr, _mr_gi, \
     _SEGUESELECTDIR
@@ -880,6 +878,8 @@ class DistSpline:
 class FeHXDDist:
     """Distribution from XD for FeH"""
     def __init__(self,data,k=2,mincut=None,maxcut=None):
+        from extreme_deconvolution import extreme_deconvolution
+        import xdtarget
         #We assume only one of mincut,maxcut is not None
         self.mincut= mincut
         self.maxcut= maxcut
