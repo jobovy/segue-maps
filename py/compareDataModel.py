@@ -335,7 +335,10 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             ndimage.filters.gaussian_filter1d(zdist,convolve/(zs[1]-zs[0]),
                                               output=zdist)
         if xrange is None:
-            xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.3]
+            if allbright and feh <= -0.5:
+                xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.7]
+            else:
+                xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.3]
         if yrange is None:
             yrange= [0.,1.6*numpy.amax(zdist)]
         bovy_plot.bovy_plot(zs,zdist,ls=ls,color=color,
