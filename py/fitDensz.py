@@ -2,12 +2,15 @@ import sys
 import os, os.path
 import math
 import numpy
+from scipy import interpolate
 import cPickle as pickle
 from matplotlib import pyplot
 from optparse import OptionParser
 from scipy import optimize, special, integrate
 import pyfits
 from galpy.util import bovy_coords, bovy_plot, bovy_quadpack
+from extreme_deconvolution import extreme_deconvolution
+import xdtarget
 import bovy_mcmc
 from segueSelect import ivezic_dist_gr, segueSelect, _gi_gr, _mr_gi, \
     _SEGUESELECTDIR
@@ -241,7 +244,7 @@ def fitDensz(parser):
         #Bin the colors
         nbins= 16
         hist,edges= numpy.histogram(grs,range=[grmin,grmax],bins=nbins)
-        colordist= ColorDistBinned(hist,edges)
+        colordist= DistBinned(hist,edges)
     if os.path.exists(args[0]):#Load savefile
         savefile= open(args[0],'rb')
         params= pickle.load(savefile)
@@ -704,12 +707,12 @@ def _ConstDensity(R,Z,params):
     return 1.
     
 ###############################################################################
-#            COLOR DISTRIBUTIONS
+#            COLOR/METALLICITY DISTRIBUTIONS
 ###############################################################################
 def _const_colordist(gr):
     return 1./.07
 
-class ColorDistBinned:
+class DistBinned:
     """Color distribution from a binned representation"""
     def __init__(self,hist,edges):
         self.hist= hist/(numpy.sum(hist)*(edges[1]-edges[0])) #normalized
@@ -720,6 +723,70 @@ class ColorDistBinned:
         #Find bin that contains this gr
         bb= int(numpy.floor((gr-self.edges[0])/(self.edges[1]-self.edges[0])))
         return self.hist[bb]
+
+class DistSpline:
+    """Color distribution from a spline fit to a binned representation"""
+    def __init__(self,hist,edges,xrange=None):
+        self.hist= hist/(numpy.sum(hist)*(edges[1]-edges[0])) #normalized
+        self.edges= edges
+        xs= []
+        for ii in range(len(self.hist)):
+            xs.append((edges[ii]+edges[ii+1])/2.)
+        self.xs= numpy.array(xs)
+        self.spline= interpolate.splrep(self.xs,numpy.log(self.hist+0.00001))
+        self.range= xrange
+        return
+
+    def __call__(self,gr):
+        if gr > self.range[1] or gr < self.range[0]: return 0.
+        return numpy.exp(interpolate.splev(gr,self.spline))
+
+class FeHXDDist:
+    """Distribution from XD for FeH"""
+    def __init__(self,data,k=2,mincut=None,maxcut=None):
+        #We assume only one of mincut,maxcut is not None
+        self.mincut= mincut
+        self.maxcut= maxcut
+        if not mincut is None:
+            thisdata= numpy.log(data-self.mincut)
+        elif not maxcut is None:
+            thisdata= numpy.log(self.maxcut-data)
+        else:
+            thisdata= data
+        #Set up XD
+        ydata= numpy.reshape(thisdata,(len(data),1))
+        ycovar= numpy.zeros((len(thisdata),1))
+        xamp= numpy.ones(k)/float(k)
+        xmean= numpy.zeros((k,1))
+        for kk in range(k):
+            xmean[kk,:]= numpy.mean(ydata,axis=0)\
+                +numpy.random.normal()*numpy.std(ydata,axis=0)
+        xcovar= numpy.zeros((k,1,1))
+        for kk in range(k):
+            xcovar[kk,:,:]= numpy.cov(ydata.T)
+        extreme_deconvolution(ydata,ycovar,xamp,xmean,xcovar)
+        self.xamp= xamp
+        self.xmean= xmean
+        self.xcovar= xcovar
+        self.xdt= xdtarget.xdtarget(amp=xamp,mean=xmean,covar=xcovar)
+        return
+
+    def __call__(self,feh):
+        if not self.mincut is None:
+            if feh <= self.mincut: return 0.
+            thisfeh= numpy.log(feh-self.mincut)
+            jac= 1./(feh-self.mincut)
+        elif not self.maxcut is None:
+            if feh >= self.maxcut: return 0.
+            thisfeh= numpy.log(self.maxcut-feh)
+            jac= 1./(self.maxcut-feh)
+        else:
+            thisfeh= feh
+            jac= 1.
+        a= numpy.reshape(numpy.array([thisfeh]),(1,1))
+        acov= numpy.zeros((1,1))
+        return numpy.exp(self.xdt(a,acov))[0]*jac
+
 
 def _ivezic_dist(gr,r,feh):
     d,derr= ivezic_dist_gr(gr+r,r,feh)

@@ -4,6 +4,7 @@ from optparse import OptionParser
 from galpy.util import bovy_plot, bovy_coords
 import segueSelect
 from fitSigz import readData
+from fitDensz import FeHXDDist, DistSpline
 from compareDataModel import _add_coordinset
 def plotMetallicityColor(options,args):
     if options.png: ext= 'png'
@@ -20,21 +21,25 @@ def plotMetallicityColor(options,args):
         rmin, rmax= 14.5, 20.2
         grmin, grmax= 0.48, 0.55
         rx= 0.47
+        colorrange=[0.48,0.55]
     elif options.sample.lower() == 'k':
         xrange=[0.51,0.79]
         rmin, rmax= 14.5, 19.
         grmin, grmax= 0.55,0.75
         rx= 0.01/.11*(xrange[1]-xrange[0])+xrange[0]
+        colorrange=[0.55,0.75]
     if options.metal.lower() == 'rich':
         yrange=[-0.5,0.5]
         ry= 0.275
+        fehrange= [-0.4,0.5]
     elif options.metal.lower() == 'poor':
         yrange=[-1.6,0.3]
         ry= yrange[1]-(.5-0.275)*(yrange[1]-yrange[0])
+        fehrange= [-1.5,-0.5]
     #First plot all data
     bovy_plot.bovy_print()
     _plotMC_single(data,options,args,all=True,overplot=False,xrange=xrange,
-                   yrange=yrange)
+                   yrange=yrange,fehrange=fehrange,colorrange=colorrange)
     bovy_plot.bovy_end_print(os.path.join(args[0],'FeH_gr_'+options.sample+'_'+options.metal+'.'+ext))
     #Then plot them pixel-by-pixel
     platelb= bovy_coords.radec_to_lb(platestr.ra,platestr.dec,
@@ -67,8 +72,28 @@ def plotMetallicityColor(options,args):
 def _plotMC_single(data,options,args,all=False,overplot=False,xrange=None,
                    yrange=None,platels=None,platebs=None,
                    rmin=None,rmax=None,grmin=None,grmax=None,
-                   rx=None,ry=None):
+                   rx=None,ry=None,fehrange=None,colorrange=None):
     if all:
+        #Load model distributions
+        #FeH
+        fehdist= DistSpline(*numpy.histogram(data.feh,bins=11,range=fehrange),
+                             xrange=fehrange)
+        nfehs= 1001
+        fehs= numpy.linspace(yrange[0],yrange[1],nfehs)
+        mfehs= numpy.zeros(nfehs)
+        for ii in range(nfehs):
+            mfehs[ii]= fehdist(fehs[ii])
+        mfehs/= numpy.nansum(mfehs)*(fehs[1]-fehs[0])    
+        #Color
+        cdist= DistSpline(*numpy.histogram(data.dered_g-data.dered_r,
+                                           bins=9,range=colorrange),
+                           xrange=colorrange)
+        ncs= 1001
+        cs= numpy.linspace(xrange[0],xrange[1],ncs)
+        mcs= numpy.zeros(nfehs)
+        for ii in range(nfehs):
+            mcs[ii]= cdist(cs[ii])
+        mcs/= numpy.nansum(mcs)*(cs[1]-cs[0])    
         bovy_plot.scatterplot(data.dered_g-data.dered_r,
                               data.feh,
                               'k,',
@@ -78,6 +103,35 @@ def _plotMC_single(data,options,args,all=False,overplot=False,xrange=None,
                               xlabel=r'$g-r\ [\mathrm{mag}]$',
                               ylabel=r'$[\mathrm{Fe/H}]$',
                               onedhists=True)
+        platestr= '\mathrm{all\ plates}'
+        bovy_plot.bovy_text(r'$'+platestr+'$'
+                            +'\n'+
+                            '$%i \ \ \mathrm{stars}$' % 
+                            len(data.feh),top_right=True)
+        #Overplot model FeH
+        from matplotlib import pyplot
+        from matplotlib.ticker import NullFormatter
+        fig= pyplot.gcf()
+        nullfmt   = NullFormatter()         # no labels
+        # definitions for the axes
+        left, width = 0.1, 0.65
+        bottom, height = 0.1, 0.65
+        bottom_h = left_h = left+width
+        rect_scatter = [left, bottom, width, height]
+        rect_histx = [left, bottom_h, width, 0.2]
+        rect_histy = [left_h, bottom, 0.2, height]
+        axScatter = pyplot.axes(rect_scatter)
+        axHistx = pyplot.axes(rect_histx)
+        axHisty = pyplot.axes(rect_histy)
+        # no labels
+        axHistx.xaxis.set_major_formatter(nullfmt)
+        axHistx.yaxis.set_major_formatter(nullfmt)
+        axHisty.xaxis.set_major_formatter(nullfmt)
+        axHisty.yaxis.set_major_formatter(nullfmt)
+        fig.sca(axHisty)
+        bovy_plot.bovy_plot(mfehs,fehs,'k-',overplot=True)
+        fig.sca(axHistx)
+        bovy_plot.bovy_plot(cs,mcs,'k-',overplot=True)
     else:
         bovy_plot.bovy_plot(data.dered_g-data.dered_r,
                               data.feh,
@@ -88,13 +142,6 @@ def _plotMC_single(data,options,args,all=False,overplot=False,xrange=None,
                               xlabel=r'$g-r\ [\mathrm{mag}]$',
                               ylabel=r'$[\mathrm{Fe/H}]$',
                               onedhists=True)
-    if all:
-        platestr= '\mathrm{all\ plates}'
-        bovy_plot.bovy_text(r'$'+platestr+'$'
-                            +'\n'+
-                            '$%i \ \ \mathrm{stars}$' % 
-                            len(data.feh),top_right=True)
-    else:
         platestr= '%i\ \mathrm{plates}' % len(set(list(data.plate)))
         lbstr= '$l = %i^\circ \pm %i^\circ$' % (
             int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
