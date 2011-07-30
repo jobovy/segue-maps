@@ -3,16 +3,19 @@
 ###############################################################################
 _NRS= 1001
 _NZS= 1001
+import sys
 import numpy
 from scipy import ndimage
 from galpy.util import bovy_coords, bovy_plot
 import matplotlib
 from fitDensz import _ivezic_dist, _ZSUN, _DEGTORAD, _gi_gr, _mr_gi
+from segueSelect import _ERASESTR
 ###############################################################################
 #   Density
 ###############################################################################
-def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
-                      rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=-0.15,
+def comparerdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
+                      rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,fehmin=-0.4,
+                      fehmax=0.5,feh=-0.15,
                       convolve=0.,xrange=None,yrange=None,
                       overplot=False,bins=21,color='k',ls='-'):
     """
@@ -25,10 +28,12 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
        params - array of parameters of the density function
        sf - segueSelect instance
        colordist - color g-r distribution
+       fehdist - FeH distribution
        data - data recarray (.dered_r is used)
        plate - plate number(s), or 'all', 'faint', or 'bright'
        rmin, rmax= minimum and maximum r
        grmin, grmax= minimum and maximum g-r
+       fehmin, fehmax= minimum and maximum [Fe/H]
        feh= metallicity to use in d->r
        convolve= set to convolution kernel size (convolve predicted 
                  distribution with Gaussian of this width)
@@ -79,7 +84,8 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
             thisrdist= _predict_rdist_plate(rs,densfunc,params,rmin,rmax,
                                             platel,
                                             plateb,grmin,grmax,
-                                            feh,colordist,sf,p)
+                                            fehmin,fehmax,
+                                            feh,colordist,fehdist,sf,p)
             if 'faint' in sf.platestr[pindx].programname[0]:
                 thisrdist[(rs < 17.8)]= 0.
                 allbright= False
@@ -207,11 +213,12 @@ def comparerdistPlate(densfunc,params,sf,colordist,data,plate,
             zs= xyzs[:,2]/8.*dz/2.+ry
             bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
             bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
-            bovy_plot.bovy_text(rx-0.2,ry+3./4.*dz/2.,r'$z$')
+            bovy_plot.bovy_text(rx-0.2,ry+3./4.*dz/2.,r'$Z$')
         return (rdist, hist[0], hist[1])
 
-def comparezdistPlate(densfunc,params,sf,colordist,data,plate,
-                      rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=-0.15,
+def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
+                      rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,fehmin=-0.4,
+                      fehmax=0.5,feh=-0.15,
                       convolve=0.,xrange=None,yrange=None,
                       overplot=False,bins=21,color='k',ls='-'):
     """
@@ -224,10 +231,12 @@ def comparezdistPlate(densfunc,params,sf,colordist,data,plate,
        params - array of parameters of the density function
        sf - segueSelect instance
        colordist - color g-r distribution
+       fehdist - Fe/H distribution of the sample
        data - data recarray (.dered_r is used)
        plate - plate number(s), or 'all', 'faint', or 'bright'
        rmin, rmax= minimum and maximum r
        grmin, grmax= minimum and maximum g-r
+       fehmin, fehmax= minimum and maximum [Fe/H]
        feh= metallicity to use in d->r
        convolve= set to convolution kernel size (convolve predicted 
                  distribution with Gaussian of this width)
@@ -281,10 +290,19 @@ def comparezdistPlate(densfunc,params,sf,colordist,data,plate,
         thisrmin, thisrmax= rmin, 17.8
     elif allfaint:
         thisrmin, thisrmax= 17.8, rmax
-    dmin= numpy.amin([_ivezic_dist(grmin,thisrmin,feh),
-                      _ivezic_dist(grmax,thisrmin,feh)])
-    dmax= numpy.amin([_ivezic_dist(grmin,thisrmax,feh),
-                      _ivezic_dist(grmax,thisrmax,feh)])
+    _NGR, _NFEH= 51, 51
+    grs= numpy.zeros((_NGR,_NFEH))
+    fehs= numpy.zeros((_NGR,_NFEH))
+    for ii in range(_NGR):
+        fehs[ii,:]= numpy.linspace(fehmin,fehmax,_NFEH)
+    for ii in range(_NFEH):
+        grs[:,ii]= numpy.linspace(grmin,grmax,_NGR)
+    sys.stdout.write('\r'+"Determining minimal and maximal distance")
+    sys.stdout.flush()
+    dmin= numpy.amin(_ivezic_dist(grs,thisrmin,fehs))
+    dmax= numpy.amin(_ivezic_dist(grs,thisrmax,fehs))
+    sys.stdout.write('\r'+_ERASESTR+'\r')
+    sys.stdout.flush()
     zmin, zmax= dmin*numpy.sin(bmin*_DEGTORAD), dmax*numpy.sin(bmax*_DEGTORAD)
     zs= numpy.linspace(zmin,zmax,_NZS)
     if isinstance(params,list): #list of samples
@@ -292,7 +310,11 @@ def comparezdistPlate(densfunc,params,sf,colordist,data,plate,
     else: #single value
         zdist= numpy.zeros(_NZS)
         platels, platebs= [], []
+        cnt= 0
         for p in plate:
+            cnt+= 1
+            sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,cnt,len(plate)))
+            sys.stdout.flush()
             #l and b?
             pindx= (sf.plates == p)
             platel= platelb[pindx,0][0]
@@ -302,8 +324,11 @@ def comparezdistPlate(densfunc,params,sf,colordist,data,plate,
             thiszdist= _predict_zdist_plate(zs,densfunc,params,rmin,rmax,
                                             platel,
                                             plateb,grmin,grmax,
-                                            feh,colordist,sf,p)
+                                            fehmin,fehmax,
+                                            feh,colordist,fehdist,sf,p)
             zdist+= thiszdist
+        sys.stdout.write('\r'+_ERASESTR+'\r')
+        sys.stdout.flush()
         norm= numpy.nansum(zdist*(zs[1]-zs[0]))
         zdist/= norm
         if convolve > 0.:
@@ -425,7 +450,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,data,plate,
             zs= xyzs[:,2]/8.*dz/2.+ry
             bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
             bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
-            bovy_plot.bovy_text(rx-0.2*xfac,ry+3./4.*dz/2.,r'$z$')
+            bovy_plot.bovy_text(rx-0.2*xfac,ry+3./4.*dz/2.,r'$Z$')
         return (zdist, hist[0], hist[1])
 
 def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
@@ -672,7 +697,7 @@ def similarPlatesDirection(l,b,dr,sf,data,bright=True,faint=True):
 ###############################################################################
 def _predict_rdist(rs,densfunc,params,rmin,rmax,platelb,grmin,grmax,
                    feh,sf,colordist):
-    """Predict the r distribution for the sample NOT USED"""
+    """Predict the r distribution for the sample NOT USED AND NOT CORRECT"""
     plates= sf.plates
     out= numpy.zeros(len(rs))
     for ii in range(len(plates)):
@@ -693,31 +718,36 @@ def _predict_rdist(rs,densfunc,params,rmin,rmax,platelb,grmin,grmax,
     return out
 
 def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
-                         feh,colordist,sf,plate,dontmarginalizecolor=False):
+                         fehmin,fehmax,
+                         feh,colordist,fehdist,
+                         sf,plate,dontmarginalizecolor=False):
     """Predict the r distribution for a plate"""
-    #BOVY: APPROXIMATELY INTEGRATE OVER GR
-    ngr= 11
+    #BOVY: APPROXIMATELY INTEGRATE OVER GR AND FEH
+    ngr, nfeh= 11, 11
     grs= numpy.linspace(grmin,grmax,ngr)
+    fehs= numpy.linspace(fehmin,fehmax,nfeh)
     if dontmarginalizecolor:
         out= numpy.zeros((len(rs),ngr))
     else:
         out= numpy.zeros(len(rs))
     norm= 0.
-    for jj in range(ngr):
-       #Calculate distances
-        ds= _ivezic_dist(grs[jj],rs,feh)
-        #Calculate (R,z)s
-        XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
-                                    numpy.array([b for ii in range(len(ds))]),
-                                    ds,degree=True)
-        XYZ= XYZ.astype(numpy.float64)
-        R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
-        XYZ[:,2]+= _ZSUN
-        if dontmarginalizecolor:
-            out[:,jj]= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])
-        else:
-            out+= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])
-        norm+= colordist(grs[jj])
+    for kk in range(nfeh):
+        for jj in range(ngr):
+            #Calculate distances
+            ds= _ivezic_dist(grs[jj],rs,fehs[kk])
+            #Calculate (R,z)s
+            XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
+                                        numpy.array([b for ii in range(len(ds))]),
+                                        ds,degree=True)
+            XYZ= XYZ.astype(numpy.float64)
+            R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+            XYZ[:,2]+= _ZSUN
+            if dontmarginalizecolor:
+                out[:,jj]+= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])*fehdist(fehs[kk])
+            else:
+                out+= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])\
+                    *fehdist(fehs[kk])
+            norm+= colordist(grs[jj])*fehdist(fehs[kk])
     select= sf(numpy.array([plate for jj in range(len(rs))]),r=rs)
     if dontmarginalizecolor:
         for jj in range(ngr):
@@ -732,30 +762,33 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     return out
 
 def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
-                         feh,colordist,sf,plate):
+                         fehmin,fehmax,
+                         feh,colordist,fehdist,sf,plate):
     """Predict the Z distribution for a plate"""
     #BOVY: APPROXIMATELY INTEGRATE OVER GR
-    ngr= 11
+    ngr, nfeh= 11, 11
     grs= numpy.linspace(grmin,grmax,ngr)
+    fehs= numpy.linspace(fehmin,fehmax,nfeh)
     out= numpy.zeros(len(zs))
     norm= 0.
-    for jj in range(ngr):
-        #What rs do these zs correspond to
-        ds= zs/numpy.fabs(numpy.sin(b*_DEGTORAD))
-        gi= _gi_gr(grs[jj])
-        mr= _mr_gi(gi,feh)
-        rs= 5.*numpy.log10(ds)+10.+mr
-        #Calculate (R,z)s
-        XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
-                                    numpy.array([b for ii in range(len(ds))]),
-                                    ds,degree=True)
-        XYZ= XYZ.astype(numpy.float64)
-        R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
-        #XYZ[:,2]+= _ZSUN #Not here because this is model
-        select= numpy.array(sf(plate,r=rs))
-        out+= ds**2.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])\
-            *select/numpy.fabs(numpy.sin(b*_DEGTORAD))
-        norm+= colordist(grs[jj])
+    for kk in range(nfeh):
+        for jj in range(ngr):
+            #What rs do these zs correspond to
+            ds= zs/numpy.fabs(numpy.sin(b*_DEGTORAD))
+            gi= _gi_gr(grs[jj])
+            mr= _mr_gi(gi,fehs[kk])
+            rs= 5.*numpy.log10(ds)+10.+mr
+            #Calculate (R,z)s
+            XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
+                                        numpy.array([b for ii in range(len(ds))]),
+                                        ds,degree=True)
+            XYZ= XYZ.astype(numpy.float64)
+            R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+            #XYZ[:,2]+= _ZSUN #Not here because this is model
+            select= numpy.array(sf(plate,r=rs))
+            out+= ds**2.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])\
+                *select/numpy.fabs(numpy.sin(b*_DEGTORAD))*fehdist(fehs[kk])
+            norm+= colordist(grs[jj])*fehdist(fehs[kk])
     out/= norm
     return out
 
@@ -850,4 +883,4 @@ def _add_coordinset(rx=None,ry=None,rmin=14.5,rmax=19.5,feh=-0.15,
     zs= xyzs[:,2]/8.*dz/2.+ry
     bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
     bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
-    bovy_plot.bovy_text(rx-0.2*xfac,ry+3./4.*dz/2.,r'$z$')
+    bovy_plot.bovy_text(rx-0.2*xfac,ry+3./4.*dz/2.,r'$Z$')

@@ -4,7 +4,8 @@ from optparse import OptionParser
 from galpy.util import bovy_plot
 import segueSelect
 from fitSigz import readData
-from fitDensz import _HWRDensity, _FlareDensity, _const_colordist
+from fitDensz import _HWRDensity, _FlareDensity, _const_colordist, \
+    DistSpline
 import compareDataModel
 def compareGRichRdist(options,args):
     if options.png: ext= 'png'
@@ -26,11 +27,27 @@ def compareGRichRdist(options,args):
                                 type_faint='sharprcut')
     if options.metal.lower() == 'rich':
         feh= -0.15
+        fehrange= [-0.4,0.5]
     elif options.metal.lower() == 'poor':
         feh= -0.65
+        fehrange= [-1.5,-0.5]
     #Load data
     XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
                                          sample=options.sample)
+    if options.sample.lower() == 'g':
+        colorrange=[0.48,0.55]
+        rmax= 20.2
+    elif options.sample.lower() == 'k':
+        colorrange=[0.55,0.75]
+        rmax= 19.
+    #Load model distributions
+    #FeH
+    fehdist= DistSpline(*numpy.histogram(data.feh,bins=11,range=fehrange),
+                         xrange=fehrange)
+    #Color
+    cdist= DistSpline(*numpy.histogram(data.dered_g-data.dered_r,
+                                       bins=9,range=colorrange),
+                       xrange=colorrange)
     #We do bright/faint for 4 directions
     ls= [180,180,45,45]
     bs= [0,90,-23,23]
@@ -46,13 +63,19 @@ def compareGRichRdist(options,args):
                                                        sf,data,
                                                        faint=False)
         bovy_plot.bovy_print()
-        compare_func(model1,params1,sf,_const_colordist,
+        compare_func(model1,params1,sf,cdist,fehdist,
                      data,plate,color='k',
-                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=feh,
+                     rmin=14.5,rmax=rmax,
+                     grmin=colorrange[0],
+                     grmax=colorrange[1],
+                     fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
                      bins=bins,ls='-')
-        compare_func(model2,params2,sf,_const_colordist,
+        compare_func(model2,params2,sf,cdist,fehdist,
                      data,plate,color='k',bins=bins,
-                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=feh,
+                     rmin=14.5,rmax=rmax,
+                     grmin=colorrange[0],
+                     grmax=colorrange[1],
+                     fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
                      overplot=True,ls='--')
         if options.type == 'r':
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_l%i_b%i_bright.' % (ls[ii],bs[ii]))+ext)
@@ -63,13 +86,18 @@ def compareGRichRdist(options,args):
                                                        sf,data,
                                                        bright=False)
         bovy_plot.bovy_print()
-        compare_func(model1,params1,sf,_const_colordist,
+        compare_func(model1,params1,sf,cdist,fehdist,
                      data,plate,color='k',
-                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=feh,
+                     rmin=14.5,rmax=rmax,
+                     grmin=colorrange[0],
+                     grmax=colorrange[1],
+                     fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
                      bins=bins,ls='-')
-        compare_func(model2,params2,sf,_const_colordist,
+        compare_func(model2,params2,sf,cdist,fehdist,
                      data,plate,color='k',bins=bins,
-                     rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=feh,
+                     rmin=14.5,rmax=rmax,grmin=colorrange[0],
+                     grmax=colorrange[1],
+                     fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
                      overplot=True,ls='--')
         if options.type == 'r':
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
