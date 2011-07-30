@@ -400,7 +400,7 @@ def fitDensz(parser):
                                       fehrange[0],fehrange[1],
                                       feh,colordist,densfunc,
                                       fehdist,options.dontmargfeh,
-                                      options.donbincolorfeh,usertol,
+                                      options.dontbincolorfeh,usertol,
                                       grs,fehs,rhogr,rhofeh,mr),
                                      create_method=create_method,
                                      isDomainFinite=isDomainFinite,
