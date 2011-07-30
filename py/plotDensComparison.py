@@ -15,7 +15,7 @@ def compareGRichRdist(options,args):
     model2= _HWRDensity
     if options.metal.lower() == 'rich':
         params1=  numpy.array([-1.20172829533,1.01068814092,-0.0464210825653])
-        params2= numpy.array([-1.36251544525,1.7404667,0.00824201794418])
+        params2= numpy.array([-1.36234488,1.73699043,1.17007366e-03])
     else:
         params1=  numpy.array([-0.187391923558,0.71285154528,1.30084421599])
         params2= numpy.array([-0.3508148171668,0.65752,0.00206572947631])
@@ -48,7 +48,7 @@ def compareGRichRdist(options,args):
     cov_vxvyvz= cov_vxvyvz[indx,:]
     if options.sample.lower() == 'g':
         colorrange=[0.48,0.55]
-        rmax= 20.2
+        rmax= 19.5 #SF cuts off here
     elif options.sample.lower() == 'k':
         colorrange=[0.55,0.75]
         rmax= 19.

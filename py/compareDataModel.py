@@ -296,13 +296,16 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
     grs= numpy.zeros((_NGR,_NFEH))
     fehs= numpy.zeros((_NGR,_NFEH))
     for ii in range(_NGR):
-        fehs[ii,:]= numpy.linspace(fehmin,fehmax,_NFEH)
+        if feh > -0.5: #rich, actually only starts at 0.05
+            fehs[ii,:]= numpy.linspace(fehmin,0.05,_NFEH)
+        else:
+            fehs[ii,:]= numpy.linspace(fehmin,fehmax,_NFEH)
     for ii in range(_NFEH):
         grs[:,ii]= numpy.linspace(grmin,grmax,_NGR)
     sys.stdout.write('\r'+"Determining minimal and maximal distance")
     sys.stdout.flush()
     dmin= numpy.amin(_ivezic_dist(grs,thisrmin,fehs))
-    dmax= numpy.amin(_ivezic_dist(grs,thisrmax,fehs))
+    dmax= numpy.amax(_ivezic_dist(grs,thisrmax,fehs))
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     zmin, zmax= dmin*numpy.sin(bmin*_DEGTORAD), dmax*numpy.sin(bmax*_DEGTORAD)
@@ -338,7 +341,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                               output=zdist)
         if xrange is None:
             if allbright and feh <= -0.5:
-                xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.7]
+                xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.3]
             else:
                 xrange= [numpy.amin(zs)-0.2,numpy.amax(zs)+0.3]
         if yrange is None:
@@ -544,7 +547,7 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
     sys.stdout.write('\r'+"Determining minimal and maximal distance")
     sys.stdout.flush()
     dmin= numpy.amin(_ivezic_dist(grs,thisrmin,fehs))
-    dmax= numpy.amin(_ivezic_dist(grs,thisrmax,fehs))
+    dmax= numpy.amax(_ivezic_dist(grs,thisrmax,fehs))
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     Rmin, Rmax= dmin*numpy.cos(bmax*_DEGTORAD), dmax*numpy.cos(bmin*_DEGTORAD)
@@ -1017,7 +1020,6 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     grs= numpy.linspace(grmin,grmax,ngr)
     fehs= numpy.linspace(fehmin,fehmax,nfeh)
     out= numpy.zeros(len(zs))
-    norm= 0.
     ds= (zs-_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
     for kk in range(nfeh):
         for jj in range(ngr):
@@ -1028,7 +1030,6 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
             select= numpy.array(sf(plate,r=rs))
             out+= colordist(grs[jj])\
                 *select/numpy.fabs(numpy.sin(b*_DEGTORAD))*fehdist(fehs[kk])
-            norm+= colordist(grs[jj])*fehdist(fehs[kk])
     #Calculate (R,z)s
     XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
                                 numpy.array([b for ii in range(len(ds))]),
@@ -1037,7 +1038,6 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
     #XYZ[:,2]+= _ZSUN #Not here because this is model
     out*= ds**2.*densfunc(R,XYZ[:,2],params)
-    out/= norm
     return out
 
 def _predict_Rdist_plate(Rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
