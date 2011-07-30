@@ -15,7 +15,7 @@ def compareGRichRdist(options,args):
     model2= _HWRDensity
     if options.metal.lower() == 'rich':
         params1=  numpy.array([-1.20172829533,1.01068814092,-0.0464210825653])
-        params2= numpy.array([-1.45521544525,1.605523259073,0.00824201794418])
+        params2= numpy.array([-1.36251544525,1.7404667,0.00824201794418])
     else:
         params1=  numpy.array([-0.187391923558,0.71285154528,1.30084421599])
         params2= numpy.array([-0.3508148171668,0.65752,0.00206572947631])
@@ -32,6 +32,20 @@ def compareGRichRdist(options,args):
     #Load data
     XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
                                          sample=options.sample)
+    #Cut out bright stars on faint plates and vice versa
+    indx= []
+    for ii in range(len(data.feh)):
+        if sf.platebright[str(data[ii].plate)] and data[ii].dered_r >= 17.8:
+            indx.append(False)
+        elif not sf.platebright[str(data[ii].plate)] and data[ii].dered_r < 17.8:
+            indx.append(False)
+        else:
+            indx.append(True)
+    indx= numpy.array(indx,dtype='bool')
+    data= data[indx]
+    XYZ= XYZ[indx,:]
+    vxvyvz= vxvyvz[indx,:]
+    cov_vxvyvz= cov_vxvyvz[indx,:]
     if options.sample.lower() == 'g':
         colorrange=[0.48,0.55]
         rmax= 20.2
@@ -46,7 +60,7 @@ def compareGRichRdist(options,args):
     cdist= DistSpline(*numpy.histogram(data.dered_g-data.dered_r,
                                        bins=9,range=colorrange),
                        xrange=colorrange)
-    #We do bright/faint for 4 directions
+    #We do bright/faint for 4 directions and all, all bright, all faint
     ls= [180,180,45,45]
     bs= [0,90,-23,23]
     bins= 21
@@ -55,6 +69,31 @@ def compareGRichRdist(options,args):
         compare_func= compareDataModel.comparerdistPlate
     elif options.type == 'z':
         compare_func= compareDataModel.comparezdistPlate
+    elif options.type == 'R':
+        compare_func= compareDataModel.compareRdistPlate
+    #all, faint, bright
+    plates= ['all','bright','faint']
+    for plate in plates:
+        bovy_plot.bovy_print()
+        compare_func(model1,params1,sf,cdist,fehdist,
+                     data,plate,color='k',
+                     rmin=14.5,rmax=rmax,
+                     grmin=colorrange[0],
+                     grmax=colorrange[1],
+                     fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                     bins=bins,ls='-')
+        compare_func(model2,params2,sf,cdist,fehdist,
+                     data,plate,color='k',bins=bins,
+                     rmin=14.5,rmax=rmax,
+                     grmin=colorrange[0],
+                     grmax=colorrange[1],
+                     fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                     overplot=True,ls='--')
+        if options.type == 'r':
+            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_'+plate+'.'+ext))
+        else:
+            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_'+options.type+'dist_'+plate+'.'+ext))
+    bins= 16
     for ii in range(len(ls)):
         #Bright
         plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
@@ -78,7 +117,7 @@ def compareGRichRdist(options,args):
         if options.type == 'r':
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_l%i_b%i_bright.' % (ls[ii],bs[ii]))+ext)
         else:
-            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_zdist_l%i_b%i_bright.' % (ls[ii],bs[ii]))+ext)
+            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_'+options.type+'dist_l%i_b%i_bright.' % (ls[ii],bs[ii]))+ext)
         #Faint
         plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
                                                        sf,data,
@@ -100,7 +139,7 @@ def compareGRichRdist(options,args):
         if options.type == 'r':
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
         elif options.type == 'z':
-            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_zdist_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
+            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_'+options.type+'dist_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
     return None
 
 def get_options():
@@ -111,7 +150,7 @@ def get_options():
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
     parser.add_option("-t","--type",dest='type',default='r',
-                      help="Type of comparison to make ('r', 'z')")
+                      help="Type of comparison to make ('r', 'z', 'R')")
     parser.add_option("--png",action="store_true", dest="png",
                       default=False,
                       help="Save as png, otherwise ps")
