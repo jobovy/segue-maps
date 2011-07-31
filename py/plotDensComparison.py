@@ -1,5 +1,6 @@
 import os, os.path
 import numpy
+import cPickle as pickle
 from optparse import OptionParser
 from galpy.util import bovy_plot
 import segueSelect
