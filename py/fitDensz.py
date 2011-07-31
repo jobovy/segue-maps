@@ -102,6 +102,22 @@ def fitDensz(parser):
         colordist= DistSpline(*numpy.histogram(rawdata.dered_g-rawdata.dered_r,
                                            bins=9,range=colorrange),
                            xrange=colorrange)
+    #Only consider plates around lcen bcen?
+    if not options.lcen is None and options.bcen is None \
+            and options.lbdr is None:
+        from compareDataModel import similarPlatesDirection
+        lbplates= similarPlatesDirection(options.lcen,options.bcen,
+                                         options.lbdr,None)
+        #Data
+        dataindx= []
+        for ii in range(len(XYZ[:,0])):
+            if rawdata[ii].plate in lbplates: dataindx.append(True)
+            else: dataindx.append(False)
+        dataindx= numpy.array(dataindx,dtype='bool')
+        rawdata= rawdata[dataindx]
+        XYZ= XYZ[dataindx,:]
+        vxvyvz= vxvyvz[dataindx,:]
+        cov_vxvyvz= cov_vxvyvz[dataindx,:,:]     
     #Cut on platesn
     if not options.minplatesn_bright is None:
         segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
@@ -162,6 +178,12 @@ def fitDensz(parser):
                     indx.append(True)
                 else:
                     indx.append(False)
+            elif options.sel_bright.lower() == 'sharprcut' \
+                    and not 'faint' in segueplatestr.programname[ii]:
+                if segueplatestr.kssharp_g_all[ii] >= options.minks:
+                    indx.append(True)
+                else:
+                    indx.append(False)
             elif options.sel_faint.lower() == 'constant' \
                     and 'faint' in segueplatestr.programname[ii]:
                 if segueplatestr.ksconst_g_all[ii] >= options.minks:
@@ -177,6 +199,12 @@ def fitDensz(parser):
             elif options.sel_faint.lower() == 'platesn_r' \
                     and 'faint' in segueplatestr.programname[ii]:
                 if segueplatestr.ksplatesn_r_g_all[ii] >= options.minks:
+                    indx.append(True)
+                else:
+                    indx.append(False)
+            elif options.sel_faint.lower() == 'sharprcut' \
+                    and 'faint' in segueplatestr.programname[ii]:
+                if segueplatestr.kssharp_g_all[ii] >= options.minks:
                     indx.append(True)
                 else:
                     indx.append(False)
@@ -992,37 +1020,6 @@ def get_options():
     parser.add_option("--subsample",dest='subsample',type='int',
                       default=None,
                       help="If set, use a random subset of this size instead of all of the data")
-    parser.add_option("--d1",dest='d1',type='int',default=1,
-                      help="First dimension to plot")
-    parser.add_option("--d2",dest='d2',type='int',default=4,
-                      help="Second dimension to plot")
-    parser.add_option("--expd1",action="store_true", dest="expd1",
-                      default=False,
-                      help="Plot exp() of d1")
-    parser.add_option("--expd2",action="store_true", dest="expd2",
-                      default=False,
-                      help="Plot exp() of d2")
-    parser.add_option("--xmin",dest='xmin',type='float',default=None,
-                      help="xrange[0]")
-    parser.add_option("--xmax",dest='xmax',type='float',default=None,
-                      help="xrange[1]")
-    parser.add_option("--ymin",dest='ymin',type='float',default=None,
-                      help="yrange[0]")
-    parser.add_option("--ymax",dest='ymax',type='float',default=None,
-                      help="yrange[1]")
-    parser.add_option("--xlabel",dest='xlabel',default=None,
-                      help="xlabel")
-    parser.add_option("--ylabel",dest='ylabel',default=None,
-                      help="ylabel")
-    parser.add_option("--plotzfunc",action="store_true", dest="plotzfunc",
-                      default=False,
-                      help="Plot the inferred rho(z) relation")
-    parser.add_option("--plotRfunc",action="store_true", dest="plotRfunc",
-                      default=False,
-                      help="Plot the inferred rho(R) relation")
-    parser.add_option("--plotrfunc",action="store_true", dest="plotrfunc",
-                      default=False,
-                      help="Plot the inferred distribution of rs")
     parser.add_option("--bright",action="store_true", dest="bright",
                       default=False,
                       help="Fit just the bright plates")
@@ -1044,6 +1041,15 @@ def get_options():
                       help="Don't compute the integral over color and metallicity by binning")
     parser.add_option("-i",dest='fakefile',
                       help="Pickle file with the fake data")
+    parser.add_option("--lcen",dest='lcen',type='float',
+                      default=None,
+                      help="If set, only use plates centered on this lcen (deg); use with bcen and lbdr")
+    parser.add_option("--bcen",dest='bcen',type='float',
+                      default=None,
+                      help="If set, only use plates centered on this bcen (deg); use with lcen and lbdr")
+    parser.add_option("--lbdr",dest='lbdr',type='float',
+                      default=None,
+                      help="If set, only use plates a distance lbdr (deg) away from lcen and bcen")
     return parser
 
 if __name__ == '__main__':

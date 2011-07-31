@@ -894,7 +894,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
 ###############################################################################
 #   Good sets of plates to run comparerdistPlate for
 ###############################################################################
-def similarPlatesDirection(l,b,dr,sf,data,bright=True,faint=True):
+def similarPlatesDirection(l,b,dr,sf,data=None,bright=True,faint=True):
     """
     NAME:
        similarPlatesDirection
@@ -904,7 +904,6 @@ def similarPlatesDirection(l,b,dr,sf,data,bright=True,faint=True):
        l,b - desired (l,b) center, but only start of iteration
        dr - radius of circle to consider plates in (deg)
        sf - segueSelect instance
-       data - data recarray (.dered_r is used)
        bright=, faint= if false, don't include bright/faint plates 
                        (default: all)
     OUTPUT:
