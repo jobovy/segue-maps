@@ -2,11 +2,11 @@ import os, os.path
 import numpy
 import cPickle as pickle
 from optparse import OptionParser
-from galpy.util import bovy_plot
+from galpy.util import bovy_plot, bovy_coords
 import segueSelect
 from fitSigz import readData
 from fitDensz import _HWRDensity, _FlareDensity, _const_colordist, \
-    DistSpline
+    DistSpline, _ivezic_dist
 import compareDataModel
 def compareGRichRdist(options,args):
     if options.png: ext= 'png'
@@ -158,11 +158,13 @@ def scatterData(options,args):
         ds, ls, bs, rs, grs, fehs= [], [], [], [], [], []
         for ii in range(len(fakedata)):
             ds.append(_ivezic_dist(fakedata[ii][1],fakedata[ii][0],fakedata[ii][2]))
-            ls.append(fakedata[ii][3])
-            bs.append(fakedata[ii][4])
+            ls.append(fakedata[ii][3]+(2*numpy.random.uniform()-1.)\
+                          *1.49)
+            bs.append(fakedata[ii][4]+(2*numpy.random.uniform()-1.)\
+                          *1.49)
             rs.append(fakedata[ii][0])
-            grs.append(fakefata[ii][1])
-            fehs.append(fakefata[ii][2])
+            grs.append(fakedata[ii][1])
+            fehs.append(fakedata[ii][2])
         ds= numpy.array(ds)
         ls= numpy.array(ls)
         bs= numpy.array(bs)
@@ -203,9 +205,15 @@ def scatterData(options,args):
                             xrange=[5,14],
                             yrange=[-4,4],
                             onedhists=True)
-    bovy_plot.bovy_end_print(os.path.join(args[0],options.type+'_'
-                                          +options.sample+'_'+
-                                          options.metal+'.'+ext))
+    if options.fake:
+        bovy_plot.bovy_end_print(os.path.join(args[0],options.type+'_'
+                                              +'fake_'+
+                                              options.sample+'_'+
+                                              options.metal+'.'+ext))
+    else:
+        bovy_plot.bovy_end_print(os.path.join(args[0],options.type+'_'
+                                              +options.sample+'_'+
+                                              options.metal+'.'+ext))
     
 def get_options():
     usage = "usage: %prog [options] <savedir>\n\nsavedir= name of the directory that the comparisons will be saved to"
