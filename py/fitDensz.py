@@ -24,7 +24,7 @@ except:
     raise ImportError( "scipy.__version__ not understood, contact developer, send scipy.__version__")
 _ERASESTR= "                                                                                "
 _VERBOSE=True
-_DEBUG=True
+_DEBUG=False
 _INTEGRATEPLATESEP= True
 _EPSREL= 1.45e-08
 _EPSABS= 1.45e-08
@@ -383,7 +383,8 @@ def fitDensz(parser):
                                            feh,colordist,densfunc,
                                            fehdist,options.dontmargfeh,
                                            options.dontbincolorfeh,usertol,
-                                           grs,fehs,rhogr,rhofeh,mr))
+                                           grs,fehs,rhogr,rhofeh,mr),
+                                     callback=cb)
         if _VERBOSE:
             print "Optimal likelihood:", params
         #Now sample
@@ -405,7 +406,8 @@ def fitDensz(parser):
                                      create_method=create_method,
                                      isDomainFinite=isDomainFinite,
                                      domain=domain,
-                                     nsamples=options.nsamples)
+                                     nsamples=options.nsamples,
+                                     callback=cb)
         if _DEBUG:
             print "Printing mean and std dev of samples ..."
             for ii in range(len(params)):
@@ -926,6 +928,7 @@ class FeHXDDist:
         acov= numpy.zeros((1,1))
         return numpy.exp(self.xdt(a,acov))[0]*jac
 
+def cb(x): print x
 
 def _ivezic_dist(gr,r,feh):
     d,derr= ivezic_dist_gr(gr+r,r,feh)
