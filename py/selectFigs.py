@@ -4,8 +4,9 @@ import numpy
 from optparse import OptionParser
 import pyfits
 from galpy.util import bovy_plot, bovy_coords
-from matplotlib import pyplot
+from matplotlib import pyplot, cm
 import segueSelect
+from fitDensz import _ZSUN
 def selectFigs(parser):
     (options,args)= parser.parse_args()
     if options.type.lower() == 'platesn':
@@ -24,7 +25,80 @@ def selectFigs(parser):
         plot_platesn_lb(options,args)
     elif options.type.lower() == 'ks_lb':
         plot_ks_lb(options,args)
+    elif options.type.lower() == 'sfrz' or options.type.lower() == 'sfxy':
+        plot_sfrz(options,args)
         
+def plot_sfrz(options,args):
+    """Plot the selection function in the R,Z plane"""
+    if options.program: select= 'program'
+    else: select= 'all'
+    sf= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                plates=None,select=select,
+                                type_bright='sharprcut',
+                                type_faint='sharprcut')
+    platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
+                                     degree=True)
+    feh= -0.5
+    if options.sample.lower() == 'g':
+        gr= (0.48+0.55)/2.
+    elif options.sample.lower() == 'k':
+        gr= (0.75+0.55)/2.
+    if options.type.lower() == 'sfxy':
+        nrs= 51
+    else:
+        nrs= 51
+    rs= numpy.linspace(sf.rmin,sf.rmax,nrs)
+    select= numpy.zeros((len(sf.plates),nrs))
+    Rs= numpy.zeros((len(sf.plates),nrs))
+    Zs= numpy.zeros((len(sf.plates),nrs))
+    for ii in range(len(sf.plates)):
+        #Calculate SF, R, and Z
+        select[ii,:]= sf(sf.plates[ii],rs)
+        ds, derrs= segueSelect.ivezic_dist_gr(rs+gr,rs,feh)
+        XYZ= bovy_coords.lbd_to_XYZ(numpy.array([platelb[ii,0] for jj in range(len(ds))]),
+                                    numpy.array([platelb[ii,1] for jj in range(len(ds))]),
+                                    ds,degree=True)
+        if options.type.lower() == 'sfxy':
+            Rs[ii,:]= XYZ[:,0]
+            Zs[ii,:]= XYZ[:,1]
+        else:
+            Rs[ii,:]= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**0.5
+            Zs[ii,:]= XYZ[:,2]+_ZSUN
+    #Plot all lines of sight
+    select[(select == 0.)]= numpy.nan
+    omin, omax= numpy.nanmin(select), numpy.nanmax(select)
+    colormap = cm.jet
+    plotthis= colormap(_squeeze(select,omin,omax))
+    bovy_plot.bovy_print(fig_width=6.)
+    if options.type.lower() == 'sfxy':
+        bovy_plot.bovy_plot([100.,100.],[100.,100.],'k,',
+                            xrange=[5.,-5.],yrange=[5.,-5.],
+                            xlabel=r'$X\ [\mathrm{kpc}]$',
+                            ylabel=r'$Y\ [\mathrm{kpc}]$')
+    else:
+        bovy_plot.bovy_plot([100.,100.],[100.,100.],'k,',
+                        xrange=[5.,14.],yrange=[-4.,4.],
+                        xlabel=r'$R\ [\mathrm{kpc}]$',
+                        ylabel=r'$Z\ [\mathrm{kpc}]$')                       
+    for ii in range(len(sf.plates)):
+        for jj in range(nrs-1):
+            if numpy.isnan(select[ii,jj]): continue
+            #pyplot.plot(Rs[ii,jj],Zs[ii,jj],'o',ms=1.,
+            #            mfc=plotthis[ii,jj],mec='none',mew=0.)
+            pyplot.plot([Rs[ii,jj],Rs[ii,jj+1]],[Zs[ii,jj],Zs[ii,jj+1]],
+                        '-',color=plotthis[ii,jj])
+    #Add colorbar
+    m = cm.ScalarMappable(cmap=cm.jet)
+    m.set_array(select)
+    m.set_clim(vmin=omin,vmax=omax)
+    cbar= pyplot.colorbar(m,fraction=0.2)
+    cbar.set_clim((omin,omax))
+    cbar.set_label(r'$\mathrm{selection\ fraction}$')
+    bovy_plot.bovy_end_print(options.plotfile)
+
+def _squeeze(o,omin,omax):
+    return (o-omin)/(omax-omin)
+
 def plot_ks_lb(options,args):
     """Plot KS value vs. lb"""
     segueplatestr= segueSelect._load_fits(os.path.join(segueSelect._SEGUESELECTDIR,
