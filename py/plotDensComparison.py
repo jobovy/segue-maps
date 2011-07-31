@@ -15,7 +15,7 @@ def compareGRichRdist(options,args):
     model2= _HWRDensity
     if options.metal.lower() == 'rich':
         params1=  numpy.array([-1.20172829533,1.01068814092,-0.0464210825653])
-        params2= numpy.array([-1.36234488,1.73699043,1.17007366e-03])
+        params2= numpy.array([-1.34316986e+00,1.75402412e+00,5.14667706e-04])
     else:
         params1=  numpy.array([-0.187391923558,0.71285154528,1.30084421599])
         params2= numpy.array([-0.3508148171668,0.65752,0.00206572947631])
