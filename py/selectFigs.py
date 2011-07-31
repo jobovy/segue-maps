@@ -110,7 +110,7 @@ def plot_colormag(options,args):
                                 type_bright='constant',
                                 type_faint='constant',select=select,
                                 sn=options.sn)
-    bins, specbins= 101, 31
+    bins, specbins= 51, 16
     bovy_plot.bovy_print()
     sf.plotColorMag(spec=True,bins=bins,specbins=specbins)
     bovy_plot.bovy_end_print(options.plotfile)    

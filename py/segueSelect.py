@@ -714,12 +714,12 @@ class segueSelect:
         else:
             ylabel= y[0]+'_0'
         ylabel= r'$'+ylabel+r'$'
-        if len(xs) > 1: #color
-            xrange= [numpy.amin(xs)-0.1,numpy.amax(xs)+0.1]
+        if len(x) > 1: #color
+            xrange= [numpy.amin(xs)-0.02,numpy.amax(xs)+0.02]
         else:
             xrange= [numpy.amin(xs)-0.7,numpy.amax(xs)+0.7]
-        if len(ys) > 1: #color
-            yrange= [numpy.amin(ys)-0.1,numpy.amax(ys)+0.1]
+        if len(y) > 1: #color
+            yrange= [numpy.amin(ys)-0.02,numpy.amax(ys)+0.02]
         else:
             yrange= [numpy.amin(ys)-0.7,numpy.amax(ys)+0.7]
         if bins is None:
@@ -741,8 +741,10 @@ class segueSelect:
                 speclevels.append(1.01)#HACK TO REMOVE OUTLIERS
                 bovy_plot.scatterplot(specxs,specys,symb,onedhists=True,
                                       levels=speclevels,
-                                      onedhistec='r',
-                                      cntrcolors='r',
+                                      onedhistec='k',
+                                      cntrcolors='w',
+                                      onedhistls='dashed',
+                                      onedhistlw=1.5,
                                       cmap=allwhite,
                                       xlabel=xlabel,ylabel=ylabel,
                                       xrange=xrange,yrange=yrange,

@@ -36,7 +36,7 @@ def plotMetallicityColor(options,args):
         yrange=[-1.6,0.3]
         ry= yrange[1]-(.5-0.275)*(yrange[1]-yrange[0])
         fehrange= [-1.5,-0.5]
-    #First plot all data
+    #First plot all data, faint, and bright
     bovy_plot.bovy_print()
     _plotMC_single(data,options,args,all=True,overplot=False,xrange=xrange,
                    yrange=yrange,fehrange=fehrange,colorrange=colorrange)
@@ -107,7 +107,7 @@ def _plotMC_single(data,options,args,all=False,overplot=False,xrange=None,
         bovy_plot.bovy_text(r'$'+platestr+'$'
                             +'\n'+
                             '$%i \ \ \mathrm{stars}$' % 
-                            len(data.feh),top_right=True)
+                            len(data.feh),top_right=True,size=16)
         #Overplot model FeH
         from matplotlib import pyplot
         from matplotlib.ticker import NullFormatter
@@ -152,7 +152,7 @@ def _plotMC_single(data,options,args,all=False,overplot=False,xrange=None,
                             '$%i \ \ \mathrm{stars}$' % 
                             len(data.feh)
                             +'\n'+
-                            lbstr,top_right=True)
+                            lbstr,top_right=True,size=16)
         _add_coordinset(rx=rx,ry=ry,platels=platels,platebs=platebs,
                         feh=numpy.mean(data.feh),
                         rmin=rmin,rmax=rmax,

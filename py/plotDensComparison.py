@@ -142,6 +142,49 @@ def compareGRichRdist(options,args):
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_'+options.type+'dist_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
     return None
 
+def scatterData(options,args):
+    if options.png: ext= 'png'
+    else: ext= 'ps'
+    #Load sf
+    sf= segueSelect.segueSelect(sample=options.sample,sn=True,
+                                type_bright='sharprcut',
+                                type_faint='sharprcut')
+    #Load data
+    XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
+                                         sample=options.sample)
+    #Cut out bright stars on faint plates and vice versa
+    indx= []
+    for ii in range(len(data.feh)):
+        if sf.platebright[str(data[ii].plate)] and data[ii].dered_r >= 17.8:
+            indx.append(False)
+        elif not sf.platebright[str(data[ii].plate)] and data[ii].dered_r < 17.8:
+            indx.append(False)
+        else:
+            indx.append(True)
+    indx= numpy.array(indx,dtype='bool')
+    data= data[indx]
+    XYZ= XYZ[indx,:]
+    vxvyvz= vxvyvz[indx,:]
+    cov_vxvyvz= cov_vxvyvz[indx,:]
+    R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**0.5
+    bovy_plot.bovy_print()
+    if options.type.lower() == 'dataxy':
+        bovy_plot.bovy_plot(XYZ[:,0],XYZ[:,1],'k,',
+                            xlabel=r'$X\ [\mathrm{kpc}]$',
+                            ylabel=r'$Y\ [\mathrm{kpc}]$',
+                            xrange=[5,-5],yrange=[5,-5],
+                            onedhists=True)
+    elif options.type.lower() == 'datarz':
+        bovy_plot.bovy_plot(R,XYZ[:,2],'k,',
+                            xlabel=r'$R\ [\mathrm{kpc}]$',
+                            ylabel=r'$Z\ [\mathrm{kpc}]$',
+                            xrange=[5,14],
+                            yrange=[-4,4],
+                            onedhists=True)
+    bovy_plot.bovy_end_print(os.path.join(args[0],options.type+'_'
+                                          +options.sample+'_'+
+                                          options.metal+'.'+ext))
+    
 def get_options():
     usage = "usage: %prog [options] <savedir>\n\nsavedir= name of the directory that the comparisons will be saved to"
     parser = OptionParser(usage=usage)
@@ -150,7 +193,7 @@ def get_options():
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
     parser.add_option("-t","--type",dest='type',default='r',
-                      help="Type of comparison to make ('r', 'z', 'R')")
+                      help="Type of comparison to make ('r', 'z', 'R', 'dataxy' or 'datarz')")
     parser.add_option("--png",action="store_true", dest="png",
                       default=False,
                       help="Save as png, otherwise ps")
@@ -159,4 +202,7 @@ def get_options():
 
 if __name__ == '__main__':
     (options,args)= get_options().parse_args()
-    compareGRichRdist(options,args)
+    if options.type.lower() == 'datarz' or options.type.lower() == 'dataxy':
+        scatterData(options,args)
+    else:
+        compareGRichRdist(options,args)
