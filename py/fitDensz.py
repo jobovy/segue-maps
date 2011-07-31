@@ -65,7 +65,7 @@ def fitDensz(parser):
         fakedata= pickle.load(fakefile)
         fakefile.close()
         #Calculate distance
-        ds, ls, bs, rs, grs, fehs= [], [], [], []
+        ds, ls, bs, rs, grs, fehs= [], [], [], [], [], []
         for ii in range(len(fakedata)):
             ds.append(_ivezic_dist(fakedata[ii][1],fakedata[ii][0],fakedata[ii][2]))
             ls.append(fakedata[ii][3])
