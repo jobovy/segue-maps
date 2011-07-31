@@ -365,7 +365,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             yrange= [0.,1.65*numpy.amax(zdist)]
         bovy_plot.bovy_plot(zs,zdist,ls=ls,color=color,
                             xrange=xrange,yrange=yrange,
-                            xlabel='$Z\ [\mathrm{kpc}]$',
+                            xlabel='$|Z|\ [\mathrm{kpc}]$',
                             ylabel='$\mathrm{density}$',overplot=overplot)
         #Plot the data
         data_z= []
