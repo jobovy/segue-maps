@@ -133,6 +133,16 @@ $(OUTDIR)/HWR_poor_g_zfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.
 $(OUTDIR)/HWR_poor_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \
 	-n 100 --plotrfunc --metal=poor
+#l,b ranges
+$(OUTDIR)/HWR_poor_g_lcen180_bcen90_lbdr30_hRhz.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_g_lcen180_bcen90_lbdr30.sav -o $@ \
+	-n 100 --lcen=180. --bcen=90 --lbdr=30 --metal=poor
+$(OUTDIR)/HWR_poor_g_lcen180_bcen0_lbdr30_hRhz.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_g_lcen180_bcen0_lbdr30.sav -o $@ \
+	-n 100 --lcen=180. --bcen=0 --lbdr=30 --metal=poor
+#min KS
 $(OUTDIR)/HWR_poor_g_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_minks_0.1.sav -o $@ \
 	-n 100 --minks=0.1 --metal=poor
