@@ -79,7 +79,7 @@ def fakeDensData(parser):
         grmin, grmax= 0.55, 0.75
     #Calculate the r-distribution for each plate
     nrs= 1001
-    ngr, nfeh= 51, 51
+    ngr, nfeh= 21, 21
     grs= numpy.linspace(grmin,grmax,ngr)
     fehs= numpy.linspace(fehrange[0],fehrange[1],nfeh)
     #Calcuate FeH and gr distriutions
