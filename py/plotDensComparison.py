@@ -6,20 +6,20 @@ from galpy.util import bovy_plot, bovy_coords
 import segueSelect
 from fitSigz import readData
 from fitDensz import _HWRDensity, _FlareDensity, _const_colordist, \
-    DistSpline, _ivezic_dist
+    DistSpline, _ivezic_dist, _TwoVerticalDensity
 import compareDataModel
 def compareGRichRdist(options,args):
     if options.png: ext= 'png'
     else: ext= 'ps'
     #Set up density models and their parameters
-    model1= _FlareDensity
-    model2= _HWRDensity
+    model1= _HWRDensity
+    model2= _TwoVerticalDensity
     if options.metal.lower() == 'rich':
-        params1=  numpy.array([-1.20172829533,1.01068814092,-0.0464210825653])
-        params2= numpy.array([-1.34316986e+00,1.75402412e+00,5.14667706e-04])
+        params1= numpy.array([-1.34316986e+00,1.75402412e+00,5.14667706e-04])
+        params2= numpy.array([-1.42335426,-0.43321135,1.79128308,0.0162946])
     else:
-        params1=  numpy.array([-0.187391923558,0.71285154528,1.30084421599])
-        params2= numpy.array([-0.3508148171668,0.65752,0.00206572947631])
+        params1= numpy.array([-0.3508148171668,0.65752,0.00206572947631])
+        params2= numpy.array([-0.37255443,-0.05221503,0.65642965,0.03518453])
     #Load sf
     sf= segueSelect.segueSelect(sample=options.sample,sn=True,
                                 type_bright='sharprcut',
@@ -73,8 +73,13 @@ def compareGRichRdist(options,args):
     elif options.type == 'R':
         compare_func= compareDataModel.compareRdistPlate
     #all, faint, bright
+    if options.metal.lower() == 'poor':
+        bins= [51,51,26]
+    elif options.metal.lower() == 'rich':
+        bins= [51,31,31]
     plates= ['all','bright','faint']
-    for plate in plates:
+    for ii in range(len(plates)):
+        plate= plates[ii]
         bovy_plot.bovy_print()
         compare_func(model1,params1,sf,cdist,fehdist,
                      data,plate,color='k',
@@ -82,9 +87,9 @@ def compareGRichRdist(options,args):
                      grmin=colorrange[0],
                      grmax=colorrange[1],
                      fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
-                     bins=bins,ls='-')
+                     bins=bins[ii],ls='-')
         compare_func(model2,params2,sf,cdist,fehdist,
-                     data,plate,color='k',bins=bins,
+                     data,plate,color='k',bins=bins[ii],
                      rmin=14.5,rmax=rmax,
                      grmin=colorrange[0],
                      grmax=colorrange[1],
