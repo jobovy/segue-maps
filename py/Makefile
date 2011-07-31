@@ -11,6 +11,9 @@ $(OUTDIR)/HWR_rich_poor_g_func.$(EXT): plotSigzFunc.py
 $(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g.sav -o $@ \
 	-n 100
+$(OUTDIR)/HWR_rich_g_mh_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_mh.sav -o $@ \
+	-n 100 --metropolis
 
 #Binned color distribution
 $(OUTDIR)/HWR_rich_g_colorbinned_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
@@ -23,7 +26,10 @@ $(OUTDIR)/HWR_rich_g_lcen180_bcen90_lbdr30_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_lcen180_bcen90_lbdr30.sav -o $@ \
 	-n 100 --lcen=180. --bcen=90 --lbdr=30
-#	--subsample=1000
+$(OUTDIR)/HWR_rich_g_lcen180_bcen0_lbdr30_hRhz.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_lcen180_bcen0_lbdr30.sav -o $@ \
+	-n 100 --lcen=180. --bcen=0 --lbdr=30 --metropolis
 
 #Min KS
 $(OUTDIR)/HWR_rich_g_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py

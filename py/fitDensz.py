@@ -103,8 +103,8 @@ def fitDensz(parser):
                                            bins=9,range=colorrange),
                            xrange=colorrange)
     #Only consider plates around lcen bcen?
-    if not options.lcen is None and options.bcen is None \
-            and options.lbdr is None:
+    if not options.lcen is None and not options.bcen is None \
+           and not options.lbdr is None:
         from compareDataModel import similarPlatesDirection
         lbplates= similarPlatesDirection(options.lcen,options.bcen,
                                          options.lbdr,None)
@@ -332,7 +332,10 @@ def fitDensz(parser):
                 params= numpy.array([numpy.log(0.3),numpy.log(2.5),0.0])
             densfunc= _HWRDensity
             #Slice sampling keywords
-            step= [0.3,0.3,0.02]
+            if options.metropolis:
+                step= [0.03,0.03,0.02]
+            else:
+                step= [0.3,0.3,0.02]
             create_method=['step_out','step_out','step_out']
             isDomainFinite=[[False,True],[False,True],[True,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],[0.,1.]]
@@ -345,7 +348,10 @@ def fitDensz(parser):
                 params= numpy.array([numpy.log(0.3),numpy.log(2.5)])
             densfunc= _DblExpDensity
             #Slice sampling keywords
-            step= [0.3,0.3]
+            if options.metropolis:
+                step= [0.03,0.03]
+            else:
+                step= [0.3,0.3]
             create_method=['step_out','step_out']
             isDomainFinite=[[False,True],[False,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918]]
@@ -358,7 +364,10 @@ def fitDensz(parser):
                 params= numpy.array([numpy.log(0.3),numpy.log(2.5),numpy.log(2.5)])
             densfunc= _FlareDensity
             #Slice sampling keywords
-            step= [0.3,0.3,0.3]
+            if options.metropolis:
+                step= [0.03,0.03,0.03]
+            else:
+                step= [0.3,0.3,0.3]
             create_method=['step_out','step_out','step_out']
             isDomainFinite=[[False,True],[False,True],[False,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
@@ -372,7 +381,10 @@ def fitDensz(parser):
                 params= numpy.array([numpy.log(0.3),numpy.log(2.5)])
             densfunc= _TiedFlareDensity
             #Slice sampling keywords
-            step= [0.3,0.3]
+            if options.metropolis:
+                step= [0.03,0.03]
+            else:
+                step= [0.3,0.3]
             create_method=['step_out','step_out']
             isDomainFinite=[[False,True],[False,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918]]
@@ -385,7 +397,10 @@ def fitDensz(parser):
                 params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),0.025])
             densfunc= _TwoVerticalDensity
             #Slice sampling keywords
-            step= [0.3,0.3,0.3,0.025]
+            if options.metropolis:
+                step= [0.03,0.03,0.03,0.025]
+            else:
+                step= [0.3,0.3,0.3,0.025]
             create_method=['step_out','step_out','step_out','step_out']
             isDomainFinite=[[False,True],[False,True],[False,True],[True,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
@@ -419,22 +434,26 @@ def fitDensz(parser):
         if _VERBOSE:
             print "Sampling the likelihood ..."
             if options.metropolis:
-                samples= bovy_mcmc.metropolis(params,
-                                              step,
-                                              pdf_func,
-                                              (XYZ,R,
-                                               sf,sf.plates,platelb[:,0],
-                                               platelb[:,1],platebright,
-                                               platefaint,Ap,
-                                               grmin,grmax,rmin,rmax,
-                                               fehrange[0],fehrange[1],
-                                               feh,colordist,densfunc,
-                                               fehdist,options.dontmargfeh,
-                                               options.dontbincolorfeh,usertol,
-                                               grs,fehs,rhogr,rhofeh,mr),
-                                              symmetric=True,
-                                              nsamples=options.nsamples,
-                                              callback=cb)
+                samples, faccept= bovy_mcmc.metropolis(params,
+                                                       step,
+                                                       pdf_func,
+                                                       (XYZ,R,
+                                                        sf,sf.plates,platelb[:,0],
+                                                        platelb[:,1],platebright,
+                                                        platefaint,Ap,
+                                                        grmin,grmax,rmin,rmax,
+                                                        fehrange[0],fehrange[1],
+                                                        feh,colordist,densfunc,
+                                                        fehdist,options.dontmargfeh,
+                                                        options.dontbincolorfeh,usertol,
+                                                        grs,fehs,rhogr,rhofeh,mr),
+                                                       symmetric=True,
+                                                       nsamples=options.nsamples,
+                                                       callback=cb)
+                if numpy.any((faccept < 0.15)) or numpy.any((faccept > 0.6)):
+                    print "WARNING: Metropolis acceptance ratio was < 0.15 or > 0.6 for a direction"
+                    print "Full acceptance ratio list:"
+                    print faccept                                    
             else:
                 samples= bovy_mcmc.slice(params,
                                          step,

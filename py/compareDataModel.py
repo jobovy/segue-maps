@@ -4,12 +4,13 @@
 _NRS= 1001
 _NZS= 1001
 import sys
+import os, os.path
 import numpy
 from scipy import ndimage
 from galpy.util import bovy_coords, bovy_plot
 import matplotlib
 from fitDensz import _ivezic_dist, _ZSUN, _DEGTORAD, _gi_gr, _mr_gi
-from segueSelect import _ERASESTR
+from segueSelect import _ERASESTR, _SEGUESELECTDIR, _load_fits
 ###############################################################################
 #   Density
 ###############################################################################
@@ -916,7 +917,12 @@ def similarPlatesDirection(l,b,dr,sf,data=None,bright=True,faint=True):
     racen, deccen= bovy_coords.lb_to_radec(lrad,brad)
     drrad= dr*_DEGTORAD
     cosdr= numpy.cos(drrad)
-    if bright and faint:
+    if sf is None:
+        #Just load plates from file
+        platestr= _load_fits(os.path.join(_SEGUESELECTDIR,
+                                          'segueplates.fits'))
+        plates= platestr.plate
+    elif bright and faint:
         plates= sf.plates
         platestr= sf.platestr
     elif bright:
