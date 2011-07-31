@@ -149,9 +149,12 @@ def scatterData(options,args):
     sf= segueSelect.segueSelect(sample=options.sample,sn=True,
                                 type_bright='sharprcut',
                                 type_faint='sharprcut')
-    #Load data
-    XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
-                                         sample=options.sample)
+    if options.fake:
+        pass
+    else:
+        #Load data
+        XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
+                                             sample=options.sample)
     #Cut out bright stars on faint plates and vice versa
     indx= []
     for ii in range(len(data.feh)):
@@ -197,6 +200,11 @@ def get_options():
     parser.add_option("--png",action="store_true", dest="png",
                       default=False,
                       help="Save as png, otherwise ps")
+    parser.add_option("-i",dest='fakefile',
+                      help="Pickle file with the fake data")
+    parser.add_option("--fake",action="store_true", dest="fake",
+                      default=False,
+                      help="Data is fake")
     return parser
 
 

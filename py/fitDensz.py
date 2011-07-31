@@ -65,18 +65,20 @@ def fitDensz(parser):
         fakedata= pickle.load(fakefile)
         fakefile.close()
         #Calculate distance
-        ds, ls, bs, rs= [], [], [], []
+        ds, ls, bs, rs, grs, fehs= [], [], [], []
         for ii in range(len(fakedata)):
-            ds.append(_ivezic_dist(fakedata[ii][1],fakedata[ii][0],feh))
-            ls.append(fakedata[ii][2])
-            bs.append(fakedata[ii][3])
+            ds.append(_ivezic_dist(fakedata[ii][1],fakedata[ii][0],fakedata[ii][2]))
+            ls.append(fakedata[ii][3])
+            bs.append(fakedata[ii][4])
             rs.append(fakedata[ii][0])
             grs.append(fakefata[ii][1])
+            fehs.append(fakefata[ii][2])
         ds= numpy.array(ds)
         ls= numpy.array(ls)
         bs= numpy.array(bs)
         rs= numpy.array(rs)
         grs= numpy.array(grs)
+        fehs= numpy.array(fehs)
         XYZ= bovy_coords.lbd_to_XYZ(ls,bs,ds,degree=True)                      
     else:
         XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
