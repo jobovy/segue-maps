@@ -75,8 +75,12 @@ def comparerdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
     else: #single value
         rdist= numpy.zeros(_NRS)
         platels, platebs= [], []
+        cnt= 0
         for p in plate:
+            cnt+= 1
             #l and b?
+            sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,cnt,len(plate)))
+            sys.stdout.flush()
             pindx= (sf.plates == p)
             platel= platelb[pindx,0][0]
             plateb= platelb[pindx,1][0]
@@ -94,6 +98,8 @@ def comparerdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                 thisrdist[(rs > 17.8)]= 0.
                 allfaint= False
             rdist+= thisrdist
+        sys.stdout.write('\r'+_ERASESTR+'\r')
+        sys.stdout.flush()
         norm= numpy.nansum(rdist*(rs[1]-rs[0]))
         rdist/= norm
         if convolve > 0.:
