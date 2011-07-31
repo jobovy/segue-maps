@@ -995,7 +995,7 @@ class FeHXDDist:
         acov= numpy.zeros((1,1))
         return numpy.exp(self.xdt(a,acov))[0]*jac
 
-def cb(x): print x
+def cb(x): print numpy.exp(x)
 
 def _ivezic_dist(gr,r,feh):
     d,derr= ivezic_dist_gr(gr+r,r,feh)

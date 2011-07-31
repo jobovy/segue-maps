@@ -150,25 +150,43 @@ def scatterData(options,args):
                                 type_bright='sharprcut',
                                 type_faint='sharprcut')
     if options.fake:
-        pass
+        fakefile= open(options.fakefile,'rb')
+        fakedata= pickle.load(fakefile)
+        fakefile.close()
+        #Calculate distance
+        ds, ls, bs, rs, grs, fehs= [], [], [], []
+        for ii in range(len(fakedata)):
+            ds.append(_ivezic_dist(fakedata[ii][1],fakedata[ii][0],fakedata[ii][2]))
+            ls.append(fakedata[ii][3])
+            bs.append(fakedata[ii][4])
+            rs.append(fakedata[ii][0])
+            grs.append(fakefata[ii][1])
+            fehs.append(fakefata[ii][2])
+        ds= numpy.array(ds)
+        ls= numpy.array(ls)
+        bs= numpy.array(bs)
+        rs= numpy.array(rs)
+        grs= numpy.array(grs)
+        fehs= numpy.array(fehs)
+        XYZ= bovy_coords.lbd_to_XYZ(ls,bs,ds,degree=True)                      
     else:
         #Load data
         XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
                                              sample=options.sample)
-    #Cut out bright stars on faint plates and vice versa
-    indx= []
-    for ii in range(len(data.feh)):
-        if sf.platebright[str(data[ii].plate)] and data[ii].dered_r >= 17.8:
-            indx.append(False)
-        elif not sf.platebright[str(data[ii].plate)] and data[ii].dered_r < 17.8:
-            indx.append(False)
-        else:
-            indx.append(True)
-    indx= numpy.array(indx,dtype='bool')
-    data= data[indx]
-    XYZ= XYZ[indx,:]
-    vxvyvz= vxvyvz[indx,:]
-    cov_vxvyvz= cov_vxvyvz[indx,:]
+        #Cut out bright stars on faint plates and vice versa
+        indx= []
+        for ii in range(len(data.feh)):
+            if sf.platebright[str(data[ii].plate)] and data[ii].dered_r >= 17.8:
+                indx.append(False)
+            elif not sf.platebright[str(data[ii].plate)] and data[ii].dered_r < 17.8:
+                indx.append(False)
+            else:
+                indx.append(True)
+        indx= numpy.array(indx,dtype='bool')
+        data= data[indx]
+        XYZ= XYZ[indx,:]
+        vxvyvz= vxvyvz[indx,:]
+        cov_vxvyvz= cov_vxvyvz[indx,:]
     R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**0.5
     bovy_plot.bovy_print()
     if options.type.lower() == 'dataxy':

@@ -79,7 +79,7 @@ def fakeDensData(parser):
         grmin, grmax= 0.55, 0.75
     #Calculate the r-distribution for each plate
     nrs= 1001
-    ngr, nfeh= 21, 21
+    ngr, nfeh= 51, 51
     grs= numpy.linspace(grmin,grmax,ngr)
     fehs= numpy.linspace(fehrange[0],fehrange[1],nfeh)
     #Calcuate FeH and gr distriutions
@@ -93,7 +93,7 @@ def fakeDensData(parser):
     colordists/= colordists[-1]
     rs= numpy.linspace(rmin,rmax,nrs)
     rdists= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
-    for ii in range(3):#len(sf.plates)):
+    for ii in range(len(sf.plates)):
         p= sf.plates[ii]
         sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,ii+1,len(sf.plates)))
         sys.stdout.flush()
@@ -114,7 +114,9 @@ def fakeDensData(parser):
     numbers/= numbers[-1]
     rdists= numpy.cumsum(rdists,axis=1)
     for ii in range(len(sf.plates)):
-        rdists[ii,:,:,:]/= rdists[ii,-1,:,:]
+        for jj in range(ngr):
+            for kk in range(nfeh):
+                rdists[ii,:,jj,kk]/= rdists[ii,-1,jj,kk]
     #Now sample until we're done
     out= []
     while len(out) < options.nsamples:

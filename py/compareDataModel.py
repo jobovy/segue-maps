@@ -1025,8 +1025,8 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
             else:
                 out+= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])\
                     *fehdist(fehs[kk])
-            norm+= colordist(grs[jj])*fehdist(fehs[kk])
-    select= sf(numpy.array([plate for jj in range(len(rs))]),r=rs)
+                norm+= colordist(grs[jj])*fehdist(fehs[kk])
+    select= sf(plate,r=rs)
     if dontmarginalizecolorfeh:
         for jj in range(ngr):
             for kk in range(nfeh):
