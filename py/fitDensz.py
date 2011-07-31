@@ -390,24 +390,42 @@ def fitDensz(parser):
         #Now sample
         if _VERBOSE:
             print "Sampling the likelihood ..."
-            samples= bovy_mcmc.slice(params,
-                                     step,
-                                     pdf_func,
-                                     (XYZ,R,
-                                      sf,sf.plates,platelb[:,0],
-                                      platelb[:,1],platebright,
-                                      platefaint,Ap,
-                                      grmin,grmax,rmin,rmax,
-                                      fehrange[0],fehrange[1],
-                                      feh,colordist,densfunc,
-                                      fehdist,options.dontmargfeh,
-                                      options.dontbincolorfeh,usertol,
-                                      grs,fehs,rhogr,rhofeh,mr),
-                                     create_method=create_method,
-                                     isDomainFinite=isDomainFinite,
-                                     domain=domain,
-                                     nsamples=options.nsamples,
-                                     callback=cb)
+            if options.metropolis:
+                samples= bovy_mcmc.metropolis(params,
+                                              step,
+                                              pdf_func,
+                                              (XYZ,R,
+                                               sf,sf.plates,platelb[:,0],
+                                               platelb[:,1],platebright,
+                                               platefaint,Ap,
+                                               grmin,grmax,rmin,rmax,
+                                               fehrange[0],fehrange[1],
+                                               feh,colordist,densfunc,
+                                               fehdist,options.dontmargfeh,
+                                               options.dontbincolorfeh,usertol,
+                                               grs,fehs,rhogr,rhofeh,mr),
+                                              symmetric=True,
+                                              nsamples=options.nsamples,
+                                              callback=cb)
+            else:
+                samples= bovy_mcmc.slice(params,
+                                         step,
+                                         pdf_func,
+                                         (XYZ,R,
+                                          sf,sf.plates,platelb[:,0],
+                                          platelb[:,1],platebright,
+                                          platefaint,Ap,
+                                          grmin,grmax,rmin,rmax,
+                                          fehrange[0],fehrange[1],
+                                          feh,colordist,densfunc,
+                                          fehdist,options.dontmargfeh,
+                                          options.dontbincolorfeh,usertol,
+                                          grs,fehs,rhogr,rhofeh,mr),
+                                         create_method=create_method,
+                                         isDomainFinite=isDomainFinite,
+                                         domain=domain,
+                                         nsamples=options.nsamples,
+                                         callback=cb)
         if _DEBUG:
             print "Printing mean and std dev of samples ..."
             for ii in range(len(params)):
@@ -1014,6 +1032,9 @@ def get_options():
     parser.add_option("--fake",action="store_true", dest="fake",
                       default=False,
                       help="Data is fake")
+    parser.add_option("--metropolis",action="store_true", dest="metropolis",
+                      default=False,
+                      help="Use metropolis sampler")
     parser.add_option("--dontmargfeh",action="store_true", dest="dontmargfeh",
                       default=False,
                       help="Don't marginalize over metallicity")
