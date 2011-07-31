@@ -29,7 +29,7 @@ $(OUTDIR)/HWR_rich_g_lcen180_bcen90_lbdr30_hRhz.$(EXT): fitDensz.py Makefile \
 $(OUTDIR)/HWR_rich_g_lcen180_bcen0_lbdr30_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_lcen180_bcen0_lbdr30.sav -o $@ \
-	-n 100 --lcen=180. --bcen=0 --lbdr=30 --metropolis
+	-n 100 --lcen=180. --bcen=0 --lbdr=30
 
 #Min KS
 $(OUTDIR)/HWR_rich_g_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
