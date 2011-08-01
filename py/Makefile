@@ -37,7 +37,7 @@ $(OUTDIR)/HWR_rich_g_lcen45_bcen-23_lbdr20_hRhz.$(EXT): fitDensz.py Makefile \
 $(OUTDIR)/HWR_rich_g_north_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_north.sav -o $@ \
-	-n 100 --north
+	-n 1000 --north
 $(OUTDIR)/HWR_rich_g_south_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_south.sav -o $@ \
