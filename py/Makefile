@@ -71,6 +71,12 @@ $(OUTDIR)/HWR_rich_g_twovertical_rfunc.$(EXT): fitDensz.py Makefile \
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_twovertical.sav -o $@ \
 	-n $(NSAMPLES) --plotrfunc \
 	--model=twovertical
+#TwoDblExp model
+$(OUTDIR)/HWR_rich_g_twoblexp_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --plotrfunc \
+	--model=twodblexp
 #Flare model
 $(OUTDIR)/HWR_rich_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
@@ -171,6 +177,12 @@ $(OUTDIR)/HWR_poor_g_twovertical_rfunc.$(EXT): fitDensz.py Makefile \
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_twovertical.sav -o $@ \
 	-n $(NSAMPLES) --plotrfunc --metal=poor \
 	--model=twovertical
+#TwoDblExp model
+$(OUTDIR)/HWR_poor_g_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_g_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --plotrfunc --metal=poor \
+	--model=twodblexp
 #Flare model
 $(OUTDIR)/HWR_poor_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
