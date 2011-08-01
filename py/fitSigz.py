@@ -10,10 +10,10 @@ import bovy_mcmc
 from segueSelect import read_gdwarfs
 _VERBOSE=True
 _DEBUG=False
-_APOORAFERANGE=[0.25,0.5]
-_APOORFEHRANGE=[-1.5,-0.25]
-_ARICHAFERANGE=[0.,0.25]
-_ARICHFEHRANGE=[-.5,0.25]
+_ARICHAFERANGE=[0.25,0.5]
+_ARICHFEHRANGE=[-1.5,-0.25]
+_APOORAFERANGE=[0.,0.25]
+_APOORFEHRANGE=[-.5,0.25]
 def fitSigz(parser):
     (options,args)= parser.parse_args()
     if len(args) == 0:
