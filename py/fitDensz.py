@@ -323,6 +323,15 @@ def fitDensz(parser):
                 print numpy.corrcoef(numpy.exp(xs),numpy.exp(ys),rowvar=1)
                 print numpy.corrcoef(xs,numpy.exp(ys),rowvar=1)
                 print numpy.corrcoef(numpy.exp(xs),ys,rowvar=1)
+        print "Printing 95, 99 percent lower and upper limits ..."
+        for ii in range(len(params)):
+            xs= sorted(numpy.array([s[ii] for s in samples]))
+            indx1= int(numpy.floor(0.05*len(samples)))
+            indx2= int(numpy.floor(0.01*len(samples)))
+            print xs[indx1], numpy.exp(xs[indx1]), xs[indx2], numpy.exp(xs[indx2])
+            indx1= int(numpy.floor(0.95*len(samples)))
+            indx2= int(numpy.floor(0.99*len(samples)))
+            print xs[indx1], numpy.exp(xs[indx1]), xs[indx2], numpy.exp(xs[indx2])
     else:
         #Subsample
         if not options.subsample is None:
