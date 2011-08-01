@@ -171,6 +171,14 @@ $(OUTDIR)/HWR_poor_g_lcen45_bcen-23_lbdr20_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_lcen45_bcen-23_lbdr20.sav -o $@ \
 	-n $(NSAMPLES) --lcen=45. --bcen=-23 --lbdr=20 --metal=poor
+$(OUTDIR)/HWR_poor_g_north_hRhz.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_g_north.sav -o $@ \
+	-n $(NSAMPLES) --north --metal=poor
+$(OUTDIR)/HWR_poor_g_south_hRhz.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_g_south.sav -o $@ \
+	-n $(NSAMPLES) --south --metal=poor
 #min KS
 $(OUTDIR)/HWR_poor_g_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_minks_0.1.sav -o $@ \
