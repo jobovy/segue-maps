@@ -158,12 +158,6 @@ $(OUTDIR)/HWR_rich_fakeflare_g_rfunc.$(EXT): fitDensz.py Makefile \
 $(OUTDIR)/HWR_poor_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \
 	-n $(NSAMPLES) --metal=poor
-$(OUTDIR)/HWR_poor_g_zfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
-	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \
-	-n $(NSAMPLES) --plotzfunc --metal=poor
-$(OUTDIR)/HWR_poor_g_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
-	$(PYTHON) fitDensz.py HWR_dens_poor_g.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --metal=poor
 #l,b ranges
 $(OUTDIR)/HWR_poor_g_lcen180_bcen90_lbdr30_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
