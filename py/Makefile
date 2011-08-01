@@ -66,23 +66,20 @@ $(OUTDIR)/HWR_rich_g_minplatesn10_hRhz.$(EXT): fitDensz.py Makefile segueSelect.
 	-n $(NSAMPLES) --minplatesn=10
 
 #TwoVertical model
-$(OUTDIR)/HWR_rich_g_twovertical_rfunc.$(EXT): fitDensz.py Makefile \
+$(OUTDIR)/HWR_rich_g_twovertical_hRhz.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_twovertical.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc \
-	--model=twovertical
+	-n $(NSAMPLES) --model=twovertical
 #TwoDblExp model
-$(OUTDIR)/HWR_rich_g_twoblexp_rfunc.$(EXT): fitDensz.py Makefile \
+$(OUTDIR)/HWR_rich_g_twoblexp_hRhz.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_twodblexp.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc \
-	--model=twodblexp
+	-n $(NSAMPLES) --model=twodblexp
 #Flare model
-$(OUTDIR)/HWR_rich_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
+$(OUTDIR)/HWR_rich_g_flare_hRhz.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_flare.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc \
-	--model=flare
+	-n $(NSAMPLES) --model=flare
 #Min KS
 $(OUTDIR)/HWR_rich_g_flare_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_flare_minks_0.1.sav -o $@ \
@@ -91,55 +88,71 @@ $(OUTDIR)/HWR_rich_g_flare_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelec
 $(OUTDIR)/HWR_rich_g_tiedflare_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_tiedflare.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc \
-	--model=tiedflare
+	-n $(NSAMPLES) --model=tiedflare
 
 #just bright
 $(OUTDIR)/HWR_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_gbright.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --bright
+	-n $(NSAMPLES) --bright
 $(OUTDIR)/TwoVertical_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py TwoVertical_dens_rich_gbright.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --bright --model=twovertical
+	-n $(NSAMPLES) --bright --model=twovertical
 $(OUTDIR)/Flare_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py Flare_dens_rich_gbright.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --bright --model=flare
+	-n $(NSAMPLES) --bright --model=flare
 $(OUTDIR)/DblExp_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py DblExp_dens_rich_gbright.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --bright --model=dblexp
+	-n $(NSAMPLES) --bright --model=dblexp
+#just faint
+$(OUTDIR)/HWR_rich_gfaint_rfunc.$(EXT): fitDensz.py Makefile plotData.py \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gfaint.sav -o $@ \
+	-n $(NSAMPLES) --faint
+$(OUTDIR)/TwoVertical_rich_gfaint_rfunc.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py TwoVertical_dens_rich_gfaint.sav -o $@ \
+	-n $(NSAMPLES) --faint --model=twovertical
+$(OUTDIR)/Flare_rich_gfaint_rfunc.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py Flare_dens_rich_gfaint.sav -o $@ \
+	-n $(NSAMPLES) --faint --model=flare
+$(OUTDIR)/DblExp_rich_gfaint_rfunc.$(EXT): fitDensz.py Makefile plotData.py \
+	segueSelect.py
+	$(PYTHON) fitDensz.py DblExp_dens_rich_gfaint.sav -o $@ \
+	-n $(NSAMPLES) --faint --model=dblexp
 
 #Fake data
 $(OUTDIR)/HWR_rich_fakedblexp_g_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_fakedblexp_g.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --sel_faint=r --fake -i fakeThinDblExp.sav
+	-n $(NSAMPLES) --sel_faint=r --fake -i fakeThinDblExp.sav
 $(OUTDIR)/HWR_rich_fakedblexp_gbright_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_fakedblexp_gbright.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --sel_faint=r --fake -i fakeThinDblExp.sav
+	-n $(NSAMPLES) --sel_faint=r --fake -i fakeThinDblExp.sav
 $(OUTDIR)/Flare_rich_fakedblexp_g_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py Flare_dens_rich_fakedblexp_g.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --sel_faint=r --fake -i fakeThinDblExp.sav \
+	-n $(NSAMPLES) --sel_faint=r --fake -i fakeThinDblExp.sav \
 	--model=flare
 $(OUTDIR)/Flare_rich_fakeflare_g_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py Flare_dens_rich_fakedblexp_g.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --sel_faint=r --fake -i fakeThinFlare.sav \
+	-n $(NSAMPLES) --sel_faint=r --fake -i fakeThinFlare.sav \
 	--model=flare
 $(OUTDIR)/HWR_rich_fakeflare_g_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_fakeflare_g.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --sel_faint=r --fake -i fakeThinFlare.sav
+	-n $(NSAMPLES) --sel_faint=r --fake -i fakeThinFlare.sav
 
 #Metal poor G dwarf densities
 $(OUTDIR)/HWR_poor_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
@@ -175,19 +188,19 @@ $(OUTDIR)/HWR_poor_g_minks0_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 $(OUTDIR)/HWR_poor_g_twovertical_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_twovertical.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --metal=poor \
+	-n $(NSAMPLES) --metal=poor \
 	--model=twovertical
 #TwoDblExp model
 $(OUTDIR)/HWR_poor_g_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_twodblexp.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --metal=poor \
+	-n $(NSAMPLES) --metal=poor \
 	--model=twodblexp
 #Flare model
 $(OUTDIR)/HWR_poor_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_flare.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --metal=poor \
+	-n $(NSAMPLES) --metal=poor \
 	--model=flare
 #Min KS
 $(OUTDIR)/HWR_poor_g_flare_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
@@ -196,11 +209,11 @@ $(OUTDIR)/HWR_poor_g_flare_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelec
 #just bright
 $(OUTDIR)/HWR_poor_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_gbright.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --bright --metal=poor
+	-n $(NSAMPLES) --bright --metal=poor
 #just bright
 $(OUTDIR)/HWR_poor_gfaint_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_gfaint.sav -o $@ \
-	-n $(NSAMPLES) --plotrfunc --faint --metal=poor
+	-n $(NSAMPLES) --faint --metal=poor
 
 #Metal rich G dwarf densities, flare
 $(OUTDIR)/flare_rich_g_hRhz.$(EXT): fitDensz.py Makefile
