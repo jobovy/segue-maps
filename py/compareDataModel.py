@@ -12,6 +12,7 @@ from galpy.util import bovy_coords, bovy_plot
 import matplotlib
 from fitDensz import _ivezic_dist, _ZSUN, _DEGTORAD, _gi_gr, _mr_gi
 from segueSelect import _ERASESTR, _SEGUESELECTDIR, _load_fits
+from fitSigz import _APOORFEHRANGE, _ARICHFEHRANGE
 ###############################################################################
 #   Density
 ###############################################################################

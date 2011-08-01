@@ -4,7 +4,8 @@ import cPickle as pickle
 from optparse import OptionParser
 from galpy.util import bovy_plot, bovy_coords
 import segueSelect
-from fitSigz import readData
+from fitSigz import readData, _ARICHFEHRANGE, _APOORFEHRANGE, \
+    _ARICHAFERANGE, _APOORAFERANGE
 from fitDensz import _HWRDensity, _FlareDensity, _const_colordist, \
     DistSpline, _ivezic_dist, _TwoVerticalDensity
 import compareDataModel
@@ -26,10 +27,10 @@ def compareGRichRdist(options,args):
                                 type_faint='sharprcut')
     if options.metal.lower() == 'rich':
         feh= -0.15
-        fehrange= [-0.4,0.5]
+        fehrange= _APOORFEHRANGE
     elif options.metal.lower() == 'poor':
         feh= -0.65
-        fehrange= [-1.5,-0.5]
+        fehrange= _ARICHFEHRANGE
     #Load data
     XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
                                          sample=options.sample)
@@ -235,15 +236,23 @@ def afeh(options,args):
                           onedhists=True)
     #Overplot cuts, metal-rich
     lw=1.3
-    bovy_plot.bovy_plot([-0.4,0.5],[0.,0.],'k--',overplot=True,lw=lw)
-    bovy_plot.bovy_plot([-0.4,0.5],[0.2,0.2],'k--',overplot=True,lw=lw)
-    bovy_plot.bovy_plot([-0.4,-0.4],[0.,0.2],'k--',overplot=True,lw=lw)
-    bovy_plot.bovy_plot([0.5,0.5],[0.,0.2],'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot(_APOORFEHRANGE,[_APOORAFERANGE[0],_APOORAFERANGE[0]],
+                         'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot(_APOORFEHRANGE,[_APOORAFERANGE[1],_APOORAFERANGE[1]],
+                        'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([_APOORFEHRANGE[0],_APOORFEHRANGE[0]],_APOORAFERANGE,
+                        'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([_APOORFEHRANGE[1],_APOORFEHRANGE[1]],_APOORAFERANGE,
+                        'k--',overplot=True,lw=lw)
     #metal-poor
-    bovy_plot.bovy_plot([-1.5,-0.5],[0.5,0.5],'k--',overplot=True,lw=lw)
-    bovy_plot.bovy_plot([-1.5,-0.5],[0.25,0.25],'k--',overplot=True,lw=lw)
-    bovy_plot.bovy_plot([-0.5,-0.5],[0.25,0.5],'k--',overplot=True,lw=lw)
-    bovy_plot.bovy_plot([-1.5,-1.5],[0.25,0.5],'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot(_ARICHFEHRANGE,[_ARICHAFERANGE[0],_ARICHAFERANGE[0]],
+                         'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot(_ARICHFEHRANGE,[_ARICHAFERANGE[1],_ARICHAFERANGE[1]],
+                        'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([_ARICHFEHRANGE[0],_ARICHFEHRANGE[0]],_ARICHAFERANGE,
+                        'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([_ARICHFEHRANGE[1],_ARICHFEHRANGE[1]],_ARICHAFERANGE,
+                        'k--',overplot=True,lw=lw)
     bovy_plot.bovy_end_print(os.path.join(args[0],options.type+'_'
                                           +options.sample+'_'+
                                           options.metal+'.'+ext))

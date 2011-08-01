@@ -3,7 +3,7 @@ import numpy
 from optparse import OptionParser
 from galpy.util import bovy_plot, bovy_coords
 import segueSelect
-from fitSigz import readData
+from fitSigz import readData, _APOORFEHRANGE, _ARICHFEHRANGE
 from fitDensz import FeHXDDist, DistSpline
 from compareDataModel import _add_coordinset
 def plotMetallicityColor(options,args):
@@ -29,13 +29,13 @@ def plotMetallicityColor(options,args):
         rx= 0.01/.11*(xrange[1]-xrange[0])+xrange[0]
         colorrange=[0.55,0.75]
     if options.metal.lower() == 'rich':
-        yrange=[-0.5,0.5]
+        yrange=[-0.55,0.5]
         ry= 0.275
-        fehrange= [-0.4,0.5]
+        fehrange= _APOORFEHRANGE
     elif options.metal.lower() == 'poor':
         yrange=[-1.6,0.3]
         ry= yrange[1]-(.5-0.275)*(yrange[1]-yrange[0])
-        fehrange= [-1.5,-0.5]
+        fehrange= _ARICHFEHRANGE
     #First plot all data, faint, and bright
     bovy_plot.bovy_print()
     _plotMC_single(data,options,args,all=True,overplot=False,xrange=xrange,

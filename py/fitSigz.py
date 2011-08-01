@@ -10,6 +10,10 @@ import bovy_mcmc
 from segueSelect import read_gdwarfs
 _VERBOSE=True
 _DEBUG=False
+_APOORAFERANGE=[0.25,0.5]
+_APOORFEHRANGE=[-1.5,-0.25]
+_ARICHAFERANGE=[0.,0.25]
+_ARICHFEHRANGE=[-.5,0.25]
 def fitSigz(parser):
     (options,args)= parser.parse_args()
     if len(args) == 0:
@@ -240,11 +244,11 @@ def readData(metal='rich',sample='G'):
         #                                    'segue-local','kdwarf.dat'))
     #Select sample
     if metal == 'rich':
-        indx= (raw.feh > -0.4)*(raw.feh < 0.5)\
-            *(raw.afe > -0.25)*(raw.afe < 0.2)
+        indx= (raw.feh > _APOORFEHRANGE[0])*(raw.feh < _APOORFEHRANGE[1])\
+            *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
     elif metal == 'poor':
-        indx= (raw.feh > -1.5)*(raw.feh < -0.5)\
-            *(raw.afe > 0.25)*(raw.afe < 0.5)
+        indx= (raw.feh > _ARICHFEHRANGE[0])*(raw.feh < _ARICHFEHRANGE[1])\
+            *(raw.afe > _ARICHAFERANGE[0])*(raw.afe < _ARICHAFERANGE[1])
     else:
         indx= (raw.feh > -2.)*(raw.feh < 0.5)\
             *(raw.afe > -0.25)*(raw.afe < 0.5)

@@ -14,7 +14,7 @@ from galpy.util import bovy_coords, bovy_plot, bovy_quadpack
 import bovy_mcmc
 from segueSelect import ivezic_dist_gr, segueSelect, _gi_gr, _mr_gi, \
     _SEGUESELECTDIR
-from fitSigz import readData
+from fitSigz import readData, _ARICHFEHRANGE, _APOORFEHRANGE
 from plotData import plotDensz
 #Scipy version
 try:
@@ -52,10 +52,10 @@ def fitDensz(parser):
         densfunc= _TwoVerticalDensity
     if options.metal.lower() == 'rich':
         feh= -0.15
-        fehrange= [-0.4,0.5]
+        fehrange= _APOORFEHRANGE
     elif options.metal.lower() == 'poor':
         feh= -0.65
-        fehrange= [-1.5,-0.5]
+        fehrange= _ARICHFEHRANGE
     else:
         feh= -0.5 
     #First read the data
@@ -487,7 +487,8 @@ def fitDensz(parser):
             thisfehs= numpy.zeros((_THISNGR,_THISNFEH))
             for ii in range(_THISNGR):
                 if feh > -0.5: #rich, actually only starts at 0.2
-                    thisfehs[ii,:]= numpy.linspace(fehrange[0],0.2,_THISNFEH)
+                    thisfehs[ii,:]= numpy.linspace(fehrange[0],fehrange[1],
+                                                   _THISNFEH)
                 else:
                     thisfehs[ii,:]= numpy.linspace(fehrange[0],fehrange[1],
                                                    _THISNFEH)
