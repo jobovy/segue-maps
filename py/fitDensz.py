@@ -306,10 +306,23 @@ def fitDensz(parser):
         params= pickle.load(savefile)
         samples= pickle.load(savefile)
         savefile.close()
+        print "Printing best fit parameters ..."
+        print params
+        print numpy.exp(params)
         print "Printing mean and std dev of samples ..."
         for ii in range(len(params)):
             xs= numpy.array([s[ii] for s in samples])
             print numpy.mean(xs), numpy.std(xs)
+            print numpy.exp(numpy.mean(xs)), numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs)), -numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))
+        print "Correlations between parameters ..."
+        for ii in range(len(params)-1):
+            xs= numpy.array([s[ii] for s in samples])
+            for jj in range(ii+1,len(params)):
+                ys= numpy.array([s[jj] for s in samples])
+                print numpy.corrcoef(xs,ys,rowvar=1)
+                print numpy.corrcoef(numpy.exp(xs),numpy.exp(ys),rowvar=1)
+                print numpy.corrcoef(xs,numpy.exp(ys),rowvar=1)
+                print numpy.corrcoef(numpy.exp(xs),ys,rowvar=1)
     else:
         #Subsample
         if not options.subsample is None:
