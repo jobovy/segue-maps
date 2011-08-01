@@ -105,6 +105,30 @@ def fitDensz(parser):
         colordist= DistSpline(*numpy.histogram(rawdata.dered_g-rawdata.dered_r,
                                            bins=9,range=colorrange),
                            xrange=colorrange)
+    #Only use north or south plates?
+    if options.north or options.south:
+        segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
+                                                   'segueplates_ksg.fits'))
+        platelb= bovy_coords.radec_to_lb(segueplatestr.ra,segueplatestr.dec,
+                                         degree=True)
+        indx= []
+        for ii in range(len(segueplatestr.ra)):
+            if options.north and platelb[ii,1] > 0.: indx.append(True)
+            elif options.south and platelb[ii,1] < 0.: indx.append(True)
+            else: indx.append(False)
+        indx= numpy.array(indx,dtype='bool')
+        plates= segueplatestr.plate[indx]
+        segueplatestr= segueplatestr[indx]
+        #Data
+        dataindx= []
+        for ii in range(len(XYZ[:,0])):
+            if rawdata[ii].plate in plates: dataindx.append(True)
+            else: dataindx.append(False)
+        dataindx= numpy.array(dataindx,dtype='bool')
+        rawdata= rawdata[dataindx]
+        XYZ= XYZ[dataindx,:]
+        vxvyvz= vxvyvz[dataindx,:]
+        cov_vxvyvz= cov_vxvyvz[dataindx,:,:]     
     #Only consider plates around lcen bcen?
     if not options.lcen is None and not options.bcen is None \
            and not options.lbdr is None:
@@ -530,7 +554,7 @@ def fitDensz(parser):
                                           feh,colordist,densfunc,
                                           fehdist,options.dontmargfeh,
                                           options.dontbincolorfeh,usertol,
-                                          grs,fehs,rhogr,rhofeh,mr),
+                                          grs,fehs,rhogr,rhofeh,mr,options.dontbin,dmin,dmax,ds),
                                          create_method=create_method,
                                          isDomainFinite=isDomainFinite,
                                          domain=domain,
@@ -1147,6 +1171,14 @@ def get_options():
     parser.add_option("--lbdr",dest='lbdr',type='float',
                       default=None,
                       help="If set, only use plates a distance lbdr (deg) away from lcen and bcen")
+    parser.add_option("--north",action="store_true", 
+                      dest="north",
+                      default=False,
+                      help="Only use plates with b < 0")
+    parser.add_option("--south",action="store_true", 
+                      dest="south",
+                      default=False,
+                      help="Only use plates with b > 0")
     return parser
 
 if __name__ == '__main__':
