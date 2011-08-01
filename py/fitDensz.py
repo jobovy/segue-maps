@@ -306,11 +306,10 @@ def fitDensz(parser):
         params= pickle.load(savefile)
         samples= pickle.load(savefile)
         savefile.close()
-        if _DEBUG:
-            print "Printing mean and std dev of samples ..."
-            for ii in range(len(params)):
-                xs= numpy.array([s[ii] for s in samples])
-                print numpy.mean(xs), numpy.std(xs)
+        print "Printing mean and std dev of samples ..."
+        for ii in range(len(params)):
+            xs= numpy.array([s[ii] for s in samples])
+            print numpy.mean(xs), numpy.std(xs)
     else:
         #Subsample
         if not options.subsample is None:
@@ -475,11 +474,10 @@ def fitDensz(parser):
                                          domain=domain,
                                          nsamples=options.nsamples,
                                          callback=cb)
-        if _DEBUG:
-            print "Printing mean and std dev of samples ..."
-            for ii in range(len(params)):
-                xs= numpy.array([s[ii] for s in samples])
-                print numpy.mean(xs), numpy.std(xs)
+        print "Printing mean and std dev of samples ..."
+        for ii in range(len(params)):
+            xs= numpy.array([s[ii] for s in samples])
+            print numpy.mean(xs), numpy.std(xs)
         if _VERBOSE:
             print "Saving ..."
         savefile= open(args[0],'wb')
