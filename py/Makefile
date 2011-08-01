@@ -40,7 +40,7 @@ $(OUTDIR)/HWR_rich_g_north_hRhz.$(EXT): fitDensz.py Makefile \
 	-n 100 --north
 $(OUTDIR)/HWR_rich_g_south_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
-	$(PYTHON) fitDensz.py HWR_dens_rich_g_north.sav -o $@ \
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_south.sav -o $@ \
 	-n 100 --south
 
 #Min KS
