@@ -7,6 +7,7 @@ from galpy.util import bovy_plot, bovy_coords
 from matplotlib import pyplot, cm
 import segueSelect
 from fitDensz import _ZSUN
+from compareDataModel import _legendsize
 def selectFigs(parser):
     (options,args)= parser.parse_args()
     if options.type.lower() == 'platesn':
@@ -25,9 +26,109 @@ def selectFigs(parser):
         plot_platesn_lb(options,args)
     elif options.type.lower() == 'ks_lb':
         plot_ks_lb(options,args)
+    elif options.type.lower() == 'platesn_rcut':
+        plot_platesn_rcut(options,args)
+    elif options.type.lower() == 'sn_r_fewplates':
+        plot_sn_r_fewplates(options,args)
     elif options.type.lower() == 'sfrz' or options.type.lower() == 'sfxy':
         plot_sfrz(options,args)
+
+def plot_sn_r_fewplates(options,args):
+    """Plot SN versus r_0 for a few plates"""
+    numpy.random.seed(2)
+    if options.program: select= 'program'
+    else: select= 'all'
+    sf= segueSelect.segueSelect(sn=False,sample=options.sample,
+                                plates=None,select=select,
+                                type_bright='sharprcut',
+                                type_faint='sharprcut')
+    if options.faint:
+        binedges= segueSelect._BINEDGES_G_FAINT
+        nbins= len(binedges)-1
+        bincolors= ['%f' % (0.25 + 0.5/(nbins-1)*ii) for ii in range(nbins)]
+        bincolors= ['b','g','y','r','m'] #'c' at beginning
+    elif not options.faint:
+        binedges= segueSelect._BINEDGES_G_BRIGHT
+        nbins= len(binedges)-1
+        bincolors= ['%f' % (0.25 + 0.5/(nbins-1)*ii) for ii in range(nbins)]
+        bincolors= ['b','g','y','r','m'] #'c' at beginning
+    _NPLATES= 2
+    bovy_plot.bovy_print()
+    if options.faint:
+        xrange=[17.8,sf.rmax]
+        yrange=[0.,50.]
+        bovy_plot.bovy_plot([17.8,sf.rmax],[15.,15.],
+                            'k--',
+                            xrange=xrange,
+                            yrange=yrange,
+                            xlabel=r'$r_0\ [\mathrm{mag}]$',
+                            ylabel=r'$\mathrm{SN}$')
+        for bb in range(nbins):
+            theseplates= []
+            for ii in range(len(sf.plates)):
+                plate= sf.plates[ii]
+                if not options.faint and 'faint' in sf.platestr[ii].programname: continue
+                elif options.faint and not 'faint' in sf.platestr[ii].programname: continue
+                #What SN bin is this plate in
+                kk= 0
+                while kk < nbins and sf.platestr[ii].platesn_r > binedges[kk+1]:
+                    kk+=1
+                if kk != bb: continue
+                theseplates.append(plate)
+            #Now pick random plate
+            p= theseplates[int(numpy.floor(numpy.random.uniform()*len(theseplates)))]
+            bovy_plot.bovy_plot(sf.platespec[str(p)].dered_r,
+                                sf.platespec[str(p)].sna,
+                                marker='o',ls='none',mfc=bincolors[bb],ms=3,
+                                mec=bincolors[bb],
+                                overplot=True)
+    else:
+        pass
+    #Legend
+    if options.faint:
+        xlegend, ylegend, dy= (sf.rmax-1.2/(20.3-17.8)*(sf.rmax+0.1-17.8))-0.35, yrange[1]/3.5*3.15,-(yrange[1]/3.5*.21)-1
+    else:
+        xlegend, ylegend, dy= 16.15, 3.15, -.21
+    for ii in range(nbins-1):
+        bovy_plot.bovy_text(xlegend,ylegend+dy*ii,
+                            r'$%5.1f < \mathrm{plateSN\_r} \leq %5.1f$' %(binedges[ii], binedges[ii+1]),color=bincolors[ii],size=_legendsize)
+    ii= nbins-1
+    bovy_plot.bovy_text(xlegend,ylegend+dy*ii,
+                        r'$%5.1f < \mathrm{plateSN\_r}$' %binedges[ii],
+                        color=bincolors[ii],size=_legendsize)
+    bovy_plot.bovy_end_print(options.plotfile)
         
+def plot_platesn_rcut(options,args):
+    """Plot plateSN versus rcut"""
+    if options.program: select= 'program'
+    else: select= 'all'
+    sf= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                plates=None,select=select,
+                                type_bright='sharprcut',
+                                type_faint='sharprcut')
+    if options.faint:
+        xs= sf.platestr.platesn_r[sf.faintplateindx]
+        plates= sf.plates[sf.faintplateindx]
+        yrange=[17.8,20.2]
+        xrange= [0.,160.]
+    else:
+        xs= sf.platestr.platesn_r[sf.brightplateindx]
+        plates= sf.plates[sf.brightplateindx]
+        yrange=[16.5,17.8]
+        xrange= [0.,360.]
+    ys= []
+    for x in plates:
+        ys.append(sf.rcuts[str(x)])
+    ys= numpy.array(ys)
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_plot(xs,ys,'ko',
+                        xlabel=r'$\mathrm{plateSN\_r}$',
+                        ylabel=r'$\mathrm{max}\ r_0\ [\mathrm{mag}]$',
+                        xrange=xrange,
+                        yrange=yrange,
+                        ms=3)
+    bovy_plot.bovy_end_print(options.plotfile)   
+
 def plot_sfrz(options,args):
     """Plot the selection function in the R,Z plane"""
     if options.program: select= 'program'

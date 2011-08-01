@@ -219,6 +219,34 @@ def scatterData(options,args):
         bovy_plot.bovy_end_print(os.path.join(args[0],options.type+'_'
                                               +options.sample+'_'+
                                               options.metal+'.'+ext))
+def afeh(options,args):
+    """Plot the [alpha/Fe] vs. [Fe/H] distribution of the sample"""
+    if options.png: ext= 'png'
+    else: ext= 'ps'
+    #Load data
+    XYZ,vxvyvz,cov_vxvyvz,data= readData(metal='all',
+                                         sample=options.sample)
+    bovy_plot.bovy_print()
+    bovy_plot.scatterplot(data.feh,data.afe,'k,',
+                          xrange=[-2.,0.6],
+                          yrange=[-0.1,0.6],
+                          xlabel=r'$[\mathrm{Fe/H}]$',
+                          ylabel=r'$[\alpha/\mathrm{Fe}]$',
+                          onedhists=True)
+    #Overplot cuts, metal-rich
+    lw=1.3
+    bovy_plot.bovy_plot([-0.4,0.5],[0.,0.],'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([-0.4,0.5],[0.2,0.2],'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([-0.4,-0.4],[0.,0.2],'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([0.5,0.5],[0.,0.2],'k--',overplot=True,lw=lw)
+    #metal-poor
+    bovy_plot.bovy_plot([-1.5,-0.5],[0.5,0.5],'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([-1.5,-0.5],[0.25,0.25],'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([-0.5,-0.5],[0.25,0.5],'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([-1.5,-1.5],[0.25,0.5],'k--',overplot=True,lw=lw)
+    bovy_plot.bovy_end_print(os.path.join(args[0],options.type+'_'
+                                          +options.sample+'_'+
+                                          options.metal+'.'+ext))
     
 def get_options():
     usage = "usage: %prog [options] <savedir>\n\nsavedir= name of the directory that the comparisons will be saved to"
@@ -244,5 +272,7 @@ if __name__ == '__main__':
     (options,args)= get_options().parse_args()
     if options.type.lower() == 'datarz' or options.type.lower() == 'dataxy':
         scatterData(options,args)
+    elif options.type.lower() == 'afeh':
+        afeh(options,args)
     else:
         compareGRichRdist(options,args)
