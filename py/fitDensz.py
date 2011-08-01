@@ -24,8 +24,8 @@ except:
     raise ImportError( "scipy.__version__ not understood, contact developer, send scipy.__version__")
 _ERASESTR= "                                                                                "
 _VERBOSE=True
-_DEBUG=False
-_INTEGRATEPLATESEP= True
+_DEBUG=True
+_INTEGRATEPLATESEP= True #DON'T CHANGE THIS
 _EPSREL= 1.45e-08
 _EPSABS= 1.45e-08
 _DEGTORAD=math.pi/180.
@@ -444,7 +444,7 @@ def fitDensz(parser):
         allbright, allfaint= True, True
         if not options.dontbin:
             #dmin and dmax for this rmin, rmax
-            for p in plate:
+            for p in sf.plates:
                 #l and b?
                 pindx= (sf.plates == p)
                 plateb= platelb[pindx,1][0]
@@ -463,17 +463,17 @@ def fitDensz(parser):
             thisfehs= numpy.zeros((_THISNGR,_THISNFEH))
             for ii in range(_THISNGR):
                 if feh > -0.5: #rich, actually only starts at 0.2
-                    thisfehs[ii,:]= numpy.linspace(fehrange[0],0.2,_NFEH)
+                    thisfehs[ii,:]= numpy.linspace(fehrange[0],0.2,_THISNFEH)
                 else:
                     thisfehs[ii,:]= numpy.linspace(fehrange[0],fehrange[1],
-                                                   _NFEH)
+                                                   _THISNFEH)
             for ii in range(_THISNFEH):
                 thisgrs[:,ii]= numpy.linspace(grmin,grmax,_THISNGR)
             dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))
             dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))
             ds= numpy.linspace(dmin,dmax,_NDS)
         else:
-            dmin, dmax, None= None, None, None
+            dmin, dmax, ds= None, None, None
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
@@ -822,7 +822,6 @@ def _NormInt(params,XYZ,R,
                                                        *rhogr[kk]*rhofeh[jj]
             else: #Compute integral by binning everything
                 thisout= numpy.zeros(_NDS)
-                BOVY ASSUME WE HAVE ds
                 for kk in range(_NGR):
                     for jj in range(_NFEH):
                         #What rs do these ds correspond to
