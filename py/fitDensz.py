@@ -153,7 +153,7 @@ def fitDensz(parser):
         #Data
         dataindx= []
         for ii in range(len(XYZ[:,0])):
-            if rawdata[ii].plate in lbplates: dataindx.append(True)
+            if rawdata[ii].plate in plates: dataindx.append(True)
             else: dataindx.append(False)
         dataindx= numpy.array(dataindx,dtype='bool')
         rawdata= rawdata[dataindx]
