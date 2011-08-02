@@ -606,7 +606,7 @@ def fitDensz(parser):
                             thisparams.append(chain[ww,pp,ss])
                         samples.append(numpy.array(thisparams))
                 if len(samples) > options.nsamples:
-                    samples= [-options.nsamples:len(samples)]
+                    samples= samples[-options.nsamples:len(samples)]
             else:
                 samples= bovy_mcmc.slice(params,
                                          step,
