@@ -6,7 +6,7 @@ import pyfits
 from galpy.util import bovy_plot, bovy_coords
 from matplotlib import pyplot, cm
 import segueSelect
-from fitDensz import _ZSUN
+from fitDensz import _ZSUN, _DEGTORAD
 from compareDataModel import _legendsize
 def selectFigs(parser):
     (options,args)= parser.parse_args()
@@ -173,14 +173,14 @@ def plot_sfrz(options,args):
     bovy_plot.bovy_print(fig_width=6.)
     if options.type.lower() == 'sfxy':
         bovy_plot.bovy_plot([100.,100.],[100.,100.],'k,',
-                            xrange=[5.,-5.],yrange=[5.,-5.],
+                            xrange=[5.99,-5.99],yrange=[5.99,-5.99],
                             xlabel=r'$X\ [\mathrm{kpc}]$',
                             ylabel=r'$Y\ [\mathrm{kpc}]$')
     else:
         bovy_plot.bovy_plot([100.,100.],[100.,100.],'k,',
-                        xrange=[5.,14.],yrange=[-4.,4.],
-                        xlabel=r'$R\ [\mathrm{kpc}]$',
-                        ylabel=r'$Z\ [\mathrm{kpc}]$')                       
+                            xrange=[4.,14.],yrange=[-4.,4.],
+                            xlabel=r'$R\ [\mathrm{kpc}]$',
+                            ylabel=r'$Z\ [\mathrm{kpc}]$')                       
     for ii in range(len(sf.plates)):
         for jj in range(nrs-1):
             if numpy.isnan(select[ii,jj]): continue
@@ -195,6 +195,51 @@ def plot_sfrz(options,args):
     cbar= pyplot.colorbar(m,fraction=0.2)
     cbar.set_clim((omin,omax))
     cbar.set_label(r'$\mathrm{selection\ fraction}$')
+    #Add arrow pointing to the Galactic Center
+    from matplotlib.patches import Arrow, FancyArrowPatch
+    if options.type.lower() == 'sfxy':
+        xarr, dx= 4.2, 1.2
+        arr= FancyArrowPatch(posA=(xarr,0.),
+                             posB=(xarr+dx,0.),
+                             arrowstyle='->', 
+                             connectionstyle='arc3,rad=%4.2f' % (0.), 
+                             shrinkA=2.0, shrinkB=2.0, mutation_scale=20.0, 
+                             mutation_aspect=None,fc='k')
+        #arr = Arrow(xarr,0.,dx,0., edgecolor='white',fc='k',width=0.65)
+        ax = pyplot.gca()
+        ax.add_patch(arr)
+        bovy_plot.bovy_text(xarr+3.*dx/4.,-0.2,r'$\mathrm{GC}$',
+                            size=_legendsize)
+        xcen, ycen, dr, t= 6.5, 0., 2., 30.*_DEGTORAD
+        arr= FancyArrowPatch(posA=(xcen-dr*numpy.cos(t),ycen+dr*numpy.sin(t)),
+                             posB=(xcen-dr*numpy.cos(-t),ycen+dr*numpy.sin(-t)),
+                             arrowstyle='<-', 
+                             connectionstyle='arc3,rad=%4.2f' % (2.*t), 
+                             shrinkA=2.0, shrinkB=2.0, mutation_scale=20.0, 
+                             mutation_aspect=None,fc='k')
+        ax.add_patch(arr)
+    else:
+        xarr, dx=5.5, -1.
+        arr= FancyArrowPatch(posA=(xarr+0.05,0.),
+                             posB=(xarr+dx,0.),
+                             arrowstyle='->', 
+                             connectionstyle='arc3,rad=%4.2f' % (0.), 
+                             shrinkA=2.0, shrinkB=2.0, mutation_scale=20.0, 
+                             mutation_aspect=None,fc='k')
+        ax = pyplot.gca()
+        ax.add_patch(arr)
+        bovy_plot.bovy_text(xarr+3.*dx/4.,-0.4,r'$\mathrm{GC}$',
+                            size=_legendsize)
+        arr= FancyArrowPatch(posA=(5.5,-0.05),
+                             posB=(5.5,1.),
+                             arrowstyle='->', 
+                             connectionstyle='arc3,rad=%4.2f' % (0.), 
+                             shrinkA=2.0, shrinkB=2.0, mutation_scale=20.0, 
+                             mutation_aspect=None,fc='k')
+        ax = pyplot.gca()
+        ax.add_patch(arr)
+        bovy_plot.bovy_text(5.55,0.2,r'$\mathrm{NGP}$',
+                            size=_legendsize)
     bovy_plot.bovy_end_print(options.plotfile)
 
 def _squeeze(o,omin,omax):
