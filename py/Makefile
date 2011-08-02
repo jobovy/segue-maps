@@ -251,6 +251,26 @@ $(OUTDIR)/HWR_poor_g_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_twodblexp.sav -o $@ \
 	-n $(NSAMPLES) --metal=poor \
 	--model=twodblexp --markovpy
+$(OUTDIR)/HWR_poor_gbright_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_gbright_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=twodblexp --markovpy --bright
+$(OUTDIR)/HWR_poor_gfaint_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_gfaint_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=twodblexp --markovpy --faint
+$(OUTDIR)/HWR_poor_gnorth_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_gnorth_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=twodblexp --markovpy --north
+$(OUTDIR)/HWR_poor_gsouth_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_gsouth_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=twodblexp --markovpy --south
 #Flare model
 $(OUTDIR)/HWR_poor_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
