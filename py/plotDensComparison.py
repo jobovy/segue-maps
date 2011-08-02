@@ -21,6 +21,8 @@ def compareGRichRdist(options,args):
     else:
         params1= numpy.array([-0.3508148171668,0.65752,0.00206572947631])
         params2= numpy.array([-0.37255443,-0.05221503,0.65642965,0.03518453])
+        #params2= numpy.array([-0.43416469,2.12440688,0.32511145])
+        #model2= _FlareDensity
     #Load sf
     sf= segueSelect.segueSelect(sample=options.sample,sn=True,
                                 type_bright='sharprcut',
