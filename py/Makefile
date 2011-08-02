@@ -267,6 +267,16 @@ $(OUTDIR)/HWR_poor_gfaint_flare_hRhz.$(EXT): fitDensz.py Makefile \
 	$(PYTHON) fitDensz.py HWR_dens_poor_gfaint_flare.sav -o $@ \
 	-n $(NSAMPLES) --metal=poor \
 	--model=flare --markovpy --faint
+$(OUTDIR)/HWR_poor_gnorth_flare_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_gnorth_flare.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=flare --markovpy --north
+$(OUTDIR)/HWR_poor_gsouth_flare_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_gsouth_flare.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=flare --markovpy --south
 #Min KS
 $(OUTDIR)/HWR_poor_g_flare_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_flare_minks_0.1.sav -o $@ \
