@@ -524,7 +524,6 @@ def fitDensz(parser):
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
-        """
         params= optimize.fmin_powell(like_func,params,
                                      args=(XYZ,R,
                                            sf,sf.plates,platelb[:,0],
@@ -538,8 +537,6 @@ def fitDensz(parser):
                                            grs,fehs,rhogr,rhofeh,mr,
                                            options.dontbin,dmin,dmax,ds),
                                      callback=cb)
-        """
-        params= numpy.array([-1.34316986e+00,1.75402412e+00,5.14667706e-04])
         if _VERBOSE:
             print "Optimal likelihood:", params
         #Now sample
@@ -582,7 +579,7 @@ def fitDensz(parser):
                                                                       feh,colordist,densfunc,
                                                                       fehdist,options.dontmargfeh,
                                                                       options.dontbincolorfeh,usertol,
-                                                                      grs,fehs,rhogr,rhofeh,mr,options.dontbin,dmin,dmax,ds))
+                                                                      grs,fehs,rhogr,rhofeh,mr,options.dontbin,dmin,dmax,ds),threads=1)
                 #Set up initial position
                 initial_position= [params+numpy.random.normal(size=len(params))*0.01 for ss in range(nwalkers)]
                 #Sample
