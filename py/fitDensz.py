@@ -569,6 +569,7 @@ def fitDensz(parser):
                 #Set-up walkers
                 nwalkers = 2*len(params)
                 ndim     = len(params)
+                nmarkovsamples= numpy.ceil(options.nsamples/nwalkers)
                 sampler = markovpy.EnsembleSampler(nwalkers,ndim,
                                                    lambda x: pdf_func(x,
                                                                       XYZ,R,
@@ -594,7 +595,7 @@ def fitDensz(parser):
                         thisparams.append(prop)
                     initial_position.append(numpy.array(thisparams))
                 #Sample
-                pos, prob, state= sampler.run_mcmc(initial_position,None,options.nsamples/nwalkers)
+                pos, prob, state= sampler.run_mcmc(initial_position,None,nmarkovsamples)
                 #Get chain
                 chain= sampler.get_chain()
                 samples= []
@@ -604,6 +605,8 @@ def fitDensz(parser):
                         for pp in range(len(params)):
                             thisparams.append(chain[ww,pp,ss])
                         samples.append(numpy.array(thisparams))
+                if len(samples) > options.nsamples:
+                    samples= [-options.nsamples:len(samples)]
             else:
                 samples= bovy_mcmc.slice(params,
                                          step,
