@@ -132,6 +132,34 @@ def fitDensz(parser):
         XYZ= XYZ[dataindx,:]
         vxvyvz= vxvyvz[dataindx,:]
         cov_vxvyvz= cov_vxvyvz[dataindx,:,:]     
+    #Only consider plates with |b| > bmin?
+    if not options.bmin is None or not options.bmax is None:
+        segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
+                                                   'segueplates_ksg.fits'))
+        platelb= bovy_coords.radec_to_lb(segueplatestr.ra,segueplatestr.dec,
+                                         degree=True)
+        indx= []
+        for ii in range(len(segueplatestr.ra)):
+            if not options.bmin is None \
+                    and numpy.fabs(platelb[ii,1]) > options.bmin: 
+                indx.append(True)
+            elif not options.bmax is None \
+                    and numpy.fabs(platelb[ii,1]) < options.bmax: 
+                indx.append(True)
+            else: indx.append(False)
+        indx= numpy.array(indx,dtype='bool')
+        plates= segueplatestr.plate[indx]
+        segueplatestr= segueplatestr[indx]
+        #Data
+        dataindx= []
+        for ii in range(len(XYZ[:,0])):
+            if rawdata[ii].plate in lbplates: dataindx.append(True)
+            else: dataindx.append(False)
+        dataindx= numpy.array(dataindx,dtype='bool')
+        rawdata= rawdata[dataindx]
+        XYZ= XYZ[dataindx,:]
+        vxvyvz= vxvyvz[dataindx,:]
+        cov_vxvyvz= cov_vxvyvz[dataindx,:,:]     
     #Only consider plates around lcen bcen?
     if not options.lcen is None and not options.bcen is None \
            and not options.lbdr is None:
@@ -1266,6 +1294,12 @@ def get_options():
                       dest="markovpy",
                       default=False,
                       help="Use the MarkovPy sampler")
+    parser.add_option("--bmin",dest='bmin',type='float',
+                      default=None,
+                      help="If set, only use plates centered on a |b| > bmin (deg0")
+    parser.add_option("--bmax",dest='bmax',type='float',
+                      default=None,
+                      help="If set, only use plates centered on a |b| < bmin (deg0")
     return parser
 
 if __name__ == '__main__':
