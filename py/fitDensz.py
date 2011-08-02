@@ -537,6 +537,7 @@ def fitDensz(parser):
                                            grs,fehs,rhogr,rhofeh,mr,
                                            options.dontbin,dmin,dmax,ds),
                                      callback=cb)
+        #params= numpy.array([-1.34316986e+00,1.75402412e+00,5.14667706e-04])
         if _VERBOSE:
             print "Optimal likelihood:", params
         #Now sample
@@ -581,7 +582,17 @@ def fitDensz(parser):
                                                                       options.dontbincolorfeh,usertol,
                                                                       grs,fehs,rhogr,rhofeh,mr,options.dontbin,dmin,dmax,ds),threads=1)
                 #Set up initial position
-                initial_position= [params+numpy.random.normal(size=len(params))*0.01 for ss in range(nwalkers)]
+                initial_position= []
+                for ww in range(nwalkers):
+                    thisparams= []
+                    for pp in range(len(params)):
+                        prop= params[pp]+numpy.random.normal()*0.01
+                        if (isDomainFinite[pp][0] and prop < domain[pp][0]):
+                            prop= domain[pp][0]
+                        elif (isDomainFinite[pp][1] and prop > domain[pp][1]):
+                            prop= domain[pp][1]
+                        thisparams.append(prop)
+                    initial_position.append(numpy.array(thisparams))
                 #Sample
                 pos, prob, state= sampler.run_mcmc(initial_position,None,options.nsamples/nwalkers)
                 #Get chain
