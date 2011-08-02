@@ -992,24 +992,24 @@ def _HWRLikeNormIntAll(d,gr,colordist,l,b,params,plates,sf,densfunc,feh):
 ###############################################################################
 def _HWRDensity(R,Z,params):
     """Double exponential disk + constant,
-    params= [hz,hR,Pbad]"""
+    params= [loghz,loghR,Pbad]"""
     hR= numpy.exp(params[1])
     hz= numpy.exp(params[0])
     return ((1.-params[2])/(2.*hz*hR)\
                 *numpy.exp(-(R-8.)/hR
-                            -numpy.fabs(Z)/numpy.exp(params[0]))\
+                            -numpy.fabs(Z)/hz)\
                 +params[2]/(_DZ*8.))
 
 def _DblExpDensity(R,Z,params):
     """Double exponential disk
-    params= [hz,hR]"""
-    hR= numpy.exp(params[1])
+    params= [loghz,loghR]"""
+    hR= numpy.exp(-params[1])
     return numpy.exp(-(R-8.)/hR
                       -numpy.fabs(Z)/numpy.exp(params[0]))
     
 def _TwoVerticalDensity(R,Z,params):
     """Double exponential disk with two vertical scale-heights
-    params= [hz1,hz2,hR,Pbad]"""
+    params= [loghz1,loghz2,loghR,Pbad]"""
     hR= numpy.exp(params[2])
     hz1= numpy.exp(params[0])
     hz2= numpy.exp(params[1])
@@ -1019,7 +1019,7 @@ def _TwoVerticalDensity(R,Z,params):
 
 def _TwoDblExpDensity(R,Z,params):
     """Two Double exponential disks
-    params= [hz1,hz2,hR1,hR2,Pbad]"""
+    params= [loghz1,loghz2,loghR1,loghR2,Pbad]"""
     hR1= numpy.exp(params[2])
     hR2= numpy.exp(params[3])
     hz1= numpy.exp(params[0])
@@ -1029,7 +1029,7 @@ def _TwoDblExpDensity(R,Z,params):
 
 def _FlareDensity(R,Z,params):
     """Double exponential disk with flaring scale-height
-    params= [hz,hflare,hR]"""
+    params= [loghz,loghflare,loghR]"""
     hR= numpy.exp(params[2])
     hz= numpy.exp(params[0])
     hf= hz*numpy.exp((R-8.)/numpy.exp(params[1]))
@@ -1037,7 +1037,7 @@ def _FlareDensity(R,Z,params):
 
 def _TiedFlareDensity(R,Z,params):
     """Double exponential disk with flaring scale-height equal to radial scale
-    params= [hz,,hR]"""
+    params= [loghz,loghR]"""
     hR= numpy.exp(params[1])
     hz= numpy.exp(params[0])
     hf= hz*numpy.exp((R-8.)/hR)
