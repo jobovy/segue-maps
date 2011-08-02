@@ -231,7 +231,7 @@ $(OUTDIR)/HWR_poor_g_flare_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelec
 #just bright
 $(OUTDIR)/HWR_poor_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_gbright.sav -o $@ \
-	-n $(NSAMPLES) --bright --metal=poor
+	-n $(NSAMPLES) --bright --metal=poor --markovpy
 #just bright
 $(OUTDIR)/HWR_poor_gfaint_rfunc.$(EXT): fitDensz.py Makefile plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_gfaint.sav -o $@ \
