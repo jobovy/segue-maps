@@ -208,9 +208,9 @@ def plot_sfrz(options,args):
         #arr = Arrow(xarr,0.,dx,0., edgecolor='white',fc='k',width=0.65)
         ax = pyplot.gca()
         ax.add_patch(arr)
-        bovy_plot.bovy_text(xarr+3.*dx/4.,-0.2,r'$\mathrm{GC}$',
+        bovy_plot.bovy_text(xarr+7.*dx/8.,-0.25,r'$\mathrm{GC}$',
                             size=_legendsize)
-        xcen, ycen, dr, t= 6.5, 0., 2., 30.*_DEGTORAD
+        xcen, ycen, dr, t= 8., 0., 4., 14.*_DEGTORAD
         arr= FancyArrowPatch(posA=(xcen-dr*numpy.cos(t),ycen+dr*numpy.sin(t)),
                              posB=(xcen-dr*numpy.cos(-t),ycen+dr*numpy.sin(-t)),
                              arrowstyle='<-', 
@@ -221,14 +221,14 @@ def plot_sfrz(options,args):
     else:
         xarr, dx=5.5, -1.
         arr= FancyArrowPatch(posA=(xarr+0.05,0.),
-                             posB=(xarr+dx,0.),
+                             posB=(xarr+dx*10./8.,0.),
                              arrowstyle='->', 
                              connectionstyle='arc3,rad=%4.2f' % (0.), 
                              shrinkA=2.0, shrinkB=2.0, mutation_scale=20.0, 
                              mutation_aspect=None,fc='k')
         ax = pyplot.gca()
         ax.add_patch(arr)
-        bovy_plot.bovy_text(xarr+3.*dx/4.,-0.4,r'$\mathrm{GC}$',
+        bovy_plot.bovy_text(xarr+7.*dx/8.,-0.45,r'$\mathrm{GC}$',
                             size=_legendsize)
         arr= FancyArrowPatch(posA=(5.5,-0.05),
                              posB=(5.5,1.),
