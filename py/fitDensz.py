@@ -12,6 +12,7 @@ from scipy import optimize, special, integrate
 import pyfits
 from galpy.util import bovy_coords, bovy_plot, bovy_quadpack
 import bovy_mcmc
+import markovpy
 from segueSelect import ivezic_dist_gr, segueSelect, _gi_gr, _mr_gi, \
     _SEGUESELECTDIR
 from fitSigz import readData, _ARICHFEHRANGE, _APOORFEHRANGE
@@ -523,6 +524,7 @@ def fitDensz(parser):
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
+        """
         params= optimize.fmin_powell(like_func,params,
                                      args=(XYZ,R,
                                            sf,sf.plates,platelb[:,0],
@@ -536,6 +538,8 @@ def fitDensz(parser):
                                            grs,fehs,rhogr,rhofeh,mr,
                                            options.dontbin,dmin,dmax,ds),
                                      callback=cb)
+        """
+        params= numpy.array([-1.34316986e+00,1.75402412e+00,5.14667706e-04])
         if _VERBOSE:
             print "Optimal likelihood:", params
         #Now sample
@@ -563,6 +567,35 @@ def fitDensz(parser):
                     print "WARNING: Metropolis acceptance ratio was < 0.15 or > 0.6 for a direction"
                     print "Full acceptance ratio list:"
                     print faccept                                    
+            elif options.markovpy:
+                #Set-up walkers
+                nwalkers = 2*len(params)
+                ndim     = len(params)
+                sampler = markovpy.EnsembleSampler(nwalkers,ndim,
+                                                   lambda x: pdf_func(x,
+                                                                      XYZ,R,
+                                                                      sf,sf.plates,platelb[:,0],
+                                                                      platelb[:,1],platebright,
+                                                                      platefaint,Ap,
+                                                                      grmin,grmax,rmin,rmax,
+                                                                      fehrange[0],fehrange[1],
+                                                                      feh,colordist,densfunc,
+                                                                      fehdist,options.dontmargfeh,
+                                                                      options.dontbincolorfeh,usertol,
+                                                                      grs,fehs,rhogr,rhofeh,mr,options.dontbin,dmin,dmax,ds))
+                #Set up initial position
+                initial_position= [params+numpy.random.normal(size=len(params))*0.01 for ss in range(nwalkers)]
+                #Sample
+                pos, prob, state= sampler.run_mcmc(initial_position,None,options.nsamples/nwalkers)
+                #Get chain
+                chain= sampler.get_chain()
+                samples= []
+                for ww in range(nwalkers):
+                    for ss in range(options.nsamples/nwalkers):
+                        thisparams= []
+                        for pp in range(len(params)):
+                            thisparams.append(chain[ww,pp,ss])
+                        samples.append(numpy.array(thisparams))
             else:
                 samples= bovy_mcmc.slice(params,
                                          step,
@@ -1218,6 +1251,10 @@ def get_options():
                       dest="south",
                       default=False,
                       help="Only use plates with b > 0")
+    parser.add_option("--markovpy",action="store_true", 
+                      dest="markovpy",
+                      default=False,
+                      help="Use the MarkovPy sampler")
     return parser
 
 if __name__ == '__main__':

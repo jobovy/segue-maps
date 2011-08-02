@@ -15,6 +15,9 @@ $(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 $(OUTDIR)/HWR_rich_g_mh_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_mh.sav -o $@ \
 	-n $(NSAMPLES) --metropolis
+$(OUTDIR)/HWR_rich_g_markovpy_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_markovpy.sav -o $@ \
+	-n $(NSAMPLES) --markovpy
 
 #Binned color distribution
 $(OUTDIR)/HWR_rich_g_colorbinned_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
