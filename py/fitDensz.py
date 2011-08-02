@@ -597,7 +597,7 @@ def fitDensz(parser):
                 #Set-up walkers
                 nwalkers = 2*len(params)
                 ndim     = len(params)
-                nmarkovsamples= numpy.ceil(options.nsamples/nwalkers)
+                nmarkovsamples= int(numpy.ceil(options.nsamples/nwalkers))
                 sampler = markovpy.EnsembleSampler(nwalkers,ndim,
                                                    lambda x: pdf_func(x,
                                                                       XYZ,R,
