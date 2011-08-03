@@ -276,6 +276,18 @@ def readData(metal='rich',sample='G'):
     if metal == 'richpoorest':
         indx= (raw.feh < _APOORFEHRANGE[0])*(raw.feh > -1.5)\
             *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
+    elif metal == 'apoorpoor' or metal == 'apoorrich' \
+            or metal == 'arichpoor' or metal == 'arichrich':
+        indx= (raw.feh < _APOORFEHRANGE[1])*(raw.feh > -1.5))
+        raw= raw[indx]
+        if metal == 'apoorpoor':
+            indx= (raw.afe > _APOORAFERANGE[0])*(raw.afe < 0.15)
+        elif metal == 'apoorrich':
+            indx= (raw.afe >= 0.15)*(raw.afe < _APOORAFERANGE[1])
+        elif metal == 'arichpoor':
+            indx= (raw.afe >= _ARICHAFERANGE[0])*(raw.afe < 0.35)
+        elif metal == 'arichrich':
+            indx= (raw.afe >= 0.35)*(raw.afe < _ARICHAFERANGE[1])
     else:
         indx= (raw.feh > -2.)*(raw.feh < 0.5)\
             *(raw.afe > -0.25)*(raw.afe < 0.5)
