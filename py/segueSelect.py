@@ -1071,7 +1071,7 @@ def ivezic_dist_gr(g,r,feh):
     return (ds,derrs)
 
 def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
-                 ebv=False,nocoords=False):
+                 ebv=True,nocoords=False):
     """
     NAME:
        read_gdwarfs
@@ -1127,7 +1127,7 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     return raw
 
 def read_kdwarfs(file=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
-                 ebv=False,nocoords=False):
+                 ebv=True,nocoords=False):
     """
     NAME:
        read_kdwarfs
