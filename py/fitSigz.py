@@ -278,7 +278,7 @@ def readData(metal='rich',sample='G'):
             *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
     elif metal == 'apoorpoor' or metal == 'apoorrich' \
             or metal == 'arichpoor' or metal == 'arichrich':
-        indx= (raw.feh < _APOORFEHRANGE[1])*(raw.feh > -1.5))
+        indx= (raw.feh < _APOORFEHRANGE[1])*(raw.feh > -1.5)
         raw= raw[indx]
         if metal == 'apoorpoor':
             indx= (raw.afe > _APOORAFERANGE[0])*(raw.afe < 0.15)
