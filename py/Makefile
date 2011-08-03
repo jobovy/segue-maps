@@ -115,6 +115,30 @@ $(OUTDIR)/HWR_rich_g_flare_hRhz.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_flare.sav -o $@ \
 	-n $(NSAMPLES) --model=flare --markovpy
+$(OUTDIR)/HWR_rich_gbright_flare_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gbright_flare.sav -o $@ \
+	-n $(NSAMPLES) --model=flare --markovpy --bright
+$(OUTDIR)/HWR_rich_gfaint_flare_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gfaint_flare.sav -o $@ \
+	-n $(NSAMPLES) --model=flare --markovpy --faint
+$(OUTDIR)/HWR_rich_gnorth_flare_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gnorth_flare.sav -o $@ \
+	-n $(NSAMPLES) --model=flare --markovpy --north
+$(OUTDIR)/HWR_rich_gsouth_flare_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gsouth_flare.sav -o $@ \
+	-n $(NSAMPLES) --model=flare --markovpy --south
+$(OUTDIR)/HWR_rich_gbmin45_flare_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gbmin45_flare.sav -o $@ \
+	-n $(NSAMPLES) --model=flare --markovpy --bmin=45.
+$(OUTDIR)/HWR_rich_gbmax45_flare_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gbmax45_flare.sav -o $@ \
+	-n $(NSAMPLES) --model=flare --markovpy --bmax=45.
 #Min KS
 $(OUTDIR)/HWR_rich_g_flare_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_flare_minks_0.1.sav -o $@ \
@@ -271,6 +295,16 @@ $(OUTDIR)/HWR_poor_gsouth_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
 	$(PYTHON) fitDensz.py HWR_dens_poor_gsouth_twodblexp.sav -o $@ \
 	-n $(NSAMPLES) --metal=poor \
 	--model=twodblexp --markovpy --south
+$(OUTDIR)/HWR_poor_gbmin45_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_gbmin45_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=twodblexp --markovpy --bmin=45.
+$(OUTDIR)/HWR_poor_gbmax45_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_gbmax45_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=twodblexp --markovpy --bmax=45.
 #Flare model
 $(OUTDIR)/HWR_poor_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
@@ -297,6 +331,16 @@ $(OUTDIR)/HWR_poor_gsouth_flare_hRhz.$(EXT): fitDensz.py Makefile \
 	$(PYTHON) fitDensz.py HWR_dens_poor_gsouth_flare.sav -o $@ \
 	-n $(NSAMPLES) --metal=poor \
 	--model=flare --markovpy --south
+$(OUTDIR)/HWR_poor_gbmin45_flare_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_gbmin45_flare.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=flare --markovpy --bmin=45.
+$(OUTDIR)/HWR_poor_gbmax45_flare_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_gbmax45_flare.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=flare --markovpy --bmax=45.
 #Min KS
 $(OUTDIR)/HWR_poor_g_flare_minks0.1_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_poor_g_flare_minks_0.1.sav -o $@ \
