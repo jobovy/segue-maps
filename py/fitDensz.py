@@ -457,7 +457,7 @@ def fitDensz(parser):
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918]]
         elif options.model.lower() == 'flare':
             if options.metal == 'rich':
-                params= numpy.array([numpy.log(0.3),numpy.log(99.5),numpy.log(2.5)])
+                params= numpy.array([numpy.log(0.3),numpy.log(99.5),numpy.log(5.3)])
             elif options.metal == 'poor':
                 params= numpy.array([numpy.log(1.),numpy.log(2.5),numpy.log(2.5)])
             else:
