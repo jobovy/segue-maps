@@ -389,6 +389,7 @@ def fitDensz(parser):
             xs= numpy.array([s[ii] for s in samples])
             print numpy.mean(xs), numpy.std(xs)
             print numpy.exp(numpy.mean(xs)), numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs)), -numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))
+        """
         print "Correlations between parameters ..."
         for ii in range(len(params)-1):
             xs= numpy.array([s[ii] for s in samples])
@@ -398,6 +399,7 @@ def fitDensz(parser):
                 print numpy.corrcoef(numpy.exp(xs),numpy.exp(ys),rowvar=1)
                 print numpy.corrcoef(xs,numpy.exp(ys),rowvar=1)
                 print numpy.corrcoef(numpy.exp(xs),ys,rowvar=1)
+        """
         print "Printing 95, 99 percent lower and upper limits ..."
         for ii in range(len(params)):
             xs= sorted(numpy.array([s[ii] for s in samples]))
