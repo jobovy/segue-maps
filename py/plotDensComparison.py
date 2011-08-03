@@ -255,6 +255,12 @@ def afeh(options,args):
                         'k--',overplot=True,lw=lw)
     bovy_plot.bovy_plot([_ARICHFEHRANGE[1],_ARICHFEHRANGE[1]],_ARICHAFERANGE,
                         'k--',overplot=True,lw=lw)
+    #metal-richrich
+    bovy_plot.bovy_plot([-0.25,-0.25],_APOORAFERANGE,
+                        'k:',overplot=True,lw=lw)
+    #metal-poorpoor
+    bovy_plot.bovy_plot([-0.7,-0.7],_ARICHAFERANGE,
+                        'k:',overplot=True,lw=lw)
     bovy_plot.bovy_end_print(os.path.join(args[0],options.type+'_'
                                           +options.sample+'_'+
                                           options.metal+'.'+ext))

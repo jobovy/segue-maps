@@ -248,7 +248,34 @@ def readData(metal='rich',sample='G'):
             *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
     elif metal == 'poor':
         indx= (raw.feh > _ARICHFEHRANGE[0])*(raw.feh < _ARICHFEHRANGE[1])\
+            *(raw.afe > _ARICHAFERANGE[0])*(raw.afe < _ARICHAFERANGE[1]) 
+    elif metal == 'poorpoor' or metal == 'poorrich':
+        #Sort on [Fe/H], cut down the middle
+        indx= (raw.feh > _ARICHFEHRANGE[0])*(raw.feh < _ARICHFEHRANGE[1])\
             *(raw.afe > _ARICHAFERANGE[0])*(raw.afe < _ARICHAFERANGE[1])
+        raw= raw[indx]
+        sfeh= sorted(raw.feh)
+        cutfeh= sfeh[len(sfeh)/2]
+        #Round to nearest 0.1
+        cutfeh= round(10*cutfeh)/10.
+        print "Cutting sample down the middle at %4.2f" % cutfeh
+        if metal == 'poorpoor': indx= (raw.feh < cutfeh)
+        else: indx= (raw.feh >= cutfeh)
+    elif metal == 'richpoor' or metal == 'richrich':
+        #Sort on [Fe/H], cut down the middle
+        indx= (raw.feh > _APOORFEHRANGE[0])*(raw.feh < _APOORFEHRANGE[1])\
+            *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
+        raw= raw[indx]
+        sfeh= sorted(raw.feh)
+        cutfeh= sfeh[len(sfeh)/2]
+        #Round to nearest 0.05
+        cutfeh= round(20*cutfeh)/20.
+        print "Cutting sample down the middle at %4.2f" % cutfeh
+        if metal == 'poorpoor': indx= (raw.feh < cutfeh)
+        else: indx= (raw.feh >= cutfeh)
+    if metal == 'richpoorest':
+        indx= (raw.feh < _APOORFEHRANGE[0])*(raw.feh > -1.5)\
+            *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
     else:
         indx= (raw.feh > -2.)*(raw.feh < 0.5)\
             *(raw.afe > -0.25)*(raw.afe < 0.5)

@@ -364,6 +364,28 @@ $(OUTDIR)/flare_poor_g_hRhz.$(EXT): fitDensz.py Makefile
 	$(PYTHON) fitDensz.py flare_dens_poor_g.sav -o $@ \
 	-n $(NSAMPLES) --metal=poor --model=flare --markovpy
 
+#Poor poor
+$(OUTDIR)/HWR_poorpoor_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poorpoor_g.sav -o $@ \
+	-n $(NSAMPLES) --metal=poorpoor --markovpy
+#Poor rich
+$(OUTDIR)/HWR_poorrich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poorrich_g.sav -o $@ \
+	-n $(NSAMPLES) --metal=poorrich --markovpy
+#Rich poor
+$(OUTDIR)/HWR_richpoor_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_richpoor_g.sav -o $@ \
+	-n $(NSAMPLES) --metal=richpoor --markovpy
+#Rich rich
+$(OUTDIR)/HWR_richrich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_richrich_g.sav -o $@ \
+	-n $(NSAMPLES) --metal=richrich --markovpy
+#Rich poorest
+$(OUTDIR)/HWR_richpoorest_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_richpoorest_g.sav -o $@ \
+	-n $(NSAMPLES) --metal=richpoorest --markovpy
+
+
 #Metal rich G dwarf velocities
 $(OUTDIR)/HWR_rich_g_sR.$(EXT): fitSigz.py Makefile
 	$(PYTHON) fitSigz.py HWR_rich_g.sav -o $@ --expd1 --expd2 -n $(NSAMPLES) \
