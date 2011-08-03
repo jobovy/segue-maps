@@ -365,25 +365,25 @@ $(OUTDIR)/flare_poor_g_hRhz.$(EXT): fitDensz.py Makefile
 	-n $(NSAMPLES) --metal=poor --model=flare --markovpy
 
 #Poor poor
-$(OUTDIR)/HWR_poorpoor_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
-	$(PYTHON) fitDensz.py HWR_dens_poorpoor_g.sav -o $@ \
-	-n $(NSAMPLES) --metal=poorpoor --markovpy
+$(OUTDIR)/HWR_poorpoor_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poorpoor_g_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=poorpoor --markovpy --model=twodblexp
 #Poor rich
-$(OUTDIR)/HWR_poorrich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
-	$(PYTHON) fitDensz.py HWR_dens_poorrich_g.sav -o $@ \
-	-n $(NSAMPLES) --metal=poorrich --markovpy
+$(OUTDIR)/HWR_poorrich_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poorrich_g_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=poorrich --markovpy --model=twodblexp
 #Rich poor
-$(OUTDIR)/HWR_richpoor_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
-	$(PYTHON) fitDensz.py HWR_dens_richpoor_g.sav -o $@ \
-	-n $(NSAMPLES) --metal=richpoor --markovpy
+$(OUTDIR)/HWR_richpoor_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_richpoor_g_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=richpoor --markovpy --model=twodblexp
 #Rich rich
-$(OUTDIR)/HWR_richrich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
-	$(PYTHON) fitDensz.py HWR_dens_richrich_g.sav -o $@ \
-	-n $(NSAMPLES) --metal=richrich --markovpy
+$(OUTDIR)/HWR_richrich_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_richrich_g_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=richrich --markovpy --model=twodblexp
 #Rich poorest
-$(OUTDIR)/HWR_richpoorest_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
-	$(PYTHON) fitDensz.py HWR_dens_richpoorest_g.sav -o $@ \
-	-n $(NSAMPLES) --metal=richpoorest --markovpy
+$(OUTDIR)/HWR_richpoorest_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_richpoorest_g_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=richpoorest --markovpy --model=twodblexp
 
 
 #Metal rich G dwarf velocities
