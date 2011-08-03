@@ -273,7 +273,7 @@ def readData(metal='rich',sample='G'):
         print "Cutting sample down the middle at %4.2f" % cutfeh
         if metal == 'poorpoor': indx= (raw.feh < cutfeh)
         else: indx= (raw.feh >= cutfeh)
-    if metal == 'richpoorest':
+    elif metal == 'richpoorest':
         indx= (raw.feh < _APOORFEHRANGE[0])*(raw.feh > -1.5)\
             *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
     elif metal == 'apoorpoor' or metal == 'apoorrich' \
