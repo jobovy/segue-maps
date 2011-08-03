@@ -2,6 +2,65 @@ OUTDIR=../figs
 EXT=png
 NSAMPLES=1000
 
+richdblexp: $(OUTDIR)/HWR_rich_g_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_g_north_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_g_south_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_g_bmin45_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_g_bmax45_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gbright_rfunc.$(EXT) \
+	$(OUTDIR)/HWR_rich_gfaint_rfunc.$(EXT)
+
+richflare: $(OUTDIR)/HWR_rich_g_flare_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gbright_flare_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gfaint_flare_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gnorth_flare_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gsouth_flare_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gbmin45_flare_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gbmax45_flare_hRhz.$(EXT)
+
+richtwodblexp: $(OUTDIR)/HWR_rich_g_twoblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gbright_twoblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gfaint_twoblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gnorth_twoblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gsouth_twoblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gbmin45_twoblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gbmax45_twoblexp_hRhz.$(EXT)
+
+poordblexp: $(OUTDIR)/HWR_poor_g_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poor_g_north_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poor_g_south_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poor_g_bmin45_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poor_g_bmax45_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poor_gbright_rfunc.$(EXT) \
+	$(OUTDIR)/HWR_poor_gfaint_rfunc.$(EXT)
+
+poorflare: $(OUTDIR)/HWR_poor_g_flare_rfunc.$(EXT) \
+	$(OUTDIR)/HWR_poor_gbright_flare_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poor_gfaint_flare_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poor_gnorth_flare_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poor_gsouth_flare_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poor_gbmin45_flare_rfunc.$(EXT) \
+	$(OUTDIR)/HWR_poor_gbmax45_flare_rfunc.$(EXT)
+
+poortwodblexp: $(OUTDIR)/HWR_poor_g_twodblexp_rfunc.$(EXT) \
+	$(OUTDIR)/HWR_poor_gbright_twodblexp_rfunc.$(EXT) \
+	$(OUTDIR)/HWR_poor_gfaint_twodblexp_rfunc.$(EXT) \
+	$(OUTDIR)/HWR_poor_gnorth_twodblexp_rfunc.$(EXT) \
+	$(OUTDIR)/HWR_poor_gsouth_twodblexp_rfunc.$(EXT) \
+	$(OUTDIR)/HWR_poor_gbmin45_twodblexp_rfunc.$(EXT) \
+	$(OUTDIR)/HWR_poor_gbmax45_twodblexp_rfunc.$(EXT) 
+
+fehranges: $(OUTDIR)/HWR_poorpoor_g_twodblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poorrich_g_twodblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_richpoor_g_twodblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_richrich_g_twodblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_richpoorest_g_twodblexp_hRhz.$(EXT)
+
+aferanges: $(OUTDIR)/HWR_apoorpoor_g_twodblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_apoorrich_g_twodblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_arichpoor_g_twodblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_arichrich_g_twodblexp_hRhz.$(EXT)
+
 #Sig_z(z) for both metal rich and metal poor
 
 $(OUTDIR)/HWR_rich_poor_g_func.$(EXT): plotSigzFunc.py
@@ -167,7 +226,7 @@ $(OUTDIR)/DblExp_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py \
 	$(PYTHON) fitDensz.py DblExp_dens_rich_gbright.sav -o $@ \
 	-n $(NSAMPLES) --bright --model=dblexp --markovpy
 #just faint
-$(OUTDIR)/HWR_rich_gfaint_rfunc.$(EXT): fitDensz.py Makefile plotData.py \
+
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_gfaint.sav -o $@ \
 	-n $(NSAMPLES) --faint --markovpy
