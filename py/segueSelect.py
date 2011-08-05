@@ -78,8 +78,6 @@ class segueSelect:
               = same as the corresponding keywords for bright
 
            SPECTROSCOPIC SAMPLE SELECTION:
-               logg= if True, cut on logg, 
-                     if number, cut on logg > the number (3.75)
                ug= if True, cut on u-g, 
                      if list/array cut to ug[0] < u-g< ug[1]
                ri= if True, cut on r-i, 
