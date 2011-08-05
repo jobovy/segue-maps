@@ -233,13 +233,13 @@ def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
         print "Current params, minus likelihood:", params, out
     return out
 
-def readData(metal='rich',sample='G'):
+def readData(metal='rich',sample='G',minlogg=3.75,minsn=15.):
     if sample.lower() == 'g':
-        raw= read_gdwarfs(logg=True,ebv=True)
+        raw= read_gdwarfs(logg=minlogg,ebv=True,sn=minsn)
         #rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
         #                                    'segue-local','gdwarf_raw.dat'))
     elif sample.lower() == 'k':
-        raw= read_kdwarfs(logg=True,ebv=True)
+        raw= read_kdwarfs(logg=minlogg,ebv=True,sn=minsn)
         #rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
         #                                    'segue-local','kdwarf.dat'))
     #Select sample

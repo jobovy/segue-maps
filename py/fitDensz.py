@@ -105,7 +105,9 @@ def fitDensz(parser):
         XYZ= bovy_coords.lbd_to_XYZ(ls,bs,ds,degree=True)                      
     else:
         XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
-                                                sample=options.sample)
+                                                sample=options.sample,
+                                                loggmin=options.loggmin,
+                                                snmin=options.snmin)
         grs= rawdata.dered_g-rawdata.dered_r
     #Load model distributions
     if options.sample.lower() == 'g':
@@ -308,7 +310,8 @@ def fitDensz(parser):
     if not options.bright and not options.faint:
         print "Using %i plates, %i stars ..." %(len(plates),len(XYZ[:,0]))
     sf= segueSelect(plates=plates,type_faint=options.sel_faint,
-                    sample=options.sample,type_bright=options.sel_bright)
+                    sample=options.sample,type_bright=options.sel_bright,
+                    logg=options.minlogg,sn=options.minsn)
     if options.fake:
         plates= sf.plates
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
@@ -346,7 +349,8 @@ def fitDensz(parser):
         #Reload selection function
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
         sf= segueSelect(plates=plates,type_faint=options.sel_faint,
-                        type_bright=options.sel_bright,sample=options.sample)
+                        type_bright=options.sel_bright,sample=options.sample,
+                        logg=options.minlogg,sn=options.minsn)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
         indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -363,7 +367,8 @@ def fitDensz(parser):
             XYZ= XYZ[indx,:]
             plates= sf.plates[sf.faintplateindx]
         sf= segueSelect(plates=plates,type_faint=options.sel_faint,
-                        type_bright=options.sel_bright,sample=options.sample)
+                        type_bright=options.sel_bright,sample=options.sample,
+                        logg=options.minlogg,sn=options.minsn)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
         indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -1321,6 +1326,12 @@ def get_options():
     parser.add_option("--bmax",dest='bmax',type='float',
                       default=None,
                       help="If set, only use plates centered on a |b| < bmin (deg0")
+    parser.add_option("--loggmin",dest='loggmin',type='float',
+                      default=3.75,
+                      help="Minimum logg to define dwarfs")
+    parser.add_option("--snmin",dest='snmin',type='float',
+                      default=15.,
+                      help="Minimum SN")
     return parser
 
 if __name__ == '__main__':
