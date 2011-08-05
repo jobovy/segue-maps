@@ -266,7 +266,6 @@ def readData(metal='rich',sample='G',loggmin=3.75,snmin=15.):
         indx= (raw.feh > _APOORFEHRANGE[0])*(raw.feh < _APOORFEHRANGE[1])\
             *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
         raw= raw[indx]
-        print len(raw)
         sfeh= sorted(raw.feh)
         cutfeh= sfeh[len(sfeh)/2]
         #Round to nearest 0.05
