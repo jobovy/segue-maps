@@ -40,6 +40,8 @@ def plotMetallicityColor(options,args):
     bovy_plot.bovy_print()
     _plotMC_single(data,options,args,all=True,overplot=False,xrange=xrange,
                    yrange=yrange,fehrange=fehrange,colorrange=colorrange)
+    _overplot_model(data,xrange=xrange,yrange=yrange,fehrange=fehrange,
+                    colorrange=colorrange)
     bovy_plot.bovy_end_print(os.path.join(args[0],'FeH_gr_'+options.sample+'_'+options.metal+'.'+ext))
     #Then plot them pixel-by-pixel
     platelb= bovy_coords.radec_to_lb(platestr.ra,platestr.dec,
@@ -66,7 +68,57 @@ def plotMetallicityColor(options,args):
                        platebs=platebs,
                        ry=ry,rx=rx,
                        rmin=rmin,rmax=rmax,grmin=grmin,grmax=grmax)
+        _overplot_model(data,xrange=xrange,yrange=yrange,fehrange=fehrange,
+                        colorrange=colorrange)
         bovy_plot.bovy_end_print(os.path.join(args[0],'FeH_gr_'+options.sample+'_'+options.metal+'_%i.' % ii + ext))
+    return None
+
+def _overplot_model(data,xrange=None,yrange=None,fehrange=None,
+                    colorrange=None):
+    #Load model distributions
+    #FeH
+    fehdist= DistSpline(*numpy.histogram(data.feh,bins=11,range=fehrange),
+                         xrange=fehrange)
+    nfehs= 1001
+    fehs= numpy.linspace(yrange[0],yrange[1],nfehs)
+    mfehs= numpy.zeros(nfehs)
+    for ii in range(nfehs):
+        mfehs[ii]= fehdist(fehs[ii])
+    mfehs/= numpy.nansum(mfehs)*(fehs[1]-fehs[0])    
+    #Color
+    cdist= DistSpline(*numpy.histogram(data.dered_g-data.dered_r,
+                                       bins=9,range=colorrange),
+                       xrange=colorrange)
+    ncs= 1001
+    cs= numpy.linspace(xrange[0],xrange[1],ncs)
+    mcs= numpy.zeros(nfehs)
+    for ii in range(nfehs):
+        mcs[ii]= cdist(cs[ii])
+    mcs/= numpy.nansum(mcs)*(cs[1]-cs[0])    
+    #Overplot model FeH
+    from matplotlib import pyplot
+    from matplotlib.ticker import NullFormatter
+    fig= pyplot.gcf()
+    nullfmt   = NullFormatter()         # no labels
+    # definitions for the axes
+    left, width = 0.1, 0.65
+    bottom, height = 0.1, 0.65
+    bottom_h = left_h = left+width
+    rect_scatter = [left, bottom, width, height]
+    rect_histx = [left, bottom_h, width, 0.2]
+    rect_histy = [left_h, bottom, 0.2, height]
+    axScatter = pyplot.axes(rect_scatter)
+    axHistx = pyplot.axes(rect_histx)
+    axHisty = pyplot.axes(rect_histy)
+    # no labels
+    axHistx.xaxis.set_major_formatter(nullfmt)
+    axHistx.yaxis.set_major_formatter(nullfmt)
+    axHisty.xaxis.set_major_formatter(nullfmt)
+    axHisty.yaxis.set_major_formatter(nullfmt)
+    fig.sca(axHisty)
+    bovy_plot.bovy_plot(mfehs,fehs,'k-',overplot=True)
+    fig.sca(axHistx)
+    bovy_plot.bovy_plot(cs,mcs,'k-',overplot=True)
     return None
 
 def _plotMC_single(data,options,args,all=False,overplot=False,xrange=None,
@@ -74,26 +126,6 @@ def _plotMC_single(data,options,args,all=False,overplot=False,xrange=None,
                    rmin=None,rmax=None,grmin=None,grmax=None,
                    rx=None,ry=None,fehrange=None,colorrange=None):
     if all:
-        #Load model distributions
-        #FeH
-        fehdist= DistSpline(*numpy.histogram(data.feh,bins=11,range=fehrange),
-                             xrange=fehrange)
-        nfehs= 1001
-        fehs= numpy.linspace(yrange[0],yrange[1],nfehs)
-        mfehs= numpy.zeros(nfehs)
-        for ii in range(nfehs):
-            mfehs[ii]= fehdist(fehs[ii])
-        mfehs/= numpy.nansum(mfehs)*(fehs[1]-fehs[0])    
-        #Color
-        cdist= DistSpline(*numpy.histogram(data.dered_g-data.dered_r,
-                                           bins=9,range=colorrange),
-                           xrange=colorrange)
-        ncs= 1001
-        cs= numpy.linspace(xrange[0],xrange[1],ncs)
-        mcs= numpy.zeros(nfehs)
-        for ii in range(nfehs):
-            mcs[ii]= cdist(cs[ii])
-        mcs/= numpy.nansum(mcs)*(cs[1]-cs[0])    
         bovy_plot.scatterplot(data.dered_g-data.dered_r,
                               data.feh,
                               'k,',
@@ -108,30 +140,6 @@ def _plotMC_single(data,options,args,all=False,overplot=False,xrange=None,
                             +'\n'+
                             '$%i \ \ \mathrm{stars}$' % 
                             len(data.feh),top_right=True,size=16)
-        #Overplot model FeH
-        from matplotlib import pyplot
-        from matplotlib.ticker import NullFormatter
-        fig= pyplot.gcf()
-        nullfmt   = NullFormatter()         # no labels
-        # definitions for the axes
-        left, width = 0.1, 0.65
-        bottom, height = 0.1, 0.65
-        bottom_h = left_h = left+width
-        rect_scatter = [left, bottom, width, height]
-        rect_histx = [left, bottom_h, width, 0.2]
-        rect_histy = [left_h, bottom, 0.2, height]
-        axScatter = pyplot.axes(rect_scatter)
-        axHistx = pyplot.axes(rect_histx)
-        axHisty = pyplot.axes(rect_histy)
-        # no labels
-        axHistx.xaxis.set_major_formatter(nullfmt)
-        axHistx.yaxis.set_major_formatter(nullfmt)
-        axHisty.xaxis.set_major_formatter(nullfmt)
-        axHisty.yaxis.set_major_formatter(nullfmt)
-        fig.sca(axHisty)
-        bovy_plot.bovy_plot(mfehs,fehs,'k-',overplot=True)
-        fig.sca(axHistx)
-        bovy_plot.bovy_plot(cs,mcs,'k-',overplot=True)
     else:
         bovy_plot.bovy_plot(data.dered_g-data.dered_r,
                               data.feh,
