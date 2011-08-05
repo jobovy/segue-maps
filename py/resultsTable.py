@@ -99,7 +99,7 @@ def resultsTable(parser):
                     thisline[paramnames[ii]]= numpy.exp(numpy.mean(xs))
                     err_low= numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))
                     err_high= -numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))
-                    if err_low/err_high > 1.2 or err_low/err_high < 0.8:
+                    if err_low/err_high > 1.4 or err_low/err_high < 0.6:
                         thisline[paramnames[ii]+'_low']= err_low
                         thisline[paramnames[ii]+'_high']= err_high
                         thisline[paramnames[ii]+'_err']= 0.5*(err_low+err_high)

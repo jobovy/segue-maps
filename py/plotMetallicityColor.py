@@ -2,6 +2,7 @@ import os, os.path
 import numpy
 from optparse import OptionParser
 from galpy.util import bovy_plot, bovy_coords
+from matplotlib import pyplot
 import segueSelect
 from fitSigz import readData, _APOORFEHRANGE, _ARICHFEHRANGE
 from fitDensz import FeHXDDist, DistSpline
@@ -96,7 +97,6 @@ def _overplot_model(data,xrange=None,yrange=None,fehrange=None,
         mcs[ii]= cdist(cs[ii])
     mcs/= numpy.nansum(mcs)*(cs[1]-cs[0])    
     #Overplot model FeH
-    from matplotlib import pyplot
     from matplotlib.ticker import NullFormatter
     fig= pyplot.gcf()
     nullfmt   = NullFormatter()         # no labels
@@ -166,6 +166,66 @@ def _plotMC_single(data,options,args,all=False,overplot=False,xrange=None,
                         rmin=rmin,rmax=rmax,
                         grmin=grmin,grmax=grmin)
 
+def plotDMMetallicityColor(options,args):
+    """Make a density plot of DM vs FeH and g-r"""
+    if options.png: ext= 'png'
+    else: ext= 'ps'
+    if options.metal.lower() == 'rich':
+        yrange=[-0.55,0.5]
+        fehrange= _APOORFEHRANGE
+    elif options.metal.lower() == 'poor':
+        yrange=[-1.6,0.3]
+        fehrange= _ARICHFEHRANGE
+    xrange=[0.46,0.57]
+    grmin, grmax= 0.48, 0.55
+    colorrange=[0.48,0.55]
+    #Set up arrays
+    nfehs, ngrs= 201,201
+    grs= numpy.linspace(xrange[0],xrange[1],nfehs)
+    fehs= numpy.linspace(yrange[0],yrange[1],ngrs)
+    plotthis= numpy.zeros((ngrs,nfehs))
+    for ii in range(ngrs):
+        for jj in range(nfehs):
+            if grs[ii] < colorrange[0] \
+                    or grs[ii] > colorrange[1] \
+                    or fehs[jj] < fehrange[0] \
+                    or fehs[jj] > fehrange[1]:
+                plotthis[ii,jj]= numpy.nan
+                continue
+            plotthis[ii,jj]= segueSelect._mr_gi(segueSelect._gi_gr(grs[ii]),fehs[jj])
+    if options.sample.lower() == 'g':
+        if options.metal.lower() == 'rich':
+            levels= [4.5,4.75,5.,5.25,5.5]
+        else:
+            levels= [5.25,5.5,5.75,6.,6.25]
+    cntrlabelcolors= ['w' for ii in range(3)]
+    cntrlabelcolors.extend(['k' for ii in range(2)])
+    #nlevels= 6
+    #levelsstart= int(20.*numpy.nanmin(plotthis))/20.
+    #levelsd= int(20.*(numpy.nanmax(plotthis)-numpy.nanmin(plotthis)))/20.
+    #levels= [levelsstart+ii/float(nlevels)*levelsd for ii in range(nlevels)]
+    #Plot it
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_dens2d(plotthis.T,origin='lower',
+                          xlabel=r'$g-r\ [\mathrm{mag}]$',
+                          ylabel=r'$[\mathrm{Fe/H}]$',
+                          zlabel=r'$M_r\ [\mathrm{mag}]$',
+                          colorbar=True,
+                          cmap=pyplot.cm.gist_gray,
+                          contours=True,
+                          levels=levels,
+                          cntrcolors=cntrlabelcolors,
+                          cntrlabel=True,
+                          cntrlabelcolors=cntrlabelcolors,
+                          cntrinline=True,
+                          interpolation='nearest',
+                          extent=[xrange[0],xrange[1],
+                                  yrange[0],yrange[1]],
+                          aspect=(xrange[1]-xrange[0])/\
+                              (yrange[1]-yrange[0]),
+                          shrink=.78)
+    bovy_plot.bovy_end_print(os.path.join(args[0],'dm_FeH_gr_'+options.sample+'_'+options.metal+'.'+ext))
+
 def get_options():
     usage = "usage: %prog [options] <savedir>\n\nsavedir= name of the directory that the comparisons will be saved to"
     parser = OptionParser(usage=usage)
@@ -173,6 +233,8 @@ def get_options():
                       help="Use 'G' or 'K' dwarf sample")
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
+    parser.add_option("--plottype",dest='plottype',default='fehcolor',
+                      help="Type of plot to make ('fehcolor,dmfehcolor')")
     parser.add_option("--png",action="store_true", dest="png",
                       default=False,
                       help="Save as png, otherwise ps")
@@ -180,4 +242,7 @@ def get_options():
 
 if __name__ == '__main__':
     (options,args)= get_options().parse_args()
-    plotMetallicityColor(options,args)
+    if options.plottype == 'fehcolor':
+        plotMetallicityColor(options,args)
+    else:
+        plotDMMetallicityColor(options,args)
