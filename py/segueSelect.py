@@ -1112,7 +1112,7 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
         indx= (raw.field('logga') > 3.75)
         raw= raw[indx]
     elif not isinstance(logg,bool):
-        indx= (raw.field('logga') >logg)
+        indx= (raw.field('logga') > logg)
         raw= raw[indx]
     if isinstance(ug,bool) and ug:
         indx= ((raw.field('dered_u')-raw.field('dered_g')) < 2.)\

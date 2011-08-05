@@ -50,11 +50,12 @@ poortwodblexp: $(OUTDIR)/HWR_poor_g_twodblexp_rfunc.$(EXT) \
 	$(OUTDIR)/HWR_poor_gbmin45_twodblexp_rfunc.$(EXT) \
 	$(OUTDIR)/HWR_poor_gbmax45_twodblexp_rfunc.$(EXT) 
 
-fehranges: $(OUTDIR)/HWR_poorpoor_g_twodblexp_hRhz.$(EXT) \
-	$(OUTDIR)/HWR_poorrich_g_twodblexp_hRhz.$(EXT) \
-	$(OUTDIR)/HWR_richpoor_g_twodblexp_hRhz.$(EXT) \
+fehranges: $(OUTDIR)/HWR_richpoor_g_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_richrich_g_twodblexp_hRhz.$(EXT) \
-	$(OUTDIR)/HWR_richpoorest_g_twodblexp_hRhz.$(EXT)
+	$(OUTDIR)/HWR_richpoorest_g_twodblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poorpoor_g_twodblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poorrich_g_twodblexp_hRhz.$(EXT) \
+
 
 aferanges: $(OUTDIR)/HWR_apoorpoor_g_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_apoorrich_g_twodblexp_hRhz.$(EXT) \
