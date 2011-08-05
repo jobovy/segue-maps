@@ -60,6 +60,8 @@ class segueSelect:
                    or plates '>1000' or '<2000'
 
            SELECTION FUNCTION DETERMINATION:
+              default: sharprcut for both bright and faint
+           
               type_bright= type of selection function to determine 
                    'constant' for constant per plate; 
                    'r' universal function of r
@@ -76,10 +78,16 @@ class segueSelect:
               = same as the corresponding keywords for bright
 
            SPECTROSCOPIC SAMPLE SELECTION:
-              ug= if True, cut on u-g
-              ri= if True, cut on r-i
-              sn= if False, don't cut on SN
-              ebv= if False, don't cut on E(B-V) < 0.3
+               logg= if True, cut on logg, 
+                     if number, cut on logg > the number (3.75)
+               ug= if True, cut on u-g, 
+                     if list/array cut to ug[0] < u-g< ug[1]
+               ri= if True, cut on r-i, 
+                     if list/array cut to ri[0] < r-i< ri[1]
+               sn= if False, don't cut on SN, 
+                     if number cut on SN > the number (15)
+               ebv= if True, cut on E(B-V), 
+                    if number cut on EBV < the number (0.3)
         OUTPUT:
            object
         HISTORY:
@@ -1078,11 +1086,11 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     PURPOSE:
        read the spectroscopic G dwarf sample
     INPUT:
-       logg= if True, cut on logg
-       ug= if True, cut on u-g
-       ri= if True, cut on r-i
-       sn= if False, don't cut on SN
-       ebv= if True, cut on E(B-V)
+       logg= if True, cut on logg, if number, cut on logg > the number (3.75)
+       ug= if True, cut on u-g, if list/array cut to ug[0] < u-g< ug[1]
+       ri= if True, cut on r-i, if list/array cut to ri[0] < r-i< ri[1]
+       sn= if False, don't cut on SN, if number cut on SN > the number (15)
+       ebv= if True, cut on E(B-V), if number cut on EBV < the number (0.3)
        nocoords= if True, don't calculate distances or transform coordinates
     OUTPUT:
        cut data, returns numpy.recarray
@@ -1102,22 +1110,39 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
         *(raw.field('vr_err') > 0.)
     raw= raw[indx]
     #Cut on logg?
-    if logg:
+    if (isinstance(logg,bool) and logg):
         indx= (raw.field('logga') > 3.75)
         raw= raw[indx]
-    if ug:
+    elif not isinstance(logg,bool):
+        indx= (raw.field('logga') >logg)
+        raw= raw[indx]
+    if isinstance(ug,bool) and ug:
         indx= ((raw.field('dered_u')-raw.field('dered_g')) < 2.)\
             *((raw.field('dered_u')-raw.field('dered_g')) > .6)
         raw= raw[indx]
-    if ri:
+    if not isinstance(ug,bool):
+        indx= ((raw.field('dered_u')-raw.field('dered_g')) < ug[1])\
+            *((raw.field('dered_u')-raw.field('dered_g')) > ug[0])
+        raw= raw[indx]
+    if isinstance(ri,bool) and ri:
         indx= ((raw.field('dered_r')-raw.field('dered_i')) < .4)\
             *((raw.field('dered_r')-raw.field('dered_i')) > -.1)
         raw= raw[indx]
-    if sn:
+    elif not isinstance(ri,bool):
+        indx= ((raw.field('dered_r')-raw.field('dered_i')) < ri[1])\
+            *((raw.field('dered_r')-raw.field('dered_i')) > ri[0])
+        raw= raw[indx]
+    if (isinstance(sn,bool) and sn):
         indx= (raw.field('sna') > 15.)
         raw= raw[indx]
-    if ebv:
+    elif not isinstance(sn,bool):
+        indx= (raw.field('sna') > sn)
+        raw= raw[indx]
+    if isinstance(ebv,bool) and ebv:
         indx= (raw.field('ebv') < .3)
+        raw= raw[indx]
+    elif not isinstance(ebv,bool):
+        indx= (raw.field('ebv') < ebv)
         raw= raw[indx]
     if nocoords: return raw
     #BOVY: distances
@@ -1158,22 +1183,39 @@ def read_kdwarfs(file=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
         *(raw.field('vr_err') > 0.)
     raw= raw[indx]
     #Cut on logg?
-    if logg:
+    if isinstance(logg,bool) and logg:
         indx= (raw.field('logga') > 3.75)
         raw= raw[indx]
-    if ug: #BOVY UPDATE FOR K
-        indx= ((raw.field('dered_u')-raw.field('dered_g')) < 2.)\
-            *((raw.field('dered_u')-raw.field('dered_g')) > .6)
+    elif not isinstance(logg,bool):
+        indx= (raw.field('logga') > logg)
         raw= raw[indx]
-    if ri: #BOVY: UPDATE FOR K
-        indx= ((raw.field('dered_r')-raw.field('dered_i')) < .4)\
-            *((raw.field('dered_r')-raw.field('dered_i')) > -.1)
+    if isinstance(ug,bool) and ug:
+        indx= ((raw.field('dered_u')-raw.field('dered_g')) < 2.5)\
+            *((raw.field('dered_u')-raw.field('dered_g')) > 1.5)
         raw= raw[indx]
-    if sn:
+    elif not isinstance(ug,bool):
+        indx= ((raw.field('dered_u')-raw.field('dered_g')) < ug[1])\
+            *((raw.field('dered_u')-raw.field('dered_g')) > ug[0])
+        raw= raw[indx]
+    if isinstance(ri,bool) and ri:
+        indx= ((raw.field('dered_r')-raw.field('dered_i')) < .7)\
+            *((raw.field('dered_r')-raw.field('dered_i')) > .1)
+        raw= raw[indx]
+    elif not isinstance(ri,bool):
+        indx= ((raw.field('dered_r')-raw.field('dered_i')) < ri[1])\
+            *((raw.field('dered_r')-raw.field('dered_i')) > ri[0])
+        raw= raw[indx]
+    if isinstance(sn,bool) and sn:
         indx= (raw.field('sna') > 15.)
         raw= raw[indx]
-    if ebv:
+    elif not isinstance(sn,bool):
+        indx= (raw.field('sna') > sn)
+        raw= raw[indx]
+    if isinstance(ebv,bool) and ebv:
         indx= (raw.field('ebv') < .3)
+        raw= raw[indx]
+    elif not isinstance(ebv,bool):
+        indx= (raw.field('ebv') < ebv)
         raw= raw[indx]
     if nocoords: return raw
     #BOVY: distances
