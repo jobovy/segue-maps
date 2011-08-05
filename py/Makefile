@@ -226,7 +226,7 @@ $(OUTDIR)/DblExp_rich_gbright_rfunc.$(EXT): fitDensz.py Makefile plotData.py \
 	$(PYTHON) fitDensz.py DblExp_dens_rich_gbright.sav -o $@ \
 	-n $(NSAMPLES) --bright --model=dblexp --markovpy
 #just faint
-
+$(OUTDIR)/HWR_rich_gfaint_rfunc.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_gfaint.sav -o $@ \
 	-n $(NSAMPLES) --faint --markovpy
