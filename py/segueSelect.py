@@ -852,8 +852,11 @@ class segueSelect:
                     self.rcuts_correct[str(p)]= 0.
                     continue
                 self.rcuts[str(p)]= numpy.amax(self.platespec[str(p)].dered_r)
-                self.rcuts_correct[str(p)]= float(len(self.platephot[str(p)]))/\
-                    float(numpy.sum((self.platephot[str(p)].r <= self.rcuts[str(p)])))
+                denom= float(numpy.sum((self.platephot[str(p)].r <= self.rcuts[str(p)])))
+                if denom == 0.: self.rcuts_correct[str(p)]= 0.
+                else:
+                    self.rcuts_correct[str(p)]= \
+                        float(len(self.platephot[str(p)]))/denom
         if type.lower() == 'r':
             #Determine the selection function in bins in r, for bright/faint
             nrbins= int(math.floor((17.8-self.rmin)/dr))+1
