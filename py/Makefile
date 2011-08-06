@@ -68,7 +68,7 @@ variations: $(OUTDIR)/HWR_rich_g_twodblexp_logg4.2.$(EXT) \
 #VARIATIONS
 $(OUTDIR)/HWR_rich_g_twodblexp_logg4.2.$(EXT): fitDensz.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_logg4.2.sav -o $@ \
-	-n $(NSAMPLES) --markovpy --loggmin=4.2
+	-n $(NSAMPLES) --markovpy --loggmin=4.2 --model=twodblexp
 $(OUTDIR)/HWR_rich_g_twodblexp_minsn30.$(EXT): fitDensz.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_minsn30.sav -o $@ \
 	-n $(NSAMPLES) --markovpy --snmin=30.
