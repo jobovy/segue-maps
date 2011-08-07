@@ -1164,10 +1164,10 @@ def _ThreeDblExpDensity(R,Z,params):
     params= [loghz1,loghz2,loghz3,loghR1,loghR2,loghR3,Pbad1,Pbad2]"""
     hR1= numpy.exp(params[3])
     hR2= numpy.exp(params[4])
-    hR2= numpy.exp(params[5])
+    hR3= numpy.exp(params[5])
     hz1= numpy.exp(params[0])
     hz2= numpy.exp(params[1])
-    hz2= numpy.exp(params[2])
+    hz3= numpy.exp(params[2])
     return ((1.-params[6]-params[7])/hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-8.)/hR1)
             +params[6]/hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2)
             +params[7]/hz3*numpy.exp(-numpy.fabs(Z)/hz3-(R-8.)/hR3))
