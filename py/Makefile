@@ -26,6 +26,14 @@ richtwodblexp: $(OUTDIR)/HWR_rich_g_twoblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_rich_gbmin45_twoblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_rich_gbmax45_twoblexp_hRhz.$(EXT)
 
+richthreedblexp: $(OUTDIR)/HWR_rich_g_threeblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gbright_threeblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gfaint_threeblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gnorth_threeblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gsouth_threeblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gbmin45_threeblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_gbmax45_threeblexp_hRhz.$(EXT)
+
 poordblexp: $(OUTDIR)/HWR_poor_g_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_poor_g_north_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_poor_g_south_hRhz.$(EXT) \
@@ -181,6 +189,35 @@ $(OUTDIR)/HWR_rich_gbmax45_twoblexp_hRhz.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_gbmax45_twodblexp.sav -o $@ \
 	-n $(NSAMPLES) --model=twodblexp --markovpy --bmax=45.
+#ThreeDblExp model
+$(OUTDIR)/HWR_rich_g_threeblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_threedblexp.sav -o $@ \
+	-n $(NSAMPLES) --model=threedblexp --markovpy
+$(OUTDIR)/HWR_rich_gbright_threeblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gbright_threedblexp.sav -o $@ \
+	-n $(NSAMPLES) --model=threedblexp --markovpy --bright
+$(OUTDIR)/HWR_rich_gfaint_threeblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gfaint_threedblexp.sav -o $@ \
+	-n $(NSAMPLES) --model=threedblexp --markovpy --faint
+$(OUTDIR)/HWR_rich_gnorth_threeblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gnorth_threedblexp.sav -o $@ \
+	-n $(NSAMPLES) --model=threedblexp --markovpy --north
+$(OUTDIR)/HWR_rich_gsouth_threeblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gsouth_threedblexp.sav -o $@ \
+	-n $(NSAMPLES) --model=threedblexp --markovpy --south
+$(OUTDIR)/HWR_rich_gbmin45_threeblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gbmin45_threedblexp.sav -o $@ \
+	-n $(NSAMPLES) --model=threedblexp --markovpy --bmin=45.
+$(OUTDIR)/HWR_rich_gbmax45_threeblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_gbmax45_threedblexp.sav -o $@ \
+	-n $(NSAMPLES) --model=threedblexp --markovpy --bmax=45.
 #Flare model
 $(OUTDIR)/HWR_rich_g_flare_hRhz.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
