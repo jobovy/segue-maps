@@ -111,7 +111,8 @@ def fitDensz(parser):
         XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
                                                 sample=options.sample,
                                                 loggmin=options.loggmin,
-                                                snmin=options.snmin)
+                                                snmin=options.snmin,
+                                                select=options.select)
         grs= rawdata.dered_g-rawdata.dered_r
     #Load model distributions
     if options.sample.lower() == 'g':
@@ -315,7 +316,7 @@ def fitDensz(parser):
         print "Using %i plates, %i stars ..." %(len(plates),len(XYZ[:,0]))
     sf= segueSelect(plates=plates,type_faint=options.sel_faint,
                     sample=options.sample,type_bright=options.sel_bright,
-                    sn=options.snmin)
+                    sn=options.snmin,select=options.select)
     if options.fake:
         plates= sf.plates
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
@@ -354,7 +355,7 @@ def fitDensz(parser):
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
         sf= segueSelect(plates=plates,type_faint=options.sel_faint,
                         type_bright=options.sel_bright,sample=options.sample,
-                        sn=options.snmin)
+                        sn=options.snmin,select=options.select)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
         indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -372,7 +373,7 @@ def fitDensz(parser):
             plates= sf.plates[sf.faintplateindx]
         sf= segueSelect(plates=plates,type_faint=options.sel_faint,
                         type_bright=options.sel_bright,sample=options.sample,
-                        sn=options.snmin)
+                        sn=options.snmin,select=options.select)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
         indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -1333,6 +1334,8 @@ def get_options():
                       help="Use 'G' or 'K' dwarf sample")
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
+    parser.add_option("--select",dest='select',default='all',
+                      help="'all' or 'program' to select all or program stars")
     parser.add_option("--sel_bright",dest='sel_bright',default='sharprcut',
                       help="Selection function to use ('constant', 'r', 'platesn_r')")
     parser.add_option("--sel_faint",dest='sel_faint',default='sharprcut',

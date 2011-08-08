@@ -7,7 +7,7 @@ from optparse import OptionParser
 from scipy import optimize, special
 from galpy.util import bovy_coords, bovy_plot
 import bovy_mcmc
-from segueSelect import read_gdwarfs
+from segueSelect import read_gdwarfs, _GDWARFFILE, _KDWARFFILE
 _ZSUN=0.025 #Sun's offset from the plane toward the NGP in kpc
 _VERBOSE=True
 _DEBUG=False
@@ -235,11 +235,17 @@ def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
         print "Current params, minus likelihood:", params, out
     return out
 
-def readData(metal='rich',sample='G',loggmin=3.75,snmin=15.):
+def readData(metal='rich',sample='G',loggmin=3.75,snmin=15.,select='all'):
     if sample.lower() == 'g':
-        raw= read_gdwarfs(logg=loggmin,ebv=True,sn=snmin)
+        if select.lower() == 'program':
+            raw= read_gdwarfs(_GDWARFFILE,logg=loggmin,ebv=True,sn=snmin)
+        else:
+            raw= read_gdwarfs(logg=loggmin,ebv=True,sn=snmin)
     elif sample.lower() == 'k':
-        raw= read_kdwarfs(logg=loggmin,ebv=True,sn=snmin)
+        if select.lower() == 'program':
+            raw= read_kdwarfs(_KDWARFFILE,logg=loggmin,ebv=True,sn=snmin)
+        else:
+            raw= read_kdwarfs(logg=loggmin,ebv=True,sn=snmin)
     #Select sample
     if metal == 'rich':
         indx= (raw.feh > _APOORFEHRANGE[0])*(raw.feh < _APOORFEHRANGE[1])\
