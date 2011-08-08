@@ -535,7 +535,7 @@ def fitDensz(parser):
             if options.metal == 'rich':
                 params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(0.8),numpy.log(2.5),numpy.log(2.5),numpy.log(2.5),0.025,0.025])
             elif options.metal == 'poor':
-                params= numpy.array([numpy.log(1.),numpy.log(2.),numpy.log(0.3),numpy.log(2.5),numpy.log(2.5),numpy.log(2.5),0.025,0.025])
+                params= numpy.array([numpy.log(65.),numpy.log(1.),numpy.log(0.3),numpy.log(2.),numpy.log(5.5),numpy.log(2.5),0.025,0.025])
             else:
                 params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(0.8),numpy.log(2.5),numpy.log(2.5),numpy.log(2.5),0.025,0.025])
             densfunc= _ThreeDblExpDensity
