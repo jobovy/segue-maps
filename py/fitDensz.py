@@ -383,15 +383,15 @@ def fitDensz(parser):
     if options.cutbrightfaint:
         #Cut out bright stars on faint plates and vice versa
         indx= []
-        for ii in range(len(data.feh)):
-            if sf.platebright[str(data[ii].plate)] and data[ii].dered_r >= 17.8:
+        for ii in range(len(rawdata.feh)):
+            if sf.platebright[str(rawdata[ii].plate)] and rawdata[ii].dered_r >= 17.8:
                 indx.append(False)
-            elif not sf.platebright[str(data[ii].plate)] and data[ii].dered_r < 17.8:
+            elif not sf.platebright[str(rawdata[ii].plate)] and rawdata[ii].dered_r < 17.8:
                 indx.append(False)
             else:
                 indx.append(True)
         indx= numpy.array(indx,dtype='bool')
-        data= data[indx]
+        rawdata= rawdata[indx]
         XYZ= XYZ[indx,:]
         vxvyvz= vxvyvz[indx,:]
         cov_vxvyvz= cov_vxvyvz[indx,:]
