@@ -1292,7 +1292,9 @@ def read_fgstars(file=_FGSTARALLFILE,logg=False,ug=False,ri=False,sn=True,
 
 def _add_distances(raw):
     """Add distances"""
-    ds,derrs= ivezic_dist_gr(raw.dered_g,raw.dered_r,raw.feh)
+    ds,derrs= ivezic_dist_gr(raw.dered_g,raw.dered_r,raw.feh,
+                             return_error=True,dg=raw.g_err,
+                             dr=raw.r_err,dfeh=raw.fehaerr)
     raw= _append_field_recarray(raw,'dist',ds)
     raw= _append_field_recarray(raw,'dist_err',derrs)
     return raw
