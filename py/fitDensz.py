@@ -55,6 +55,8 @@ def fitDensz(parser):
         densfunc= _TwoDblExpDensity
     elif options.model.lower() == 'threedblexp':
         densfunc= _ThreeDblExpDensity
+    elif options.model.lower() == 'twodblexpflare':
+        densfunc= _TwoDblExpFlareDensity
     if options.metal.lower() == 'rich':
         feh= -0.15
         fehrange= _APOORFEHRANGE
@@ -553,6 +555,26 @@ def fitDensz(parser):
                     [0.,4.6051701859880918],[0.,4.6051701859880918],
                     [0.,4.6051701859880918],
                     [0.,4.6051701859880918],[0.,1.],[0.,1.]]
+        elif options.model.lower() == 'twodblexpflare':
+            if options.metal == 'rich':
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),numpy.log(5.),0.025])
+            elif options.metal == 'poor':
+                params= numpy.array([numpy.log(1.),numpy.log(2.),numpy.log(2.5),numpy.log(2.5),numpy.log(5.),0.025])
+            else:
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),numpy.log(5.),0.025])
+            densfunc= _TwoDblExpFlareDensity
+            #Slice sampling keywords
+            if options.metropolis:
+                step= [0.03,0.03,0.03,0.3,0.3,0.025]
+            else:
+                step= [0.3,0.3,0.3,0.3,0.3,0.025]
+            create_method=['step_out','step_out','step_out','step_out',
+                           'step_out','step_out']
+            isDomainFinite=[[False,True],[False,True],[False,True],
+                            [False,True],[False,True],[True,True]]
+            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
+                    [0.,4.6051701859880918],[0.,4.6051701859880918],
+                    [0.,4.6051701859880918],[0.,1.]]
         #Integration argument based on scipy version
         usertol= (_SCIPYVERSION >= 0.9)
         #Integration grid when binning
@@ -912,6 +934,14 @@ def _HWRLikeMinus(params,XYZ,R,
                 or params[6] < 0. or params[6] > 1. \
                 or params[7] < 0. or params[7] > 1.:
             return numpy.finfo(numpy.dtype(numpy.float64)).max       
+    elif densfunc == _TwoDblExpFlareDensity:
+        if params[0] > 4.6051701859880918 \
+                or params[1] > 4.6051701859880918 \
+                or params[2] > 4.6051701859880918 \
+                or params[3] > 4.6051701859880918 \
+                or params[4] > 4.6051701859880918 \
+                or params[5] < 0. or params[5] > 1.:
+            return numpy.finfo(numpy.dtype(numpy.float64)).max       
     #First calculate the normalizing integral
     out= _NormInt(params,XYZ,R,
                   sf,plates,platel,plateb,platebright,platefaint,Ap,
@@ -1179,6 +1209,17 @@ def _FlareDensity(R,Z,params):
     hz= numpy.exp(params[0])
     hf= hz*numpy.exp((R-8.)/numpy.exp(params[1]))
     return numpy.exp(-(R-8.)/hR)/hf*numpy.exp(-numpy.fabs(Z)/hf)
+
+def _TwoDblExpFlareDensity(R,Z,params):
+    """Two Double exponential disks, first one flares
+    params= [loghz1,loghz2,loghR1,loghR2,loghf,Pbad]"""
+    hR1= numpy.exp(params[2])
+    hR2= numpy.exp(params[3])
+    hz1= numpy.exp(params[0])
+    hf= hz1*numpy.exp((R-8.)/numpy.exp(params[4]))
+    hz2= numpy.exp(params[1])
+    return ((1.-params[5])/hf*numpy.exp(-numpy.fabs(Z)/hf-(R-8.)/hR1)
+            +params[5]/hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2))
 
 def _TiedFlareDensity(R,Z,params):
     """Double exponential disk with flaring scale-height equal to radial scale
