@@ -1064,7 +1064,7 @@ def ivezic_dist_gr(g,r,feh,dg=0.,dr=0.,dfeh=0.,return_error=False,
     NAME:
        ivezic_dist_gr
     PURPOSE:
-        Iveziv et al. (2008) distances in terms of g-r for <M0 stars
+        Ivezic et al. (2008) distances in terms of g-r for <M0 stars
     INPUT:
        g, r, feh - dereddened g and r and metallicity
        return_error= if True, return errors
@@ -1085,6 +1085,44 @@ def ivezic_dist_gr(g,r,feh,dg=0.,dr=0.,dfeh=0.,return_error=False,
                     +_gi_gr(g-r,dr=True)**2.*dr**2.)
     dmr= numpy.sqrt(_mr_gi(gi,feh,dgi=True)**2.*dgi**2.
                     +_mr_gi(gi,feh,dfeh=True)**2.*dfeh**2.+dmr**2.)
+    derrs= 0.2*numpy.log(10.)*numpy.sqrt(dmr**2.+dr**2.)*ds
+    return (ds,derrs)
+
+def juric_dist_gr(g,r,dg=0.,dr=0.,return_error=False,
+                  dmr=0.3,faint=False):
+    """
+    NAME:
+       juric_dist_gr
+    PURPOSE:
+        Juric et al. (2008) distances in terms of g-r for <M0 stars
+    INPUT:
+       g, r- dereddened g and r
+       return_error= if True, return errors
+       dg, dr= uncertainties
+       dmr= intrinsic cmd scatter
+       faint= if True, use faint relation, else use bright
+    OUTPUT:
+       (dist,disterr) arrays in kpc
+    HISTORY:
+       2011-08-08 - Written - Bovy (NYU)
+    """
+    #First distances, then uncertainties
+    ri= _ri_gr(g-r)
+    if faint:
+        mr= _mr_ri_faint(ri)
+    else:
+        mr= _mr_ri_bright(ri)
+    ds= 10.**(0.2*(r-mr)-2.)
+    if not return_error: return (ds,numpy.zeros(len(ds)))
+    #Now propagate the uncertainties
+    dri= numpy.sqrt(_ri_gr(g-r,dg=True)**2.*dg**2.
+                    +_ri_gr(g-r,dr=True)**2.*dr**2.)
+    if faint:
+        dmr= numpy.sqrt(_mr_ri_faint(ri,dri=True)**2.*dri**2.
+                        +dmr**2.)
+    else:
+        dmr= numpy.sqrt(_mr_ri_bright(ri,dri=True)**2.*dri**2.
+                        +dmr**2.)
     derrs= 0.2*numpy.log(10.)*numpy.sqrt(dmr**2.+dr**2.)*ds
     return (ds,derrs)
 
