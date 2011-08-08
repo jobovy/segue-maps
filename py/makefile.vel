@@ -65,49 +65,49 @@ $(OUTDIR)/HWR_poor_g_func.$(EXT): fitSigz.py Makefile
 $(OUTDIR)/HWR_poorpoor_g_func.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitSigz.py HWR_poorpoor_g.sav -o $@ \
 	--plotfunc --plotnsamples=1000 \
-	-n $(NSAMPLES) --metal=poorpoor
+	-n $(NSAMPLES) --metal=poorpoor --noplots
 #Poor rich
 $(OUTDIR)/HWR_poorrich_g_func.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitSigz.py HWR_poorrich_g.sav -o $@ \
 	--plotfunc --plotnsamples=1000 \
-	-n $(NSAMPLES) --metal=poorrich
+	-n $(NSAMPLES) --metal=poorrich --noplots
 #Rich poor
 $(OUTDIR)/HWR_richpoor_g_func.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitSigz.py HWR_richpoor_g.sav -o $@ \
 	--plotfunc --plotnsamples=1000 \
-	-n $(NSAMPLES) --metal=richpoor
+	-n $(NSAMPLES) --metal=richpoor --noplots
 #Rich rich
 $(OUTDIR)/HWR_richrich_g_func.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitSigz.py HWR_richrich_g.sav -o $@ \
 	--plotfunc --plotnsamples=1000 \
-	-n $(NSAMPLES) --metal=richrich
+	-n $(NSAMPLES) --metal=richrich --noplots
 #Rich poorest
 $(OUTDIR)/HWR_richpoorest_g_func.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitSigz.py HWR_richpoorest_g.sav -o $@ \
 	--plotfunc --plotnsamples=1000 \
-	-n $(NSAMPLES) --metal=richpoorest
+	-n $(NSAMPLES) --metal=richpoorest --noplots
 
 #AFE RANGES
 #Poor poor
 $(OUTDIR)/HWR_apoorpoor_g_func.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitSigz.py HWR_apoorpoor_g.sav -o $@ \
 	--plotfunc --plotnsamples=1000 \
-	-n $(NSAMPLES) --metal=apoorpoor
+	-n $(NSAMPLES) --metal=apoorpoor --noplots
 #Poor rich
 $(OUTDIR)/HWR_apoorrich_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitSigz.py HWR_apoorrich_g.sav -o $@ \
 	--plotfunc --plotnsamples=1000 \
-	-n $(NSAMPLES) --metal=apoorrich
+	-n $(NSAMPLES) --metal=apoorrich --noplots
 #Rich poor
 $(OUTDIR)/HWR_arichpoor_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitSigz.py HWR_arichpoor_g.sav -o $@ \
 	--plotfunc --plotnsamples=1000 \
-	-n $(NSAMPLES) --metal=arichpoor
+	-n $(NSAMPLES) --metal=arichpoor --noplots
 #Rich rich
 $(OUTDIR)/HWR_arichrich_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitSigz.py HWR_arichrich_g.sav -o $@ \
 	--plotfunc --plotnsamples=1000 \
-	-n $(NSAMPLES) --metal=arichrich
+	-n $(NSAMPLES) --metal=arichrich --noplots
 
 ###############################K DWARFS########################################
 #Metal rich K dwarf velocities

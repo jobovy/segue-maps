@@ -103,6 +103,7 @@ def fitSigz(parser):
         pickle.dump(params,savefile)
         pickle.dump(samples,savefile)
         savefile.close()
+    if options.noplots: return None
     #Plot
     if options.plotfunc:
         #First plot the best fit
@@ -347,6 +348,9 @@ def get_options():
     parser.add_option("--plotfunc",action="store_true", dest="plotfunc",
                       default=False,
                       help="Plot samples from the inferred sigma_z(z) relation at R_0")
+    parser.add_option("--noplots",action="store_true", dest="noplots",
+                      default=False,
+                      help="If set, do not plot")
     parser.add_option("--plotnsamples",dest='plotnsamples',default=10,
                       type='int',
                       help="Plot this number of function samples")
