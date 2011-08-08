@@ -58,7 +58,7 @@ poortwodblexp: $(OUTDIR)/HWR_poor_g_twodblexp_rfunc.$(EXT) \
 	$(OUTDIR)/HWR_poor_gbmin45_twodblexp_rfunc.$(EXT) \
 	$(OUTDIR)/HWR_poor_gbmax45_twodblexp_rfunc.$(EXT) 
 
-poorthreedblexp: $(OUTDIR)/HWR_poor_g_threeblexp_hRhz.$(EXT)
+poorthreedblexp: $(OUTDIR)/HWR_poor_g_threeblexp_rfunc.$(EXT)
 
 fehranges: $(OUTDIR)/HWR_richpoor_g_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_richrich_g_twodblexp_hRhz.$(EXT) \
