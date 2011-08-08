@@ -26,6 +26,8 @@ def selectFigs(parser):
         plot_platesn_lb(options,args)
     elif options.type.lower() == 'ks_lb':
         plot_ks_lb(options,args)
+    elif options.type.lower() == 'ks_sharpr':
+        plot_ks_sharpr(options,args)
     elif options.type.lower() == 'platesn_rcut':
         plot_platesn_rcut(options,args)
     elif options.type.lower() == 'sn_r_fewplates':
@@ -288,6 +290,34 @@ def plot_ks_lb(options,args):
                         clabel=r'$\mathrm{KS\ probability}$',
                         crange=crange,
                         xrange=[0.,360.],yrange=[-90.,90.])
+    bovy_plot.bovy_end_print(options.plotfile)
+
+def plot_ks_sharpr(options,args):
+    """Plot KS of sharpr selection function"""
+    segueplatestr= segueSelect._load_fits(os.path.join(segueSelect._SEGUESELECTDIR,
+                                                       'segueplates_ksg.fits'))
+    #Plot
+    #select bright plates only
+    brightplateindx= numpy.array([not 'faint' in segueplatestr[ii].programname \
+                                      for ii in range(len(segueplatestr))],
+                                 dtype='bool')
+    thissegueplatestr= segueplatestr[brightplateindx]
+    plotthis= thissegueplatestr.kssharp_g_all
+    bins=21
+    xrange= [(0.001-1./bins)/(1.+1./bins),1.]
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_hist(plotthis,range=xrange,bins=bins,
+                        xlabel=r'$\mathrm{KS\ probability\ that\ the\ spectroscopic\ sample}$'+'\n'+r'$\mathrm{was\ drawn\ from\ the\ photometric\ sample}$'+'\n'+r'$\times\ \mathrm{the\ model\ selection\ function}$',
+                        ylabel=r'$\mathrm{Number\ of\ plates}$',
+                        ec='k',ls='dashed',histtype='step')
+    #select faint plates only
+    faintplateindx= numpy.array(['faint' in segueplatestr[ii].programname \
+                                     for ii in range(len(segueplatestr))],
+                                dtype='bool')
+    thissegueplatestr= segueplatestr[faintplateindx]
+    plotthis= thissegueplatestr.kssharp_g_all
+    bovy_plot.bovy_hist(plotthis,range=xrange,bins=bins,overplot=True,
+                        ec='k',histtype='step')
     bovy_plot.bovy_end_print(options.plotfile)
 
 def plot_platesn_lb(options,args):
