@@ -1058,7 +1058,8 @@ def _linear_func(x,deriv,xo,yo):
     """Evaluate a linear function"""
     return deriv*(x-xo)+yo
 
-def ivezic_dist_gr(g,r,feh):
+def ivezic_dist_gr(g,r,feh,dg=0.,dr=0.,dfeh=0.,return_error=False,
+                   dmr=0.1):
     """
     NAME:
        ivezic_dist_gr
@@ -1066,6 +1067,9 @@ def ivezic_dist_gr(g,r,feh):
         Iveziv et al. (2008) distances in terms of g-r for <M0 stars
     INPUT:
        g, r, feh - dereddened g and r and metallicity
+       return_error= if True, return errors
+       dg, dr, dfeh= uncertainties
+       dmr= intrinsic cmd scatter
     OUTPUT:
        (dist,disterr) arrays in kpc
     HISTORY:
@@ -1075,8 +1079,13 @@ def ivezic_dist_gr(g,r,feh):
     gi= _gi_gr(g-r)
     mr= _mr_gi(gi,feh)
     ds= 10.**(0.2*(r-mr)-2.)
+    if not return_errors: return (ds,None)
     #Now propagate the uncertainties
-    derrs= ds/10. #BOVY: ASSUME 10% for now
+    dgi= numpy.sqrt(_gi_gr(g-r,dg=True)**2.*dg**2.
+                    +_gi_gr(g-r,dr=True)**2.*dr**2.)
+    dmr= numpy.sqrt(_mr_gi(gi,feh,dgi=True)**2.*dgi**2.
+                    +_mr_gi(gi,feh,dfeh=True)**2.*dfeh**2.+dmr**2.)
+    derrs= 0.2*numpy.log(10.)*numpy.sqrt(dmr**2.+dr**2.)*ds
     return (ds,derrs)
 
 def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
@@ -1373,18 +1382,30 @@ def _as_recarray(recarray):
     return newrecarray
 
 #Ivezic distance functions
-def _mr_gi(gi,feh):
+def _mr_gi(gi,feh,dgi=False,dfeh=True):
     """Ivezic+08 photometric distance"""
-    mro= -5.06+14.32*gi-12.97*gi**2.+6.127*gi**3.-1.267*gi**4.+0.0967*gi**5.
-    dmr= 4.5-1.11*feh-0.18*feh**2.
-    mr= mro+dmr
-    return mr
+    if dgi:
+        return 14.32-2.*12.97*gi+3.*6.127*gi**2.-4.*1.267*gi**3.\
+               +5.*0.0967*gi**4.
+    elif dfeh:
+        return -1.11-0.36*feh
+    else:
+        mro= -5.06+14.32*gi-12.97*gi**2.+6.127*gi**3.-1.267*gi**4.\
+             +0.0967*gi**5.
+        dmr= 4.5-1.11*feh-0.18*feh**2.
+        mr= mro+dmr
+        return mr
 
-def _gi_gr(gr):
+def _gi_gr(gr,dr=False,dg=False):
     """(g-i) = (g-r)+(r-i), with Juric et al. (2008) stellar locus for g-r,
     BOVY: JUST USES LINEAR APPROXIMATION VALID FOR < M0"""
-    ri= (gr-0.07)/2.34
-    return gr+ri
+    if dg:
+        return 1.+1./2.34
+    elif dr:
+        return -1.-1./2.34
+    else:
+        ri= (gr-0.07)/2.34
+        return gr+ri
 
 
 ############################CLEAN UP PHOTOMETRY################################
