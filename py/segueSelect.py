@@ -1294,7 +1294,7 @@ def _add_distances(raw):
     """Add distances"""
     ds,derrs= ivezic_dist_gr(raw.dered_g,raw.dered_r,raw.feh,
                              return_error=True,dg=raw.g_err,
-                             dr=raw.r_err,dfeh=raw.fehaerr)
+                             dr=raw.r_err,dfeh=raw.feh_err)
     raw= _append_field_recarray(raw,'dist',ds)
     raw= _append_field_recarray(raw,'dist_err',derrs)
     return raw
@@ -1383,7 +1383,7 @@ def _as_recarray(recarray):
         newrecarray[field.lower()] = recarray.field(field)
     return newrecarray
 
-#Ivezic distance functions
+#Ivezic and Juric distance functions
 def _mr_gi(gi,feh,dgi=False,dfeh=False):
     """Ivezic+08 photometric distance"""
     if dgi:
@@ -1398,6 +1398,20 @@ def _mr_gi(gi,feh,dgi=False,dfeh=False):
         mr= mro+dmr
         return mr
 
+def _mr_ri_bright(ri,dri=False):
+    """Juric+08 bright photometric distance"""
+    if dri:
+        return 13.3-2.*11.5*ri+3.*5.4*ri**2.-4.*0.7*ri**3.
+    else:
+        return 3.2+13.3*ri-11.5*ri**2.+5.4*ri**3.-0.7*ri**4.
+
+def _mr_ri_faint(ri,dri=False):
+    """Juric+08 faint photometric distance"""
+    if dri:
+        return 11.86-2.*10.74*ri+3.*5.99*ri**2.-4.*1.2*ri**3.
+    else:
+        return 4.+11.86*ri-10.74*ri**2.+5.99*ri**3.-1.2*ri**4.
+
 def _gi_gr(gr,dr=False,dg=False):
     """(g-i) = (g-r)+(r-i), with Juric et al. (2008) stellar locus for g-r,
     BOVY: JUST USES LINEAR APPROXIMATION VALID FOR < M0"""
@@ -1408,6 +1422,17 @@ def _gi_gr(gr,dr=False,dg=False):
     else:
         ri= (gr-0.07)/2.34
         return gr+ri
+
+def _ri_gr(gr,dr=False,dg=False):
+    """(r-i) = f(g-r), with Juric et al. (2008) stellar locus for g-r,
+    BOVY: JUST USES LINEAR APPROXIMATION VALID FOR < M0"""
+    if dg:
+        return 1./2.34
+    elif dr:
+        return 1./2.34
+    else:
+        ri= (gr-0.07)/2.34
+        return ri
 
 
 ############################CLEAN UP PHOTOMETRY################################

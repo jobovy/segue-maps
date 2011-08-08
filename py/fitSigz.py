@@ -8,6 +8,7 @@ from scipy import optimize, special
 from galpy.util import bovy_coords, bovy_plot
 import bovy_mcmc
 from segueSelect import read_gdwarfs
+_ZSUN=0.025 #Sun's offset from the plane toward the NGP in kpc
 _VERBOSE=True
 _DEBUG=False
 _ARICHAFERANGE=[0.25,0.5]
@@ -35,10 +36,10 @@ def fitSigz(parser):
             print "Reading and parsing data ..."
         XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal=options.metal,
                                                 sample=options.sample)
-        XYZ= XYZ.astype(numpy.float64)
         vxvyvz= vxvyvz.astype(numpy.float64)
         cov_vxvyvz= cov_vxvyvz.astype(numpy.float64)
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+        XYZ[:,2]+= _ZSUN
         d= (XYZ[:,2]-.5)
         #Optimize likelihood
         if _VERBOSE:
@@ -236,12 +237,8 @@ def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
 def readData(metal='rich',sample='G',loggmin=3.75,snmin=15.):
     if sample.lower() == 'g':
         raw= read_gdwarfs(logg=loggmin,ebv=True,sn=snmin)
-        #rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
-        #                                    'segue-local','gdwarf_raw.dat'))
     elif sample.lower() == 'k':
         raw= read_kdwarfs(logg=loggmin,ebv=True,sn=snmin)
-        #rawdata= numpy.loadtxt(os.path.join(os.getenv('DATADIR'),'bovy',
-        #                                    'segue-local','kdwarf.dat'))
     #Select sample
     if metal == 'rich':
         indx= (raw.feh > _APOORFEHRANGE[0])*(raw.feh < _APOORFEHRANGE[1])\
