@@ -312,7 +312,7 @@ def fitDensz(parser):
         plates= None
     else:
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
-    if not options.bright and not options.faint:
+    if not options.bright and not options.faint and not options.cutbrightfaint:
         print "Using %i plates, %i stars ..." %(len(plates),len(XYZ[:,0]))
     sf= segueSelect(plates=plates,type_faint=options.sel_faint,
                     sample=options.sample,type_bright=options.sel_bright,
@@ -380,7 +380,33 @@ def fitDensz(parser):
         platebright= numpy.array(indx,dtype='bool')
         indx= ['faint' in name for name in sf.platestr.programname]
         platefaint= numpy.array(indx,dtype='bool')
-    if options.bright or options.faint:
+    if options.cutbrightfaint:
+        #Cut out bright stars on faint plates and vice versa
+        indx= []
+        for ii in range(len(data.feh)):
+            if sf.platebright[str(data[ii].plate)] and data[ii].dered_r >= 17.8:
+                indx.append(False)
+            elif not sf.platebright[str(data[ii].plate)] and data[ii].dered_r < 17.8:
+                indx.append(False)
+            else:
+                indx.append(True)
+        indx= numpy.array(indx,dtype='bool')
+        data= data[indx]
+        XYZ= XYZ[indx,:]
+        vxvyvz= vxvyvz[indx,:]
+        cov_vxvyvz= cov_vxvyvz[indx,:]
+        #Reload selection function
+        plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
+        sf= segueSelect(plates=plates,type_faint=options.sel_faint,
+                        type_bright=options.sel_bright,sample=options.sample,
+                        sn=options.snmin,select=options.select)
+        platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
+                                         degree=True)
+        indx= [not 'faint' in name for name in sf.platestr.programname]
+        platebright= numpy.array(indx,dtype='bool')
+        indx= ['faint' in name for name in sf.platestr.programname]
+        platefaint= numpy.array(indx,dtype='bool')
+    if options.bright or options.faint or options.cutbrightfaint:
         print "Using %i plates, %i stars ..." %(len(plates),len(XYZ[:,0]))
     Ap= math.pi*2.*(1.-numpy.cos(1.49*_DEGTORAD)) #SEGUE PLATE=1.49 deg radius
     if options.sample.lower() == 'g':
@@ -1423,6 +1449,10 @@ def get_options():
     parser.add_option("--snmin",dest='snmin',type='float',
                       default=15.,
                       help="Minimum SN")
+    parser.add_option("--cutbrightfaint",action="store_true", 
+                      dest="cutbrightfaint",
+                      default=False,
+                      help="Cut bright stars from faint plates and vice versa")
     return parser
 
 if __name__ == '__main__':
