@@ -147,7 +147,7 @@ def compareGRichRdist(options,args):
                      overplot=True,ls='--')
         if options.type == 'r':
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
-        elif options.type == 'z':
+        else:
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_'+options.type+'dist_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
     return None
 

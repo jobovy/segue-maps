@@ -1079,7 +1079,7 @@ def ivezic_dist_gr(g,r,feh,dg=0.,dr=0.,dfeh=0.,return_error=False,
     gi= _gi_gr(g-r)
     mr= _mr_gi(gi,feh)
     ds= 10.**(0.2*(r-mr)-2.)
-    if not return_error: return (ds,numpy.zeros(len(ds)))
+    if not return_error: return (ds,0.*ds)
     #Now propagate the uncertainties
     dgi= numpy.sqrt(_gi_gr(g-r,dg=True)**2.*dg**2.
                     +_gi_gr(g-r,dr=True)**2.*dr**2.)
@@ -1113,7 +1113,7 @@ def juric_dist_gr(g,r,dg=0.,dr=0.,return_error=False,
     else:
         mr= _mr_ri_bright(ri)
     ds= 10.**(0.2*(r-mr)-2.)
-    if not return_error: return (ds,numpy.zeros(len(ds)))
+    if not return_error: return (ds,0.*ds)
     #Now propagate the uncertainties
     dri= numpy.sqrt(_ri_gr(g-r,dg=True)**2.*dg**2.
                     +_ri_gr(g-r,dr=True)**2.*dr**2.)

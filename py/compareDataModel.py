@@ -6,6 +6,7 @@ _NZS= 1001
 _legendsize= 16
 import sys
 import os, os.path
+import math as m
 import numpy
 from scipy import ndimage
 from galpy.util import bovy_coords, bovy_plot
@@ -572,7 +573,7 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
     dmax= numpy.amax(_ivezic_dist(grs,thisrmax,fehs))
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
-    Rmin, Rmax= dmin*numpy.cos(bmax*_DEGTORAD), dmax*numpy.cos(bmin*_DEGTORAD)
+    Rmin, Rmax= 5., 14. #BOVY: HARD-CODED
     Rs= numpy.linspace(Rmin,Rmax,_NZS)
     if isinstance(params,list): #list of samples
         pass
@@ -617,7 +618,7 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
         #Plot the data
         data_R= []
         for p in plate:
-            data_R.extend((data[(data.plate == p)].xc**2.+data[(data.plate == p)].yc**2.)**0.5)
+            data_R.extend(((8.-data[(data.plate == p)].xc)**2.+data[(data.plate == p)].yc**2.)**0.5)
         hist= bovy_plot.bovy_hist(data_R,
                                   normed=True,bins=bins,ec='k',
                                   histtype='step',
@@ -1083,7 +1084,26 @@ def _predict_Rdist_plate(Rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     fehs= numpy.linspace(fehmin,fehmax,nfeh)
     out= numpy.zeros(len(Rs))
     norm= 0.
-    ds= Rs/numpy.fabs(numpy.cos(b*_DEGTORAD))
+    ds= numpy.zeros(len(Rs))
+    zero_indx= []
+    for ii in range(len(Rs)):
+        if Rs[ii] < 8.:
+            if m.cos(l*_DEGTORAD) < 0.:
+                ds[ii]= 1.
+                zero_indx.append(True)
+                continue
+            elif (l < 90. and Rs[ii] < 8.*numpy.cos((90.-l-1.49)*_DEGTORAD)) \
+                    or (l > 270. and Rs[ii] < 8.*numpy.cos((l-270.-1.49)*_DEGTORAD)):
+                ds[ii]= 1.
+                zero_indx.append(True)
+                continue
+            theta= m.asin(8.*m.sin(l*_DEGTORAD)/Rs[ii])-l*_DEGTORAD
+        else:
+            theta= m.pi-m.asin(8.*m.sin(l*_DEGTORAD)/Rs[ii])-l*_DEGTORAD
+        ds[ii]= m.sqrt(Rs[ii]**2.+8.**2.-16.*Rs[ii]*m.cos(theta))
+        zero_indx.append(False)
+    zero_indx= numpy.array(zero_indx,dtype='bool')
+    ds/= numpy.fabs(numpy.cos(b*_DEGTORAD))
     for kk in range(nfeh):
         for jj in range(ngr):
             #What rs do these Rs correspond to
@@ -1091,8 +1111,7 @@ def _predict_Rdist_plate(Rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
             mr= _mr_gi(gi,fehs[kk])
             rs= 5.*numpy.log10(ds)+10.+mr
             select= numpy.array(sf(plate,r=rs))
-            out+= colordist(grs[jj])\
-                *select/numpy.fabs(numpy.cos(b*_DEGTORAD))*fehdist(fehs[kk])
+            out+= colordist(grs[jj])*select*fehdist(fehs[kk])
             norm+= colordist(grs[jj])*fehdist(fehs[kk])
     #Calculate (R,z)s
     XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
@@ -1103,6 +1122,8 @@ def _predict_Rdist_plate(Rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     #XYZ[:,2]+= _ZSUN #Not here because this is model
     out*= ds**2.*densfunc(R,XYZ[:,2],params)
     out/= norm
+    out*= Rs/numpy.cos(b*_DEGTORAD)/numpy.fabs(ds*numpy.cos(b*_DEGTORAD)-8.*numpy.cos(l*_DEGTORAD))
+    out[zero_indx]= 0.
     return out
 
 def cos_sphere_dist(theta,phi,theta_o,phi_o):
