@@ -318,6 +318,13 @@ def plot_ks_sharpr(options,args):
     plotthis= thissegueplatestr.kssharp_g_all
     bovy_plot.bovy_hist(plotthis,range=xrange,bins=bins,overplot=True,
                         ec='k',histtype='step')
+    xlegend, ylegend, dy= 0.75, 40., -2.5
+    bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend,ylegend],'k--',
+                        overplot=True)
+    bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{bright}$')
+    bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend+dy,ylegend+dy],'k-',
+                        overplot=True)
+    bovy_plot.bovy_text(xlegend,ylegend+dy,r'$\mathrm{faint}$')
     bovy_plot.bovy_end_print(options.plotfile)
 
 def plot_platesn_lb(options,args):
