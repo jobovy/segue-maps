@@ -1382,7 +1382,7 @@ def _as_recarray(recarray):
     return newrecarray
 
 #Ivezic distance functions
-def _mr_gi(gi,feh,dgi=False,dfeh=True):
+def _mr_gi(gi,feh,dgi=False,dfeh=False):
     """Ivezic+08 photometric distance"""
     if dgi:
         return 14.32-2.*12.97*gi+3.*6.127*gi**2.-4.*1.267*gi**3.\
