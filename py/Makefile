@@ -58,6 +58,8 @@ poortwodblexp: $(OUTDIR)/HWR_poor_g_twodblexp_rfunc.$(EXT) \
 	$(OUTDIR)/HWR_poor_gbmin45_twodblexp_rfunc.$(EXT) \
 	$(OUTDIR)/HWR_poor_gbmax45_twodblexp_rfunc.$(EXT) 
 
+poorthreedblexp: $(OUTDIR)/HWR_poor_g_threeblexp_hRhz.$(EXT)
+
 fehranges: $(OUTDIR)/HWR_richpoor_g_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_richrich_g_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_richpoorest_g_twodblexp_hRhz.$(EXT) \
@@ -413,6 +415,12 @@ $(OUTDIR)/HWR_poor_gbmax45_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
 	$(PYTHON) fitDensz.py HWR_dens_poor_gbmax45_twodblexp.sav -o $@ \
 	-n $(NSAMPLES) --metal=poor \
 	--model=twodblexp --markovpy --bmax=45.
+#Threedblexp
+$(OUTDIR)/HWR_poor_g_threedblexp_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_g_threedblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=threedblexp --markovpy
 #Flare model
 $(OUTDIR)/HWR_poor_g_flare_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
