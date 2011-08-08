@@ -7,7 +7,8 @@ import segueSelect
 from fitSigz import readData, _ARICHFEHRANGE, _APOORFEHRANGE, \
     _ARICHAFERANGE, _APOORAFERANGE
 from fitDensz import _HWRDensity, _FlareDensity, _const_colordist, \
-    DistSpline, _ivezic_dist, _TwoVerticalDensity
+    DistSpline, _ivezic_dist, _TwoVerticalDensity, _TwoDblExpDensity, \
+    _ThreeDblExpDensity
 import compareDataModel
 def compareGRichRdist(options,args):
     if options.png: ext= 'png'
@@ -15,9 +16,11 @@ def compareGRichRdist(options,args):
     #Set up density models and their parameters
     model1= _HWRDensity
     model2= _TwoVerticalDensity
+    #model2= _HWRDensity
     if options.metal.lower() == 'rich':
         params1= numpy.array([-1.34316986e+00,1.75402412e+00,5.14667706e-04])
         params2= numpy.array([-1.42335426,-0.43321135,1.79128308,0.0162946])
+        #params2= numpy.array([-1.38316986e+00,1.38,5.14667706e-04])
     else:
         params1= numpy.array([-0.3508148171668,0.65752,0.00206572947631])
         params2= numpy.array([-0.37255443,-0.05221503,0.65642965,0.03518453])
