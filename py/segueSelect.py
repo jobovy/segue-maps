@@ -1458,7 +1458,7 @@ def _gi_gr(gr,dr=False,dg=False):
     elif dr:
         return -1.-1./2.34
     else:
-        ri= (gr-0.07)/2.34
+        ri= (gr-0.12)/2.34
         return gr+ri
 
 def _ri_gr(gr,dr=False,dg=False):
