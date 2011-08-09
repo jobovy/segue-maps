@@ -25,7 +25,7 @@ except:
     raise ImportError( "scipy.__version__ not understood, contact developer, send scipy.__version__")
 _ERASESTR= "                                                                                "
 _VERBOSE=True
-_DEBUG=False
+_DEBUG=True
 _INTEGRATEPLATESEP= True #DON'T CHANGE THIS
 _EPSREL= 1.45e-08
 _EPSABS= 1.45e-08

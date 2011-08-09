@@ -337,6 +337,23 @@ class segueSelect:
                     *self.rcuts_correct[str(plate)]
                 if isinstance(r,list): return list(out)
                 else: return out
+            elif (bright and self.type_bright.lower() == 'tanhrcut') \
+                    or (not bright and self.type_faint.lower() == 'tanhrcut'):
+                nout= len(r)
+                if isinstance(r,list): thisr= numpy.array(r)
+                else: thisr= r
+                out= numpy.zeros(nout)
+                if bright:
+                    indx= (thisr >= 14.5)*(thisr <= 17.8)
+                else:
+                    indx= (thisr >= 17.8)*(thisr <= self.rmax)
+                if numpy.sum(indx) == 0: return out
+                out[indx]= self.weight[str(plate)]\
+                    *self.rcuts_correct[str(plate)]\
+                    *_sf_tanh(thisr[indx],[self.rcuts[str(plate)]-0.1,
+                                           -3.,0.])
+                if isinstance(r,list): return list(out)
+                else: return out
             else:
                 if isinstance(r,numpy.ndarray):
                     plate= numpy.array([plate for ii in range(len(r))])
