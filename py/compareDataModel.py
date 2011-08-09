@@ -1112,8 +1112,8 @@ def _predict_Rdist_plate(Rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
                 ds[ii]= 1.
                 zero_indx.append(True)
                 continue
-            elif (l < 90. and Rs[ii] < 8.*numpy.cos((90.-l-1.49)*_DEGTORAD)) \
-                    or (l > 270. and Rs[ii] < 8.*numpy.cos((l-270.-1.49)*_DEGTORAD)):
+            elif (l < 90. and Rs[ii] < 8.*numpy.cos((90.-l-1.49*0.)*_DEGTORAD)) \
+                    or (l > 270. and Rs[ii] < 8.*numpy.cos((l-270.-0.*1.49)*_DEGTORAD)):
                 ds[ii]= 1.
                 zero_indx.append(True)
                 continue
