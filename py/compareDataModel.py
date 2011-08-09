@@ -622,7 +622,7 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                               0.1/(Rs[1]-Rs[0]),
                                               output=eightRdist,
                                               mode='nearest')
-        Rdist[eightindx]= eightRdist
+            Rdist[eightindx]= eightRdist
         if xrange is None:
             if allbright and feh <= -0.5:
                 xrange= [numpy.amin(Rs)-0.2,numpy.amax(Rs)+0.7]
