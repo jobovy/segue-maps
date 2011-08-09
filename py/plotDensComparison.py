@@ -58,6 +58,12 @@ def compareGRichRdist(options,args):
         model1= _TwoDblExpDensity
         model2= _TwoDblExpDensity
         model3= _TwoDblExpDensity
+        params1= numpy.array([-0.53760415,0.05568142,
+                               0.64126537,1.42494789,0.0260056])
+        params2= numpy.array([-0.53760415,0.05568142,
+                               numpy.log(3.),1.42494789,0.0260056])
+        params3= numpy.array([-0.53760415,0.05568142,
+                               numpy.log(4.),1.42494789,0.0260056])
         left_legend= r'$[\mathrm{Fe/H}] \geq -0.70$'
     elif options.metal.lower() == 'richpoor':
         model1= _TwoDblExpDensity
