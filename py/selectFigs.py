@@ -400,6 +400,9 @@ def plot_ks(options,args):
     sfsharp= segueSelect.segueSelect(sn=True,sample=options.sample,
                                      plates=plates,type_bright='sharprcut',
                                      type_faint='sharprcut',select=select)
+    sftanh= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                    plates=plates,type_bright='tanhrcut',
+                                     type_faint='tanhrcut',select=select)
     print "constant, bright"
     ksconst_bright= sfconst.check_consistency('bright')
     print "constant, faint"
@@ -416,6 +419,10 @@ def plot_ks(options,args):
     kssharp_bright= sfsharp.check_consistency('bright')
     print "sharprcut, faint"
     kssharp_faint= sfsharp.check_consistency('faint')
+    print "tanhrcut, bright"
+    kstanh_bright= sftanh.check_consistency('bright')
+    print "tanhrcut, faint"
+    kstanh_faint= sftanh.check_consistency('faint')
     #Plot
     bins=21
     range= [(0.001-1./bins)/(1.+1./bins),1.]
@@ -432,6 +439,9 @@ def plot_ks(options,args):
     bovy_plot.bovy_hist(kssharp_bright,
                         range=range,bins=bins,overplot=True,
                         ec='g',ls='dashed',histtype='step')
+    bovy_plot.bovy_hist(kstanh_bright,
+                        range=range,bins=bins,overplot=True,
+                        ec='b',ls='dashed',histtype='step')
     bovy_plot.bovy_hist(ksconst_faint,range=range,bins=bins,overplot=True,
                         ec='r',ls='solid',histtype='step')
     bovy_plot.bovy_hist(ksr_faint,range=range,bins=bins,overplot=True,
@@ -442,6 +452,9 @@ def plot_ks(options,args):
     bovy_plot.bovy_hist(kssharp_faint,
                         range=range,bins=bins,overplot=True,
                         ec='g',ls='solid',histtype='step')
+    bovy_plot.bovy_hist(kstanh_faint,
+                        range=range,bins=bins,overplot=True,
+                        ec='b',ls='solid',histtype='step')
     xlegend, ylegend, dy= 0.55, 140., -10.
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{constant}$',color='r')
     bovy_plot.bovy_text(xlegend,ylegend+dy,r'$r\ \mathrm{dependent}$',color='orange')
