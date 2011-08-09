@@ -460,7 +460,8 @@ def plot_ks(options,args):
     bovy_plot.bovy_text(xlegend,ylegend+dy,r'$r\ \mathrm{dependent}$',color='orange')
     bovy_plot.bovy_text(xlegend,ylegend+2.*dy,r'$\mathrm{plateSN\_r},r\ \mathrm{dependent}$',color='y')
     bovy_plot.bovy_text(xlegend,ylegend+3.*dy,r'$\mathrm{sharp}\ r\ \mathrm{cut}$',color='g')
-    xlegend, ylegend, dy= 0.55, 95., -10.
+    bovy_plot.bovy_text(xlegend,ylegend+4.*dy,r'$\mathrm{tanh}\ r\ \mathrm{cut}$',color='g')
+    xlegend, ylegend, dy= 0.55, 85., -10.
     bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend,ylegend],'k--',
                         overplot=True)
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{bright}$')
