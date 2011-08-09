@@ -338,7 +338,10 @@ class segueSelect:
                 if isinstance(r,list): return list(out)
                 else: return out
             else:
-                plate= [plate for ii in range(len(r))]
+                if isinstance(r,numpy.ndarray):
+                    plate= numpy.array([plate for ii in range(len(r))])
+                else:
+                    plate= [plate for ii in range(len(r))]
                 scalarOut= False
         else:
             scalarOut= False
