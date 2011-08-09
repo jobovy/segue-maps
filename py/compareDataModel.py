@@ -21,7 +21,8 @@ def comparerdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                       rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,fehmin=-0.4,
                       fehmax=0.5,feh=-0.15,
                       convolve=0.,xrange=None,yrange=None,
-                      overplot=False,bins=21,color='k',ls='-'):
+                      overplot=False,bins=21,color='k',ls='-',
+                      left_legend=None):
     """
     NAME:
        comparerdistPlate
@@ -45,6 +46,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
        overplot= if True, overplot
        bins= hist number of bins
        color= color for model
+       left_legend = if set, legend to put at the left top
     OUTPUT:
        plot to output
        return rdist, datahist, dataedges
@@ -228,13 +230,16 @@ def comparerdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
             bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
             bovy_plot.bovy_text(rx-0.2,ry+3./4.*dz/2.,r'$Z$')
+        if not left_legend is None:
+            bovy_plot.bovy_text(left_legend,top_left=True,size=_legendsize)
         return (rdist, hist[0], hist[1])
 
 def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                       rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,fehmin=-0.4,
                       fehmax=0.5,feh=-0.15,
                       convolve=0.,xrange=None,yrange=None,
-                      overplot=False,bins=21,color='k',ls='-'):
+                      overplot=False,bins=21,color='k',ls='-',
+                      left_legend=None):
     """
     NAME:
        comparezdistPlate
@@ -258,6 +263,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
        overplot= if True, overplot
        bins= hist number of bins
        color= color for model
+       left_legend = if set, legend to put at the left top
     OUTPUT:
        plot to output
        return rdist, datahist, dataedges
@@ -482,13 +488,16 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
             bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
             bovy_plot.bovy_text(rx-0.25*xfac,ry+3./4.*dz/2.,r'$Z$')
+        if not left_legend is None:
+            bovy_plot.bovy_text(left_legend,top_left=True,size=_legendsize)
         return (zdist, hist[0], hist[1])
 
 def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                       rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,fehmin=-0.4,
                       fehmax=0.5,feh=-0.15,
-                      convolve=0.,xrange=None,yrange=None,
-                      overplot=False,bins=21,color='k',ls='-'):
+                      convolve=0.02,xrange=None,yrange=None,
+                      overplot=False,bins=21,color='k',ls='-',
+                      left_legend=None):
     """
     NAME:
        compareRdistPlate
@@ -512,6 +521,7 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
        overplot= if True, overplot
        bins= hist number of bins
        color= color for model
+       left_legend = if set, legend to put at the left top
     OUTPUT:
        plot to output
        return rdist, datahist, dataedges
@@ -728,6 +738,8 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
             bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
             bovy_plot.bovy_text(rx-0.25*xfac,ry+3./4.*dz/2.,r'$Z$')
+        if not left_legend is None:
+            bovy_plot.bovy_text(left_legend,top_left=True,size=_legendsize)
         return (Rdist, hist[0], hist[1])
 
 def comparernumberPlate(densfunc,params,sf,colordist,data,plate,

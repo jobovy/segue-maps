@@ -14,18 +14,81 @@ def compareGRichRdist(options,args):
     if options.png: ext= 'png'
     else: ext= 'ps'
     #Set up density models and their parameters
-    model1= _HWRDensity
-    model2= _TwoVerticalDensity
+    model1= _TwoDblExpDensity
+    model2= _TwoDblExpDensity
+    params2= None
+    params3= None
     #model2= _HWRDensity
+    left_legend= None
     if options.metal.lower() == 'rich':
-        params1= numpy.array([-1.34316986e+00,1.75402412e+00,5.14667706e-04])
-        params2= numpy.array([-1.42335426,-0.43321135,1.79128308,0.0162946])
-        #params2= numpy.array([-1.38316986e+00,1.38,5.14667706e-04])
-    else:
+        params1= numpy.array([-1.2773895676,-0.342622618893,
+                               1.54219678317,3.26125640181,
+                               0.0213463610149])
+        params2= numpy.array([-1.2773895676,-0.342622618893,
+                               numpy.log(2.),3.26125640181,
+                               0.0213463610149])
+        params3= numpy.array([-1.2773895676,-0.342622618893,
+                               numpy.log(3.),3.26125640181,
+                               0.0213463610149])
+    elif options.metal.lower() == 'poor':
         params1= numpy.array([-0.3508148171668,0.65752,0.00206572947631])
         params2= numpy.array([-0.37255443,-0.05221503,0.65642965,0.03518453])
         #params2= numpy.array([-0.43416469,2.12440688,0.32511145])
         #model2= _FlareDensity
+    elif options.metal.lower() == 'poorpoor':
+        model1= _TwoDblExpDensity
+        model2= _TwoDblExpDensity
+        pass
+    elif options.metal.lower() == 'poorrich':
+        model1= _TwoDblExpDensity
+        pass
+    elif options.metal.lower() == 'richpoor':
+        model1= _TwoDblExpDensity
+        model2= _TwoDblExpDensity
+        model3= _TwoDblExpDensity
+        params1= numpy.array([-1.13590587909,-0.229095217496,
+                               2.31957547293,3.08130976581,0.0306050071738])
+        params2= numpy.array([-1.13590587909,-0.229095217496,
+                               numpy.log(2.),3.08130976581,0.0306050071738])
+        params3= numpy.array([-1.13590587909,-0.229095217496,
+                               numpy.log(3.),3.08130976581,0.0306050071738])
+        left_legend= r'$[\mathrm{Fe/H}] < -0.25$'
+    elif options.metal.lower() == 'richrich':
+        model1= _TwoDblExpDensity
+        params1= numpy.array([-1.4054707897,-0.316827211246,
+                               1.13722477602,
+                               1.73361114293,0.0105419023466])
+        params2= numpy.array([-1.4054707897,-0.316827211246,
+                               numpy.log(2.),
+                               1.73361114293,0.0105419023466])
+        left_legend= r'$[\mathrm{Fe/H}] \geq -0.25$'
+        params3= None
+    elif options.metal.lower() == 'richpoorest':
+        model1= _TwoDblExpDensity
+        params1= numpy.array([-0.776456513258,0.446361154618,4.47547740363,
+                               2.83176699906,0.0792706192638])
+        params2= None
+    elif options.metal.lower() == 'apoorpoor':
+        model1= _TwoDblExpDensity
+        params1= numpy.array([-1.4636093883,-0.253335318811,2.31749026865,
+                               4.56846956075,0.0111069900004])
+        params2= None
+        left_legend= r'$[\mathrm{Fe/H}] < -0.7$'
+    elif options.metal.lower() == 'apoorrich':
+        model1= _TwoDblExpDensity
+        params1= numpy.array([-0.950520030144,0.03112785181,1.71614632276,
+                               2.58730852881,0.0316080213337])
+        params2= None
+        left_legend= r'$[\mathrm{Fe/H}] \geq -0.7$'
+    elif options.metal.lower() == 'arichpoor':
+        model1= _TwoDblExpDensity
+        params1= numpy.array([-0.46348820713,-0.0330860858936,0.650016021926,
+                               1.13095321369,0.060682753378])
+        params2= None
+    elif options.metal.lower() == 'arichrich':
+        model1= _TwoDblExpDensity
+        params1= numpy.array([])
+        params2= None
     #Load sf
     sf= segueSelect.segueSelect(sample=options.sample,sn=True,
                                 type_bright='sharprcut',
@@ -36,6 +99,25 @@ def compareGRichRdist(options,args):
     elif options.metal.lower() == 'poor':
         feh= -0.65
         fehrange= _ARICHFEHRANGE
+    elif options.metal == 'poorpoor':
+        feh= -0.65
+        fehrange= [_ARICHHFEHRANGE[0],-0.7]
+    elif options.metal == 'poorrich':
+        feh= -0.65
+        fehrange= [-0.7,_ARICHHFEHRANGE[1]]
+    elif options.metal == 'richpoor':
+        feh= -0.15
+        fehrange= [_APOORFEHRANGE[0],-0.25]
+    elif options.metal == 'richrich':
+        feh= -0.15
+        fehrange= [-0.25,_APOORFEHRANGE[1]]
+    elif options.metal == 'richpoorest':
+        feh= -0.15
+        fehrange= [-1.5,_APOORFEHRANGE[0]]
+    elif options.metal == 'apoorpoor' or options.metal == 'apoorrich' \
+            or options.metal == 'arichpoor' or options.metal == 'arichrich':
+        feh= -0.2
+        fehrange= [-1.5,_APOORFEHRANGE[1]]
     #Load data
     XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
                                          sample=options.sample)
@@ -83,6 +165,8 @@ def compareGRichRdist(options,args):
         bins= [51,51,26]
     elif options.metal.lower() == 'rich':
         bins= [51,31,31]
+    else:
+        bins= [31,31,31]
     plates= ['all','bright','faint']
     for ii in range(len(plates)):
         plate= plates[ii]
@@ -93,14 +177,23 @@ def compareGRichRdist(options,args):
                      grmin=colorrange[0],
                      grmax=colorrange[1],
                      fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
-                     bins=bins[ii],ls='-')
-        compare_func(model2,params2,sf,cdist,fehdist,
-                     data,plate,color='k',bins=bins[ii],
-                     rmin=14.5,rmax=rmax,
-                     grmin=colorrange[0],
-                     grmax=colorrange[1],
-                     fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
-                     overplot=True,ls='--')
+                     bins=bins[ii],ls='-',left_legend=left_legend)
+        if not params2 is None:
+            compare_func(model2,params2,sf,cdist,fehdist,
+                         data,plate,color='k',bins=bins[ii],
+                         rmin=14.5,rmax=rmax,
+                         grmin=colorrange[0],
+                         grmax=colorrange[1],
+                         fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         overplot=True,ls='--')
+        if not params3 is None:
+            compare_func(model3,params3,sf,cdist,fehdist,
+                         data,plate,color='k',bins=bins[ii],
+                         rmin=14.5,rmax=rmax,
+                         grmin=colorrange[0],
+                         grmax=colorrange[1],
+                         fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         overplot=True,ls=':')
         if options.type == 'r':
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_'+plate+'.'+ext))
         else:
@@ -118,14 +211,23 @@ def compareGRichRdist(options,args):
                      grmin=colorrange[0],
                      grmax=colorrange[1],
                      fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
-                     bins=bins,ls='-')
-        compare_func(model2,params2,sf,cdist,fehdist,
-                     data,plate,color='k',bins=bins,
-                     rmin=14.5,rmax=rmax,
-                     grmin=colorrange[0],
-                     grmax=colorrange[1],
-                     fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
-                     overplot=True,ls='--')
+                     bins=bins,ls='-',left_legend=left_legend)
+        if not params2 is None:
+            compare_func(model2,params2,sf,cdist,fehdist,
+                         data,plate,color='k',bins=bins,
+                         rmin=14.5,rmax=rmax,
+                         grmin=colorrange[0],
+                         grmax=colorrange[1],
+                         fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         overplot=True,ls='--')
+        if not params3 is None:
+            compare_func(model3,params3,sf,cdist,fehdist,
+                         data,plate,color='k',bins=bins,
+                         rmin=14.5,rmax=rmax,
+                         grmin=colorrange[0],
+                         grmax=colorrange[1],
+                         fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         overplot=True,ls=':')
         if options.type == 'r':
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_l%i_b%i_bright.' % (ls[ii],bs[ii]))+ext)
         else:
@@ -141,13 +243,21 @@ def compareGRichRdist(options,args):
                      grmin=colorrange[0],
                      grmax=colorrange[1],
                      fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
-                     bins=bins,ls='-')
-        compare_func(model2,params2,sf,cdist,fehdist,
-                     data,plate,color='k',bins=bins,
-                     rmin=14.5,rmax=rmax,grmin=colorrange[0],
-                     grmax=colorrange[1],
-                     fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
-                     overplot=True,ls='--')
+                     bins=bins,ls='-',left_legend=left_legend)
+        if not params2 is None:
+            compare_func(model2,params2,sf,cdist,fehdist,
+                         data,plate,color='k',bins=bins,
+                         rmin=14.5,rmax=rmax,grmin=colorrange[0],
+                         grmax=colorrange[1],
+                         fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         overplot=True,ls='--')
+        if not params3 is None:
+            compare_func(model3,params3,sf,cdist,fehdist,
+                         data,plate,color='k',bins=bins,
+                         rmin=14.5,rmax=rmax,grmin=colorrange[0],
+                         grmax=colorrange[1],
+                         fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         overplot=True,ls=':')
         if options.type == 'r':
             bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
         else:
