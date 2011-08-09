@@ -67,6 +67,7 @@ class segueSelect:
                    'r' universal function of r
                    'plateSN_r' function of r for plates in ranges in plateSN_r
                    'sharprcut' sharp cut in r for each plate, at the r-band mag of the faintest object on this plate
+                   'tanhrcut' cut in r for each plate, at the r-band mag of the faintest object on this plate, with 0.1 mag tanh softening
               dr_bright= when determining the selection function as a function 
                          of r, binsize to use
               interp_degree_bright= when spline-interpolating, degree to use
@@ -386,6 +387,11 @@ class segueSelect:
                         *self.rcuts_correct[str(plate)]
                 else:
                     return 0.
+            elif self.type_bright.lower() == 'tanhrcut':
+                return self.weight[str(plate)]\
+                    *self.rcuts_correct[str(plate)]\
+                    *_sf_tanh(r,[self.rcuts[str(plate)]-0.1,
+                                 -3.,0.])
         else:
             if r < 17.8 or r > self.rmax: return 0.
             elif self.type_faint.lower() == 'constant':
@@ -414,6 +420,11 @@ class segueSelect:
                         *self.rcuts_correct[str(plate)]
                 else:
                     return 0.
+            elif self.type_faint.lower() == 'tanhrcut':
+                return self.weight[str(plate)]\
+                    *self.rcuts_correct[str(plate)]\
+                    *_sf_tanh(r,[self.rcuts[str(plate)]-0.1,
+                                 -3.,0.])
 
     def check_consistency(self,plate):
         """
@@ -838,7 +849,7 @@ class segueSelect:
                 /float(len(self.platephot[str(plate)]))
         if type.lower() == 'constant':
             return #We're done!
-        if type.lower() == 'sharprcut':
+        if type.lower() == 'sharprcut' or type.lower() == 'tanhrcut':
             #For each plate cut at the location of the faintest object
             if not hasattr(self,'rcuts'): self.rcuts= {}
             if not hasattr(self,'rcuts_correct'): self.rcuts_correct= {}
