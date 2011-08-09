@@ -495,7 +495,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
 def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                       rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,fehmin=-0.4,
                       fehmax=0.5,feh=-0.15,
-                      convolve=0.02,xrange=None,yrange=None,
+                      convolve=0.,xrange=None,yrange=None,
                       overplot=False,bins=21,color='k',ls='-',
                       left_legend=None):
     """
@@ -614,6 +614,14 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
         if convolve > 0.:
             ndimage.filters.gaussian_filter1d(Rdist,convolve/(Rs[1]-Rs[0]),
                                               output=Rdist)
+        #Convolve around 8 anyway
+        eightindx= (Rs > 7.8)*(Rs < 8.2)
+        eightRdist= numpy.zeros(numpy.sum(eightindx))
+        ndimage.filters.gaussian_filter1d(Rdist[eightindx],
+                                          0.1/(Rs[1]-Rs[0]),
+                                          output=eightRdist,
+                                          mode='nearest')
+        Rdist[eightindx]= eightRdist
         if xrange is None:
             if allbright and feh <= -0.5:
                 xrange= [numpy.amin(Rs)-0.2,numpy.amax(Rs)+0.7]

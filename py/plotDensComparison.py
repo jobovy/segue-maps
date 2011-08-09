@@ -16,6 +16,7 @@ def compareGRichRdist(options,args):
     #Set up density models and their parameters
     model1= _TwoDblExpDensity
     model2= _TwoDblExpDensity
+    model3= _TwoDblExpDensity
     params2= None
     params3= None
     #model2= _HWRDensity
@@ -31,17 +32,33 @@ def compareGRichRdist(options,args):
                                numpy.log(3.),3.26125640181,
                                0.0213463610149])
     elif options.metal.lower() == 'poor':
-        params1= numpy.array([-0.3508148171668,0.65752,0.00206572947631])
-        params2= numpy.array([-0.37255443,-0.05221503,0.65642965,0.03518453])
-        #params2= numpy.array([-0.43416469,2.12440688,0.32511145])
-        #model2= _FlareDensity
+        params1= numpy.array([-0.42318463388,0.120618411932,
+                               0.646532463713,1.18310796794,
+                               0.0388013358113])
+        params2= numpy.array([-0.42318463388,0.120618411932,
+                               numpy.log(3.),1.18310796794,
+                               0.0388013358113])
+        params3= numpy.array([-0.42318463388,0.120618411932,
+                               numpy.log(4.),1.18310796794,
+                               0.0388013358113])
     elif options.metal.lower() == 'poorpoor':
         model1= _TwoDblExpDensity
         model2= _TwoDblExpDensity
-        pass
+        model3= _TwoDblExpDensity
+        params1= numpy.array([-0.219870550136,-0.238834348878,0.669726269879,
+                               0.673337061069,0.0742667712409])
+        params2= numpy.array([-0.219870550136,-0.238834348878,
+                               numpy.log(3.),
+                               0.673337061069,0.0742667712409])
+        params3= numpy.array([-0.219870550136,-0.238834348878,
+                               numpy.log(4.),
+                               0.673337061069,0.0742667712409])
+        left_legend= r'$[\mathrm{Fe/H}] < -0.70$'
     elif options.metal.lower() == 'poorrich':
         model1= _TwoDblExpDensity
-        pass
+        model2= _TwoDblExpDensity
+        model3= _TwoDblExpDensity
+        left_legend= r'$[\mathrm{Fe/H}] \geq -0.70$'
     elif options.metal.lower() == 'richpoor':
         model1= _TwoDblExpDensity
         model2= _TwoDblExpDensity
@@ -101,10 +118,10 @@ def compareGRichRdist(options,args):
         fehrange= _ARICHFEHRANGE
     elif options.metal == 'poorpoor':
         feh= -0.65
-        fehrange= [_ARICHHFEHRANGE[0],-0.7]
+        fehrange= [_ARICHFEHRANGE[0],-0.7]
     elif options.metal == 'poorrich':
         feh= -0.65
-        fehrange= [-0.7,_ARICHHFEHRANGE[1]]
+        fehrange= [-0.7,_ARICHFEHRANGE[1]]
     elif options.metal == 'richpoor':
         feh= -0.15
         fehrange= [_APOORFEHRANGE[0],-0.25]
@@ -149,6 +166,13 @@ def compareGRichRdist(options,args):
     cdist= DistSpline(*numpy.histogram(data.dered_g-data.dered_r,
                                        bins=9,range=colorrange),
                        xrange=colorrange)
+    #Ranges
+    if options.type == 'z':
+        xrange= [-0.1,5.]
+    elif options.type == 'R':
+        xrange= [4.8,14.2]
+    elif options.type == 'r':
+        xrange= [14.2,20.1]
     #We do bright/faint for 4 directions and all, all bright, all faint
     ls= [180,180,45,45]
     bs= [0,90,-23,23]
@@ -170,6 +194,10 @@ def compareGRichRdist(options,args):
     plates= ['all','bright','faint']
     for ii in range(len(plates)):
         plate= plates[ii]
+        if plate == 'all':
+            thisleft_legend= left_legend
+        else:
+            thisleft_legend= None
         bovy_plot.bovy_print()
         compare_func(model1,params1,sf,cdist,fehdist,
                      data,plate,color='k',
@@ -177,7 +205,8 @@ def compareGRichRdist(options,args):
                      grmin=colorrange[0],
                      grmax=colorrange[1],
                      fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
-                     bins=bins[ii],ls='-',left_legend=left_legend)
+                     xrange=xrange,
+                     bins=bins[ii],ls='-',left_legend=thisleft_legend)
         if not params2 is None:
             compare_func(model2,params2,sf,cdist,fehdist,
                          data,plate,color='k',bins=bins[ii],
@@ -185,6 +214,7 @@ def compareGRichRdist(options,args):
                          grmin=colorrange[0],
                          grmax=colorrange[1],
                          fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         xrange=xrange,
                          overplot=True,ls='--')
         if not params3 is None:
             compare_func(model3,params3,sf,cdist,fehdist,
@@ -193,11 +223,12 @@ def compareGRichRdist(options,args):
                          grmin=colorrange[0],
                          grmax=colorrange[1],
                          fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         xrange=xrange,
                          overplot=True,ls=':')
         if options.type == 'r':
-            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_'+plate+'.'+ext))
+            bovy_plot.bovy_end_print(os.path.join(args[0],'model_data_g_'+options.metal+'_'+plate+'.'+ext))
         else:
-            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_'+options.type+'dist_'+plate+'.'+ext))
+            bovy_plot.bovy_end_print(os.path.join(args[0],'model_data_g_'+options.metal+'_'+options.type+'dist_'+plate+'.'+ext))
     bins= 16
     for ii in range(len(ls)):
         #Bright
@@ -211,7 +242,8 @@ def compareGRichRdist(options,args):
                      grmin=colorrange[0],
                      grmax=colorrange[1],
                      fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
-                     bins=bins,ls='-',left_legend=left_legend)
+                     xrange=xrange,
+                     bins=bins,ls='-')
         if not params2 is None:
             compare_func(model2,params2,sf,cdist,fehdist,
                          data,plate,color='k',bins=bins,
@@ -219,6 +251,7 @@ def compareGRichRdist(options,args):
                          grmin=colorrange[0],
                          grmax=colorrange[1],
                          fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         xrange=xrange,
                          overplot=True,ls='--')
         if not params3 is None:
             compare_func(model3,params3,sf,cdist,fehdist,
@@ -227,11 +260,12 @@ def compareGRichRdist(options,args):
                          grmin=colorrange[0],
                          grmax=colorrange[1],
                          fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         xrange=xrange,
                          overplot=True,ls=':')
         if options.type == 'r':
-            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_l%i_b%i_bright.' % (ls[ii],bs[ii]))+ext)
+            bovy_plot.bovy_end_print(os.path.join(args[0],'model_data_g_'+options.metal+'_l%i_b%i_bright.' % (ls[ii],bs[ii]))+ext)
         else:
-            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_'+options.type+'dist_l%i_b%i_bright.' % (ls[ii],bs[ii]))+ext)
+            bovy_plot.bovy_end_print(os.path.join(args[0],'model_data_g_'+options.metal+'_'+options.type+'dist_l%i_b%i_bright.' % (ls[ii],bs[ii]))+ext)
         #Faint
         plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
                                                        sf,data,
@@ -243,13 +277,15 @@ def compareGRichRdist(options,args):
                      grmin=colorrange[0],
                      grmax=colorrange[1],
                      fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
-                     bins=bins,ls='-',left_legend=left_legend)
+                     xrange=xrange,
+                     bins=bins,ls='-')
         if not params2 is None:
             compare_func(model2,params2,sf,cdist,fehdist,
                          data,plate,color='k',bins=bins,
                          rmin=14.5,rmax=rmax,grmin=colorrange[0],
                          grmax=colorrange[1],
                          fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         xrange=xrange,
                          overplot=True,ls='--')
         if not params3 is None:
             compare_func(model3,params3,sf,cdist,fehdist,
@@ -257,11 +293,12 @@ def compareGRichRdist(options,args):
                          rmin=14.5,rmax=rmax,grmin=colorrange[0],
                          grmax=colorrange[1],
                          fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
+                         xrange=xrange,
                          overplot=True,ls=':')
         if options.type == 'r':
-            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
+            bovy_plot.bovy_end_print(os.path.join(args[0],'model_data_g_'+options.metal+'_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
         else:
-            bovy_plot.bovy_end_print(os.path.join(args[0],'Flare_Dblexp_g_'+options.metal+'_'+options.type+'dist_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
+            bovy_plot.bovy_end_print(os.path.join(args[0],'model_data_g_'+options.metal+'_'+options.type+'dist_l%i_b%i_faint.' % (ls[ii],bs[ii]))+ext)
     return None
 
 def scatterData(options,args):
