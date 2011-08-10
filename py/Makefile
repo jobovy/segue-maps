@@ -87,6 +87,7 @@ variations: $(OUTDIR)/HWR_rich_g_twodblexp_logg4.2.$(EXT) \
 	$(OUTDIR)/HWR_poor_g_tanhrcut_twodblexp_hRhz.$(EXT)
 
 alttwodblexp: $(OUTDIR)/HWR_rich_g_alttwoblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_poor_g_alttwodblexp_rfunc.$(EXT)
 
 #VARIATIONS
 $(OUTDIR)/HWR_rich_g_twodblexp_logg4.2.$(EXT): fitDensz.py segueSelect.py
