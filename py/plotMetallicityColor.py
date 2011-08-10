@@ -192,10 +192,10 @@ def plotMetallicityRZ(options,args):
     elif options.metal.lower() == 'poor':
         yrange=[-1.6,0.3]
         fehrange= _ARICHFEHRANGE
-    Zrange= [0.25,3.75]
+    Zrange= [0.25,3.25]
     Rrange= [5.,12.]
     if options.plottype.lower() == 'z':
-        _NBINS= 8
+        _NBINS= 7
         Zranges= [[Zrange[0]+ii*(Zrange[1]-Zrange[0])/(_NBINS-1),
                    Zrange[0]+(ii+1)*(Zrange[1]-Zrange[0])/(_NBINS-1)] \
                       for ii in range(_NBINS-1)]
@@ -252,19 +252,30 @@ def _plotMRZ_single(XYZ,R,data,options,args,all=True,overplot=True,xrange=None,
         *(R > Rrange[0])\
         *(R <= Rrange[1])
         thisdata= data[indx]
-        bovy_plot.bovy_plot(thisdata.dered_g-thisdata.dered_r,
-                            thisdata.feh,
-                            'k,',
-                            bins=21,
-                            xrange=xrange,
-                            yrange=yrange,
-                            xlabel=r'$g-r\ [\mathrm{mag}]$',
-                            ylabel=r'$[\mathrm{Fe/H}]$',
-                            onedhists=True)
-        if options.plottype.lower() == 'r':
-            lbstr= '$%4.1f < R / \mathrm{kpc} \leq %4.1f$' % (Rrange[0],Rrange[1])
+        if len(thisdata) > 1500:
+            bovy_plot.scatterplot(thisdata.dered_g-thisdata.dered_r,
+                                  thisdata.feh,
+                                  'k,',
+                                  bins=21,
+                                  xrange=xrange,
+                                  yrange=yrange,
+                                  xlabel=r'$g-r\ [\mathrm{mag}]$',
+                                  ylabel=r'$[\mathrm{Fe/H}]$',
+                                  onedhists=True)
         else:
-            lbstr= '$%i < |Z| / \mathrm{pc} \leq %i$' % (int(1000*Zrange[0]),int(1000*Zrange[1]))
+            bovy_plot.bovy_plot(thisdata.dered_g-thisdata.dered_r,
+                                thisdata.feh,
+                                'k,',
+                                bins=21,
+                                xrange=xrange,
+                                yrange=yrange,
+                                xlabel=r'$g-r\ [\mathrm{mag}]$',
+                                ylabel=r'$[\mathrm{Fe/H}]$',
+                                onedhists=True)
+        if options.plottype.lower() == 'r':
+            lbstr= r'$%i < R / \mathrm{kpc} \leq %i$' % (int(Rrange[0]),int(Rrange[1]))
+        else:
+            lbstr= r'$%i < |Z| / \mathrm{pc} \leq %i$' % (int(1000*Zrange[0]),int(1000*Zrange[1]))
         bovy_plot.bovy_text(r'$%i \ \ \mathrm{stars}$' % 
                             len(thisdata.feh)
                             +'\n'+
