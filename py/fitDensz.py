@@ -1362,9 +1362,9 @@ def get_options():
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
     parser.add_option("--select",dest='select',default='all',
                       help="'all' or 'program' to select all or program stars")
-    parser.add_option("--sel_bright",dest='sel_bright',default='sharprcut',
+    parser.add_option("--sel_bright",dest='sel_bright',default='tanhrcut',
                       help="Selection function to use ('constant', 'r', 'platesn_r')")
-    parser.add_option("--sel_faint",dest='sel_faint',default='sharprcut',
+    parser.add_option("--sel_faint",dest='sel_faint',default='tanhrcut',
                       help="Selection function to use ('constant', 'r', 'platesn_r')")
     parser.add_option("--colordist",dest='colordist',default='spline',
                       help="Color distribution to use ('constant', 'binned','spline')")
