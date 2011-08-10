@@ -1559,12 +1559,16 @@ def _add_ks(outfile,sample='g',select='all'):
     sfsharp= segueSelect(sn=True,sample=sample,
                          type_bright='sharprcut',
                          type_faint='sharprcut',select=select)
+    sftanh= segueSelect(sn=True,sample=sample,
+                        type_bright='tanhrcut',
+                        type_faint='tanhrcut',select=select)
     #Calculate KS for each plate
     nplates= len(plates)
     ksconst= numpy.zeros(nplates)
     ksr= numpy.zeros(nplates)
     ksplatesn_r= numpy.zeros(nplates)
     kssharp= numpy.zeros(nplates)
+    kstanh= numpy.zeros(nplates)
     for ii in range(nplates):
         plate= plates[ii]
         sys.stdout.write('\r'+"Working on plate %i" % plate)
@@ -1576,6 +1580,7 @@ def _add_ks(outfile,sample='g',select='all'):
         ksr[ii]= sfr.check_consistency(plate)
         ksplatesn_r[ii]= sfplatesn_r.check_consistency(plate)
         kssharp[ii]= sfsharp.check_consistency(plate)
+        kstanh[ii]= sftanh.check_consistency(plate)
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     #Add to platestr
@@ -1587,6 +1592,8 @@ def _add_ks(outfile,sample='g',select='all'):
                                      ksplatesn_r)
     platestr= _append_field_recarray(platestr,'kssharp_'+sample+'_'+select,
                                      kssharp)
+    platestr= _append_field_recarray(platestr,'kstanh_'+sample+'_'+select,
+                                     kstanh)
     #Save
     pyfits.writeto(outfile,platestr,clobber=True)
     return

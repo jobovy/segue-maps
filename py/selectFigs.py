@@ -28,6 +28,8 @@ def selectFigs(parser):
         plot_ks_lb(options,args)
     elif options.type.lower() == 'ks_sharpr':
         plot_ks_sharpr(options,args)
+    elif options.type.lower() == 'ks_tanhr':
+        plot_ks_tanhr(options,args)
     elif options.type.lower() == 'platesn_rcut':
         plot_platesn_rcut(options,args)
     elif options.type.lower() == 'sn_r_fewplates':
@@ -135,6 +137,7 @@ def plot_sfrz(options,args):
     """Plot the selection function in the R,Z plane"""
     if options.program: select= 'program'
     else: select= 'all'
+    #We make this figure with the sharpr for clarity
     sf= segueSelect.segueSelect(sn=True,sample=options.sample,
                                 plates=None,select=select,
                                 type_bright='sharprcut',
@@ -303,6 +306,41 @@ def plot_ks_sharpr(options,args):
                                  dtype='bool')
     thissegueplatestr= segueplatestr[brightplateindx]
     plotthis= thissegueplatestr.kssharp_g_all
+    bins=21
+    xrange= [(0.001-1./bins)/(1.+1./bins),1.]
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_hist(plotthis,range=xrange,bins=bins,
+                        xlabel=r'$\mathrm{KS\ probability\ that\ the\ spectroscopic\ sample}$'+'\n'+r'$\mathrm{was\ drawn\ from\ the\ photometric\ sample}$'+'\n'+r'$\times\ \mathrm{the\ model\ selection\ function}$',
+                        ylabel=r'$\mathrm{Number\ of\ plates}$',
+                        ec='k',ls='dashed',histtype='step')
+    #select faint plates only
+    faintplateindx= numpy.array(['faint' in segueplatestr[ii].programname \
+                                     for ii in range(len(segueplatestr))],
+                                dtype='bool')
+    thissegueplatestr= segueplatestr[faintplateindx]
+    plotthis= thissegueplatestr.kssharp_g_all
+    bovy_plot.bovy_hist(plotthis,range=xrange,bins=bins,overplot=True,
+                        ec='k',histtype='step')
+    xlegend, ylegend, dy= 0.75, 40., -2.5
+    bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend,ylegend],'k--',
+                        overplot=True)
+    bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{bright}$')
+    bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend+dy,ylegend+dy],'k-',
+                        overplot=True)
+    bovy_plot.bovy_text(xlegend,ylegend+dy,r'$\mathrm{faint}$')
+    bovy_plot.bovy_end_print(options.plotfile)
+
+def plot_ks_tanhr(options,args):
+    """Plot KS of tanhr selection function"""
+    segueplatestr= segueSelect._load_fits(os.path.join(segueSelect._SEGUESELECTDIR,
+                                                       'segueplates_ksg.fits'))
+    #Plot
+    #select bright plates only
+    brightplateindx= numpy.array([not 'faint' in segueplatestr[ii].programname \
+                                      for ii in range(len(segueplatestr))],
+                                 dtype='bool')
+    thissegueplatestr= segueplatestr[brightplateindx]
+    plotthis= thissegueplatestr.kstanh_g_all
     bins=21
     xrange= [(0.001-1./bins)/(1.+1./bins),1.]
     bovy_plot.bovy_print()
