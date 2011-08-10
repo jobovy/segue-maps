@@ -238,7 +238,7 @@ def compareGRichRdist(options,args):
         compare_func= compareDataModel.compareRdistPlate
     #all, faint, bright
     if options.metal.lower() == 'poor':
-        bins= [51,51,26]
+        bins= [31,31,31]
     elif options.metal.lower() == 'rich':
         bins= [51,31,31]
     else:

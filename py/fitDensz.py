@@ -53,6 +53,8 @@ def fitDensz(parser):
         densfunc= _TwoVerticalDensity
     elif options.model.lower() == 'twodblexp':
         densfunc= _TwoDblExpDensity
+    elif options.model.lower() == 'alttwodblexp':
+        densfunc= _AltTwoDblExpDensity
     elif options.model.lower() == 'threedblexp':
         densfunc= _ThreeDblExpDensity
     elif options.model.lower() == 'twodblexpflare':
@@ -560,6 +562,25 @@ def fitDensz(parser):
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
                     [0.,4.6051701859880918],
                     [0.,4.6051701859880918],[0.,1.]]
+        elif options.model.lower() == 'alttwodblexp':
+            if options.metal == 'rich':
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),2.5,2.5,0.025])
+            elif options.metal == 'poor':
+                params= numpy.array([numpy.log(1.),numpy.log(2.),2.5,2.5,0.025])
+            else:
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),2.5,2.5,0.025])
+            densfunc= _AltTwoDblExpDensity
+            #Slice sampling keywords
+            if options.metropolis:
+                step= [0.03,0.03,0.03,0.3,0.025]
+            else:
+                step= [0.3,0.3,0.3,0.3,0.025]
+            create_method=['step_out','step_out','step_out','step_out','step_out']
+            isDomainFinite=[[False,True],[False,True],[True,True],
+                            [True,True],[True,True]]
+            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
+                    [-100.,100.],[-100.,100.],
+                    [0.,1.]]
         elif options.model.lower() == 'threedblexp':
             if options.metal == 'rich':
                 params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(0.25),numpy.log(2.5),numpy.log(2.5),numpy.log(2.5),0.025,0.025])
@@ -951,6 +972,13 @@ def _HWRLikeMinus(params,XYZ,R,
                 or params[3] > 4.6051701859880918 \
                 or params[4] < 0. or params[4] > 1.:
             return numpy.finfo(numpy.dtype(numpy.float64)).max       
+    elif densfunc == _AltTwoDblExpDensity:
+        if params[0] > 4.6051701859880918 \
+                or params[1] > 4.6051701859880918 \
+                or params[2] > 100. or params[2] < -100. \
+                or params[3] > 100. or params[3] < -100. \
+                or params[4] < 0. or params[4] > 1.:
+            return numpy.finfo(numpy.dtype(numpy.float64)).max       
     elif densfunc == _ThreeDblExpDensity:
         if params[0] > 4.6051701859880918 \
                 or params[1] > 4.6051701859880918 \
@@ -1211,6 +1239,16 @@ def _TwoDblExpDensity(R,Z,params):
     params= [loghz1,loghz2,loghR1,loghR2,Pbad]"""
     hR1= numpy.exp(params[2])
     hR2= numpy.exp(params[3])
+    hz1= numpy.exp(params[0])
+    hz2= numpy.exp(params[1])
+    return ((1.-params[4])/hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-8.)/hR1)
+            +params[4]/hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2))
+
+def _AltTwoDblExpDensity(R,Z,params):
+    """Alternative two Double exponential disks
+    params= [loghz1,loghz2,hR1,hR2,Pbad]"""
+    hR1= params[2]
+    hR2= params[3]
     hz1= numpy.exp(params[0])
     hz2= numpy.exp(params[1])
     return ((1.-params[4])/hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-8.)/hR1)
