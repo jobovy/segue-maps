@@ -22,25 +22,25 @@ def compareGRichRdist(options,args):
     #model2= _HWRDensity
     left_legend= None
     if options.metal.lower() == 'rich':
-        params1= numpy.array([-1.2773895676,-0.342622618893,
-                               1.54219678317,3.26125640181,
-                               0.0213463610149])
-        params2= numpy.array([-1.2773895676,-0.342622618893,
-                               numpy.log(2.),3.26125640181,
-                               0.0213463610149])
-        params3= numpy.array([-1.2773895676,-0.342622618893,
-                               numpy.log(3.),3.26125640181,
-                               0.0213463610149])
+        params1= numpy.array([-1.27245538735,-0.340870869903,
+                               1.59581835214,4.46627144451,
+                               0.0247958916673])
+        params2= numpy.array([-1.27245538735,-0.340870869903,
+                               numpy.log(2.),4.46627144451,
+                               0.0247958916673])
+        params3= numpy.array([-1.27245538735,-0.340870869903,
+                               numpy.log(3.),4.46627144451,
+                               0.0247958916673])
     elif options.metal.lower() == 'poor':
-        params1= numpy.array([-0.42318463388,0.120618411932,
-                               0.646532463713,1.18310796794,
-                               0.0388013358113])
-        params2= numpy.array([-0.42318463388,0.120618411932,
-                               numpy.log(3.),1.18310796794,
-                               0.0388013358113])
-        params3= numpy.array([-0.42318463388,0.120618411932,
-                               numpy.log(4.),1.18310796794,
-                               0.0388013358113])
+        params1= numpy.array([-0.385462892439,0.206062851547,
+                               0.635030986681,1.38756474045,
+                               0.0361985513556])
+        params2= numpy.array([-0.385462892439,0.206062851547,
+                               numpy.log(3.),1.38756474045,
+                               0.0361985513556])
+        params3= numpy.array([-0.385462892439,0.206062851547,
+                               numpy.log(4.),1.38756474045,
+                               0.0361985513556])
     elif options.metal.lower() == 'poorpoor':
         model1= _TwoDblExpDensity
         model2= _TwoDblExpDensity
