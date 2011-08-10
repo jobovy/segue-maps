@@ -82,6 +82,7 @@ variations: $(OUTDIR)/HWR_rich_g_twodblexp_logg4.2.$(EXT) \
 	$(OUTDIR)/HWR_rich_gminks0.1_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_rich_gprogram_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_rich_gcutbrightfaint_twodblexp_hRhz.$(EXT) \
+	$(OUTDIR)/HWR_rich_g_twodblexp_addfeh-0.1.$(EXT) \
 	$(OUTDIR)/HWR_rich_g_tanhrcut_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_poor_g_tanhrcut_twodblexp_hRhz.$(EXT)
 
@@ -120,6 +121,9 @@ $(OUTDIR)/HWR_poor_g_tanhrcut_twodblexp_hRhz.$(EXT): fitDensz.py \
 	-o $@ \
 	-n $(NSAMPLES) --markovpy --model=twodblexp --sel_bright=tanhrcut \
 	--sel_faint=tanhrcut --metal=poor
+$(OUTDIR)/HWR_rich_g_twodblexp_addfeh-0.1.$(EXT): fitDensz.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_addfeh-0.1.sav -o $@ \
+	-n $(NSAMPLES) --markovpy --addfeh=-0.1 --model=twodblexp
 
 #Metal rich G dwarf densities
 $(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py

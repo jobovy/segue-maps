@@ -121,7 +121,7 @@ def fitDensz(parser):
         colorrange=[0.55,0.75]
     #FeH
     fehdist= DistSpline(*numpy.histogram(rawdata.feh,bins=11,range=fehrange),
-                         xrange=fehrange)
+                         xrange=fehrange,dontcuttorange=(options.addfeh != 0.))
     #Color
     if options.colordist.lower() == 'constant':
         colordist= _const_colordist
@@ -608,7 +608,7 @@ def fitDensz(parser):
         grs= numpy.linspace(grmin,grmax,_NGR)
         fehs= numpy.linspace(fehrange[0],fehrange[1],_NFEH)
         rhogr= numpy.array([colordist(gr) for gr in grs])
-        rhofeh= numpy.array([fehdist(feh) for feh in fehs])
+        rhofeh= numpy.array([fehdist(feh+options.addfeh) for feh in fehs])
         mr= numpy.zeros((_NGR,_NFEH))
         for kk in range(_NGR):
             for jj in range(_NFEH):
@@ -1280,7 +1280,7 @@ class DistBinned:
 
 class DistSpline:
     """Color distribution from a spline fit to a binned representation"""
-    def __init__(self,hist,edges,xrange=None):
+    def __init__(self,hist,edges,xrange=None,dontcuttorange=False):
         self.hist= hist/(numpy.sum(hist)*(edges[1]-edges[0])) #normalized
         self.edges= edges
         xs= []
@@ -1289,10 +1289,12 @@ class DistSpline:
         self.xs= numpy.array(xs)
         self.spline= interpolate.splrep(self.xs,numpy.log(self.hist+0.00001))
         self.range= xrange
+        self.dontcuttorange= dontcuttorange
         return
 
     def __call__(self,gr):
-        if gr > self.range[1] or gr < self.range[0]: return 0.
+        if not self.dontcuttorange \
+           and (gr > self.range[1] or gr < self.range[0]): return 0.
         return numpy.exp(interpolate.splev(gr,self.spline))
 
 class FeHXDDist:
@@ -1453,6 +1455,9 @@ def get_options():
                       dest="cutbrightfaint",
                       default=False,
                       help="Cut bright stars from faint plates and vice versa")
+    parser.add_option("--addfeh",dest='addfeh',type='float',
+                      default=0.,
+                      help="When evaluating the FeH distribution, add this value")
     return parser
 
 if __name__ == '__main__':
