@@ -4,7 +4,7 @@ from optparse import OptionParser
 from galpy.util import bovy_plot, bovy_coords
 from matplotlib import pyplot
 import segueSelect
-from fitSigz import readData, _APOORFEHRANGE, _ARICHFEHRANGE
+from fitSigz import readData, _APOORFEHRANGE, _ARICHFEHRANGE, _ZSUN
 from fitDensz import FeHXDDist, DistSpline
 from compareDataModel import _add_coordinset
 def plotMetallicityColor(options,args):
@@ -166,6 +166,111 @@ def _plotMC_single(data,options,args,all=False,overplot=False,xrange=None,
                         rmin=rmin,rmax=rmax,
                         grmin=grmin,grmax=grmin)
 
+def plotMetallicityRZ(options,args):
+    if options.png: ext= 'png'
+    else: ext= 'ps'
+    #Load data
+    XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
+                                         sample=options.sample)
+    R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**0.5
+    XYZ[:,2]+= _ZSUN
+    #Set up ranges
+    #Set up ranges
+    if options.sample.lower() == 'g':
+        xrange=[0.46,0.57]
+        rmin, rmax= 14.5, 20.2
+        grmin, grmax= 0.48, 0.55
+        colorrange=[0.48,0.55]
+    elif options.sample.lower() == 'k':
+        xrange=[0.51,0.79]
+        rmin, rmax= 14.5, 19.
+        grmin, grmax= 0.55,0.75
+        colorrange=[0.55,0.75]
+    if options.metal.lower() == 'rich':
+        yrange=[-0.55,0.5]
+        fehrange= _APOORFEHRANGE
+    elif options.metal.lower() == 'poor':
+        yrange=[-1.6,0.3]
+        fehrange= _ARICHFEHRANGE
+    Zrange= [0.25,3.75]
+    Rrange= [5.,12.]
+    if options.plottype.lower() == 'z':
+        _NBINS= 8
+        Zranges= [[Zrange[0]+ii*(Zrange[1]-Zrange[0])/(_NBINS-1),
+                   Zrange[0]+(ii+1)*(Zrange[1]-Zrange[0])/(_NBINS-1)] \
+                      for ii in range(_NBINS-1)]
+        Zranges.append([Zranges[-1][1],4.])
+        Rranges= [Rrange for ii in range(_NBINS)]
+    elif options.plottype.lower() == 'r':
+        _NBINS= 7
+        Zranges= [Zrange for ii in range(_NBINS)]
+        Rranges= [[5.,7.]]
+        Rranges.extend([[Rrange[0]+ii*(Rrange[1]-Rrange[0])/_NBINS,
+                         Rrange[0]+(ii+1)*(Rrange[1]-Rrange[0])/_NBINS] \
+                            for ii in range(1,_NBINS)])
+    #First plot all data
+    bovy_plot.bovy_print()
+    _plotMRZ_single(XYZ,R,data,options,args,all=True,overplot=False,
+                    xrange=xrange,yrange=yrange,colorrange=colorrange,
+                    fehrange=fehrange,
+                    Zrange=Zrange,Rrange=Rrange)
+    _overplot_model(data,xrange=xrange,yrange=yrange,fehrange=fehrange,
+                    colorrange=colorrange)
+    bovy_plot.bovy_end_print(os.path.join(args[0],'FeH_'+options.plottype+'_'+options.sample+'_'+options.metal+'.'+ext))
+    #Then plot them in ranges
+    for ii in range(_NBINS):
+        _plotMRZ_single(XYZ,R,data,options,args,all=False,overplot=False,
+                        xrange=xrange,Zrange=Zranges[ii],Rrange=Rranges[ii],
+                        yrange=yrange,colorrange=colorrange,fehrange=fehrange)
+        _overplot_model(data,xrange=xrange,yrange=yrange,fehrange=fehrange,
+                        colorrange=colorrange)
+        bovy_plot.bovy_end_print(os.path.join(args[0],'FeH_'+options.plottype+'_'+options.sample+'_'+options.metal+'_%i.' % ii + ext))
+    return None
+
+def _plotMRZ_single(XYZ,R,data,options,args,all=True,overplot=True,xrange=None,
+                    Zrange=None,Rrange=None,yrange=None,colorrange=None,
+                    fehrange=None):
+    if all:
+        bovy_plot.scatterplot(data.dered_g-data.dered_r,
+                              data.feh,
+                              'k,',
+                              bins=21,
+                              xrange=xrange,
+                              yrange=yrange,
+                              xlabel=r'$g-r\ [\mathrm{mag}]$',
+                              ylabel=r'$[\mathrm{Fe/H}]$',
+                              onedhists=True)
+        platestr= '\mathrm{all\ plates}'
+        bovy_plot.bovy_text(r'$'+platestr+'$'
+                            +'\n'+
+                            '$%i \ \ \mathrm{stars}$' % 
+                            len(data.feh),top_right=True,size=16)
+    else:
+        #Cut to range
+        indx= (numpy.fabs(XYZ[:,2]) > Zrange[0])\
+        *(numpy.fabs(XYZ[:,2]) <= Zrange[1])\
+        *(R > Rrange[0])\
+        *(R <= Rrange[1])
+        thisdata= data[indx]
+        bovy_plot.bovy_plot(thisdata.dered_g-thisdata.dered_r,
+                            thisdata.feh,
+                            'k,',
+                            bins=21,
+                            xrange=xrange,
+                            yrange=yrange,
+                            xlabel=r'$g-r\ [\mathrm{mag}]$',
+                            ylabel=r'$[\mathrm{Fe/H}]$',
+                            onedhists=True)
+        if options.plottype.lower() == 'r':
+            lbstr= '$%4.1f < R / \mathrm{kpc} \leq %4.1f$' % (Rrange[0],Rrange[1])
+        else:
+            lbstr= '$%i < |Z| / \mathrm{pc} \leq %i$' % (int(1000*Zrange[0]),int(1000*Zrange[1]))
+        bovy_plot.bovy_text(r'$%i \ \ \mathrm{stars}$' % 
+                            len(thisdata.feh)
+                            +'\n'+
+                            lbstr,top_right=True,size=16)
+    return None
+
 def plotDMMetallicityColor(options,args):
     """Make a density plot of DM vs FeH and g-r"""
     if options.png: ext= 'png'
@@ -233,7 +338,7 @@ def get_options():
                       help="Use 'G' or 'K' dwarf sample")
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
-    parser.add_option("--plottype",dest='plottype',default='fehcolor',
+    parser.add_option("-t","--plottype",dest='plottype',default='fehcolor',
                       help="Type of plot to make ('fehcolor,dmfehcolor')")
     parser.add_option("--png",action="store_true", dest="png",
                       default=False,
@@ -244,5 +349,7 @@ if __name__ == '__main__':
     (options,args)= get_options().parse_args()
     if options.plottype == 'fehcolor':
         plotMetallicityColor(options,args)
+    elif options.plottype.lower() == 'r' or options.plottype.lower() == 'z':
+        plotMetallicityRZ(options,args)
     else:
         plotDMMetallicityColor(options,args)
