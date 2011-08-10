@@ -117,8 +117,8 @@ def compareGRichRdist(options,args):
         params2= None
     #Load sf
     sf= segueSelect.segueSelect(sample=options.sample,sn=True,
-                                type_bright='sharprcut',
-                                type_faint='sharprcut')
+                                type_bright='tanhrcut',
+                                type_faint='tanhrcut')
     if options.metal.lower() == 'rich':
         feh= -0.15
         fehrange= _APOORFEHRANGE
