@@ -341,7 +341,7 @@ def plot_ks_tanhr(options,args):
                                  dtype='bool')
     thissegueplatestr= segueplatestr[brightplateindx]
     plotthis= thissegueplatestr.kstanh_g_all
-    bins=21
+    bins=16
     xrange= [-(1./bins-0.001)/(1.-1./bins),1.]
     bovy_plot.bovy_print()
     bovy_plot.bovy_hist(plotthis,range=xrange,bins=bins,
@@ -356,7 +356,7 @@ def plot_ks_tanhr(options,args):
     plotthis= thissegueplatestr.kstanh_g_all
     bovy_plot.bovy_hist(plotthis,range=xrange,bins=bins,overplot=True,
                         ec='k',histtype='step')
-    xlegend, ylegend, dy= 0.75, 22., -1.5
+    xlegend, ylegend, dy= 0.75, 27., -1.5
     bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend,ylegend],'k--',
                         overplot=True)
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{bright}$')
