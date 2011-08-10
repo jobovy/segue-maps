@@ -342,7 +342,7 @@ def plot_ks_tanhr(options,args):
     thissegueplatestr= segueplatestr[brightplateindx]
     plotthis= thissegueplatestr.kstanh_g_all
     bins=21
-    xrange= [(0.001-1./bins)/(1.+1./bins),1.]
+    xrange= [-(1./bins-0.001)/(1.-1./bins),1.]
     bovy_plot.bovy_print()
     bovy_plot.bovy_hist(plotthis,range=xrange,bins=bins,
                         xlabel=r'$\mathrm{KS\ probability\ that\ the\ spectroscopic\ sample}$'+'\n'+r'$\mathrm{was\ drawn\ from\ the\ photometric\ sample}$'+'\n'+r'$\times\ \mathrm{the\ model\ selection\ function}$',
@@ -353,10 +353,10 @@ def plot_ks_tanhr(options,args):
                                      for ii in range(len(segueplatestr))],
                                 dtype='bool')
     thissegueplatestr= segueplatestr[faintplateindx]
-    plotthis= thissegueplatestr.kssharp_g_all
+    plotthis= thissegueplatestr.kstanh_g_all
     bovy_plot.bovy_hist(plotthis,range=xrange,bins=bins,overplot=True,
                         ec='k',histtype='step')
-    xlegend, ylegend, dy= 0.75, 40., -2.5
+    xlegend, ylegend, dy= 0.75, 22., -1.5
     bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend,ylegend],'k--',
                         overplot=True)
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{bright}$')
