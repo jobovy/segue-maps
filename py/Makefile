@@ -86,6 +86,8 @@ variations: $(OUTDIR)/HWR_rich_g_twodblexp_logg4.2.$(EXT) \
 	$(OUTDIR)/HWR_rich_g_tanhrcut_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_poor_g_tanhrcut_twodblexp_hRhz.$(EXT)
 
+alttwodblexp: $(OUTDIR)/HWR_rich_g_alttwoblexp_hRhz.$(EXT) \
+
 #VARIATIONS
 $(OUTDIR)/HWR_rich_g_twodblexp_logg4.2.$(EXT): fitDensz.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_logg4.2.sav -o $@ \
@@ -230,6 +232,11 @@ $(OUTDIR)/HWR_rich_gbmax45_twoblexp_hRhz.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_gbmax45_twodblexp.sav -o $@ \
 	-n $(NSAMPLES) --model=twodblexp --markovpy --bmax=45.
+#AltTwoDblExp
+$(OUTDIR)/HWR_rich_g_alttwoblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_g_alttwodblexp.sav -o $@ \
+	-n $(NSAMPLES) --model=alttwodblexp --markovpy
 #ThreeDblExp model
 $(OUTDIR)/HWR_rich_g_threeblexp_hRhz.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
@@ -459,6 +466,12 @@ $(OUTDIR)/HWR_poor_gbmax45_twodblexp_rfunc.$(EXT): fitDensz.py Makefile \
 	$(PYTHON) fitDensz.py HWR_dens_poor_gbmax45_twodblexp.sav -o $@ \
 	-n $(NSAMPLES) --metal=poor \
 	--model=twodblexp --markovpy --bmax=45.
+#AltTwoDblExp
+$(OUTDIR)/HWR_poor_g_alttwodblexp_rfunc.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_g_alttwodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=poor \
+	--model=alttwodblexp --markovpy
 #Threedblexp
 $(OUTDIR)/HWR_poor_g_threedblexp_rfunc.$(EXT): fitDensz.py Makefile \
 	plotData.py segueSelect.py
