@@ -564,11 +564,11 @@ def fitDensz(parser):
                     [0.,4.6051701859880918],[0.,1.]]
         elif options.model.lower() == 'alttwodblexp':
             if options.metal == 'rich':
-                params= numpy.array([numpy.log(0.3),numpy.log(1.),2.5,2.5,0.025])
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),1./2.5,1./2.5,0.025])
             elif options.metal == 'poor':
-                params= numpy.array([numpy.log(1.),numpy.log(2.),2.5,2.5,0.025])
+                params= numpy.array([numpy.log(1.),numpy.log(2.),1./2.5,1./2.5,0.025])
             else:
-                params= numpy.array([numpy.log(0.3),numpy.log(1.),2.5,2.5,0.025])
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),1./2.5,1./2.5,0.025])
             densfunc= _AltTwoDblExpDensity
             #Slice sampling keywords
             if options.metropolis:
@@ -576,8 +576,8 @@ def fitDensz(parser):
             else:
                 step= [0.3,0.3,0.3,0.3,0.025]
             create_method=['step_out','step_out','step_out','step_out','step_out']
-            isDomainFinite=[[False,True],[False,True],[True,True],
-                            [True,True],[True,True]]
+            isDomainFinite=[[False,True],[False,True],[False,False],
+                            [False,False],[True,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
                     [-100.,100.],[-100.,100.],
                     [0.,1.]]
@@ -975,8 +975,6 @@ def _HWRLikeMinus(params,XYZ,R,
     elif densfunc == _AltTwoDblExpDensity:
         if params[0] > 4.6051701859880918 \
                 or params[1] > 4.6051701859880918 \
-                or params[2] > 100. or params[2] < -100. \
-                or params[3] > 100. or params[3] < -100. \
                 or params[4] < 0. or params[4] > 1.:
             return numpy.finfo(numpy.dtype(numpy.float64)).max       
     elif densfunc == _ThreeDblExpDensity:
@@ -1247,8 +1245,8 @@ def _TwoDblExpDensity(R,Z,params):
 def _AltTwoDblExpDensity(R,Z,params):
     """Alternative two Double exponential disks
     params= [loghz1,loghz2,hR1,hR2,Pbad]"""
-    hR1= params[2]
-    hR2= params[3]
+    hR1= 1./params[2]
+    hR2= 1./params[3]
     hz1= numpy.exp(params[0])
     hz2= numpy.exp(params[1])
     return ((1.-params[4])/hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-8.)/hR1)
