@@ -291,11 +291,11 @@ def readData(metal='rich',sample='G',loggmin=3.75,snmin=15.,select='all'):
         if metal == 'apoorpoor':
             indx= (raw.afe > _APOORAFERANGE[0])*(raw.afe < 0.15)\
                   *(raw.feh > _APOORFEHRANGE[0])\
-                  (raw.afe > (-0.15/0.25*(raw.feh+0.25)+0.1))
+                  *(raw.afe > (-0.15/0.25*(raw.feh+0.25)+0.1))
         elif metal == 'apoorrich':
             indx= (raw.afe >= 0.15)*(raw.afe < _APOORAFERANGE[1])\
                   *(raw.feh > _APOORFEHRANGE[0])\
-                  (raw.afe > (-0.15/0.25*(raw.feh+0.25)+0.1))
+                  *(raw.afe > (-0.15/0.25*(raw.feh+0.25)+0.1))
         elif metal == 'arichpoor':
             indx= (raw.afe >= _ARICHAFERANGE[0])*(raw.afe < 0.35)
         elif metal == 'arichrich':
