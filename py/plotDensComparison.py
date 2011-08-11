@@ -139,25 +139,40 @@ def compareGRichRdist(options,args):
         params2= None
     elif options.metal.lower() == 'apoorpoor':
         model1= _TwoDblExpDensity
-        params1= numpy.array([-1.4636093883,-0.253335318811,2.31749026865,
-                               4.56846956075,0.0111069900004])
+        params1= numpy.array([-1.49967726,
+                               -0.45194581,
+                               1.47562434,
+                               2.39880867,
+                               0.0103469])
         params2= None
-        left_legend= r'$[\mathrm{Fe/H}] < -0.7$'
+        left_legend= r'$0.00 < [\alpha/\mathrm{Fe}] < 0.15$'
     elif options.metal.lower() == 'apoorrich':
         model1= _TwoDblExpDensity
-        params1= numpy.array([-0.950520030144,0.03112785181,1.71614632276,
-                               2.58730852881,0.0316080213337])
+        params1= numpy.array([-0.99124643,
+                               -0.11411772,
+                               1.22215045,
+                               2.18807971,
+                               0.01979753])
         params2= None
-        left_legend= r'$[\mathrm{Fe/H}] \geq -0.7$'
+        left_legend= r'$0.15 \leq [\alpha/\mathrm{Fe}] < 0.25$'
     elif options.metal.lower() == 'arichpoor':
         model1= _TwoDblExpDensity
-        params1= numpy.array([-0.46348820713,-0.0330860858936,0.650016021926,
-                               1.13095321369,0.060682753378])
+        params1= numpy.array([-0.40855111,
+                               -0.08056961,
+                               0.67347343,
+                               1.11501001,
+                               0.04171047])
+        left_legend= r'$0.25 \leq [\alpha/\mathrm{Fe}] < 0.35$'
         params2= None
     elif options.metal.lower() == 'arichrich':
         model1= _TwoDblExpDensity
-        params1= numpy.array([])
+        params1= numpy.array([-0.11965451,
+                               0.00565726,
+                               0.64488055,
+                               0.85272678,
+                               0.04057597])
         params2= None
+        left_legend= r'$0.35 \leq [\alpha/\mathrm{Fe}] < 0.45$'
     #Load sf
     sf= segueSelect.segueSelect(sample=options.sample,sn=True,
                                 type_bright='tanhrcut',
@@ -182,11 +197,13 @@ def compareGRichRdist(options,args):
         fehrange= [-0.25,_APOORFEHRANGE[1]]
     elif options.metal == 'richpoorest':
         feh= -0.15
-        fehrange= [-1.5,_APOORFEHRANGE[0]]
-    elif options.metal == 'apoorpoor' or options.metal == 'apoorrich' \
-            or options.metal == 'arichpoor' or options.metal == 'arichrich':
+        fehrange= [-1.5,_ARICHFEHRANGE[0]]
+    elif options.metal == 'apoorpoor' or options.metal == 'apoorrich':
         feh= -0.2
-        fehrange= [-1.5,_APOORFEHRANGE[1]]
+        fehrange= [-_APOORFEHRANGE[0],_APOORFEHRANGE[1]]
+    elif options.metal == 'arichpoor' or options.metal == 'arichrich':
+        feh= -0.7
+        fehrange= [-_ARICHFEHRANGE[0],_ARICHFEHRANGE[1]]
     #Load data
     XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
                                          sample=options.sample)
