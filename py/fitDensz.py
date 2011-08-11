@@ -59,13 +59,16 @@ def fitDensz(parser):
         densfunc= _ThreeDblExpDensity
     elif options.model.lower() == 'twodblexpflare':
         densfunc= _TwoDblExpFlareDensity
+    elif options.model.lower() == 'gaussiandblexp':
+        densfunc= _GaussianDblExpDensity
     if options.metal.lower() == 'rich':
         feh= -0.15
         fehrange= _APOORFEHRANGE
     elif options.metal.lower() == 'poor':
         feh= -0.65
         fehrange= _ARICHFEHRANGE
-    elif options.metal.lower() == 'richdiag':
+    elif options.metal.lower() == 'richdiag' \
+             or options.metal.lower() == 'richlowerdiag':
         feh= -0.15
         fehrange= _APOORFEHRANGE
     elif options.metal.lower() == 'poorpoor':
@@ -626,6 +629,25 @@ def fitDensz(parser):
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
                     [0.,4.6051701859880918],[0.,4.6051701859880918],
                     [0.,4.6051701859880918],[0.,1.]]
+        elif options.model.lower() == 'gaussiandblexp':
+            if options.metal == 'rich':
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),0.025,numpy.log(8.)])
+            elif options.metal == 'poor':
+                params= numpy.array([numpy.log(1.),numpy.log(2.),numpy.log(2.5),numpy.log(2.5),0.025,numpy.log(8.)])
+            else:
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),0.025,numpy.log(8.)])
+            densfunc= _TwoDblExpDensity
+            #Slice sampling keywords
+            if options.metropolis:
+                step= [0.03,0.03,0.03,0.3,0.025,0.3]
+            else:
+                step= [0.3,0.3,0.3,0.3,0.025,0.3]
+            create_method=['step_out','step_out','step_out','step_out','step_out','step_out']
+            isDomainFinite=[[False,True],[False,True],[False,True],
+                            [False,True],[True,True],[False,False]]
+            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
+                    [0.,4.6051701859880918],
+                    [0.,4.6051701859880918],[0.,1.],[0.,0.]]
         #Integration argument based on scipy version
         usertol= (_SCIPYVERSION >= 0.9)
         #Integration grid when binning
@@ -998,6 +1020,13 @@ def _HWRLikeMinus(params,XYZ,R,
                 or params[4] > 4.6051701859880918 \
                 or params[5] < 0. or params[5] > 1.:
             return numpy.finfo(numpy.dtype(numpy.float64)).max       
+    elif densfunc == _GaussianDblExpDensity:
+        if params[0] > 4.6051701859880918 \
+                or params[1] > 4.6051701859880918 \
+                or params[2] > 4.6051701859880918 \
+                or params[3] > 4.6051701859880918 \
+                or params[4] < 0. or params[4] > 1.:
+            return numpy.finfo(numpy.dtype(numpy.float64)).max       
     #First calculate the normalizing integral
     out= _NormInt(params,XYZ,R,
                   sf,plates,platel,plateb,platebright,platefaint,Ap,
@@ -1243,6 +1272,16 @@ def _TwoDblExpDensity(R,Z,params):
     hz1= numpy.exp(params[0])
     hz2= numpy.exp(params[1])
     return ((1.-params[4])/hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-8.)/hR1)
+            +params[4]/hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2))
+
+def _GaussianDblExpDensity(R,Z,params):
+    """One Double exponential disk + one Gaussian in R, exponential in Z
+    params= [loghz1,loghz2,loghR1,loghR2,Pbad,logmeanR]"""
+    hR1= numpy.exp(params[2])
+    hR2= numpy.exp(params[3])
+    hz1= numpy.exp(params[0])
+    hz2= numpy.exp(params[1])
+    return ((1.-params[4])/hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-numpy.exp(params[5])**2./2./hR1**2.))
             +params[4]/hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2))
 
 def _AltTwoDblExpDensity(R,Z,params):

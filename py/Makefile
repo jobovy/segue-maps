@@ -131,6 +131,14 @@ $(OUTDIR)/HWR_richdiag_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_richdiag_g_twodblexp.sav -o $@ \
 	-n $(NSAMPLES) --metal=richdiag --markovpy --model=twodblexp
+$(OUTDIR)/HWR_richlowerdiag_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_richlowerdiag_g_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=richlowerdiag --markovpy --model=twodblexp
+$(OUTDIR)/HWR_richlowerdiag_g_gaussiandblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_richlowerdiag_g_gaussiandblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=richlowerdiag --markovpy --model=gaussiandblexp
 
 #Metal rich G dwarf densities
 $(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
