@@ -173,6 +173,13 @@ def compareGRichRdist(options,args):
                                0.04057597])
         params2= None
         left_legend= r'$0.35 \leq [\alpha/\mathrm{Fe}] < 0.45$'
+    #Legend
+    right_legend= None
+    if options.all:
+        if options.type == 'z':
+            right_legend= r'$h_z = %i\ \mathrm{pc}$' % (1000.*numpy.exp(params1[0]))
+        else:
+            right_legend= r'$h_R = %.1f\ \mathrm{kpc}$' % numpy.exp(params1[2])
     #Load sf
     sf= segueSelect.segueSelect(sample=options.sample,sn=True,
                                 type_bright='tanhrcut',
@@ -200,10 +207,10 @@ def compareGRichRdist(options,args):
         fehrange= [-1.5,_ARICHFEHRANGE[0]]
     elif options.metal == 'apoorpoor' or options.metal == 'apoorrich':
         feh= -0.2
-        fehrange= [-_APOORFEHRANGE[0],_APOORFEHRANGE[1]]
+        fehrange= [_APOORFEHRANGE[0],_APOORFEHRANGE[1]]
     elif options.metal == 'arichpoor' or options.metal == 'arichrich':
         feh= -0.7
-        fehrange= [-_ARICHFEHRANGE[0],_ARICHFEHRANGE[1]]
+        fehrange= [_ARICHFEHRANGE[0],_ARICHFEHRANGE[1]]
     #Load data
     XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
                                          sample=options.sample)
@@ -265,8 +272,10 @@ def compareGRichRdist(options,args):
         plate= plates[ii]
         if plate == 'all':
             thisleft_legend= left_legend
+            thisright_legend= right_legend
         else:
             thisleft_legend= None
+            thisright_legend= None
         bovy_plot.bovy_print()
         compare_func(model1,params1,sf,cdist,fehdist,
                      data,plate,color='k',
@@ -275,7 +284,8 @@ def compareGRichRdist(options,args):
                      grmax=colorrange[1],
                      fehmin=fehrange[0],fehmax=fehrange[1],feh=feh,
                      xrange=xrange,
-                     bins=bins[ii],ls='-',left_legend=thisleft_legend)
+                     bins=bins[ii],ls='-',left_legend=thisleft_legend,
+                     right_legend=thisright_legend)
         if not params2 is None:
             compare_func(model2,params2,sf,cdist,fehdist,
                          data,plate,color='k',bins=bins[ii],
@@ -298,6 +308,7 @@ def compareGRichRdist(options,args):
             bovy_plot.bovy_end_print(os.path.join(args[0],'model_data_g_'+options.metal+'_'+plate+'.'+ext))
         else:
             bovy_plot.bovy_end_print(os.path.join(args[0],'model_data_g_'+options.metal+'_'+options.type+'dist_'+plate+'.'+ext))
+        if options.all: return None
     bins= 16
     for ii in range(len(ls)):
         #Bright
@@ -501,6 +512,9 @@ def get_options():
     parser.add_option("--fake",action="store_true", dest="fake",
                       default=False,
                       help="Data is fake")
+    parser.add_option("--all",action="store_true", dest="all",
+                      default=False,
+                      help="Just make the 'all' figure")
     return parser
 
 

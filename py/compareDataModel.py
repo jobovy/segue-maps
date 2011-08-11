@@ -22,7 +22,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                       fehmax=0.5,feh=-0.15,
                       convolve=0.,xrange=None,yrange=None,
                       overplot=False,bins=21,color='k',ls='-',
-                      left_legend=None):
+                      left_legend=None,right_legend=None):
     """
     NAME:
        comparerdistPlate
@@ -47,6 +47,7 @@ def comparerdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
        bins= hist number of bins
        color= color for model
        left_legend = if set, legend to put at the left top
+       right_legend = if set, legend to put at the right top
     OUTPUT:
        plot to output
        return rdist, datahist, dataedges
@@ -126,6 +127,8 @@ def comparerdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                   normed=True,bins=bins,ec='k',
                                   histtype='step',
                                   overplot=True,range=xrange)
+        if not right_legend is None:
+            bovy_plot.bovy_text(right_legend,top_right=True,size=_legendsize)
         if len(plate) > 1 and len(plate) < 9:
             platestr= '\mathrm{plates}\ \ '
             for ii in range(len(plate)-1):
@@ -136,25 +139,28 @@ def comparerdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             int(numpy.std(platebs)))
         elif allplates:
             platestr= '\mathrm{all\ plates}'
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_dered_r),top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_dered_r),top_right=True,
+                                    size=_legendsize)
         elif brightplates:
             platestr= '\mathrm{bright\ plates}'
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_dered_r),top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_dered_r),top_right=True,
+                                    size=_legendsize)
         elif faintplates:
             platestr= '\mathrm{faint\ plates}'
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_dered_r),top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_dered_r),top_right=True,
+                                    size=_legendsize)
         elif len(plate) >= 9:
             platestr= '%i\ \mathrm{plates}' % len(plate)
             lbstr= '$l = %i^\circ \pm %i^\circ$' % (
@@ -166,13 +172,14 @@ def comparerdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             lbstr= '$l = %i^\circ$' % int(platel)+'\n'\
                 +'$b = %i^\circ$' % int(plateb)           
         if not (allplates or brightplates or faintplates):
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_dered_r)
-                                +'\n'+
-                                lbstr,top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_dered_r)
+                                    +'\n'+
+                                    lbstr,top_right=True,
+                                    size=_legendsize)
             #Overplot direction in (R,z) plane
             ax= matplotlib.pyplot.gca()
             yrange= ax.get_ylim()
@@ -239,7 +246,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                       fehmax=0.5,feh=-0.15,
                       convolve=0.,xrange=None,yrange=None,
                       overplot=False,bins=21,color='k',ls='-',
-                      left_legend=None):
+                      left_legend=None,right_legend=None):
     """
     NAME:
        comparezdistPlate
@@ -264,6 +271,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
        bins= hist number of bins
        color= color for model
        left_legend = if set, legend to put at the left top
+       right_legend = if set, legend to put at the right top
     OUTPUT:
        plot to output
        return rdist, datahist, dataedges
@@ -383,6 +391,8 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                   normed=True,bins=bins,ec='k',
                                   histtype='step',
                                   overplot=True,range=[zmin,zmax])
+        if not right_legend is None:
+            bovy_plot.bovy_text(right_legend,top_right=True,size=_legendsize)
         if len(plate) > 1 and len(plate) < 9:
             platestr= '\mathrm{plates}\ \ '
             for ii in range(len(plate)-1):
@@ -393,25 +403,28 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             int(numpy.std(platebs)))
         elif allplates:
             platestr= '\mathrm{all\ plates}'
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_z),top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_z),top_right=True,
+                                    size=_legendsize)
         elif brightplates:
             platestr= '\mathrm{bright\ plates}'
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_z),top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_z),top_right=True,
+                                    size=_legendsize)
         elif faintplates:
             platestr= '\mathrm{faint\ plates}'
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_z),top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_z),top_right=True,
+                                    size=_legendsize)
         elif len(plate) >= 9:
             platestr= '%i\ \mathrm{plates}' % len(plate)
             lbstr= '$l = %i^\circ \pm %i^\circ$' % (
@@ -423,13 +436,14 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             lbstr= '$l = %i^\circ$' % int(platel)+'\n'\
                 +'$b = %i^\circ$' % int(plateb)           
         if not (allplates or brightplates or faintplates):
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_z)
-                                +'\n'+
-                                lbstr,top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_z)
+                                    +'\n'+
+                                    lbstr,top_right=True,
+                                    size=_legendsize)
             #Overplot direction in (R,z) plane
             ax= matplotlib.pyplot.gca()
             yrange= ax.get_ylim()
@@ -497,7 +511,7 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                       fehmax=0.5,feh=-0.15,
                       convolve=0.05,xrange=None,yrange=None,
                       overplot=False,bins=21,color='k',ls='-',
-                      left_legend=None):
+                      left_legend=None,right_legend=None):
     """
     NAME:
        compareRdistPlate
@@ -522,6 +536,7 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
        bins= hist number of bins
        color= color for model
        left_legend = if set, legend to put at the left top
+       right_legend = if set, legend to put at the right top
     OUTPUT:
        plot to output
        return rdist, datahist, dataedges
@@ -642,6 +657,8 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                   normed=True,bins=bins,ec='k',
                                   histtype='step',
                                   overplot=True,range=[Rmin,Rmax])
+        if not right_legend is None:
+            bovy_plot.bovy_text(right_legend,top_right=True,size=_legendsize)
         if len(plate) > 1 and len(plate) < 9:
             platestr= '\mathrm{plates}\ \ '
             for ii in range(len(plate)-1):
@@ -652,25 +669,28 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             int(numpy.std(platebs)))
         elif allplates:
             platestr= '\mathrm{all\ plates}'
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_R),top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_R),top_right=True,
+                                    size=_legendsize)
         elif brightplates:
             platestr= '\mathrm{bright\ plates}'
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_R),top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_R),top_right=True,
+                                    size=_legendsize)
         elif faintplates:
             platestr= '\mathrm{faint\ plates}'
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_R),top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_R),top_right=True,
+                                    size=_legendsize)
         elif len(plate) >= 9:
             platestr= '%i\ \mathrm{plates}' % len(plate)
             lbstr= '$l = %i^\circ \pm %i^\circ$' % (
@@ -682,13 +702,14 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             lbstr= '$l = %i^\circ$' % int(platel)+'\n'\
                 +'$b = %i^\circ$' % int(plateb)           
         if not (allplates or brightplates or faintplates):
-            bovy_plot.bovy_text(r'$'+platestr+'$'
-                                +'\n'+
-                                '$%i \ \ \mathrm{stars}$' % 
-                                len(data_R)
-                                +'\n'+
-                                lbstr,top_right=True,
-                                size=_legendsize)
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_R)
+                                    +'\n'+
+                                    lbstr,top_right=True,
+                                    size=_legendsize)
             #Overplot direction in (R,z) plane
             ax= matplotlib.pyplot.gca()
             yrange= ax.get_ylim()
