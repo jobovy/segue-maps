@@ -65,6 +65,9 @@ def fitDensz(parser):
     elif options.metal.lower() == 'poor':
         feh= -0.65
         fehrange= _ARICHFEHRANGE
+    elif options.metal.lower() == 'richdiag':
+        feh= -0.15
+        fehrange= _APOORFEHRANGE
     elif options.metal.lower() == 'poorpoor':
         feh= -0.7
         fehrange= [_ARICHFEHRANGE[0],-0.7]
