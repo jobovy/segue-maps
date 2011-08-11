@@ -49,27 +49,33 @@ _POORTWODBLEXPNAMES= ['HWR_dens_poor_g_twodblexp.sav',
 _RICHFEHNAMES= ['HWR_dens_richpoorest_g_twodblexp.sav',
                 'HWR_dens_richpoor_g_twodblexp.sav',
                 'HWR_dens_richrich_g_twodblexp.sav']
+_RICHAFENAMES= ['HWR_dens_apoorpoor_g_twodblexp.sav',
+                'HWR_dens_apoorrich_g_twodblexp.sav']
 _POORFEHNAMES= ['HWR_dens_poorpoor_g_twodblexp.sav',
                 'HWR_dens_poorrich_g_twodblexp.sav']
-_AFENAMES= ['HWR_dens_apoorpoor_g_twodblexp.sav',
-            'HWR_dens_apoorrich_g_twodblexp.sav',
-            'HWR_dens_arichpoor_g_twodblexp.sav',
-            'HWR_dens_arichrich_g_twodblexp.sav']
+_POORAFENAMES= ['HWR_dens_arichpoor_g_twodblexp.sav',
+                'HWR_dens_arichrich_g_twodblexp.sav']
 def resultsTable(parser):
     (options,args)= parser.parse_args()
-    cmdline= '%python resultsTable '+args[0]+' --table='+options.table
+    cmdline= '%python resultsTable.py '+args[0]+' --table='+options.table
     if len(args) == 0:
         parser.print_help()
         return
     #Set up sections
     if options.table.lower() == 'richresults':
-        sections= [_RICHDBLEXPNAMES,_RICHFLARENAMES,_RICHTWODBLEXPNAMES,
-                   _RICHFEHNAMES]
-        format= ['hz','hR','hz1','hR1','a2','hf','ac']
+        #sections= [_RICHDBLEXPNAMES,_RICHFLARENAMES,_RICHTWODBLEXPNAMES,
+        #           _RICHFEHNAMES]
+        #format= ['hz','hR','hz1','hR1','a2','hf','ac']
+        sections= [_RICHDBLEXPNAMES,_RICHTWODBLEXPNAMES,
+                   _RICHFEHNAMES,_RICHAFENAMES]
+        format= ['hz','hR','hz1','hR1','a2','ac']
     elif options.table.lower() == 'poorresults':
-        sections= [_POORDBLEXPNAMES,_POORFLARENAMES,_POORTWODBLEXPNAMES,
-                   _POORFEHNAMES]
-        format= ['hz','hR','hz1','hR1','a2','hf','ac']
+        #sections= [_POORDBLEXPNAMES,_POORFLARENAMES,_POORTWODBLEXPNAMES,
+        #           _POORFEHNAMES]
+        #format= ['hz','hR','hz1','hR1','a2','hf','ac']
+        sections= [_POORDBLEXPNAMES,_POORTWODBLEXPNAMES,
+                   _POORFEHNAMES,_POORAFENAMES]
+        format= ['hz','hR','hz1','hR1','a2','ac']
     elif options.table.lower() == 'afe':
         sections= [_AFENAMES]
         format= ['hz','hR','hz1','hR1','a2'] #just list the two-dblexp parameters
@@ -214,7 +220,8 @@ def resultsTable(parser):
             printline+= '\\\\'
             #Write the line
             outfile.write(printline+'\n')
-        outfile.write('\\\\\n')
+        if not section == sections[-1]:
+            outfile.write('\\\\\n')
     outfile.write(cmdline+'\n')
     outfile.close()
 
