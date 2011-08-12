@@ -92,6 +92,7 @@ def fitDensz(parser):
         fehrange= [-1.5,_APOORFEHRANGE[1]]    
     else:
         feh= -0.5 
+        fehrange= [-1.5,0.5]
     #First read the data
     if _VERBOSE:
         print "Reading and parsing data ..."

@@ -305,7 +305,7 @@ def readData(metal='rich',sample='G',loggmin=3.75,snmin=15.,select='all'):
         elif metal == 'arichrich':
             indx= (raw.afe >= 0.35)*(raw.afe < _ARICHAFERANGE[1])
     else:
-        indx= (raw.feh > -2.)*(raw.feh < 0.5)\
+        indx= (raw.feh > -1.5)*(raw.feh < 0.5)\
             *(raw.afe > -0.25)*(raw.afe < 0.5)
     raw= raw[indx]
     ndata= len(raw.ra)
