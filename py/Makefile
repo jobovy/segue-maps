@@ -65,11 +65,10 @@ poorthreedblexp: $(OUTDIR)/HWR_poor_g_threedblexp_rfunc.$(EXT)
 poortwoblexpflare: $(OUTDIR)/HWR_poor_g_twoblexpflare_hRhz.$(EXT)
 
 fehranges: $(OUTDIR)/HWR_richpoor_g_twodblexp_hRhz.$(EXT) \
-	$(OUTDIR)/HWR_richrich_g_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_richpoorest_g_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_poorpoor_g_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_poorrich_g_twodblexp_hRhz.$(EXT) \
-
+	$(OUTDIR)/HWR_richrich_g_twodblexp_hRhz.$(EXT) \
 
 aferanges: $(OUTDIR)/HWR_apoorpoor_g_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_apoorrich_g_twodblexp_hRhz.$(EXT) \
@@ -143,6 +142,10 @@ $(OUTDIR)/HWR_all_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_all_g_twodblexp.sav -o $@ \
 	-n $(NSAMPLES) --metal=all --markovpy --model=twodblexp
+$(OUTDIR)/HWR_all_g_threedblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_all_g_threedblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=all --markovpy --model=threedblexp
 
 #Metal rich G dwarf densities
 $(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
