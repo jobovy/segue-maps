@@ -14,7 +14,7 @@ _DEBUG=False
 _ARICHAFERANGE=[0.25,0.5]
 _ARICHFEHRANGE=[-1.5,-0.25]
 _APOORAFERANGE=[0.,0.25]
-_APOORFEHRANGE=[-.35,0.25]
+_APOORFEHRANGE=[-.3,0.25]
 def fitSigz(parser):
     (options,args)= parser.parse_args()
     if len(args) == 0:
@@ -315,7 +315,11 @@ def readData(metal='rich',sample='G',loggmin=3.75,snmin=15.,select='all'):
         indx= (raw.feh > _ARICHFEHRANGE[0])*(raw.feh < _ARICHFEHRANGE[1])\
             *(raw.afe > _ARICHAFERANGE[0])*(raw.afe < _ARICHAFERANGE[1])
         raw2= raw[indx]
-        raw= numpy.concatenate((raw1,raw2))
+        lenraw1= len(raw1)
+        raw1.resize(len(raw1)+len(raw2))
+        for ii in range(len(raw2)):
+            raw1[lenraw1+ii]= raw2[ii]
+        raw= raw1
         indx= numpy.array([True for ii in range(len(raw))],dtype='bool')
     elif metal == 'all':
         indx= (raw.feh > -1.5)*(raw.feh < 0.5)\
