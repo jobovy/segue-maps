@@ -14,7 +14,7 @@ _DEBUG=False
 _ARICHAFERANGE=[0.25,0.5]
 _ARICHFEHRANGE=[-1.5,-0.25]
 _APOORAFERANGE=[0.,0.25]
-_APOORFEHRANGE=[-.5,0.25]
+_APOORFEHRANGE=[-.3,0.25]
 def fitSigz(parser):
     (options,args)= parser.parse_args()
     if len(args) == 0:
@@ -273,37 +273,41 @@ def readData(metal='rich',sample='G',loggmin=3.75,snmin=15.,select='all'):
         print "Cutting sample down the middle at %4.2f" % cutfeh
         if metal == 'poorpoor': indx= (raw.feh < cutfeh)
         else: indx= (raw.feh >= cutfeh)
+        """
     elif metal == 'richpoor' or metal == 'richrich':
-        #Sort on [Fe/H], cut down the middle
-        indx= (raw.feh > _APOORFEHRANGE[0])*(raw.feh < _APOORFEHRANGE[1])\
-            *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
-        raw= raw[indx]
-        sfeh= sorted(raw.feh)
-        cutfeh= sfeh[len(sfeh)/2]
-        #Round to nearest 0.05
-        cutfeh= round(20*cutfeh)/20.
-        print "Cutting sample down the middle at %4.2f" % cutfeh
-        if metal == 'richpoor': indx= (raw.feh < cutfeh)
-        else: indx= (raw.feh >= cutfeh)
+    #Sort on [Fe/H], cut down the middle
+    indx= (raw.feh > _APOORFEHRANGE[0])*(raw.feh < _APOORFEHRANGE[1])\
+    *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
+    raw= raw[indx]
+    sfeh= sorted(raw.feh)
+    cutfeh= sfeh[len(sfeh)/2]
+    #Round to nearest 0.05
+    cutfeh= round(20*cutfeh)/20.
+    print 'Cutting sample down the middle at %4.2f' % cutfeh
+    if metal == 'richpoor': indx= (raw.feh < cutfeh)
+    else: indx= (raw.feh >= cutfeh)
+    """
+    elif metal == 'richrich':
+        indx= (raw.feh < _APOORFEHRANGE[1])*(raw.feh > _APOORFEHRANGE[0])\
+              *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
+    elif metal == 'richpoor':
+        indx= (raw.feh < _APOORFEHRANGE[0])*(raw.feh > -0.6)\
+              *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
     elif metal == 'richpoorest':
-        indx= (raw.feh < _APOORFEHRANGE[0])*(raw.feh > -1.5)\
-            *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
-    elif metal == 'apoorpoor' or metal == 'apoorrich' \
-            or metal == 'arichpoor' or metal == 'arichrich':
-        indx= (raw.feh < _APOORFEHRANGE[1])*(raw.feh > -1.5)
-        raw= raw[indx]
-        if metal == 'apoorpoor':
-            indx= (raw.afe > _APOORAFERANGE[0])*(raw.afe < 0.15)\
-                  *(raw.feh > _APOORFEHRANGE[0])\
-                  *(raw.afe > (-0.15/0.25*(raw.feh+0.25)+0.1))
-        elif metal == 'apoorrich':
-            indx= (raw.afe >= 0.15)*(raw.afe < _APOORAFERANGE[1])\
-                  *(raw.feh > _APOORFEHRANGE[0])\
-                  *(raw.afe > (-0.15/0.25*(raw.feh+0.25)+0.1))
-        elif metal == 'arichpoor':
-            indx= (raw.afe >= _ARICHAFERANGE[0])*(raw.afe < 0.35)
-        elif metal == 'arichrich':
-            indx= (raw.afe >= 0.35)*(raw.afe < _ARICHAFERANGE[1])
+        indx= (raw.feh < -0.6)*(raw.feh > -1.5)\
+              *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
+    elif metal == 'apoorpoor':
+        indx= (raw.feh < _APOORFEHRANGE[1])*(raw.feh > _APOORFEHRANGE[0])\
+              *(raw.afe > _APOORAFERANGE[0])*(raw.afe < 0.15)
+    elif metal == 'apoorrich':
+        indx= (raw.feh < _APOORFEHRANGE[1])*(raw.feh > _APOORFEHRANGE[0])\
+              *(raw.afe >= 0.15)*(raw.afe < _APOORAFERANGE[1])
+    elif metal == 'arichpoor':
+        indx= (raw.feh < _ARICHFEHRANGE[1])*(raw.feh > _ARICHFEHRANGE[0])\
+              *(raw.afe >= _ARICHAFERANGE[0])*(raw.afe < 0.35)
+    elif metal == 'arichrich':
+        indx= (raw.feh < _ARICHFEHRANGE[1])*(raw.feh > _ARICHFEHRANGE[0])\
+              *(raw.afe >= 0.35)*(raw.afe < _ARICHAFERANGE[1])
     else:
         indx= (raw.feh > -1.5)*(raw.feh < 0.5)\
             *(raw.afe > -0.25)*(raw.afe < 0.5)

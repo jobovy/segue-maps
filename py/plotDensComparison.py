@@ -190,27 +190,34 @@ def compareGRichRdist(options,args):
     elif options.metal.lower() == 'poor':
         feh= -0.65
         fehrange= _ARICHFEHRANGE
-    elif options.metal == 'poorpoor':
-        feh= -0.65
-        fehrange= [_ARICHFEHRANGE[0],-0.7]
-    elif options.metal == 'poorrich':
-        feh= -0.65
-        fehrange= [-0.7,_ARICHFEHRANGE[1]]
-    elif options.metal == 'richpoor':
+    elif options.metal.lower() == 'richdiag' \
+             or options.metal.lower() == 'richlowerdiag':
         feh= -0.15
-        fehrange= [_APOORFEHRANGE[0],-0.25]
-    elif options.metal == 'richrich':
-        feh= -0.15
-        fehrange= [-0.25,_APOORFEHRANGE[1]]
-    elif options.metal == 'richpoorest':
-        feh= -0.15
-        fehrange= [-1.5,_ARICHFEHRANGE[0]]
-    elif options.metal == 'apoorpoor' or options.metal == 'apoorrich':
-        feh= -0.2
-        fehrange= [_APOORFEHRANGE[0],_APOORFEHRANGE[1]]
-    elif options.metal == 'arichpoor' or options.metal == 'arichrich':
+        fehrange= _APOORFEHRANGE
+    elif options.metal.lower() == 'poorpoor':
         feh= -0.7
-        fehrange= [_ARICHFEHRANGE[0],_ARICHFEHRANGE[1]]
+        fehrange= [_ARICHFEHRANGE[0],-0.7]
+    elif options.metal.lower() == 'poorrich':
+        feh= -0.7
+        fehrange= [-0.7,_ARICHFEHRANGE[1]]
+    elif options.metal.lower() == 'richpoor':
+        feh= -0.35
+        fehrange= [-0.6,_APOORFEHRANGE[0]]
+    elif options.metal.lower() == 'richrich':
+        feh= -0.2
+        fehrange= _APOORFEHRANGE
+    elif options.metal.lower() == 'richpoorest':
+        feh= -0.7
+        fehrange= [-1.5,-0.6]
+    elif options.metal.lower() == 'apoorpoor' or options.metal.lower() == 'apoorrich':
+        feh= -0.15
+        fehrange= _APOORFEHRANGE
+    elif options.metal.lower() == 'arichpoor' or options.metal.lower() == 'arichrich':
+        feh= -0.65
+        fehrange= _ARICHFEHRANGE
+    else:
+        feh= -0.5 
+        fehrange= [-1.5,0.5]
     #Load data
     XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
                                          sample=options.sample)

@@ -78,18 +78,20 @@ def fitDensz(parser):
         feh= -0.7
         fehrange= [-0.7,_ARICHFEHRANGE[1]]
     elif options.metal.lower() == 'richpoor':
-        feh= -0.3
-        fehrange= [_APOORFEHRANGE[0],-0.25]
+        feh= -0.35
+        fehrange= [-0.6,_APOORFEHRANGE[0]]
     elif options.metal.lower() == 'richrich':
-        feh= -0.15
-        fehrange= [-0.25,_APOORFEHRANGE[1]]
+        feh= -0.2
+        fehrange= _APOORFEHRANGE
     elif options.metal.lower() == 'richpoorest':
+        feh= -0.7
+        fehrange= [-1.5,-0.6]
+    elif options.metal.lower() == 'apoorpoor' or options.metal.lower() == 'apoorrich':
+        feh= -0.15
+        fehrange= _APOORFEHRANGE
+    elif options.metal.lower() == 'arichpoor' or options.metal.lower() == 'arichrich':
         feh= -0.65
-        fehrange= [-1.5,_APOORFEHRANGE[0]]
-    elif options.metal.lower() == 'apoorpoor' or options.metal.lower() == 'apoorrich' \
-                or options.metal.lower() == 'arichpoor' or options.metal.lower() == 'arichrich':
-        feh= -0.65
-        fehrange= [-1.5,_APOORFEHRANGE[1]]    
+        fehrange= _ARICHFEHRANGE
     else:
         feh= -0.5 
         fehrange= [-1.5,0.5]
