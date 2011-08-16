@@ -308,6 +308,15 @@ def readData(metal='rich',sample='G',loggmin=3.75,snmin=15.,select='all'):
     elif metal == 'arichrich':
         indx= (raw.feh < _ARICHFEHRANGE[1])*(raw.feh > _ARICHFEHRANGE[0])\
               *(raw.afe >= 0.35)*(raw.afe < _ARICHAFERANGE[1])
+    elif metal == 'allrichpoor':
+        indx= (raw.feh > _APOORFEHRANGE[0])*(raw.feh < _APOORFEHRANGE[1])\
+              *(raw.afe > _APOORAFERANGE[0])*(raw.afe < _APOORAFERANGE[1])
+        raw1= raw[indx]
+        indx= (raw.feh > _ARICHFEHRANGE[0])*(raw.feh < _ARICHFEHRANGE[1])\
+            *(raw.afe > _ARICHAFERANGE[0])*(raw.afe < _ARICHAFERANGE[1])
+        raw2= raw[indx]
+        raw= numpy.concatenate((raw1,raw2))
+        indx= numpy.array([True for ii in range(len(raw))],dtype='bool')
     elif metal == 'all':
         indx= (raw.feh > -1.5)*(raw.feh < 0.5)\
             *(raw.afe > -0.25)*(raw.afe < 0.5)

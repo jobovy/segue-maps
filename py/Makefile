@@ -146,6 +146,10 @@ $(OUTDIR)/HWR_all_g_threedblexp_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_all_g_threedblexp.sav -o $@ \
 	-n $(NSAMPLES) --metal=all --markovpy --model=threedblexp
+$(OUTDIR)/HWR_allrichpoor_g_threedblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_allrichpoor_g_threedblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=allrichpoor --markovpy --model=threedblexp
 
 #Metal rich G dwarf densities
 $(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
