@@ -464,7 +464,7 @@ def afeh(options,args):
     if options.png: ext= 'png'
     else: ext= 'ps'
     #Load data
-    XYZ,vxvyvz,cov_vxvyvz,data= readData(metal='all',
+    XYZ,vxvyvz,cov_vxvyvz,data= readData(metal='allall',
                                          sample=options.sample)
     bovy_plot.bovy_print()
     bovy_plot.scatterplot(data.feh,data.afe,'k,',
@@ -493,7 +493,12 @@ def afeh(options,args):
     bovy_plot.bovy_plot([_ARICHFEHRANGE[1],_ARICHFEHRANGE[1]],_ARICHAFERANGE,
                         'k--',overplot=True,lw=lw)
     #metal-richrich
-    bovy_plot.bovy_plot([-0.25,-0.25],_APOORAFERANGE,
+    bovy_plot.bovy_plot([-0.6,-0.6],_APOORAFERANGE,'k:',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([-0.6,-0.35],[_APOORAFERANGE[0],_APOORAFERANGE[0]],
+                        'k:',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([-0.6,-0.35],[_APOORAFERANGE[0],_APOORAFERANGE[0]],
+                        'k:',overplot=True,lw=lw)
+    bovy_plot.bovy_plot([-0.6,-0.35],[_APOORAFERANGE[1],_APOORAFERANGE[1]],
                         'k:',overplot=True,lw=lw)
     #metal-poorpoor
     bovy_plot.bovy_plot([-0.7,-0.7],_ARICHAFERANGE,

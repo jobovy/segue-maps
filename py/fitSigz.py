@@ -308,9 +308,11 @@ def readData(metal='rich',sample='G',loggmin=3.75,snmin=15.,select='all'):
     elif metal == 'arichrich':
         indx= (raw.feh < _ARICHFEHRANGE[1])*(raw.feh > _ARICHFEHRANGE[0])\
               *(raw.afe >= 0.35)*(raw.afe < _ARICHAFERANGE[1])
-    else:
+    elif metal == 'all':
         indx= (raw.feh > -1.5)*(raw.feh < 0.5)\
             *(raw.afe > -0.25)*(raw.afe < 0.5)
+    else:
+        indx= numpy.array([True for ii in range(len(raw))],dtype='bool')
     raw= raw[indx]
     ndata= len(raw.ra)
     XYZ= numpy.zeros((ndata,3))
