@@ -14,7 +14,7 @@ _DEBUG=False
 _ARICHAFERANGE=[0.25,0.5]
 _ARICHFEHRANGE=[-1.5,-0.25]
 _APOORAFERANGE=[0.,0.25]
-_APOORFEHRANGE=[-.3,0.25]
+_APOORFEHRANGE=[-.35,0.25]
 def fitSigz(parser):
     (options,args)= parser.parse_args()
     if len(args) == 0:
