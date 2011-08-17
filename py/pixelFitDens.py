@@ -96,6 +96,14 @@ class pixelAfeFeh:
            2011-08-16 - Written - Bovy (NYU)
         """
         return 0.5*(self.afeedges[i]+self.afeedges[i+1])
+
+    def npixfeh(self):
+        """Return the number of FeH pixels"""
+        return len(self.fehedges)-1
+
+    def npixafe(self):
+        """Return the number of AFe pixels"""
+        return len(self.afeedges)-1
     
 def pixelFitDens(parser):
     options,args= parser.parse_args()
