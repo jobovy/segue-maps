@@ -5,7 +5,7 @@ import numpy
 from scipy import optimize
 import cPickle as pickle
 from optparse import OptionParser
-from galpy.util import bovy_coords
+from galpy.util import bovy_coords, bovy_plot
 from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
     segueSelect
 from fitDensz import _TwoDblExpDensity, _HWRLikeMinus, _ZSUN, DistSpline, \
@@ -62,6 +62,7 @@ class pixelAfeFeh:
         #Find bin
         fehbin= int(math.floor((args[0]-self.fehmin)/self.dfeh))
         afebin= int(math.floor((args[1]-self.afemin)/self.dafe))
+        print fehbin, afebin
         #Return data
         return self.data[(self.data.feh > self.fehedges[fehbin])\
                              *(self.data.feh <= self.fehedges[fehbin+1])\
@@ -129,6 +130,7 @@ def pixelFitDens(parser):
     else:
         fits= []
         ii, jj= 0, 0
+    print len(fits), ii, jj
     #Set up model etc.
     if options.model.lower() == 'hwr':
         densfunc= _HWRDensity
@@ -155,7 +157,6 @@ def pixelFitDens(parser):
         grmin, grmax= 0.48, 0.55
         rmin,rmax= 14.5, 20.2
     #Run through the bins
-    fits= []
     while ii < len(binned.fehedges)-1:
         while jj < len(binned.afeedges)-1:
             data= binned(binned.feh(ii),binned.afe(jj))
@@ -198,8 +199,8 @@ def pixelFitDens(parser):
             rhofeh= numpy.array([fehdist(feh) for feh in fehs])
             mr= numpy.zeros((_NGR,_NFEH))
             for kk in range(_NGR):
-                for jj in range(_NFEH):
-                    mr[kk,jj]= _mr_gi(_gi_gr(grs[kk]),fehs[jj])
+                for ll in range(_NFEH):
+                    mr[kk,ll]= _mr_gi(_gi_gr(grs[kk]),fehs[ll])
             #determine dmin and dmax
             allbright, allfaint= True, True
             #dmin and dmax for this rmin, rmax
@@ -249,13 +250,15 @@ def pixelFitDens(parser):
                 jj= 0
                 ii+= 1
             save_pickles(fits,ii,jj,args[0])
-            if jj == len(binned.afeedges)-1: 
+            if jj == 0: #this means we've reset the counter 
                 break
     #Now plot
     #Run through the pixels and gather
     plotthis= numpy.zeros((binned.npixfeh(),binned.npixafe()))
     for ii in range(binned.npixfeh()):
         for jj in range(binned.npixafe()):
+            #print binned.feh(ii), binned.afe(jj), fits[jj+ii*binned.npixafe()]
+            #print jj+ii*binned.npixafe(), len(fits)
             thisfit= fits[jj+ii*binned.npixafe()]
             if thisfit is None:
                 plotthis[ii,jj]= numpy.nan
@@ -326,6 +329,9 @@ def get_options():
                       help="Name of the file for plot")
     parser.add_option("-t","--type",dest='type',default='rmean',
                       help="Quantity to plot")
+    parser.add_option("--old",action="store_true", dest="old",
+                      default=False,
+                      help="If set, old, messed up fits list")
     return parser
   
 if __name__ == '__main__':
