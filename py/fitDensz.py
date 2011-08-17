@@ -420,9 +420,6 @@ def fitDensz(parser):
     if options.bright or options.faint or options.cutbrightfaint:
         print "Using %i plates, %i stars ..." %(len(plates),len(XYZ[:,0]))
     Ap= math.pi*2.*(1.-numpy.cos(1.49*_DEGTORAD)) #SEGUE PLATE=1.49 deg radius
-    if options.sample.lower() == 'g':
-        grmin, grmax= 0.48, 0.55
-        rmin,rmax= 14.5, 20.2
     if os.path.exists(args[0]):#Load savefile
         savefile= open(args[0],'rb')
         params= pickle.load(savefile)

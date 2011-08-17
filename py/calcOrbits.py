@@ -71,7 +71,7 @@ def calcOrbits(parser):
     return None
 
 def get_options():
-    usage = "usage: %prog [options] <savedir>\n\nsavedir= name of the file that the orbits will be saved to"
+    usage = "usage: %prog [options] <savefile>\n\nsavedir= name of the file that the orbits will be saved to"
     parser = OptionParser(usage=usage)
     parser.add_option("--sample",dest='sample',default='g',
                       help="Use 'G' or 'K' dwarf sample")
