@@ -153,7 +153,8 @@ def pixelFitDens(parser):
                 if jj == len(binned.afeedges)-1: 
                     jj= 0
                     ii+= 1
-                continue                
+                    break
+                continue               
             print binned.feh(ii), binned.afe(jj), len(data)
             #Create XYZ and R
             R= ((8.-data.xc)**2.+data.yc**2.)**0.5
@@ -232,6 +233,7 @@ def pixelFitDens(parser):
             if jj == len(binned.afeedges)-1: 
                 jj= 0
                 ii+= 1
+                break
             save_pickles(fits,ii,jj,args[0])
     return None
 
