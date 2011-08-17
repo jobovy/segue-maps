@@ -47,8 +47,7 @@ _POORTWODBLEXPNAMES= ['HWR_dens_poor_g_twodblexp.sav',
                       'HWR_dens_poor_gbmin45_twodblexp.sav',
                       'HWR_dens_poor_gbmax45_twodblexp.sav']
 _RICHFEHNAMES= ['HWR_dens_richpoorest_g_twodblexp.sav',
-                'HWR_dens_richpoor_g_twodblexp.sav',
-                'HWR_dens_richrich_g_twodblexp.sav']
+                'HWR_dens_richpoor_g_twodblexp.sav']
 _RICHAFENAMES= ['HWR_dens_apoorpoor_g_twodblexp.sav',
                 'HWR_dens_apoorrich_g_twodblexp.sav']
 _POORFEHNAMES= ['HWR_dens_poorpoor_g_twodblexp.sav',
@@ -98,11 +97,13 @@ def resultsTable(parser):
             for ii in range(len(paramnames)):
                 xs= numpy.array([s[ii] for s in samples])
                 if paramnames[ii] == 'a2' or paramnames[ii] == 'ac':
-                    thisline[paramnames[ii]]= numpy.mean(xs)
+                    #thisline[paramnames[ii]]= numpy.mean(xs)
+                    thisline[paramnames[ii]]= params[ii]
                     err= numpy.std(xs)
                     thisline[paramnames[ii]+'_err']= err                  
                 else:
-                    thisline[paramnames[ii]]= numpy.exp(numpy.mean(xs))
+                    #thisline[paramnames[ii]]= numpy.exp(numpy.mean(xs))
+                    thisline[paramnames[ii]]= numpy.exp(params[ii])
                     err_low= numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))
                     err_high= -numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))
                     if err_low/err_high > 1.4 or err_low/err_high < 0.6:
@@ -142,11 +143,11 @@ def resultsTable(parser):
             elif 'poorrich' in name:
                 printline= '\protect{[}Fe/H] $>$ -0.7  '
             elif 'richpoorest' in name:
-                printline= '\phantom{-1.00 $<$} \protect{[}Fe/H] $<$ -0.5\phantom{0}  '
+                printline= '-1.5 $<$ \protect{[}Fe/H] $<$ -0.6\\tablenotemark{1}  '
             elif 'richpoor' in name:
-                printline= '-0.5\phantom{0} $<$ [Fe/H] $<$ -0.25  '
+                printline= '-0.6 $<$ [Fe/H] $<$ -0.3\\tablenotemark{1}  '
             elif 'richrich' in name:
-                printline= '-0.25 $<$ \protect{[}Fe/H] \phantom{$<$ -0.25}  '
+                printline= '-0.3 $<$ \protect{[}Fe/H] \phantom{$<$ -0.25}  '
             else:
                 printline= 'all plates '
             for paramname in format:
@@ -217,7 +218,8 @@ def resultsTable(parser):
                 else:
                     #Print value+err
                     printline+= '& '+value+'&'+err
-            printline+= '\\\\'
+            if not section == sections[-1] or not name == section[-1]:
+                printline+= '\\\\'
             #Write the line
             outfile.write(printline+'\n')
         if not section == sections[-1]:
