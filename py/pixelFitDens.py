@@ -62,7 +62,6 @@ class pixelAfeFeh:
         #Find bin
         fehbin= int(math.floor((args[0]-self.fehmin)/self.dfeh))
         afebin= int(math.floor((args[1]-self.afemin)/self.dafe))
-        print fehbin, afebin
         #Return data
         return self.data[(self.data.feh > self.fehedges[fehbin])\
                              *(self.data.feh <= self.fehedges[fehbin+1])\
@@ -130,7 +129,6 @@ def pixelFitDens(parser):
     else:
         fits= []
         ii, jj= 0, 0
-    print len(fits), ii, jj
     #Set up model etc.
     if options.model.lower() == 'hwr':
         densfunc= _HWRDensity
@@ -252,6 +250,8 @@ def pixelFitDens(parser):
             save_pickles(fits,ii,jj,args[0])
             if jj == 0: #this means we've reset the counter 
                 break
+    save_pickles(fits,ii,jj,args[0])
+    if options.plotfile is None: return None
     #Now plot
     #Run through the pixels and gather
     plotthis= numpy.zeros((binned.npixfeh(),binned.npixafe()))
