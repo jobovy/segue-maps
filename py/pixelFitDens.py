@@ -9,7 +9,7 @@ from galpy.util import bovy_coords
 from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
     segueSelect
 from fitDensz import _TwoDblExpDensity, _HWRLikeMinus, _ZSUN, DistSpline, \
-    _ivezic_dist, _NDS, cb
+    _ivezic_dist, _NDS, cb, _HWRDensity
 _NGR= 11
 _NFEH=11
 class pixelAfeFeh:
@@ -124,7 +124,10 @@ def pixelFitDens(parser):
         fits= []
         ii, jj= 0, 0
     #Set up model etc.
-    densfunc= _TwoDblExpDensity
+    if options.model.lower() == 'hwr':
+        densfunc= _HWRDensity
+    elif options.model.lower() == 'twodblexp':
+        densfunc= _TwoDblExpDensity
     like_func= _HWRLikeMinus
     if options.sample.lower() == 'g':
         colorrange=[0.48,0.55]
@@ -178,7 +181,10 @@ def pixelFitDens(parser):
                                                    bins=9,range=colorrange),
                                    xrange=colorrange)
             #Initial condition
-            params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),0.5])
+            if options.model.lower() == 'hwr':
+                params= numpy.array([numpy.log(0.5),numpy.log(3.),0.05])
+            elif options.model.lower() == 'twodblexp':
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),0.5])
            #Integration grid when binning
             grs= numpy.linspace(grmin,grmax,_NGR)
             fehs= numpy.linspace(fehrange[0],fehrange[1],_NFEH)
@@ -275,6 +281,8 @@ def get_options():
                       help="[a/Fe] bin size")   
     parser.add_option("--minndata",dest='minndata',default=100,type='int',
                       help="Minimum number of objects in a bin to perform a fit")   
+    parser.add_option("--model",dest='model',default='twodblexp',
+                      help="Model to fit")
     return parser
   
 if __name__ == '__main__':
