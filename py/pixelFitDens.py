@@ -126,8 +126,6 @@ def pixelFitDens(parser):
         ii= pickle.load(savefile)
         jj= pickle.load(savefile)
         savefile.close()
-        ii= 17
-        jj= 9
     else:
         fits= []
         ii, jj= 0, 0
@@ -253,6 +251,39 @@ def pixelFitDens(parser):
             save_pickles(fits,ii,jj,args[0])
             if jj == len(binned.afeedges)-1: 
                 break
+    #Now plot
+    #Run through the pixels and gather
+    plotthis= numpy.zeros((binned.npixfeh(),binned.npixafe()))
+    for ii in range(binned.npixfeh()):
+        for jj in range(binned.npixafe()):
+            thisfit= fits[jj+ii*binned.npixafe()]
+            if thisfit is None:
+                plotthis[ii,jj]= numpy.nan
+                continue
+            if options.model.lower() == 'hwr':
+                if options.type == 'hz':
+                    plotthis[ii,jj]= numpy.exp(thisfit[0])*1000.
+                elif options.type == 'hr':
+                    plotthis[ii,jj]= numpy.exp(thisfit[1])
+    #Set up plot
+    if options.type == 'hz':
+        vmin, vmax= 200,1000
+        zlabel=r'$\mathrm{vertical\ scale\ height\ [kpc]}$'
+    elif options.type == 'hr':
+        vmin, vmax= 1.5,5.
+        zlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$'
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
+                          interpolation='nearest',
+                          xrange=[-2.,0.6],
+                          yrange=[-0.1,0.6],
+                          xlabel=r'$[\mathrm{Fe/H}]$',
+                          ylabel=r'$[\alpha/\mathrm{Fe}]$',
+                          zlabel=zlabel,
+                          vmin=vmin,vmax=vmax,
+                          contours=False,
+                          colorbar=True,shrink=0.78)
+    bovy_plot.bovy_end_print(options.plotfile)
     return None
 
 def save_pickles(fits,ii,jj,savefilename):
@@ -291,6 +322,10 @@ def get_options():
                       help="Minimum number of objects in a bin to perform a fit")   
     parser.add_option("--model",dest='model',default='twodblexp',
                       help="Model to fit")
+    parser.add_option("-o","--plotfile",dest='plotfile',default=None,
+                      help="Name of the file for plot")
+    parser.add_option("-t","--type",dest='type',default='rmean',
+                      help="Quantity to plot")
     return parser
   
 if __name__ == '__main__':
