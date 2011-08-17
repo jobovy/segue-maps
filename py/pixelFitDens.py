@@ -117,6 +117,9 @@ def pixelFitDens(parser):
         fits= pickle.load(savefile)
         ii= pickle.load(savefile)
         jj= pickle.load(savefile)
+        savefile.close()
+        ii= 17
+        jj= 9
     else:
         fits= []
         ii, jj= 0, 0
@@ -205,11 +208,11 @@ def pixelFitDens(parser):
             _THISNGR, _THISNFEH= 51, 51
             thisgrs= numpy.zeros((_THISNGR,_THISNFEH))
             thisfehs= numpy.zeros((_THISNGR,_THISNFEH))
-            for ii in range(_THISNGR):
-                thisfehs[ii,:]= numpy.linspace(fehrange[0],fehrange[1],
+            for kk in range(_THISNGR):
+                thisfehs[kk,:]= numpy.linspace(fehrange[0],fehrange[1],
                                                _THISNFEH)
-            for ii in range(_THISNFEH):
-                thisgrs[:,ii]= numpy.linspace(grmin,grmax,_THISNGR)
+            for kk in range(_THISNFEH):
+                thisgrs[:,kk]= numpy.linspace(grmin,grmax,_THISNGR)
             dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))
             dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))
             ds= numpy.linspace(dmin,dmax,_NDS)
@@ -233,8 +236,9 @@ def pixelFitDens(parser):
             if jj == len(binned.afeedges)-1: 
                 jj= 0
                 ii+= 1
-                break
             save_pickles(fits,ii,jj,args[0])
+            if jj == len(binned.afeedges)-1: 
+                break
     return None
 
 def save_pickles(fits,ii,jj,savefilename):

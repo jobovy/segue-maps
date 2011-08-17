@@ -130,6 +130,9 @@ def fitDensz(parser):
         colorrange=[0.48,0.55]
     elif options.sample.lower() == 'k':
         colorrange=[0.55,0.75]
+    if options.sample.lower() == 'g':
+        grmin, grmax= 0.48, 0.55
+        rmin,rmax= 14.5, 20.2
     #FeH
     fehdist= DistSpline(*numpy.histogram(rawdata.feh,bins=11,range=fehrange),
                          xrange=fehrange,dontcuttorange=(options.addfeh != 0.))
