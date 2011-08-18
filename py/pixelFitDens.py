@@ -270,7 +270,7 @@ def pixelFitDens(parser):
                     plotthis[ii,jj]= numpy.exp(thisfit[1])
     #Set up plot
     if options.type == 'hz':
-        vmin, vmax= 200,1000
+        vmin, vmax= 200,1200
         zlabel=r'$\mathrm{vertical\ scale\ height\ [kpc]}$'
     elif options.type == 'hr':
         vmin, vmax= 1.5,5.
@@ -327,7 +327,7 @@ def get_options():
                       help="Model to fit")
     parser.add_option("-o","--plotfile",dest='plotfile',default=None,
                       help="Name of the file for plot")
-    parser.add_option("-t","--type",dest='type',default='rmean',
+    parser.add_option("-t","--type",dest='type',default='hr',
                       help="Quantity to plot")
     parser.add_option("--old",action="store_true", dest="old",
                       default=False,
