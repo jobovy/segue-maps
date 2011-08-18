@@ -271,7 +271,7 @@ def pixelFitDens(parser):
     #Set up plot
     if options.type == 'hz':
         vmin, vmax= 200,1200
-        zlabel=r'$\mathrm{vertical\ scale\ height\ [kpc]}$'
+        zlabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$'
     elif options.type == 'hr':
         vmin, vmax= 1.5,5.
         zlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$'
