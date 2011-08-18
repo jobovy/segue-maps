@@ -282,6 +282,12 @@ def fitDensz(parser):
                     indx.append(True)
                 else:
                     indx.append(False)
+            elif options.sel_bright.lower() == 'tanhrcut' \
+                    and not 'faint' in segueplatestr.programname[ii]:
+                if segueplatestr.kstanh_g_all[ii] >= options.minks:
+                    indx.append(True)
+                else:
+                    indx.append(False)
             elif options.sel_faint.lower() == 'constant' \
                     and 'faint' in segueplatestr.programname[ii]:
                 if segueplatestr.ksconst_g_all[ii] >= options.minks:
@@ -303,6 +309,12 @@ def fitDensz(parser):
             elif options.sel_faint.lower() == 'sharprcut' \
                     and 'faint' in segueplatestr.programname[ii]:
                 if segueplatestr.kssharp_g_all[ii] >= options.minks:
+                    indx.append(True)
+                else:
+                    indx.append(False)
+            elif options.sel_faint.lower() == 'tanhrcut' \
+                     and 'faint' in segueplatestr.programname[ii]:
+                if segueplatestr.kstanh_g_all[ii] >= options.minks:
                     indx.append(True)
                 else:
                     indx.append(False)
