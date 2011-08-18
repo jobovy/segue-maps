@@ -105,8 +105,7 @@ class pixelAfeFeh:
         """Return the number of AFe pixels"""
         return len(self.afeedges)-1
     
-def pixelFitDens(parser):
-    options,args= parser.parse_args()
+def pixelFitDens(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
             raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
@@ -251,16 +250,42 @@ def pixelFitDens(parser):
             if jj == 0: #this means we've reset the counter 
                 break
     save_pickles(fits,ii,jj,args[0])
-    if options.plotfile is None: return None
+    return None
+
+def plotPixelFit(options,args):
+    if options.sample.lower() == 'g':
+        if options.select.lower() == 'program':
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
+        else:
+            raw= read_gdwarfs(logg=True,ebv=True,sn=True)
+    elif options.sample.lower() == 'k':
+        if options.select.lower() == 'program':
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=True)
+        else:
+            raw= read_kdwarfs(logg=True,ebv=True,sn=True)
+    #Bin the data
+    binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
+    #Savefile
+    if os.path.exists(args[0]):#Load savefile
+        savefile= open(args[0],'rb')
+        fits= pickle.load(savefile)
+        savefile.close()
     #Now plot
     #Run through the pixels and gather
     plotthis= numpy.zeros((binned.npixfeh(),binned.npixafe()))
     for ii in range(binned.npixfeh()):
         for jj in range(binned.npixafe()):
+            data= binned(binned.feh(ii),binned.afe(jj))
             #print binned.feh(ii), binned.afe(jj), fits[jj+ii*binned.npixafe()]
             #print jj+ii*binned.npixafe(), len(fits)
+            if jj+ii*binned.npixafe() >= len(fits):
+                plotthis[ii,jj]= numpy.nan
+                continue
             thisfit= fits[jj+ii*binned.npixafe()]
             if thisfit is None:
+                plotthis[ii,jj]= numpy.nan
+                continue
+            if len(data) < options.minndata:
                 plotthis[ii,jj]= numpy.nan
                 continue
             if options.model.lower() == 'hwr':
@@ -329,10 +354,15 @@ def get_options():
                       help="Name of the file for plot")
     parser.add_option("-t","--type",dest='type',default='hr',
                       help="Quantity to plot")
-    parser.add_option("--old",action="store_true", dest="old",
+    parser.add_option("--plot",action="store_true", dest="plot",
                       default=False,
-                      help="If set, old, messed up fits list")
+                      help="If set, plot, otherwise, fit")
     return parser
   
 if __name__ == '__main__':
-    pixelFitDens(get_options())
+    parser= get_options()
+    options,args= parser.parse_args()
+    if options.plot:
+        plotPixelFit(options,args)
+    else:
+        pixelFitDens(options,args)
