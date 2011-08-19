@@ -23,7 +23,8 @@ def plotOrbits(parser):
     indx= (orbits.sna > 15.)*(orbits.logga > 3.75)*(orbits.ebv < 0.3)
     orbits= orbits[indx]
     #Load the orbits into the pixel structure
-    pix= pixelAfeFeh(orbits,dfeh=options.dfeh,dafe=options.dafe)
+    pix= pixelAfeFeh(orbits,dfeh=options.dfeh,dafe=options.dafe,fehmin=-2.,
+                     fehmax=0.3,afemin=0.,afemax=0.45)
     #Run through the pixels and gather
     plotthis= numpy.zeros((pix.npixfeh(),pix.npixafe()))
     for ii in range(pix.npixfeh()):
@@ -44,10 +45,13 @@ def plotOrbits(parser):
                 vals= data.zmax*8.
             elif options.type == 'vphi':
                 vals= data.vyc+220.
-            if options.mean:
-                plotthis[ii,jj]= numpy.mean(vals)
+            if options.type == 'nstars':
+                plotthis[ii,jj]= len(data)
             else:
-                plotthis[ii,jj]= numpy.median(vals)
+                if options.mean:
+                    plotthis[ii,jj]= numpy.mean(vals)
+                else:
+                    plotthis[ii,jj]= numpy.median(vals)
     #Set up plot
     if options.type == 'rmean':
         vmin, vmax= 6., 10.
@@ -67,11 +71,14 @@ def plotOrbits(parser):
     elif options.type == 'e':
         vmin, vmax= 0.,1.
         zlabel=r'$\mathrm{eccentricity}$'
+    elif options.type == 'nstars':
+        vmin, vmax= 0.,550.
+        zlabel=r'$\mathrm{number\ of\ stars}$'
     bovy_plot.bovy_print()
     bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
                           interpolation='nearest',
-                          xrange=[-2.,0.6],
-                          yrange=[-0.1,0.6],
+                          xrange=[-2.,0.3],
+                          yrange=[0.,0.4],
                           xlabel=r'$[\mathrm{Fe/H}]$',
                           ylabel=r'$[\alpha/\mathrm{Fe}]$',
                           zlabel=zlabel,

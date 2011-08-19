@@ -14,7 +14,8 @@ _NGR= 11
 _NFEH=11
 class pixelAfeFeh:
     """Class that pixelizes the data in afe and feh"""
-    def __init__(self,data,dfeh=0.05,dafe=0.05):
+    def __init__(self,data,dfeh=0.05,dafe=0.05,fehmin=-2.,fehmax=0.6,
+                 afemin=-0.1,afemax=.6):
         """
         NAME:
            __init__
@@ -32,10 +33,10 @@ class pixelAfeFeh:
         self.dfeh= dfeh
         self.dafe= dafe
         #These are somewhat ridiculous to be sure to contain the data
-        self.fehmin=-2.
-        self.fehmax= .6
-        self.afemin= -.1
-        self.afemax= .6
+        self.fehmin= fehmin
+        self.fehmax= fehmax
+        self.afemin= afemin
+        self.afemax= afemax
         #edges in feh
         fehedges= list(numpy.arange(0.,self.fehmax+0.01,dfeh))
         fehedges.extend(list(numpy.arange(0,self.fehmin-0.01,-dfeh)))
@@ -96,6 +97,36 @@ class pixelAfeFeh:
            2011-08-16 - Written - Bovy (NYU)
         """
         return 0.5*(self.afeedges[i]+self.afeedges[i+1])
+
+    def fehindx(self,feh):
+        """
+        NAME:
+           fehindx
+        PURPOSE:
+           return the index corresponding to a FeH value
+        INPUT:
+           feh
+        OUTPUT:
+           index
+        HISTORY:
+           2011-08-19 - Written - Bovy (NYU)
+        """
+        return int(math.floor((feh-self.fehmin)/self.dfeh))
+
+    def afeindx(self,afe):
+        """
+        NAME:
+           afeindx
+        PURPOSE:
+           return the index corresponding to a AFe value
+        INPUT:
+           afe
+        OUTPUT:
+           index
+        HISTORY:
+           2011-08-19 - Written - Bovy (NYU)
+        """
+        return int(math.floor((afe-self.afemin)/self.dafe))
 
     def npixfeh(self):
         """Return the number of FeH pixels"""
@@ -263,8 +294,13 @@ def plotPixelFit(options,args):
             raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=True)
         else:
             raw= read_kdwarfs(logg=True,ebv=True,sn=True)
-    #Bin the data
+    #Bin the data   
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
+    if options.tighten:
+        tightbinned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe,
+                                 fehmin=-2.,fehmax=0.3,afemin=0.,afemax=0.45)
+    else:
+        tightbinned= binned
     #Savefile
     if os.path.exists(args[0]):#Load savefile
         savefile= open(args[0],'rb')
@@ -272,16 +308,16 @@ def plotPixelFit(options,args):
         savefile.close()
     #Now plot
     #Run through the pixels and gather
-    plotthis= numpy.zeros((binned.npixfeh(),binned.npixafe()))
-    for ii in range(binned.npixfeh()):
-        for jj in range(binned.npixafe()):
-            data= binned(binned.feh(ii),binned.afe(jj))
-            #print binned.feh(ii), binned.afe(jj), fits[jj+ii*binned.npixafe()]
-            #print jj+ii*binned.npixafe(), len(fits)
-            if jj+ii*binned.npixafe() >= len(fits):
+    plotthis= numpy.zeros((tightbinned.npixfeh(),tightbinned.npixafe()))
+    for ii in range(tightbinned.npixfeh()):
+        for jj in range(tightbinned.npixafe()):
+            data= binned(tightbinned.feh(ii),tightbinned.afe(jj))
+            fehindx= binned.fehindx(tightbinned.feh(ii))#Map onto regular binning
+            afeindx= binned.afeindx(tightbinned.afe(jj))
+            if afeindx+fehindx*binned.npixafe() >= len(fits):
                 plotthis[ii,jj]= numpy.nan
                 continue
-            thisfit= fits[jj+ii*binned.npixafe()]
+            thisfit= fits[afeindx+fehindx*binned.npixafe()]
             if thisfit is None:
                 plotthis[ii,jj]= numpy.nan
                 continue
@@ -300,14 +336,19 @@ def plotPixelFit(options,args):
     elif options.type == 'hr':
         vmin, vmax= 1.5,4.5
         zlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$'
+    if options.tighten:
+        xrange=[-2.,0.3]
+        yrange=[0.,0.45]
+    else:
+        xrange=[-2.,0.6]
+        yrange=[-0.1,0.6],
     bovy_plot.bovy_print()
     bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
                           interpolation='nearest',
-                          xrange=[-2.,0.6],
-                          yrange=[-0.1,0.6],
                           xlabel=r'$[\mathrm{Fe/H}]$',
                           ylabel=r'$[\alpha/\mathrm{Fe}]$',
                           zlabel=zlabel,
+                          xrange=xrange,yrange=yrange,
                           vmin=vmin,vmax=vmax,
                           contours=False,
                           colorbar=True,shrink=0.78)
@@ -357,6 +398,9 @@ def get_options():
     parser.add_option("--plot",action="store_true", dest="plot",
                       default=False,
                       help="If set, plot, otherwise, fit")
+    parser.add_option("--tighten",action="store_true", dest="tighten",
+                      default=False,
+                      help="If set, tighten axes")
     return parser
   
 if __name__ == '__main__':
