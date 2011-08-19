@@ -330,11 +330,12 @@ def plotPixelFit(options,args):
                 elif options.type == 'hr':
                     plotthis[ii,jj]= numpy.exp(thisfit[1])
     #Set up plot
+    #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'hz':
-        vmin, vmax= 200,1200
+        vmin, vmax= 180,1200
         zlabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$'
     elif options.type == 'hr':
-        vmin, vmax= 1.5,4.5
+        vmin, vmax= 1.35,4.5
         zlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$'
     if options.tighten:
         xrange=[-2.,0.3]
