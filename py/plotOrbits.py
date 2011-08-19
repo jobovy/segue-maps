@@ -63,7 +63,7 @@ def plotOrbits(parser):
         vmin, vmax= 6., 10.
         zlabel=r'$R_{\mathrm{peri}}\ [\mathrm{kpc}]$'
     elif options.type == 'zmax':
-        vmin, vmax= .3, 4.
+        vmin, vmax= .7, 4.
         zlabel=r'$Z_{\mathrm{max}}\ [\mathrm{kpc}]$'
     elif options.type == 'vphi':
         vmin, vmax= 140.,250.
