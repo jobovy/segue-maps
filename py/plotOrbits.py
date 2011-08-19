@@ -78,7 +78,7 @@ def plotOrbits(parser):
     bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
                           interpolation='nearest',
                           xrange=[-2.,0.3],
-                          yrange=[0.,0.4],
+                          yrange=[0.,0.45],
                           xlabel=r'$[\mathrm{Fe/H}]$',
                           ylabel=r'$[\alpha/\mathrm{Fe}]$',
                           zlabel=zlabel,
