@@ -298,7 +298,7 @@ def plotPixelFit(options,args):
         vmin, vmax= 200,1200
         zlabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$'
     elif options.type == 'hr':
-        vmin, vmax= 1.5,5.
+        vmin, vmax= 1.5,4.5
         zlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$'
     bovy_plot.bovy_print()
     bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
