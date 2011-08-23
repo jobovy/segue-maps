@@ -2,94 +2,14 @@ import os, os.path
 import sys
 import math
 import numpy
-from scipy import optimize
 import cPickle as pickle
 from optparse import OptionParser
 from galpy.util import bovy_coords, bovy_plot, save_pickles
+from matplotlib import pyplot, cm
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE
-from fitSigz import _IsothermLikeMinus, _HWRLikeMinus, _ZSUN
 from pixelFitDens import pixelAfeFeh
-def pixelFitVel(options,args):
-    if options.sample.lower() == 'g':
-        if options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
-        else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=True)
-    elif options.sample.lower() == 'k':
-        if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=True)
-        else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=True)
-    #Bin the data
-    binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
-    #Savefile
-    if os.path.exists(args[0]):#Load savefile
-        savefile= open(args[0],'rb')
-        fits= pickle.load(savefile)
-        ii= pickle.load(savefile)
-        jj= pickle.load(savefile)
-        savefile.close()
-    else:
-        fits= []
-        ii, jj= 0, 0
-    #Model
-    if options.model.lower() == 'hwr':
-        like_func= _HWRLikeMinus
-    elif options.model.lower() == 'isotherm':
-        like_func= _IsothermLikeMinus
-    #Run through the bins
-    while ii < len(binned.fehedges)-1:
-        while jj < len(binned.afeedges)-1:
-            data= binned(binned.feh(ii),binned.afe(jj))
-            if len(data) < options.minndata:
-                fits.append(None)
-                jj+= 1
-                if jj == len(binned.afeedges)-1: 
-                    jj= 0
-                    ii+= 1
-                    break
-                continue               
-            print binned.feh(ii), binned.afe(jj), len(data)
-            #Create XYZ and R, vxvyvz, cov_vxvyvz
-            R= ((8.-data.xc)**2.+data.yc**2.)**0.5
-            XYZ= numpy.zeros((len(data),3))
-            XYZ[:,0]= data.xc
-            XYZ[:,1]= data.yc
-            XYZ[:,2]= data.zc+_ZSUN
-            d= (XYZ[:,2]-1.)
-            vxvyvz= numpy.zeros((len(data),3))
-            vxvyvz[:,0]= data.vxc
-            vxvyvz[:,1]= data.vyc
-            vxvyvz[:,2]= data.vzc
-            cov_vxvyvz= numpy.zeros((len(data),3,3))
-            cov_vxvyvz[:,0,0]= data.vxc_err**2.
-            cov_vxvyvz[:,1,1]= data.vyc_err**2.
-            cov_vxvyvz[:,2,2]= data.vzc_err**2.
-            cov_vxvyvz[:,0,1]= data.vxvyc_rho*data.vxc_err*data.vyc_err
-            cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err
-            cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err
-            #Fit this data
-            #Initial condition
-            if options.model.lower() == 'hwr':
-                params= numpy.array([0.02,numpy.log(30.),0.,0.,numpy.log(6.)])
-            elif options.model.lower() == 'isotherm':
-                params= numpy.array([0.02,numpy.log(30.),numpy.log(6.)])
-            #Optimize likelihood
-            params= optimize.fmin_powell(like_func,params,
-                                         args=(XYZ,vxvyvz,cov_vxvyvz,R,d))
-            print numpy.exp(params)
-            fits.append(params)
-            jj+= 1
-            if jj == len(binned.afeedges)-1: 
-                jj= 0
-                ii+= 1
-            save_pickles(args[0],fits,ii,jj)
-            if jj == 0: #this means we've reset the counter 
-                break
-    save_pickles(args[0],fits,ii,jj)
-    return None
-
-def plotPixelFitVel(options,args):
+from fitSigz import _ZSUN
+def plotsz2hz(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
             raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
@@ -107,15 +27,20 @@ def plotPixelFitVel(options,args):
                                  fehmin=-2.,fehmax=0.3,afemin=0.,afemax=0.45)
     else:
         tightbinned= binned
-    #Savefile
+    #Savefile1
     if os.path.exists(args[0]):#Load savefile
         savefile= open(args[0],'rb')
-        fits= pickle.load(savefile)
+        velfits= pickle.load(savefile)
+        savefile.close()
+    if os.path.exists(args[1]):#Load savefile
+        savefile= open(args[1],'rb')
+        densfits= pickle.load(savefile)
         savefile.close()
     #Now plot
     #Run through the pixels and gather
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
             or options.type.lower() == 'fehafe' \
+            or options.type.lower() == 'zfunc' \
             or options.type.lower() == 'afefeh':
         plotthis= []
     else:
@@ -125,16 +50,20 @@ def plotPixelFitVel(options,args):
             data= binned(tightbinned.feh(ii),tightbinned.afe(jj))
             fehindx= binned.fehindx(tightbinned.feh(ii))#Map onto regular binning
             afeindx= binned.afeindx(tightbinned.afe(jj))
-            if afeindx+fehindx*binned.npixafe() >= len(fits):
+            if afeindx+fehindx*binned.npixafe() >= len(densfits) \
+                    or afeindx+fehindx*binned.npixafe() >= len(velfits):
                 if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
+                        or options.type.lower() == 'zfunc' \
                         or options.type.lower() == 'afefeh':
                     continue
                 else:
                     plotthis[ii,jj]= numpy.nan
                     continue
-            thisfit= fits[afeindx+fehindx*binned.npixafe()]
-            if thisfit is None:
+            thisdensfit= densfits[afeindx+fehindx*binned.npixafe()]
+            thisvelfit= velfits[afeindx+fehindx*binned.npixafe()]
+            if thisdensfit is None or thisvelfit is None:
                 if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
+                        or options.type.lower() == 'zfunc' \
                         or options.type.lower() == 'afefeh':
                     continue
                 else:
@@ -142,38 +71,51 @@ def plotPixelFitVel(options,args):
                     continue
             if len(data) < options.minndata:
                 if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
+                        or options.type.lower() == 'zfunc' \
                         or options.type.lower() == 'afefeh':
                     continue
                 else:
                     plotthis[ii,jj]= numpy.nan
                     continue
-            if options.model.lower() == 'hwr':
-                if options.type == 'sz':
-                    plotthis[ii,jj]= numpy.exp(thisfit[1])
-                elif options.type == 'sz2':
-                    plotthis[ii,jj]= numpy.exp(2.*thisfit[1])
-                elif options.type == 'hs':
-                    plotthis[ii,jj]= numpy.exp(thisfit[4])
+            if options.velmodel.lower() == 'hwr':
+                if options.type == 'sz2hz':
+                    numerator= numpy.exp(2.*thisvelfit[1])
+                elif options.type.lower() == 'afe' \
+                        or options.type.lower() == 'feh' \
+                        or options.type.lower() == 'fehafe' \
+                        or options.type.lower() == 'zfunc' \
+                        or options.type.lower() == 'afefeh':
+                    thisplot=[tightbinned.feh(ii),
+                              tightbinned.afe(jj),
+                              numpy.exp(thisvelfit[1]),
+                              numpy.exp(thisvelfit[3]),
+                              len(data),
+                              thisvelfit[1],
+                              thisvelfit[2]]
+                    #Als find min and max z for this data bin
+                    zsorted= sorted(numpy.fabs(data.zc))
+                    zmin= zsorted[int(numpy.ceil(0.16*len(zsorted)))]
+                    zmax= zsorted[int(numpy.floor(0.84*len(zsorted)))]
+                    thisplot.extend([zmin,zmax])
+            if options.densmodel.lower() == 'hwr':
+                if options.type == 'sz2hz':
+                    denominator= numpy.exp(thisdensfit[0])*1000.
+                    plotthis[ii,jj]= numerator/denominator
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
                         or options.type.lower() == 'afefeh':
-                    plotthis.append([tightbinned.feh(ii),
-                                     tightbinned.afe(jj),
-                                     numpy.exp(thisfit[1]),
-                                     numpy.exp(thisfit[3]),
-                                     len(data)])
+                    thisplot.extend([numpy.exp(thisdensfit[0])*1000.,
+                                     numpy.exp(thisdensfit[1]),
+                                     numpy.median(numpy.fabs(data.zc)-_ZSUN)])
+                    plotthis.append(thisplot)
     #Set up plot
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
-    if options.type == 'sz':
-        vmin, vmax= 15.,60.
-        zlabel= r'$\sigma_z(z=1000\ \mathrm{pc})\ [\mathrm{km\ s}^{-1}]$'
-    elif options.type == 'sz2':
-        vmin, vmax= 15.**2.,50.**2.
-        zlabel= r'$\sigma_z^2(z=1000\ \mathrm{pc})\ [\mathrm{km\ s}^{-1}]$'
-    elif options.type == 'hs':
-        vmin, vmax= 3.,15.
-        zlabel= r'$R_\sigma\ [\mathrm{kpc}]$'
+    if options.type == 'sz2hz':
+        plotthis/= 2.*numpy.pi*4.302*10.**-3 #2piG
+        print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
+        vmin, vmax= 15.,100.
+        zlabel= r'$\sigma_z^2(z=1000\ \mathrm{pc}) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
     elif options.type == 'afe':
         vmin, vmax= 0.05,.4
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
@@ -195,17 +137,27 @@ def plotPixelFitVel(options,args):
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
             or options.type.lower() == 'fehafe' \
             or options.type.lower() == 'afefeh':
-        print "Update!!"
-        return None
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
-        #Gather hR and hz
-        hz, hr,afe, feh, ndata= [], [], [], [], []
+        #Gather everything
+        zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
-            hz.append(plotthis[ii][2])
-            hr.append(plotthis[ii][3])
+            sz.append(plotthis[ii][2])
+            hs.append(plotthis[ii][3])
+            hz.append(plotthis[ii][9])
+            hr.append(plotthis[ii][10])
             afe.append(plotthis[ii][1])
             feh.append(plotthis[ii][0])
             ndata.append(plotthis[ii][4])
+            p1.append(plotthis[ii][5])
+            p2.append(plotthis[ii][6])         
+            mz.append(plotthis[ii][11])
+            zmin.append(plotthis[ii][7])
+            zmax.append(plotthis[ii][8])
+        zmin= numpy.array(zmin)
+        zmax= numpy.array(zmax)
+        sz= numpy.array(sz)
+        mz= numpy.array(mz)*1000.
+        hs= numpy.array(hs)
         hz= numpy.array(hz)
         hr= numpy.array(hr)
         afe= numpy.array(afe)
@@ -242,17 +194,58 @@ def plotPixelFitVel(options,args):
                 for jj in range(len(feh)):
                     if afe[jj] == tightbinned.afe(ii):
                         plotc[jj]= feh[jj]-medianfeh
-        yrange= [150,1200]
-        xrange= [1.2,5.]
-        bovy_plot.bovy_plot(hr,hz,s=ndata,c=plotc,
-                            cmap='jet',
-                            ylabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$',
-                            xlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$',
-                            clabel=zlabel,
-                            xrange=xrange,yrange=yrange,
-                            vmin=vmin,vmax=vmax,
-                            scatter=True,edgecolors='none',
-                            colorbar=True)
+        if not options.subtype == 'zfunc':
+            if options.subtype == 'mz':
+                yrange= [0,130.]
+                xrange= [0,1500]
+                plotx= mz
+                ploty= (sz+(mz/1000.-1.)*p1+p2*(mz/1000.-1.)**2.)**2./hz/2./numpy.pi/4.302/10**-3.
+                xlabel=r'$\mathrm{median\ \ height}\ z_{1/2}\ \mathrm{[pc]}$'
+                ylabel=r'$\sigma_z^2(z = z_{1/2}) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
+            elif options.subtype == 'hz':
+                yrange= [0,130.]
+                xrange= [0,1200]
+                plotx= hz
+                ploty= (sz+(hz/1000.-1.)*p1+p2*(hz/1000.-1.)**2.)**2./hz/2./numpy.pi/4.302/10**-3.
+                ylabel=r'$\sigma_z^2(z = h_z) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
+                xlabel=r'$\mathrm{vertical\ scale\ height}\ h_z\ \mathrm{[pc]}$'
+            bovy_plot.bovy_plot(plotx,ploty,
+                                s=ndata,c=plotc,
+                                cmap='jet',
+                                xlabel=xlabel,ylabel=ylabel,
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True)
+            #Add local density
+            bovy_plot.bovy_plot([0.,2000],[0.,200],'--',color='0.5',overplot=True)
+            #add Siebert
+            bovy_plot.bovy_plot(numpy.linspace(0.,2000.,1001),
+                                90.*numpy.linspace(0.,2000.,1001)/numpy.sqrt(numpy.linspace(0.,2000.,1001)**2.+637**2.)+0.01*numpy.linspace(0.,2000.,1001)*2.,
+                                '-.',color='0.5',overplot=True)
+        else:
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            #Set up plot
+            bovy_plot.bovy_plot([-100.,-100.],[100.,100.],'k,',
+                                xrange=[0,2700],yrange=[0.,70.],
+                                xlabel=r'$|Z|\ [\mathrm{pc}]$',
+                                ylabel=r'$\sigma_z(z)\ [\mathrm{km\ s}^{-1}]$')
+            #Calculate and plot all zfuncs
+            for ii in numpy.random.permutation(len(afe)):
+                ds= numpy.linspace(zmin[ii]*1000.,zmax[ii]*1000.,1001)/1000.-1.
+                thiszfunc= sz[ii]+p1[ii]*ds+p2[ii]*ds**2.
+                pyplot.plot(ds*1000.+1000.,thiszfunc,'-',
+                            color=colormap(_squeeze(plotc[ii],vmin,vmax)),
+                            lw=ndata[ii]/15.)
+            #Add colorbar
+            m = cm.ScalarMappable(cmap=cm.jet)
+            m.set_array(plotc)
+            m.set_clim(vmin=vmin,vmax=vmax)
+            cbar= pyplot.colorbar(m,fraction=0.15)
+            cbar.set_clim((vmin,vmax))
+            cbar.set_label(zlabel)
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
@@ -268,7 +261,7 @@ def plotPixelFitVel(options,args):
     return None
 
 def get_options():
-    usage = "usage: %prog [options] <savefile>\n\nsavefile= name of the file that the fits will be saved to"
+    usage = "usage: %prog [options] <savefile1> <savefile2>\n\nsavefile1= name of the file that the velocity fits are saved to\nsavefile2 = name of the file that the density fits are saved to"
     parser = OptionParser(usage=usage)
     parser.add_option("--sample",dest='sample',default='g',
                       help="Use 'G' or 'K' dwarf sample")
@@ -280,25 +273,23 @@ def get_options():
                       help="[a/Fe] bin size")   
     parser.add_option("--minndata",dest='minndata',default=100,type='int',
                       help="Minimum number of objects in a bin to perform a fit")   
-    parser.add_option("--model",dest='model',default='hwr',
-                      help="Model to fit")
     parser.add_option("-o","--plotfile",dest='plotfile',default=None,
                       help="Name of the file for plot")
     parser.add_option("-t","--type",dest='type',default='sz',
-                      help="Quantity to plot ('sz', 'hs', 'afe', 'feh'")
-    parser.add_option("--plot",action="store_true", dest="plot",
-                      default=False,
-                      help="If set, plot, otherwise, fit")
+                      help="Quantity to plot ('sz2hz', 'afe', 'feh'")
+    parser.add_option("--subtype",dest='subtype',default='mz',
+                      help="Sub-type of plot: when plotting afe, feh, afefeh, or fehafe, plot this")
     parser.add_option("--tighten",action="store_true", dest="tighten",
                       default=False,
                       help="If set, tighten axes")
+    parser.add_option("--velmodel",dest='velmodel',default='hwr',
+                      help="Velocity model used")
+    parser.add_option("--densmodel",dest='densmodel',default='hwr',
+                      help="Density model used")
     return parser
-  
+
 if __name__ == '__main__':
     parser= get_options()
     options,args= parser.parse_args()
-    if options.plot:
-        plotPixelFitVel(options,args)
-    else:
-        pixelFitVel(options,args)
+    plotsz2hz(options,args)
 

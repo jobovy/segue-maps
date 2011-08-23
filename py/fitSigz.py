@@ -40,7 +40,7 @@ def fitSigz(parser):
         cov_vxvyvz= cov_vxvyvz.astype(numpy.float64)
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
         XYZ[:,2]+= _ZSUN
-        d= (XYZ[:,2]-.5)
+        d= (XYZ[:,2]-1.)
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
@@ -108,7 +108,7 @@ def fitSigz(parser):
     if options.plotfunc:
         #First plot the best fit
         zs= numpy.linspace(0.3,1.2,1001)
-        ds= zs-0.5
+        ds= zs-1.
         func= zfunc
         maxys= math.exp(params[1])+params[2]*ds+params[3]*ds**2.
         if options.xmin is None or options.xmax is None:
@@ -124,7 +124,7 @@ def fitSigz(parser):
         nsigs= 3
         zsigs= numpy.zeros((len(zs),2*nsigs))
         fs= numpy.zeros((len(zs),len(samples)))
-        ds= zs-0.5
+        ds= zs-1.
         for ii in range(len(samples)):
             thisparams= samples[ii]
             fs[:,ii]= math.exp(thisparams[1])+thisparams[2]*ds+thisparams[3]*ds**2.
