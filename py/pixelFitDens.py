@@ -309,7 +309,8 @@ def plotPixelFit(options,args):
     #Now plot
     #Run through the pixels and gather
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
-            or options.type.lower() == 'fehafe':
+            or options.type.lower() == 'fehafe' \
+            or options.type.lower() == 'afefeh':
         plotthis= []
     else:
         plotthis= numpy.zeros((tightbinned.npixfeh(),tightbinned.npixafe()))
@@ -319,20 +320,23 @@ def plotPixelFit(options,args):
             fehindx= binned.fehindx(tightbinned.feh(ii))#Map onto regular binning
             afeindx= binned.afeindx(tightbinned.afe(jj))
             if afeindx+fehindx*binned.npixafe() >= len(fits):
-                if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe':
+                if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
+                        or options.type.lower() == 'afefeh':
                     continue
                 else:
                     plotthis[ii,jj]= numpy.nan
                     continue
             thisfit= fits[afeindx+fehindx*binned.npixafe()]
             if thisfit is None:
-                if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe':
+                if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
+                        or options.type.lower() == 'afefeh':
                     continue
                 else:
                     plotthis[ii,jj]= numpy.nan
                     continue
             if len(data) < options.minndata:
-                if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe':
+                if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
+                        or options.type.lower() == 'afefeh':
                     continue
                 else:
                     plotthis[ii,jj]= numpy.nan
@@ -344,7 +348,8 @@ def plotPixelFit(options,args):
                     plotthis[ii,jj]= numpy.exp(thisfit[1])
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
-                        or options.type.lower() == 'fehafe':
+                        or options.type.lower() == 'fehafe' \
+                        or options.type.lower() == 'afefeh':
                     plotthis.append([tightbinned.feh(ii),
                                      tightbinned.afe(jj),
                                      numpy.exp(thisfit[0])*1000.,
@@ -359,14 +364,17 @@ def plotPixelFit(options,args):
         vmin, vmax= 1.35,4.5
         zlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$'
     elif options.type == 'afe':
-        vmin, vmax= 0.05,.45
+        vmin, vmax= 0.05,.4
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
     elif options.type == 'feh':
         vmin, vmax= -1.5,0.
         zlabel=r'$[\mathrm{Fe/H}]$'
     elif options.type == 'fehafe':
-        vmin, vmax= -.8,.8
-        zlabel=r'$[\mathrm{Fe/H}]-[\mathrm{Fe/H}]_{1/2}|[\alpha/\mathrm{Fe}]$'
+        vmin, vmax= -.7,.7
+        zlabel=r'$[\mathrm{Fe/H}]-[\mathrm{Fe/H}]_{1/2}([\alpha/\mathrm{Fe}])$'
+    elif options.type == 'afefeh':
+        vmin, vmax= -.15,.15
+        zlabel=r'$[\alpha/\mathrm{Fe}]-[\alpha/\mathrm{Fe}]_{1/2}([\mathrm{Fe/H}])$'
     if options.tighten:
         xrange=[-2.,0.3]
         yrange=[0.,0.45]
@@ -374,8 +382,9 @@ def plotPixelFit(options,args):
         xrange=[-2.,0.6]
         yrange=[-0.1,0.6]
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
-            or options.type.lower() == 'fehafe':
-        bovy_plot.bovy_print(fig_height=5.,fig_width=6.)
+            or options.type.lower() == 'fehafe' \
+            or options.type.lower() == 'afefeh':
+        bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather hR and hz
         hz, hr,afe, feh, ndata= [], [], [], [], []
         for ii in range(len(plotthis)):
@@ -398,6 +407,17 @@ def plotPixelFit(options,args):
             plotc= afe
         elif options.type.lower() == 'feh':
             plotc= feh
+        elif options.type.lower() == 'afefeh':
+            #Go through the bins to determine whether feh is high or low for this alpha
+            plotc= numpy.zeros(len(afe))
+            for ii in range(tightbinned.npixfeh()):
+                fehbin= ii
+                data= tightbinned.data[(tightbinned.data.feh > tightbinned.fehedges[fehbin])\
+                                           *(tightbinned.data.feh <= tightbinned.fehedges[fehbin+1])]
+                medianafe= numpy.median(data.afe)
+                for jj in range(len(afe)):
+                    if feh[jj] == tightbinned.feh(ii):
+                        plotc[jj]= afe[jj]-medianafe
         else:
             #Go through the bins to determine whether feh is high or low for this alpha
             plotc= numpy.zeros(len(feh))
@@ -409,17 +429,17 @@ def plotPixelFit(options,args):
                 for jj in range(len(feh)):
                     if afe[jj] == tightbinned.afe(ii):
                         plotc[jj]= feh[jj]-medianfeh
-        xrange= [150,1200]
-        yrange= [1.2,5.]
-        bovy_plot.bovy_plot(hz,hr,s=ndata,c=plotc,
+        yrange= [150,1200]
+        xrange= [1.2,5.]
+        bovy_plot.bovy_plot(hr,hz,s=ndata,c=plotc,
                             cmap='jet',
-                            xlabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$',
-                            ylabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$',
+                            ylabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$',
+                            xlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$',
                             clabel=zlabel,
                             xrange=xrange,yrange=yrange,
                             vmin=vmin,vmax=vmax,
                             scatter=True,edgecolors='none',
-                            colorbar=True)#,shrink=0.78)
+                            colorbar=True)
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
