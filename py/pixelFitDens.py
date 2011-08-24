@@ -10,7 +10,7 @@ from matplotlib import pyplot, cm
 from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
     segueSelect, _GDWARFFILE, _KDWARFFILE
 from fitDensz import _TwoDblExpDensity, _HWRLikeMinus, _ZSUN, DistSpline, \
-    _ivezic_dist, _NDS, cb, _HWRDensity
+    _ivezic_dist, _NDS, cb, _HWRDensity, _HWRLike
 _NGR= 11
 _NFEH=11
 class pixelAfeFeh:
@@ -160,12 +160,35 @@ def pixelFitDens(options,args):
     else:
         fits= []
         ii, jj= 0, 0
+    #Sample?
+    if options.sample:
+        if ii < len(binned.fehedges)-1 and jj < len(binned.afeedges)-1:
+            print "First do all of the fits ..."
+            print "Returning ..."
+            return None
+        if os.path.exists(args[1]): #Load savefile
+            savefile= open(args[1],'rb')
+            samples= pickle.load(savefile)
+            ii= pickle.load(savefile)
+            jj= pickle.load(savefile)
+            savefile.close()
+        else:
+            samples= []
+            ii, jj= 0, 0
     #Set up model etc.
     if options.model.lower() == 'hwr':
         densfunc= _HWRDensity
+        isDomainFinite=[[False,True],[False,True],[True,True]]
+        domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],[0.,1.]]
     elif options.model.lower() == 'twodblexp':
         densfunc= _TwoDblExpDensity
+        isDomainFinite=[[False,True],[False,True],[False,True],
+                        [False,True],[True,True],[False,False]]
+        domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
+                [0.,4.6051701859880918],
+                [0.,4.6051701859880918],[0.,1.],[0.,0.]]
     like_func= _HWRLikeMinus
+    pdf_func= _HWRLike
     if options.sample.lower() == 'g':
         colorrange=[0.48,0.55]
     elif options.sample.lower() == 'k':
@@ -190,7 +213,8 @@ def pixelFitDens(options,args):
         while jj < len(binned.afeedges)-1:
             data= binned(binned.feh(ii),binned.afe(jj))
             if len(data) < options.minndata:
-                fits.append(None)
+                if options.sample: samples.append(None)
+                else: fits.append(None)
                 jj+= 1
                 if jj == len(binned.afeedges)-1: 
                     jj= 0
@@ -221,7 +245,7 @@ def pixelFitDens(options,args):
                 params= numpy.array([numpy.log(0.5),numpy.log(3.),0.05])
             elif options.model.lower() == 'twodblexp':
                 params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),0.5])
-           #Integration grid when binning
+            #Integration grid when binning
             grs= numpy.linspace(grmin,grmax,_NGR)
             fehs= numpy.linspace(fehrange[0],fehrange[1],_NFEH)
             rhogr= numpy.array([colordist(gr) for gr in grs])
@@ -258,30 +282,54 @@ def pixelFitDens(options,args):
             dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))
             dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))
             ds= numpy.linspace(dmin,dmax,_NDS)
-            #Optimize likelihood
-            params= optimize.fmin_powell(like_func,params,
-                                         args=(XYZ,R,
-                                               sf,sf.plates,platelb[:,0],
-                                               platelb[:,1],platebright,
-                                               platefaint,1.,
-                                               grmin,grmax,rmin,rmax,
-                                               fehrange[0],fehrange[1],
-                                               feh,colordist,densfunc,
-                                               fehdist,False,
-                                               False,1.,
-                                               grs,fehs,rhogr,rhofeh,mr,
-                                               False,dmin,dmax,ds),
-                                         callback=cb)
-            print numpy.exp(params)
-            fits.append(params)
+            if not options.sample:
+                #Optimize likelihood
+                params= optimize.fmin_powell(like_func,params,
+                                             args=(XYZ,R,
+                                                   sf,sf.plates,platelb[:,0],
+                                                   platelb[:,1],platebright,
+                                                   platefaint,1.,
+                                                   grmin,grmax,rmin,rmax,
+                                                   fehrange[0],fehrange[1],
+                                                   feh,colordist,densfunc,
+                                                   fehdist,False,
+                                                   False,1.,
+                                                   grs,fehs,rhogr,rhofeh,mr,
+                                                   False,dmin,dmax,ds),
+                                             callback=cb)
+                print numpy.exp(params)
+                fits.append(params)
+            else:
+                #Load best-fit params
+                params= fits[jj+ii*binned.npixafe()]
+                thesesamples= bovy_mcmc.markovpy(params,
+                                                 0.01,
+                                                 pdf_func,
+                                                 (XYZ,R,
+                                                  sf,sf.plates,platelb[:,0],
+                                                  platelb[:,1],platebright,
+                                                  platefaint,1.,
+                                                  grmin,grmax,rmin,rmax,
+                                                  fehrange[0],fehrange[1],
+                                                  feh,colordist,densfunc,
+                                                  fehdist,False,
+                                                  False,1.,
+                                                  grs,fehs,rhogr,rhofeh,mr,
+                                                  False,dmin,dmax,ds),
+                                                 isDomainFinite=isDomainFinite,
+                                                 domain=domain,
+                                                 nsamples=options.nsamples)
+                samples.append(thesesamples)
             jj+= 1
             if jj == len(binned.afeedges)-1: 
                 jj= 0
                 ii+= 1
-            save_pickles(fits,ii,jj,args[0])
+            if options.sample: save_pickles(samples,ii,jj,args[1])
+            else: save_pickles(fits,ii,jj,args[0])
             if jj == 0: #this means we've reset the counter 
                 break
-    save_pickles(fits,ii,jj,args[0])
+    if options.sample: save_pickles(samples,ii,jj,args[1])
+    else: save_pickles(fits,ii,jj,args[0])
     return None
 
 def plotPixelFit(options,args):
@@ -485,7 +533,7 @@ def save_pickles(fits,ii,jj,savefilename):
             interrupted= True
 
 def get_options():
-    usage = "usage: %prog [options] <savefile>\n\nsavefile= name of the file that the fits will be saved to"
+    usage = "usage: %prog [options] <savefile> <savefile>\n\nsavefile= name of the file that the fits will be saved to\nsavefile = name of the file that the samples will be saved to (optional)"
     parser = OptionParser(usage=usage)
     parser.add_option("--sample",dest='sample',default='g',
                       help="Use 'G' or 'K' dwarf sample")
@@ -509,6 +557,9 @@ def get_options():
     parser.add_option("--tighten",action="store_true", dest="tighten",
                       default=False,
                       help="If set, tighten axes")
+    parser.add_option("--sample",action="store_true", dest="sample",
+                      default=False,
+                      help="If set, sample around the best fit, save in args[1]")
     return parser
   
 if __name__ == '__main__':
