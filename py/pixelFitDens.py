@@ -320,6 +320,11 @@ def pixelFitDens(options,args):
                                                  isDomainFinite=isDomainFinite,
                                                  domain=domain,
                                                  nsamples=options.nsamples)
+                #Print some helpful stuff
+                printthis= []
+                for ii in range(len(params)):
+                    printthis.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
+                print printthis
                 samples.append(thesesamples)
             jj+= 1
             if jj == len(binned.afeedges)-1: 
