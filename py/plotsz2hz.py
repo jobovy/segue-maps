@@ -183,6 +183,8 @@ def plotsz2hz(options,args):
             zmax.append(plotthis[ii][8])
             pivot.append(plotthis[ii][9])
         pivot= numpy.array(pivot)
+        p1= numpy.array(p1)
+        p2= numpy.array(p2)
         zmin= numpy.array(zmin)
         zmax= numpy.array(zmax)
         if velerrors:
@@ -231,10 +233,13 @@ def plotsz2hz(options,args):
                 if velerrors: #Don't plot if errors > 30%
                     indx= (sz_err/sz <= .3)
                     sz= sz[indx]
+                    mz= mz[indx]
                     hz= hz[indx]
                     pivot= pivot[indx]
                     ndata= ndata[indx]
                     plotc= plotc[indx]
+                    p1= p1[indx]
+                    p2= p2[indx]
                 yrange= [0,130.]
                 xrange= [0,1500]
                 plotx= mz
@@ -249,6 +254,8 @@ def plotsz2hz(options,args):
                     pivot= pivot[indx]
                     ndata= ndata[indx]
                     plotc= plotc[indx]
+                    p1= p1[indx]
+                    p2= p2[indx]
                 yrange= [0,130.]
                 xrange= [0,1200]
                 plotx= hz
