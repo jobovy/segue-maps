@@ -7,6 +7,7 @@ import cPickle as pickle
 from optparse import OptionParser
 from galpy.util import bovy_coords, bovy_plot
 from matplotlib import pyplot, cm
+import bovy_mcmc
 from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
     segueSelect, _GDWARFFILE, _KDWARFFILE
 from fitDensz import _TwoDblExpDensity, _HWRLikeMinus, _ZSUN, DistSpline, \
