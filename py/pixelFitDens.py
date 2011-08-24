@@ -322,8 +322,8 @@ def pixelFitDens(options,args):
                                                  nsamples=options.nsamples)
                 #Print some helpful stuff
                 printthis= []
-                for ii in range(len(params)):
-                    xs= numpy.array([s[ii] for s in thesesamples])
+                for kk in range(len(params)):
+                    xs= numpy.array([s[kk] for s in thesesamples])
                     printthis.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
                 print printthis
                 samples.append(thesesamples)
