@@ -560,6 +560,8 @@ def get_options():
     parser.add_option("--sample",action="store_true", dest="sample",
                       default=False,
                       help="If set, sample around the best fit, save in args[1]")
+    parser.add_option("--nsamples",dest='nsamples',default=1000,type='int',
+                      help="Number of MCMC samples to obtain")
     return parser
   
 if __name__ == '__main__':
