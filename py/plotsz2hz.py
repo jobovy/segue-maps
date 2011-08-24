@@ -36,6 +36,23 @@ def plotsz2hz(options,args):
         savefile= open(args[1],'rb')
         densfits= pickle.load(savefile)
         savefile.close()
+    #Uncertainties are in savefile3 and 4
+    if len(args) > 3 and os.path.exists(args[3]):
+        savefile= open(args[3],'rb')
+        denssamples= pickle.load(savefile)
+        savefile.close()
+        denserrors= True
+    else:
+        denssamples= None
+        denserrors= False
+    if len(args) > 2 and os.path.exists(args[2]):
+        savefile= open(args[2],'rb')
+        velsamples= pickle.load(savefile)
+        savefile.close()
+        velerrors= True
+    else:
+        velsamples= None            
+        velerrors= False
     #Now plot
     #Run through the pixels and gather
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
@@ -43,6 +60,7 @@ def plotsz2hz(options,args):
             or options.type.lower() == 'zfunc' \
             or options.type.lower() == 'afefeh':
         plotthis= []
+        errors= []
     else:
         plotthis= numpy.zeros((tightbinned.npixfeh(),tightbinned.npixafe()))
     for ii in range(tightbinned.npixfeh()):
@@ -97,6 +115,14 @@ def plotsz2hz(options,args):
                     zmin= zsorted[int(numpy.ceil(0.16*len(zsorted)))]
                     zmax= zsorted[int(numpy.floor(0.84*len(zsorted)))]
                     thisplot.extend([zmin,zmax,numpy.mean(numpy.fabs(data.zc+_ZSUN))])
+                    #Errors
+                    if velerrors:
+                        theseerrors= []
+                        thesesamples= velsamples[afeindx+fehindx*binned.npixafe()]
+                        for kk in [1,4]:
+                            xs= numpy.array([s[kk] for s in thesesamples])
+                            theseerrors.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
+                        errors.append(theseerrors)
             if options.densmodel.lower() == 'hwr':
                 if options.type == 'sz2hz':
                     denominator= numpy.exp(thisdensfit[0])*1000.
@@ -139,8 +165,10 @@ def plotsz2hz(options,args):
             or options.type.lower() == 'afefeh':
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather everything
-        pivot, zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], [], []
+        sz_err, pivot, zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
+            if velerrors:
+                sz_err.append(errors[ii][0])
             sz.append(plotthis[ii][2])
             hs.append(plotthis[ii][3])
             hz.append(plotthis[ii][10])
@@ -157,6 +185,8 @@ def plotsz2hz(options,args):
         pivot= numpy.array(pivot)
         zmin= numpy.array(zmin)
         zmax= numpy.array(zmax)
+        if velerrors:
+            sz_err= numpy.array(sz_err)
         sz= numpy.array(sz)
         mz= numpy.array(mz)*1000.
         hs= numpy.array(hs)
@@ -198,6 +228,13 @@ def plotsz2hz(options,args):
                         plotc[jj]= feh[jj]-medianfeh
         if not options.subtype == 'zfunc':
             if options.subtype == 'mz':
+                if velerrors: #Don't plot if errors > 30%
+                    indx= (sz_err/sz <= .3)
+                    sz= sz[indx]
+                    hz= hz[indx]
+                    pivot= pivot[indx]
+                    ndata= ndata[indx]
+                    plotc= plotc[indx]
                 yrange= [0,130.]
                 xrange= [0,1500]
                 plotx= mz
@@ -205,6 +242,13 @@ def plotsz2hz(options,args):
                 xlabel=r'$\mathrm{median\ \ height}\ z_{1/2}\ \mathrm{[pc]}$'
                 ylabel=r'$\sigma_z^2(z = z_{1/2}) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
             elif options.subtype == 'hz':
+                if velerrors: #Don't plot if errors > 30%
+                    indx= (sz_err/sz <= .3)
+                    sz= sz[indx]
+                    hz= hz[indx]
+                    pivot= pivot[indx]
+                    ndata= ndata[indx]
+                    plotc= plotc[indx]
                 yrange= [0,130.]
                 xrange= [0,1200]
                 plotx= hz
@@ -236,6 +280,9 @@ def plotsz2hz(options,args):
                                 ylabel=r'$\sigma_z(z)\ [\mathrm{km\ s}^{-1}]$')
             #Calculate and plot all zfuncs
             for ii in numpy.random.permutation(len(afe)):
+                if velerrors: #Don't plot if errors > 30%
+                    if sz_err[ii]/sz[ii] > .3: continue
+                    #if sz_err[ii] > 20.: continue
                 ds= numpy.linspace(zmin[ii]*1000.,zmax[ii]*1000.,1001)/1000.-pivot[ii]
                 thiszfunc= sz[ii]+p1[ii]*ds+p2[ii]*ds**2.
                 pyplot.plot(numpy.linspace(zmin[ii]*1000.,1000*zmax[ii],1001),
