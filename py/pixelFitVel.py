@@ -167,10 +167,10 @@ def plotPixelFitVel(options,args):
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'sz':
         vmin, vmax= 15.,60.
-        zlabel= r'$\sigma_z(z = z_{1/2})\ [\mathrm{km\ s}^{-1}]$'
+        zlabel= r'$\sigma_z(z = \langle z \rangle)\ [\mathrm{km\ s}^{-1}]$'
     elif options.type == 'sz2':
         vmin, vmax= 15.**2.,50.**2.
-        zlabel= r'$\sigma_z^2(z= z_{1/2})\ [\mathrm{km\ s}^{-1}]$'
+        zlabel= r'$\sigma_z^2(z= \langle z \rangle)\ [\mathrm{km\ s}^{-1}]$'
     elif options.type == 'hs':
         vmin, vmax= 3.,15.
         zlabel= r'$R_\sigma\ [\mathrm{kpc}]$'
