@@ -6,6 +6,7 @@ from scipy import optimize
 import cPickle as pickle
 from optparse import OptionParser
 from galpy.util import bovy_coords, bovy_plot, save_pickles
+import bovy_mcmc
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE
 from fitSigz import _IsothermLikeMinus, _HWRLikeMinus, _ZSUN
 from pixelFitDens import pixelAfeFeh
@@ -32,17 +33,43 @@ def pixelFitVel(options,args):
     else:
         fits= []
         ii, jj= 0, 0
+    #Sample?
+    if options.mcsample:
+        if ii < len(binned.fehedges)-1 and jj < len(binned.afeedges)-1:
+            print "First do all of the fits ..."
+            print "Returning ..."
+            return None
+        if os.path.exists(args[1]): #Load savefile
+            savefile= open(args[1],'rb')
+            samples= pickle.load(savefile)
+            ii= pickle.load(savefile)
+            jj= pickle.load(savefile)
+            savefile.close()
+        else:
+            samples= []
+            ii, jj= 0, 0
     #Model
     if options.model.lower() == 'hwr':
         like_func= _HWRLikeMinus
+        pdf_func= _HWRLike
+        isDomainFinite=[[True,True],[False,False],
+                        [False,False],[False,False],
+                        [False,False]]
+        domain=[[0.,1.],[0.,0.],[0.,0.],[0.,0.],
+                [0.,4.6051701859880918]]
     elif options.model.lower() == 'isotherm':
         like_func= _IsothermLikeMinus
+        pdf_func= _IsothermLike
+        isDomainFinite=[[True,True],[False,False],
+                        [False,True]]
+        domain=[[0.,1.],[0.,0.],[0.,4.6051701859880918]]
     #Run through the bins
     while ii < len(binned.fehedges)-1:
         while jj < len(binned.afeedges)-1:
             data= binned(binned.feh(ii),binned.afe(jj))
             if len(data) < options.minndata:
-                fits.append(None)
+                if options.mcsample: samples.append(None)
+                else: fits.append(None)
                 jj+= 1
                 if jj == len(binned.afeedges)-1: 
                     jj= 0
@@ -74,19 +101,39 @@ def pixelFitVel(options,args):
                 params= numpy.array([0.02,numpy.log(30.),0.,0.,numpy.log(6.)])
             elif options.model.lower() == 'isotherm':
                 params= numpy.array([0.02,numpy.log(30.),numpy.log(6.)])
-            #Optimize likelihood
-            params= optimize.fmin_powell(like_func,params,
-                                         args=(XYZ,vxvyvz,cov_vxvyvz,R,d))
-            print numpy.exp(params)
-            fits.append(params)
+            if not options.mcsample:
+                #Optimize likelihood
+                params= optimize.fmin_powell(like_func,params,
+                                             args=(XYZ,vxvyvz,cov_vxvyvz,R,d))
+                print numpy.exp(params)
+                fits.append(params)
+            else:
+                #Load best-fit params
+                params= fits[jj+ii*binned.npixafe()]
+                thesesamples= bovy_mcmc.markovpy(params,
+                                                 0.01,
+                                                 pdf_func,
+                                                 (XYZ,vxvyvz,cov_vxvyvz,R,d),
+                                                 create_method=create_method,
+                                                 isDomainFinite=isDomainFinite,
+                                                 domain=domain,
+                                                 nsamples=options.nsamples)
+                #Print some helpful stuff
+                printthis= []
+                for ii in range(len(params)):
+                    printthis.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
+                print printthis
+                samples.append(thesesamples)               
             jj+= 1
             if jj == len(binned.afeedges)-1: 
                 jj= 0
                 ii+= 1
-            save_pickles(args[0],fits,ii,jj)
+            if options.mcsample: save_pickles(args[1],samples,ii,jj)
+            else: save_pickles(args[0],fits,ii,jj)
             if jj == 0: #this means we've reset the counter 
                 break
-    save_pickles(args[0],fits,ii,jj)
+    if options.mcsample: save_pickles(args[1],samples,ii,jj)
+    else: save_pickles(args[0],fits,ii,jj)
     return None
 
 def plotPixelFitVel(options,args):
@@ -292,6 +339,11 @@ def get_options():
     parser.add_option("--tighten",action="store_true", dest="tighten",
                       default=False,
                       help="If set, tighten axes")
+    parser.add_option("--mcsample",action="store_true", dest="mcsample",
+                      default=False,
+                      help="If set, sample around the best fit, save in args[1]")
+    parser.add_option("--nsamples",dest='nsamples',default=1000,type='int',
+                      help="Number of MCMC samples to obtain")
     return parser
   
 if __name__ == '__main__':
