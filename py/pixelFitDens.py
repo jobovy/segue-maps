@@ -6,6 +6,7 @@ from scipy import optimize
 import cPickle as pickle
 from optparse import OptionParser
 from galpy.util import bovy_coords, bovy_plot
+from matplotlib import pyplot, cm
 from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
     segueSelect, _GDWARFFILE, _KDWARFFILE
 from fitDensz import _TwoDblExpDensity, _HWRLikeMinus, _ZSUN, DistSpline, \
@@ -440,6 +441,14 @@ def plotPixelFit(options,args):
                             vmin=vmin,vmax=vmax,
                             scatter=True,edgecolors='none',
                             colorbar=True)
+        #Overplot upper limits in hR
+        from selectFigs import _squeeze
+        colormap = cm.jet
+        for jj in range(len(hr)):
+            if hr[jj] < 5.: continue
+            pyplot.errorbar(4.8,hz[jj],xerr=0.1,xuplims=True,
+                            color=colormap(_squeeze(plotc[jj],vmin,vmax)),
+                            elinewidth=2.,capsize=3)
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',

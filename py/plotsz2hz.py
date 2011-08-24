@@ -92,11 +92,11 @@ def plotsz2hz(options,args):
                               len(data),
                               thisvelfit[1],
                               thisvelfit[2]]
-                    #Als find min and max z for this data bin
-                    zsorted= sorted(numpy.fabs(data.zc))
+                    #Als find min and max z for this data bin, and median
+                    zsorted= sorted(numpy.fabs(data.zc+_ZSUN))
                     zmin= zsorted[int(numpy.ceil(0.16*len(zsorted)))]
                     zmax= zsorted[int(numpy.floor(0.84*len(zsorted)))]
-                    thisplot.extend([zmin,zmax])
+                    thisplot.extend([zmin,zmax,numpy.mean(numpy.fabs(data.zc+_ZSUN))])
             if options.densmodel.lower() == 'hwr':
                 if options.type == 'sz2hz':
                     denominator= numpy.exp(thisdensfit[0])*1000.
@@ -139,12 +139,12 @@ def plotsz2hz(options,args):
             or options.type.lower() == 'afefeh':
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather everything
-        zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], []
+        pivot, zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
             sz.append(plotthis[ii][2])
             hs.append(plotthis[ii][3])
-            hz.append(plotthis[ii][9])
-            hr.append(plotthis[ii][10])
+            hz.append(plotthis[ii][10])
+            hr.append(plotthis[ii][11])
             afe.append(plotthis[ii][1])
             feh.append(plotthis[ii][0])
             ndata.append(plotthis[ii][4])
@@ -153,6 +153,8 @@ def plotsz2hz(options,args):
             mz.append(plotthis[ii][11])
             zmin.append(plotthis[ii][7])
             zmax.append(plotthis[ii][8])
+            pivot.append(plotthis[ii][9])
+        pivot= numpy.array(pivot)
         zmin= numpy.array(zmin)
         zmax= numpy.array(zmax)
         sz= numpy.array(sz)
@@ -199,14 +201,14 @@ def plotsz2hz(options,args):
                 yrange= [0,130.]
                 xrange= [0,1500]
                 plotx= mz
-                ploty= (sz+(mz/1000.-1.)*p1+p2*(mz/1000.-1.)**2.)**2./hz/2./numpy.pi/4.302/10**-3.
+                ploty= (sz+(mz/1000.-pivot)*p1+p2*(mz/1000.-pivot)**2.)**2./hz/2./numpy.pi/4.302/10**-3.
                 xlabel=r'$\mathrm{median\ \ height}\ z_{1/2}\ \mathrm{[pc]}$'
                 ylabel=r'$\sigma_z^2(z = z_{1/2}) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
             elif options.subtype == 'hz':
                 yrange= [0,130.]
                 xrange= [0,1200]
                 plotx= hz
-                ploty= (sz+(hz/1000.-1.)*p1+p2*(hz/1000.-1.)**2.)**2./hz/2./numpy.pi/4.302/10**-3.
+                ploty= (sz+(hz/1000.-pivot)*p1+p2*(hz/1000.-pivot)**2.)**2./hz/2./numpy.pi/4.302/10**-3.
                 ylabel=r'$\sigma_z^2(z = h_z) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
                 xlabel=r'$\mathrm{vertical\ scale\ height}\ h_z\ \mathrm{[pc]}$'
             bovy_plot.bovy_plot(plotx,ploty,
@@ -234,9 +236,10 @@ def plotsz2hz(options,args):
                                 ylabel=r'$\sigma_z(z)\ [\mathrm{km\ s}^{-1}]$')
             #Calculate and plot all zfuncs
             for ii in numpy.random.permutation(len(afe)):
-                ds= numpy.linspace(zmin[ii]*1000.,zmax[ii]*1000.,1001)/1000.-1.
+                ds= numpy.linspace(zmin[ii]*1000.,zmax[ii]*1000.,1001)/1000.-pivot[ii]
                 thiszfunc= sz[ii]+p1[ii]*ds+p2[ii]*ds**2.
-                pyplot.plot(ds*1000.+1000.,thiszfunc,'-',
+                pyplot.plot(numpy.linspace(zmin[ii]*1000.,1000*zmax[ii],1001),
+                            thiszfunc,'-',
                             color=colormap(_squeeze(plotc[ii],vmin,vmax)),
                             lw=ndata[ii]/15.)
             #Add colorbar
