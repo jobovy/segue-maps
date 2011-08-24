@@ -56,7 +56,7 @@ def pixelFitVel(options,args):
             XYZ[:,0]= data.xc
             XYZ[:,1]= data.yc
             XYZ[:,2]= data.zc+_ZSUN
-            d= (XYZ[:,2]-numpy.median(numpy.fabs(XYZ[:,2])))
+            d= numpy.fabs((XYZ[:,2]-numpy.median(numpy.fabs(XYZ[:,2]))))
             vxvyvz= numpy.zeros((len(data),3))
             vxvyvz[:,0]= data.vxc
             vxvyvz[:,1]= data.vyc

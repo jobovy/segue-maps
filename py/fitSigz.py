@@ -40,7 +40,7 @@ def fitSigz(parser):
         cov_vxvyvz= cov_vxvyvz.astype(numpy.float64)
         R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
         XYZ[:,2]+= _ZSUN
-        d= (XYZ[:,2]-numpy.mean(numpy.fabs(XYZ[:,2])))
+        d= numpy.fabs((XYZ[:,2]-numpy.mean(numpy.fabs(XYZ[:,2]))))
         #Optimize likelihood
         if _VERBOSE:
             print "Optimizing the likelihood ..."
