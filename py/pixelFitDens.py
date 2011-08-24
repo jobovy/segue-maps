@@ -161,7 +161,7 @@ def pixelFitDens(options,args):
         fits= []
         ii, jj= 0, 0
     #Sample?
-    if options.sample:
+    if options.mcsample:
         if ii < len(binned.fehedges)-1 and jj < len(binned.afeedges)-1:
             print "First do all of the fits ..."
             print "Returning ..."
@@ -213,7 +213,7 @@ def pixelFitDens(options,args):
         while jj < len(binned.afeedges)-1:
             data= binned(binned.feh(ii),binned.afe(jj))
             if len(data) < options.minndata:
-                if options.sample: samples.append(None)
+                if options.mcsample: samples.append(None)
                 else: fits.append(None)
                 jj+= 1
                 if jj == len(binned.afeedges)-1: 
@@ -282,7 +282,7 @@ def pixelFitDens(options,args):
             dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))
             dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))
             ds= numpy.linspace(dmin,dmax,_NDS)
-            if not options.sample:
+            if not options.mcsample:
                 #Optimize likelihood
                 params= optimize.fmin_powell(like_func,params,
                                              args=(XYZ,R,
@@ -324,11 +324,11 @@ def pixelFitDens(options,args):
             if jj == len(binned.afeedges)-1: 
                 jj= 0
                 ii+= 1
-            if options.sample: save_pickles(samples,ii,jj,args[1])
+            if options.mcsample: save_pickles(samples,ii,jj,args[1])
             else: save_pickles(fits,ii,jj,args[0])
             if jj == 0: #this means we've reset the counter 
                 break
-    if options.sample: save_pickles(samples,ii,jj,args[1])
+    if options.mcsample: save_pickles(samples,ii,jj,args[1])
     else: save_pickles(fits,ii,jj,args[0])
     return None
 
@@ -557,7 +557,7 @@ def get_options():
     parser.add_option("--tighten",action="store_true", dest="tighten",
                       default=False,
                       help="If set, tighten axes")
-    parser.add_option("--sample",action="store_true", dest="sample",
+    parser.add_option("--mcsample",action="store_true", dest="mcsample",
                       default=False,
                       help="If set, sample around the best fit, save in args[1]")
     parser.add_option("--nsamples",dest='nsamples',default=1000,type='int',
