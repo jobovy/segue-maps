@@ -8,7 +8,8 @@ from optparse import OptionParser
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 import bovy_mcmc
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE
-from fitSigz import _IsothermLikeMinus, _HWRLikeMinus, _ZSUN
+from fitSigz import _IsothermLikeMinus, _HWRLikeMinus, _ZSUN, \
+    _HWRLike, _IsothermLike
 from pixelFitDens import pixelAfeFeh
 def pixelFitVel(options,args):
     if options.sample.lower() == 'g':
@@ -52,14 +53,19 @@ def pixelFitVel(options,args):
     if options.model.lower() == 'hwr':
         like_func= _HWRLikeMinus
         pdf_func= _HWRLike
-        isDomainFinite=[[True,True],[False,False],
-                        [False,False],[False,False],
-                        [False,False]]
-        domain=[[0.,1.],[0.,0.],[0.,0.],[0.,0.],
+        step= [0.01,0.3,0.3,0.3,0.3]
+        create_method=['full','step_out','step_out',
+                       'step_out','step_out']
+        isDomainFinite=[[True,True],[True,True],
+                        [True,True],[True,True],
+                        [False,True]]
+        domain=[[0.,1.],[-10.,10.],[-100.,100.],[-100.,100.],
                 [0.,4.6051701859880918]]
     elif options.model.lower() == 'isotherm':
         like_func= _IsothermLikeMinus
         pdf_func= _IsothermLike
+        step= [0.01,0.05,0.3]
+        create_method=['full','step_out','step_out']
         isDomainFinite=[[True,True],[False,False],
                         [False,True]]
         domain=[[0.,1.],[0.,0.],[0.,4.6051701859880918]]
@@ -110,17 +116,21 @@ def pixelFitVel(options,args):
             else:
                 #Load best-fit params
                 params= fits[jj+ii*binned.npixafe()]
+                print numpy.exp(params)
                 thesesamples= bovy_mcmc.markovpy(params,
+                #thesesamples= bovy_mcmc.slice(params,
+                                                 #step,
                                                  0.01,
                                                  pdf_func,
                                                  (XYZ,vxvyvz,cov_vxvyvz,R,d),
-                                                 create_method=create_method,
+                                                 #create_method=create_method,
                                                  isDomainFinite=isDomainFinite,
                                                  domain=domain,
                                                  nsamples=options.nsamples)
                 #Print some helpful stuff
                 printthis= []
-                for ii in range(len(params)):
+                for kk in range(len(params)):
+                    xs= numpy.array([s[kk] for s in thesesamples])
                     printthis.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
                 print printthis
                 samples.append(thesesamples)               

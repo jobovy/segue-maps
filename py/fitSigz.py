@@ -191,6 +191,9 @@ def _HWRLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
 def _HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
     """Minus log likelihood for the HWR model"""
     if params[0] < 0. or params[0] > 1.\
+            or params[1] < -10. or params[1] > 10. \
+            or params[2] < -100. or params[2] > 100. \
+            or params[3] < -100. or params[3] > 100. \
             or params[4] > 4.6051701859880918:
         return numpy.finfo(numpy.dtype(numpy.float64)).max
     #Get model sigma_z
