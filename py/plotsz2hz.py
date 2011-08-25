@@ -231,7 +231,7 @@ def plotsz2hz(options,args):
         if not options.subtype == 'zfunc':
             if options.subtype == 'mz':
                 if velerrors: #Don't plot if errors > 30%
-                    indx= (sz_err/sz <= .3)
+                    indx= (sz_err/sz <= .2)
                     sz= sz[indx]
                     mz= mz[indx]
                     hz= hz[indx]
@@ -248,7 +248,7 @@ def plotsz2hz(options,args):
                 ylabel=r'$\sigma_z^2(z = z_{1/2}) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
             elif options.subtype == 'hz':
                 if velerrors: #Don't plot if errors > 30%
-                    indx= (sz_err/sz <= .3)
+                    indx= (sz_err/sz <= .2)
                     sz= sz[indx]
                     hz= hz[indx]
                     pivot= pivot[indx]
@@ -288,7 +288,7 @@ def plotsz2hz(options,args):
             #Calculate and plot all zfuncs
             for ii in numpy.random.permutation(len(afe)):
                 if velerrors: #Don't plot if errors > 30%
-                    if sz_err[ii]/sz[ii] > .3: continue
+                    if sz_err[ii]/sz[ii] > .2: continue
                     #if sz_err[ii] > 20.: continue
                 ds= numpy.linspace(zmin[ii]*1000.,zmax[ii]*1000.,1001)/1000.-pivot[ii]
                 thiszfunc= sz[ii]+p1[ii]*ds+p2[ii]*ds**2.
