@@ -34,8 +34,63 @@ def selectFigs(parser):
         plot_platesn_rcut(options,args)
     elif options.type.lower() == 'sn_r_fewplates':
         plot_sn_r_fewplates(options,args)
+    elif options.type.lower() == 'rcutg_rcutk':
+        plot_rcutg_rcutk(options,args)
     elif options.type.lower() == 'sfrz' or options.type.lower() == 'sfxy':
         plot_sfrz(options,args)
+
+def plot_rcutg_rcutk(options,args):
+    if options.program: select= 'program'
+    else: select= 'all'
+    sfg= segueSelect.segueSelect(sn=True,sample='g',
+                                plates=None,select=select,
+                                type_bright='sharprcut',
+                                type_faint='sharprcut')
+    sfk= segueSelect.segueSelect(sn=True,sample='k',
+                                plates=None,select=select,
+                                type_bright='sharprcut',
+                                type_faint='sharprcut')
+    #Match sfg to sfk
+    matchindxg, matchindxk= [], []
+    for pp in range(len(sfg.plates)):
+        matchk= (sfk.plates == sfg.plates[pp])
+        if True in list(matchk): #We have a match!
+            matchindxg.append(pp)
+            matchindxk.append(list(matchk).index(True))
+    matchindxg= numpy.array(matchindxg,dtype='int')
+    matchindxk= numpy.array(matchindxk,dtype='int')
+    #Now gather rcuts
+    rcutsg, rcutsk, ndata, platesn= [], [], [], []
+    for mm in range(len(matchindxg)):
+        rcutsg.append(sfg.rcuts[str(sfg.plates[matchindxg[mm]])])
+        rcutsk.append(sfk.rcuts[str(sfk.plates[matchindxk[mm]])])
+        ndata.append(len(sfk.platespec[str(sfk.plates[matchindxk[mm]])]))
+        platesn.append(sfk.platestr.platesn_r[matchindxk[mm]])
+    rcutsg= numpy.array(rcutsg)
+    rcutsk= numpy.array(rcutsk)
+    ndata= numpy.array(ndata)
+    platesn= numpy.array(platesn)
+    platesn[(platesn > 180.)]= 180. #Saturate
+    ndata= ndata/numpy.mean(ndata)*20.
+    bovy_plot.bovy_print(fig_width=5./.85)  
+    bovy_plot.bovy_plot(rcutsg,rcutsk,s=ndata,c=platesn,
+                        cmap='jet',
+                        clabel=r'$\mathrm{plateSN\_r}$',
+                        ylabel=r'$\mathrm{max}\ r_K\ [\mathrm{mag}]$',
+                        xlabel=r'$\mathrm{max}\ r_G\ [\mathrm{mag}]$',
+                        xrange=[16.5,20.2],yrange=[16.5,20.2],
+                        scatter=True,edgecolors='none',
+                        colorbar=True)
+    bovy_plot.bovy_plot(numpy.array([16.5,20.2]),
+                        numpy.array([16.5,20.2]),ls='-',color='0.65',
+                        overplot=True,zorder=-1,lw=2.)
+    bovy_plot.bovy_plot(numpy.array([16.5,20.2]),
+                        numpy.array([19.,19.]),ls='--',color='0.65',
+                        overplot=True,zorder=-2,lw=2.)
+    bovy_plot.bovy_text(16.6,19.1,r'$\mathrm{K\ star\ sample\ faint\ limit}$',
+                        color='0.65')
+    bovy_plot.bovy_end_print(options.plotfile)   
+
 
 def plot_sn_r_fewplates(options,args):
     """Plot SN versus r_0 for a few plates"""
