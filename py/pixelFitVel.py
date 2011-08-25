@@ -230,7 +230,7 @@ def plotPixelFitVel(options,args):
         zlabel= r'$\sigma_z^2(z= \langle z \rangle)\ [\mathrm{km\ s}^{-1}]$'
     elif options.type == 'hs':
         vmin, vmax= 3.,15.
-        zlabel= r'$R_\sigma\ [\mathrm{kpc}]$'
+        zlabel= r'$h_\sigma\ [\mathrm{kpc}]$'
     elif options.type == 'afe':
         vmin, vmax= 0.05,.4
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
