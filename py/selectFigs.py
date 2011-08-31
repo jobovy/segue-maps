@@ -120,7 +120,7 @@ def plot_sn_r_fewplates(options,args):
                             'k--',
                             xrange=xrange,
                             yrange=yrange,
-                            xlabel=r'$r_0\ [\mathrm{mag}]$',
+                            xlabel=r'$r\ [\mathrm{mag}]$',
                             ylabel=r'$\mathrm{SN}$')
         for bb in range(nbins):
             theseplates= []
@@ -182,7 +182,7 @@ def plot_platesn_rcut(options,args):
     bovy_plot.bovy_print()
     bovy_plot.bovy_plot(xs,ys,'ko',
                         xlabel=r'$\mathrm{plateSN\_r}$',
-                        ylabel=r'$\mathrm{max}\ r_0\ [\mathrm{mag}]$',
+                        ylabel=r'$\mathrm{max}\ r\ [\mathrm{mag}]$',
                         xrange=xrange,
                         yrange=yrange,
                         ms=3)
