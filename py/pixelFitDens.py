@@ -10,6 +10,7 @@ from matplotlib import pyplot, cm
 import bovy_mcmc
 from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
     segueSelect, _GDWARFFILE, _KDWARFFILE
+from selectFigs import _squeeze
 from fitDensz import _TwoDblExpDensity, _HWRLikeMinus, _ZSUN, DistSpline, \
     _ivezic_dist, _NDS, cb, _HWRDensity, _HWRLike
 _NGR= 11
@@ -362,12 +363,22 @@ def plotPixelFit(options,args):
         savefile= open(args[0],'rb')
         fits= pickle.load(savefile)
         savefile.close()
+    #Uncertainties are in savefile3 and 4
+    if len(args) > 1 and os.path.exists(args[1]):
+        savefile= open(args[1],'rb')
+        denssamples= pickle.load(savefile)
+        savefile.close()
+        denserrors= True
+    else:
+        denssamples= None
+        denserrors= False
     #Now plot
     #Run through the pixels and gather
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
             or options.type.lower() == 'fehafe' \
             or options.type.lower() == 'afefeh':
         plotthis= []
+        errors= []
     else:
         plotthis= numpy.zeros((tightbinned.npixfeh(),tightbinned.npixafe()))
     for ii in range(tightbinned.npixfeh()):
@@ -411,6 +422,14 @@ def plotPixelFit(options,args):
                                      numpy.exp(thisfit[0])*1000.,
                                      numpy.exp(thisfit[1]),
                                      len(data)])
+                    if denserrors:
+                        theseerrors= []
+                        thesesamples= denssamples[afeindx+fehindx*binned.npixafe()]
+                        if options.model.lower() == 'hwr':
+                            for kk in [0,1]:
+                                xs= numpy.array([s[kk] for s in thesesamples])
+                                theseerrors.append(0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
+                        errors.append(theseerrors)
     #Set up plot
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'hz':
@@ -442,13 +461,17 @@ def plotPixelFit(options,args):
             or options.type.lower() == 'afefeh':
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather hR and hz
-        hz, hr,afe, feh, ndata= [], [], [], [], []
+        hz_err, hr_err, hz, hr,afe, feh, ndata= [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
+            hz_err.append(errors[ii][0])
+            hr_err.append(errors[ii][1])
             hz.append(plotthis[ii][2])
             hr.append(plotthis[ii][3])
             afe.append(plotthis[ii][1])
             feh.append(plotthis[ii][0])
             ndata.append(plotthis[ii][4])
+        hz_err= numpy.array(hz_err)
+        hr_err= numpy.array(hr_err)
         hz= numpy.array(hz)
         hr= numpy.array(hr)
         afe= numpy.array(afe)
@@ -495,14 +518,30 @@ def plotPixelFit(options,args):
                             xrange=xrange,yrange=yrange,
                             vmin=vmin,vmax=vmax,
                             scatter=True,edgecolors='none',
-                            colorbar=True)
+                            colorbar=True,zorder=2)
+        #Overplot errors
+        if options.ploterrors:
+            colormap = cm.jet
+            for ii in range(len(hz)):
+                if hr[ii] < 5.:
+                    pyplot.errorbar(hr[ii],hz[ii],xerr=hr_err[ii],yerr=hz_err[ii],
+                                    color=colormap(_squeeze(plotc[ii],
+                                                            numpy.amax([vmin,
+                                                                        numpy.amin(plotc)]),
+                                                            numpy.amin([vmax,
+                                                                        numpy.amax(plotc)]))),
+                                    elinewidth=2.,capsize=3,zorder=0)
         #Overplot upper limits in hR
-        from selectFigs import _squeeze
         colormap = cm.jet
         for jj in range(len(hr)):
             if hr[jj] < 5.: continue
             pyplot.errorbar(4.8,hz[jj],xerr=0.1,xuplims=True,
-                            color=colormap(_squeeze(plotc[jj],vmin,vmax)),
+                                    color=colormap(_squeeze(plotc[jj],
+                                                            numpy.amax([vmin,
+                                                                        numpy.amin(plotc)]),
+                                                            numpy.amin([vmax,
+                                                                        numpy.amax(plotc)]))),
+#                            color=colormap(_squeeze(plotc[jj],vmin,vmax)),
                             elinewidth=2.,capsize=3)
     else:
         bovy_plot.bovy_print()
@@ -567,6 +606,9 @@ def get_options():
     parser.add_option("--mcsample",action="store_true", dest="mcsample",
                       default=False,
                       help="If set, sample around the best fit, save in args[1]")
+    parser.add_option("--ploterrors",action="store_true", dest="ploterrors",
+                      default=False,
+                      help="If set, plot the errorbars")
     parser.add_option("--nsamples",dest='nsamples',default=1000,type='int',
                       help="Number of MCMC samples to obtain")
     return parser
