@@ -60,14 +60,16 @@ def plot_rcutg_rcutk(options,args):
     matchindxg= numpy.array(matchindxg,dtype='int')
     matchindxk= numpy.array(matchindxk,dtype='int')
     #Now gather rcuts
-    rcutsg, rcutsk, ndata, platesn= [], [], [], []
+    rcutsg, rcutsk, ndata, platesn, plates= [], [], [], [], []
     for mm in range(len(matchindxg)):
         rcutsg.append(sfg.rcuts[str(sfg.plates[matchindxg[mm]])])
         rcutsk.append(sfk.rcuts[str(sfk.plates[matchindxk[mm]])])
         ndata.append(len(sfk.platespec[str(sfk.plates[matchindxk[mm]])]))
         platesn.append(sfk.platestr.platesn_r[matchindxk[mm]])
+        plates.append(sfk.plates[matchindxk[mm]])
     rcutsg= numpy.array(rcutsg)
     rcutsk= numpy.array(rcutsk)
+    plates= numpy.array(plates)
     ndata= numpy.array(ndata)
     platesn= numpy.array(platesn)
     platesn[(platesn > 180.)]= 180. #Saturate
@@ -90,7 +92,13 @@ def plot_rcutg_rcutk(options,args):
     bovy_plot.bovy_text(16.6,19.1,r'$\mathrm{K\ star\ sample\ faint\ limit}$',
                         color='0.65')
     bovy_plot.bovy_end_print(options.plotfile)   
-
+    #Also output the discrepant plates
+    if len(args) > 0:
+        indx= (rcutsg > (rcutsk+0.3))
+        if numpy.sum(indx) > 0.:
+            print plates[indx]
+            numpy.savetext(args[0],plates[indx],fmt='%i')
+    return None
 
 def plot_sn_r_fewplates(options,args):
     """Plot SN versus r_0 for a few plates"""
