@@ -97,7 +97,7 @@ def plot_rcutg_rcutk(options,args):
         indx= (rcutsg > (rcutsk+0.3))
         if numpy.sum(indx) > 0.:
             print plates[indx]
-            numpy.savetext(args[0],plates[indx],fmt='%i')
+            numpy.savetxt(args[0],plates[indx],fmt='%i')
     return None
 
 def plot_sn_r_fewplates(options,args):
