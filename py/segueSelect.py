@@ -45,6 +45,7 @@ class segueSelect:
                  binedges_faint=_BINEDGES_G_FAINT,
                  ug=False,ri=False,sn=True,
                  ebv=True,
+                 _rmax=None,_rmin=None,
                  _platephot=None,_platespec=None,_spec=None):
         """
         NAME:
@@ -194,6 +195,8 @@ class segueSelect:
         elif self.sample == 'fg':
             self.rmin= 14.5
             self.rmax= 20.
+        if not _rmin is None: self.rmin= _rmin
+        if not _rmax is None: self.rmax= _rmax
         #load the photometry for the SEGUE plates
         if _platephot is None:
             self.platephot= {}
