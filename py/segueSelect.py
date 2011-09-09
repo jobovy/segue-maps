@@ -383,7 +383,7 @@ class segueSelect:
         #First determine whether this is a bright or a faint plate
         bright= self.platebright[str(plate)] #Short-cut
         if bright:
-            if r >= 17.8 or r < self.rmin: return 0.
+            if not self.type_bright.lower() == 'tanhrcut+brightsharprcut' and (r >= 17.8 or r < self.rmin): return 0.
             elif self.type_bright.lower() == 'constant':
                 return self.weight[str(plate)]
             elif self.type_bright.lower() == 'r':
@@ -415,8 +415,14 @@ class segueSelect:
                     *self.rcuts_correct[str(plate)]\
                     *_sf_tanh(r,[self.rcuts[str(plate)]-0.1,
                                  -3.,0.])
+            elif self.type_bright.lower() == 'tanhrcut+brightsharprcut':
+                if r <= self.rcuts_bright[str(plate)]: return 0.
+                return self.weight[str(plate)]\
+                    *self.rcuts_correct[str(plate)]\
+                    *_sf_tanh(r,[self.rcuts_faint[str(plate)]-0.1,
+                                 -3.,0.])
         else:
-            if r < 17.8 or r > self.rmax: return 0.
+            if not self.type_bright.lower() == 'tanhrcut+brightsharprcut' and (r < 17.8 or r > self.rmax): return 0.
             elif self.type_faint.lower() == 'constant':
                 return self.weight[str(plate)]
             elif self.type_faint.lower() == 'r':
@@ -447,6 +453,12 @@ class segueSelect:
                 return self.weight[str(plate)]\
                     *self.rcuts_correct[str(plate)]\
                     *_sf_tanh(r,[self.rcuts[str(plate)]-0.1,
+                                 -3.,0.])
+            elif self.type_faint.lower() == 'tanhrcut+brightsharprcut':
+                if r <= self.rcuts_bright[str(plate)]: return 0.
+                return self.weight[str(plate)]\
+                    *self.rcuts_correct[str(plate)]\
+                    *_sf_tanh(r,[self.rcuts_faint[str(plate)]-0.1,
                                  -3.,0.])
 
     def check_consistency(self,plate):
@@ -891,7 +903,29 @@ class segueSelect:
                 else:
                     self.rcuts_correct[str(p)]= \
                         float(len(self.platephot[str(p)]))/denom
-        if type.lower() == 'r':
+        elif type.lower() == 'tanhrcut+brightsharprcut':
+            #For each plate cut at the location of the brightest and faintest object
+            if not hasattr(self,'rcuts_faint'): self.rcuts_faint= {}
+            if not hasattr(self,'rcuts_bright'): self.rcuts_bright= {}
+            if not hasattr(self,'rcuts_correct'): self.rcuts_correct= {}
+            for ii in range(len(self.plates)):
+                if bright and 'faint' in self.platestr[ii].programname: continue
+                elif not bright \
+                        and not 'faint' in self.platestr[ii].programname: continue
+                p= self.plates[ii]
+                if self.weight[str(p)] == 0.:
+                    self.rcuts_bright[str(p)]= 0.
+                    self.rcuts_faint[str(p)]= 0.
+                    self.rcuts_correct[str(p)]= 0.
+                    continue
+                self.rcuts_bright[str(p)]= numpy.amin(self.platespec[str(p)].dered_r)
+                self.rcuts_faint[str(p)]= numpy.amax(self.platespec[str(p)].dered_r)
+                denom= float(numpy.sum((self.platephot[str(p)].r <= self.rcuts_faint[str(p)])*(self.platephot[str(p)].r > self.rcuts_bright[str(p)])))
+                if denom == 0.: self.rcuts_correct[str(p)]= 0.
+                else:
+                    self.rcuts_correct[str(p)]= \
+                        float(len(self.platephot[str(p)]))/denom
+        elif type.lower() == 'r':
             #Determine the selection function in bins in r, for bright/faint
             nrbins= int(math.floor((17.8-self.rmin)/dr))+1
             s_one_r= numpy.zeros((nrbins,len(self.plates)))

@@ -36,8 +36,60 @@ def selectFigs(parser):
         plot_sn_r_fewplates(options,args)
     elif options.type.lower() == 'rcutg_rcutk':
         plot_rcutg_rcutk(options,args)
+    elif options.type.lower() == 'specr_platepairs':
+        plot_specr_platepairs(options,args)
     elif options.type.lower() == 'sfrz' or options.type.lower() == 'sfxy':
         plot_sfrz(options,args)
+
+def plot_specr_platepairs(options,args):
+    if options.program: select= 'program'
+    else: select= 'all'
+    sf= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                plates=None,select=select,
+                                type_bright='sharprcut',
+                                type_faint='sharprcut')
+    #Set-up output
+    if not os.path.exists(args[0]):
+        os.mkdir(args[0])
+    #Find plate-pairs
+    allplates= list(sf.plates)
+    done= []
+    for plate in allplates:
+        if plate in done: continue
+        #Find plate's friend
+        ii= (sf.plates == plate)
+        indx= (sf.platestr.ra == sf.platestr[ii].ra)
+        if numpy.sum(indx) < 2: continue #No friend
+        thisplates= sf.plates[indx]
+        ii= (sf.plates == thisplates[0])
+        jj= (sf.plates == thisplates[1])
+        brightplate, faintplate= None, None
+        if 'faint' in sf.platestr[ii].programname[0]:
+            faintplate= thisplates[0]
+        elif 'faint' in sf.platestr[jj].programname[0]:
+            faintplate= thisplates[1]
+        if not 'faint' in sf.platestr[ii].programname[0]:
+            brightplate= thisplates[0]
+        elif not 'faint' in sf.platestr[jj].programname[0]:
+            brightplate= thisplates[1]
+        if brightplate is None or faintplate is None:
+            print "Error: no bright/faint plate for plate-pair"
+        done.extend([brightplate,faintplate])
+        #Plot bright and faint distributions
+        bovy_plot.bovy_print()
+        if len(sf.platespec[str(brightplate)].r) > 0:
+            bovy_plot.bovy_hist(sf.platespec[str(brightplate)].r,bins=20,range=[14.,20.],
+                                xlabel=r'$r\ [\mathrm{mag}]$',histtype='step',normed=True)
+        if len(sf.platespec[str(faintplate)].r) > 0:
+            bovy_plot.bovy_hist(sf.platespec[str(faintplate)].r,bins=20,range=[14.,20.],
+                                overplot=True,histtype='step',normed=True)
+        pyplot.ylim(0.,1.5)
+        bovy_plot.bovy_text(r'$\mathrm{bright\ plate\ %i}$' % brightplate
+                            +'\n'+
+                            r'$\mathrm{faint\ plate\ %i}$' % faintplate,
+                            top_left=True)
+        bovy_plot.bovy_end_print(os.path.join(args[0],'specr-%i-%i.png' % (brightplate,faintplate)))
+    return None
 
 def plot_rcutg_rcutk(options,args):
     if options.program: select= 'program'
