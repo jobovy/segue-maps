@@ -45,7 +45,7 @@ class segueSelect:
                  binedges_faint=_BINEDGES_G_FAINT,
                  ug=False,ri=False,sn=True,
                  ebv=True,
-                 _rmax=None,_rmin=None,
+                 _rmax=None,_rmin=None,_indiv_brightlims=False,
                  _platephot=None,_platespec=None,_spec=None):
         """
         NAME:
@@ -185,6 +185,22 @@ class segueSelect:
         self.brightplateindx= brightplateindx
         self.nbrightplates= numpy.sum(self.brightplateindx)
         self.nfaintplates= numpy.sum(self.faintplateindx)
+        #Build plate-pair array
+        platemate= numpy.zeros(len(self.plates),dtype='int')
+        indices= numpy.arange(len(self.plates),dtype='int')
+        for ii in range(len(self.plates)):
+            plate= self.plates[ii]
+            #Find plate's friend
+            indx= (self.platestr.ra == self.platestr[ii].ra)
+            if numpy.sum(indx) < 2: 
+                platemate[ii]= -1 #No friend
+                continue
+            thisplates= self.plates[indx]
+            jj= indices[indx][0]
+            kk= indices[indx][1]
+            if ii == kk: platemate[ii]= jj
+            elif ii == jj: platemate[ii]= kk
+        self.platemate= platemate
         #Set r limits
         if self.sample == 'g':
             self.rmin= 14.5
@@ -197,52 +213,7 @@ class segueSelect:
             self.rmax= 20.
         if not _rmin is None: self.rmin= _rmin
         if not _rmax is None: self.rmax= _rmax
-        #load the photometry for the SEGUE plates
-        if _platephot is None:
-            self.platephot= {}
-            for ii in range(len(self.plates)):
-                plate= self.plates[ii]
-                sys.stdout.write('\r'+"Loading photometry for plate %i" % plate)
-                sys.stdout.flush()
-                platefile= os.path.join(_SEGUESELECTDIR,'segueplates',
-                                        '%i.fit' % plate)
-                self.platephot[str(plate)]= _load_fits(platefile)
-                #Split into bright and faint
-                if 'faint' in self.platestr[ii].programname:
-                    indx= (self.platephot[str(plate)].field('r') >= 17.8)
-                    self.platephot[str(plate)]= self.platephot[str(plate)][indx]
-                else:
-                    indx= (self.platephot[str(plate)].field('r') < 17.8)
-                    self.platephot[str(plate)]= self.platephot[str(plate)][indx]
-            sys.stdout.write('\r'+_ERASESTR+'\r')
-            sys.stdout.flush()
-        else:
-            self.platephot= _platephot
-        #Flesh out samples
-        for plate in self.plates:
-            if self.sample == 'g':
-                indx= ((self.platephot[str(plate)].field('g')\
-                            -self.platephot[str(plate)].field('r')) < 0.55)\
-                            *((self.platephot[str(plate)].field('g')\
-                                   -self.platephot[str(plate)].field('r')) > 0.48)\
-                                   *(self.platephot[str(plate)].field('r') < 20.2)\
-                                   *(self.platephot[str(plate)].field('r') > 14.5)
-            elif self.sample == 'k':
-                indx= ((self.platephot[str(plate)].field('g')\
-                            -self.platephot[str(plate)].field('r')) > 0.55)\
-                            *((self.platephot[str(plate)].field('g')\
-                                   -self.platephot[str(plate)].field('r')) < 0.75)\
-                                   *(self.platephot[str(plate)].field('r') < 19.)\
-                                   *(self.platephot[str(plate)].field('r') > 14.5)
-            elif self.sample == 'fg':
-                indx= ((self.platephot[str(plate)].field('g')\
-                            -self.platephot[str(plate)].field('r')) > 0.2)\
-                            *((self.platephot[str(plate)].field('g')\
-                                   -self.platephot[str(plate)].field('r')) < 0.48)\
-                                   *(self.platephot[str(plate)].field('r') < 20.)\
-                                   *(self.platephot[str(plate)].field('r') > 14.5)
-            self.platephot[str(plate)]= self.platephot[str(plate)][indx]
-        #Now load the spectroscopic data
+        #load the spectroscopic data
         self.select= select
         if _platespec is None:
             sys.stdout.write('\r'+"Reading and parsing spectroscopic data ...\r")
@@ -281,6 +252,88 @@ class segueSelect:
         else:
             self.platespec= _platespec
             self.spec= _spec
+        #Set bright/faint divider
+        if _indiv_brightlims:
+            #Use brightest faint-plate object as the bright/faint interface
+            faintbright= numpy.zeros(len(self.plates))
+            for ii in range(len(self.plates)):
+                #Pair?
+                if not self.platemate[ii] == -1:
+                    #Which one's faint?
+                    if faintplateindx[ii]: #First one
+                        if len(self.platespec[str(self.plates[ii])].r) > 0:
+                            faintbright[ii]= numpy.amin(self.platespec[str(self.plates[ii])].r)
+                        elif len(self.platespec[str(self.plates[self.platemate[ii]])].r) > 0:
+                            faintbright[ii]= numpy.amax(self.platespec[str(self.plates[self.platemate[ii]])].r)
+                        else: faintbright[ii]= 17.8
+                    elif faintplateindx[self.platemate[ii]]: #Second one
+                        if len(self.platespec[str(self.plates[self.platemate[ii]])].r) > 0:
+                            faintbright[ii]= numpy.amin(self.platespec[str(self.plates[self.platemate[ii]])].r)
+                        elif len(self.platespec[str(self.plates[ii])].r) > 0:
+                            faintbright[ii]= numpy.amax(self.platespec[str(self.plates[ii])].r)
+                        else:
+                            faintbright[ii]= 17.8
+                    else:
+                        print "Error: no faint plate found for plate-pair %i,%i ..."%(self.plates[ii],self.plates[self.platemate[ii]])
+                        print "Returning ..."
+                        return None                        
+                else:
+                    if self.faintplateindx[ii]: #faint plate
+                        faintbright[ii]= numpy.amin(self.platespec[str(self.plates[ii])].r)
+                    else:
+                        faintbright[ii]= 17.8
+                self.faintbright= faintbright
+        else:
+            self.faintbright= numpy.zeros(len(self.plates))+17.8
+        #Also create faintbright dict
+        self.faintbrightDict= {}
+        for ii in range(len(self.plates)):
+            self.faintbrightDict[str(self.plates[ii])]= self.faintbright[ii]
+        #load the photometry for the SEGUE plates
+        if _platephot is None:
+            self.platephot= {}
+            for ii in range(len(self.plates)):
+                plate= self.plates[ii]
+                sys.stdout.write('\r'+"Loading photometry for plate %i" % plate)
+                sys.stdout.flush()
+                platefile= os.path.join(_SEGUESELECTDIR,'segueplates',
+                                        '%i.fit' % plate)
+                self.platephot[str(plate)]= _load_fits(platefile)
+                #Split into bright and faint
+                if 'faint' in self.platestr[ii].programname:
+                    indx= (self.platephot[str(plate)].field('r') >= self.faintbright[ii])
+                    self.platephot[str(plate)]= self.platephot[str(plate)][indx]
+                else:
+                    indx= (self.platephot[str(plate)].field('r') < self.faintbright[ii])
+                    self.platephot[str(plate)]= self.platephot[str(plate)][indx]
+            sys.stdout.write('\r'+_ERASESTR+'\r')
+            sys.stdout.flush()
+        else:
+            self.platephot= _platephot
+        #Flesh out samples
+        for plate in self.plates:
+            if self.sample == 'g':
+                indx= ((self.platephot[str(plate)].field('g')\
+                            -self.platephot[str(plate)].field('r')) < 0.55)\
+                            *((self.platephot[str(plate)].field('g')\
+                                   -self.platephot[str(plate)].field('r')) > 0.48)\
+                                   *(self.platephot[str(plate)].field('r') < 20.2)\
+                                   *(self.platephot[str(plate)].field('r') > 14.5)
+            elif self.sample == 'k':
+                indx= ((self.platephot[str(plate)].field('g')\
+                            -self.platephot[str(plate)].field('r')) > 0.55)\
+                            *((self.platephot[str(plate)].field('g')\
+                                   -self.platephot[str(plate)].field('r')) < 0.75)\
+                                   *(self.platephot[str(plate)].field('r') < 19.)\
+                                   *(self.platephot[str(plate)].field('r') > 14.5)
+            elif self.sample == 'fg':
+                indx= ((self.platephot[str(plate)].field('g')\
+                            -self.platephot[str(plate)].field('r')) > 0.2)\
+                            *((self.platephot[str(plate)].field('g')\
+                                   -self.platephot[str(plate)].field('r')) < 0.48)\
+                                   *(self.platephot[str(plate)].field('r') < 20.)\
+                                   *(self.platephot[str(plate)].field('r') > 14.5)
+            self.platephot[str(plate)]= self.platephot[str(plate)][indx]
         #Determine selection function
         sys.stdout.write('\r'+"Determining selection function ...\r")
         sys.stdout.flush()
@@ -332,9 +385,9 @@ class segueSelect:
                 else: thisr= r
                 out= numpy.zeros(nout)
                 if bright:
-                    indx= (thisr >= 14.5)*(thisr <= numpy.amin([self.rcuts[str(plate)],17.8]))
+                    indx= (thisr >= 14.5)*(thisr <= numpy.amin([self.rcuts[str(plate)],self.faintbrightDict[str(plate)]]))
                 else:
-                    indx= (thisr >= 17.8)*(thisr <= numpy.amin([self.rcuts[str(plate)],self.rmax]))
+                    indx= (thisr >= self.faintbrightDict[str(plate)])*(thisr <= numpy.amin([self.rcuts[str(plate)],self.rmax]))
                 if numpy.sum(indx) == 0: return out
                 out[indx]= self.weight[str(plate)]\
                     *self.rcuts_correct[str(plate)]
@@ -347,9 +400,9 @@ class segueSelect:
                 else: thisr= r
                 out= numpy.zeros(nout)
                 if bright:
-                    indx= (thisr >= 14.5)*(thisr <= 17.8)
+                    indx= (thisr >= 14.5)*(thisr <= self.faintbrightDict[str(plate)])
                 else:
-                    indx= (thisr >= 17.8)*(thisr <= self.rmax)
+                    indx= (thisr >= self.faintbrightDict[str(plate)])*(thisr <= self.rmax)
                 if numpy.sum(indx) == 0: return out
                 out[indx]= self.weight[str(plate)]\
                     *self.rcuts_correct[str(plate)]\
@@ -383,7 +436,7 @@ class segueSelect:
         #First determine whether this is a bright or a faint plate
         bright= self.platebright[str(plate)] #Short-cut
         if bright:
-            if not self.type_bright.lower() == 'tanhrcut+brightsharprcut' and (r >= 17.8 or r < self.rmin): return 0.
+            if not self.type_bright.lower() == 'tanhrcut+brightsharprcut' and (r >= self.faintbrightDict[str(plate)] or r < self.rmin): return 0.
             elif self.type_bright.lower() == 'constant':
                 return self.weight[str(plate)]
             elif self.type_bright.lower() == 'r':
@@ -422,7 +475,7 @@ class segueSelect:
                     *_sf_tanh(r,[self.rcuts_faint[str(plate)]-0.1,
                                  -3.,0.])
         else:
-            if not self.type_bright.lower() == 'tanhrcut+brightsharprcut' and (r < 17.8 or r > self.rmax): return 0.
+            if not self.type_bright.lower() == 'tanhrcut+brightsharprcut' and (r < self.faintbrightDict[str(plate)] or r > self.rmax): return 0.
             elif self.type_faint.lower() == 'constant':
                 return self.weight[str(plate)]
             elif self.type_faint.lower() == 'r':
@@ -522,11 +575,11 @@ class segueSelect:
         thisplatespec= self.platespec[str(plate)]
         #Cut to bright or faint part
         if self.platebright[str(plate)]:
-            thisplatespec= thisplatespec[(thisplatespec.dered_r < 17.8)\
+            thisplatespec= thisplatespec[(thisplatespec.dered_r < self.faintbrightDict[str(plate)])\
                                              *(thisplatespec.dered_r > self.rmin)]
         else:
             thisplatespec= thisplatespec[(thisplatespec.dered_r < self.rmax)\
-                                             *(thisplatespec.dered_r >= 17.8)]
+                                             *(thisplatespec.dered_r >= self.faintbrightDict[str(plate)])]
         if len(thisplatespec.dered_r) == 0: return (None,None,None,None)
         #Calculate selection function weights for the photometry
         w= numpy.zeros(len(thisplatephot.r))
