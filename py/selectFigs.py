@@ -76,6 +76,8 @@ def plot_specr_platepairs(options,args):
             print "Error: no bright/faint plate for plate-pair"
         done.extend([brightplate,faintplate])
         #Plot bright and faint distributions
+        if len(sf.platespec[str(brightplate)].r) == 0 or len(sf.platespec[str(faintplate)].r) == 0:
+            continue
         bovy_plot.bovy_print()
         if len(sf.platespec[str(brightplate)].r) > 0:
             bovy_plot.bovy_hist(sf.platespec[str(brightplate)].r,bins=20,range=[14.,20.],
@@ -83,10 +85,12 @@ def plot_specr_platepairs(options,args):
         if len(sf.platespec[str(faintplate)].r) > 0:
             bovy_plot.bovy_hist(sf.platespec[str(faintplate)].r,bins=20,range=[14.,20.],
                                 overplot=True,histtype='step',normed=True)
+        else:
+            con
         pyplot.ylim(0.,1.5)
-        bovy_plot.bovy_text(r'$\mathrm{bright\ plate\ %i}$' % brightplate
+        bovy_plot.bovy_text(r'$\mathrm{bright\ plate\ %i,\ \mathrm{faintest}\ %5.2f\ mag}$' % (brightplate,numpy.amax(sf.platespec[str(brightplate)].r))
                             +'\n'+
-                            r'$\mathrm{faint\ plate\ %i}$' % faintplate,
+                            r'$\mathrm{faint\ plate\ %i,\ \mathrm{brightest}\ %5.2f\ mag}$' % (faintplate,numpy.amin(sf.platespec[str(faintplate)].r)),
                             top_left=True)
         bovy_plot.bovy_end_print(os.path.join(args[0],'specr-%i-%i.png' % (brightplate,faintplate)))
     return None
