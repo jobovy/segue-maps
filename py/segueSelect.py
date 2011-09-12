@@ -46,6 +46,7 @@ class segueSelect:
                  ug=False,ri=False,sn=True,
                  ebv=True,
                  _rmax=None,_rmin=None,indiv_brightlims=False,
+                 _program_brightlims=False,
                  _platephot=None,_platespec=None,_spec=None):
         """
         NAME:
@@ -256,6 +257,26 @@ class segueSelect:
             self.spec= _spec
         #Set bright/faint divider
         if indiv_brightlims:
+            if _program_brightlims and not select.lower() == 'program': #Grab the bright/faint interface from the program stars
+                if sample.lower() == 'g':
+                    bfspec= read_gdwarfs(file=_GDWARFFILE,
+                                         ug=ug,ri=ri,sn=sn,
+                                         ebv=ebv,nocoords=True)
+                elif sample.lower() == 'k':
+                    bfspec= read_kdwarfs(file=_KDWARFFILE,
+                                            ug=ug,ri=ri,sn=sn,
+                                            ebv=ebv,nocoords=True)
+                elif sample.lower() == 'fg':
+                    bfspec= read_fgstars(file=_FGSTARFILE,
+                                         ug=ug,ri=ri,sn=sn,
+                                         ebv=ebv,nocoords=True)
+                bfplatespec= {}
+                for plate in self.plates:
+                    #Find spectra for each plate
+                    indx= (bfspec.field('plate') == plate)
+                    bfplatespec[str(plate)]= bfspec[indx]
+            else:
+                bfplatespec= self.platespec
             #Use brightest faint-plate object as the bright/faint interface
             faintbright= numpy.zeros(len(self.plates))
             for ii in range(len(self.plates)):
@@ -263,16 +284,16 @@ class segueSelect:
                 if not self.platemate[ii] == -1:
                     #Which one's faint?
                     if faintplateindx[ii]: #First one
-                        if len(self.platespec[str(self.plates[ii])].r) > 0:
-                            faintbright[ii]= numpy.amin(self.platespec[str(self.plates[ii])].r)
-                        elif len(self.platespec[str(self.plates[self.platemate[ii]])].r) > 0:
-                            faintbright[ii]= numpy.amax(self.platespec[str(self.plates[self.platemate[ii]])].r)
+                        if len(bfplatespec[str(self.plates[ii])].r) > 0:
+                            faintbright[ii]= numpy.amin(bfplatespec[str(self.plates[ii])].r)
+                        elif len(bfplatespec[str(self.plates[self.platemate[ii]])].r) > 0:
+                            faintbright[ii]= numpy.amax(bfplatespec[str(self.plates[self.platemate[ii]])].r)
                         else: faintbright[ii]= 17.8
                     elif faintplateindx[self.platemate[ii]]: #Second one
-                        if len(self.platespec[str(self.plates[self.platemate[ii]])].r) > 0:
-                            faintbright[ii]= numpy.amin(self.platespec[str(self.plates[self.platemate[ii]])].r)
-                        elif len(self.platespec[str(self.plates[ii])].r) > 0:
-                            faintbright[ii]= numpy.amax(self.platespec[str(self.plates[ii])].r)
+                        if len(bfplatespec[str(self.plates[self.platemate[ii]])].r) > 0:
+                            faintbright[ii]= numpy.amin(bfplatespec[str(self.plates[self.platemate[ii]])].r)
+                        elif len(bfplatespec[str(self.plates[ii])].r) > 0:
+                            faintbright[ii]= numpy.amax(bfplatespec[str(self.plates[ii])].r)
                         else:
                             faintbright[ii]= 17.8
                     else:
@@ -281,7 +302,7 @@ class segueSelect:
                         return None                        
                 else:
                     if self.faintplateindx[ii]: #faint plate
-                        faintbright[ii]= numpy.amin(self.platespec[str(self.plates[ii])].r)
+                        faintbright[ii]= numpy.amin(bfplatespec[str(self.plates[ii])].r)
                     else:
                         faintbright[ii]= 17.8
                 self.faintbright= faintbright

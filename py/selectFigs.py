@@ -614,6 +614,11 @@ def plot_ks(options,args):
                                      plates=plates,type_bright='tanhrcut',
                                      type_faint='tanhrcut',select=select,
                                      indiv_brightlims=True)
+    if not select.lower() == 'program':
+        sftanhip= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                          plates=plates,type_bright='tanhrcut',
+                                          type_faint='tanhrcut',select=select,
+                                          indiv_brightlims=True,_program_brightlims=True)
     print "constant, bright"
     ksconst_bright= sfconst.check_consistency('bright')
     print "constant, faint"
@@ -638,6 +643,11 @@ def plot_ks(options,args):
     kstanhi_bright= sftanhi.check_consistency('bright')
     print "tanhrcut+indivbrightlims, faint"
     kstanhi_faint= sftanhi.check_consistency('faint')
+    if not select.lower() == 'program':
+        print "tanhrcut+indivbrightlims+program_brightlims, bright"
+        kstanhip_bright= sftanhip.check_consistency('bright')
+        print "tanhrcut+indivbrightlims+program_brightlims, faint"
+        kstanhip_faint= sftanhip.check_consistency('faint')
     #Plot
     bins=21
     range= [(0.001-1./bins)/(1.+1./bins),1.]
@@ -660,6 +670,10 @@ def plot_ks(options,args):
     bovy_plot.bovy_hist(kstanhi_bright,
                         range=range,bins=bins,overplot=True,
                         ec='c',ls='dashed',histtype='step')
+    if not select.lower() == 'program':
+        bovy_plot.bovy_hist(kstanhip_bright,
+                            range=range,bins=bins,overplot=True,
+                            ec='m',ls='dashed',histtype='step')
     bovy_plot.bovy_hist(ksconst_faint,range=range,bins=bins,overplot=True,
                         ec='r',ls='solid',histtype='step')
     bovy_plot.bovy_hist(ksr_faint,range=range,bins=bins,overplot=True,
@@ -676,6 +690,10 @@ def plot_ks(options,args):
     bovy_plot.bovy_hist(kstanhi_faint,
                         range=range,bins=bins,overplot=True,
                         ec='c',ls='solid',histtype='step')
+    if not select.lower() == 'program':
+        bovy_plot.bovy_hist(kstanhip_faint,
+                            range=range,bins=bins,overplot=True,
+                            ec='m',ls='solid',histtype='step')
     xlegend, ylegend, dy= 0.45, 140., -10.
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{constant}$',color='r')
     bovy_plot.bovy_text(xlegend,ylegend+dy,r'$r\ \mathrm{dependent}$',color='orange')
@@ -683,7 +701,11 @@ def plot_ks(options,args):
     bovy_plot.bovy_text(xlegend,ylegend+3.*dy,r'$\mathrm{sharp}\ r\ \mathrm{cut}$',color='g')
     bovy_plot.bovy_text(xlegend,ylegend+4.*dy,r'$\mathrm{tanh}\ r\ \mathrm{cut}$',color='b')
     bovy_plot.bovy_text(xlegend,ylegend+5.*dy,r'$\mathrm{tanh}\ r\ \mathrm{cut,\ indiv\_brightlims}$',color='c')
-    xlegend, ylegend, dy= 0.45, 75., -10.
+    if not select.lower() == 'program':
+        bovy_plot.bovy_text(xlegend,ylegend+6.*dy,r'$\mathrm{tanh}\ r\ \mathrm{cut,\ indiv\_brightlims,\ program\_brightlims}$',color='m')
+        xlegend, ylegend, dy= 0.45, 65., -10.
+    else:
+        xlegend, ylegend, dy= 0.45, 75., -10.
     bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend,ylegend],'k--',
                         overplot=True)
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{bright}$')
