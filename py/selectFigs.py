@@ -38,8 +38,58 @@ def selectFigs(parser):
         plot_rcutg_rcutk(options,args)
     elif options.type.lower() == 'specr_platepairs':
         plot_specr_platepairs(options,args)
+    elif options.type.lower() == 'faintbright_programall':
+        plot_faintbright_programall(options,args)
     elif options.type.lower() == 'sfrz' or options.type.lower() == 'sfxy':
         plot_sfrz(options,args)
+
+def plot_faintbright_programall(options,args):
+    #Load selection functions
+    sf= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                plates=None,select='all',
+                                type_bright='tanhrcut',
+                                type_faint='tanhrcut',
+                                indiv_brightlims=True)
+    sfp= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                 plates=None,select='program',
+                                 type_bright='tanhrcut',
+                                 type_faint='tanhrcut',
+                                 indiv_brightlims=True)
+    #Match sf to sfp, just to be sure
+    matchindx, matchindxp= [], []
+    for pp in range(len(sf.plates)):
+        matchp= (sfp.plates == sf.plates[pp])
+        if True in list(matchp): #We have a match!
+            matchindx.append(pp)
+            matchindxp.append(list(matchp).index(True))
+    matchindx= numpy.array(matchindx,dtype='int')
+    matchindxp= numpy.array(matchindxp,dtype='int')
+    #Now gather faintbright
+    fb, fbp, ndata, platesn= [], [], [], []
+    for mm in range(len(matchindx)):
+        fb.append(sf.faintbright[matchindx[mm]])
+        fbp.append(sfp.faintbright[matchindxp[mm]])
+        ndata.append(len(sf.platespec[str(sf.plates[matchindx[mm]])]))
+        platesn.append(sf.platestr.platesn_r[matchindx[mm]])
+    fb= numpy.array(fb)
+    fbp= numpy.array(fbp)
+    ndata= numpy.array(ndata)
+    platesn= numpy.array(platesn)
+    platesn[(platesn > 180.)]= 180. #Saturate
+    ndata= ndata/numpy.mean(ndata)*20.
+    bovy_plot.bovy_print(fig_width=5./.85)  
+    bovy_plot.bovy_plot(fbp,fb,s=ndata,c=platesn,
+                        cmap='jet',
+                        clabel=r'$\mathrm{plateSN\_r}$',
+                        xlabel=r'$\mathrm{program\ bright/faint\ boundary}\ [\mathrm{mag}]$',
+                        ylabel=r"$\mathrm{'all'\ bright/faint\ boundary}\ [\mathrm{mag}]$",
+                        xrange=[15.5,20.],yrange=[15.5,20.],
+                        scatter=True,edgecolors='none',
+                        colorbar=True)
+    bovy_plot.bovy_plot(numpy.array([15.5,20.2]),
+                        numpy.array([15.5,20.2]),ls='-',color='0.65',
+                        overplot=True,zorder=-1,lw=2.)
+    bovy_plot.bovy_end_print(options.plotfile)   
 
 def plot_specr_platepairs(options,args):
     if options.program: select= 'program'
@@ -560,6 +610,10 @@ def plot_ks(options,args):
     sftanh= segueSelect.segueSelect(sn=True,sample=options.sample,
                                     plates=plates,type_bright='tanhrcut',
                                      type_faint='tanhrcut',select=select)
+    sftanhi= segueSelect.segueSelect(sn=True,sample=options.sample,
+                                     plates=plates,type_bright='tanhrcut',
+                                     type_faint='tanhrcut',select=select,
+                                     indiv_brightlims=True)
     print "constant, bright"
     ksconst_bright= sfconst.check_consistency('bright')
     print "constant, faint"
@@ -580,6 +634,10 @@ def plot_ks(options,args):
     kstanh_bright= sftanh.check_consistency('bright')
     print "tanhrcut, faint"
     kstanh_faint= sftanh.check_consistency('faint')
+    print "tanhrcut+indivbrightlims, bright"
+    kstanhi_bright= sftanhi.check_consistency('bright')
+    print "tanhrcut+indivbrightlims, faint"
+    kstanhi_faint= sftanhi.check_consistency('faint')
     #Plot
     bins=21
     range= [(0.001-1./bins)/(1.+1./bins),1.]
@@ -599,6 +657,9 @@ def plot_ks(options,args):
     bovy_plot.bovy_hist(kstanh_bright,
                         range=range,bins=bins,overplot=True,
                         ec='b',ls='dashed',histtype='step')
+    bovy_plot.bovy_hist(kstanhi_bright,
+                        range=range,bins=bins,overplot=True,
+                        ec='c',ls='dashed',histtype='step')
     bovy_plot.bovy_hist(ksconst_faint,range=range,bins=bins,overplot=True,
                         ec='r',ls='solid',histtype='step')
     bovy_plot.bovy_hist(ksr_faint,range=range,bins=bins,overplot=True,
@@ -612,13 +673,17 @@ def plot_ks(options,args):
     bovy_plot.bovy_hist(kstanh_faint,
                         range=range,bins=bins,overplot=True,
                         ec='b',ls='solid',histtype='step')
+    bovy_plot.bovy_hist(kstanhi_faint,
+                        range=range,bins=bins,overplot=True,
+                        ec='c',ls='solid',histtype='step')
     xlegend, ylegend, dy= 0.55, 140., -10.
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{constant}$',color='r')
     bovy_plot.bovy_text(xlegend,ylegend+dy,r'$r\ \mathrm{dependent}$',color='orange')
     bovy_plot.bovy_text(xlegend,ylegend+2.*dy,r'$\mathrm{plateSN\_r},r\ \mathrm{dependent}$',color='y')
     bovy_plot.bovy_text(xlegend,ylegend+3.*dy,r'$\mathrm{sharp}\ r\ \mathrm{cut}$',color='g')
     bovy_plot.bovy_text(xlegend,ylegend+4.*dy,r'$\mathrm{tanh}\ r\ \mathrm{cut}$',color='b')
-    xlegend, ylegend, dy= 0.55, 85., -10.
+    bovy_plot.bovy_text(xlegend,ylegend+5.*dy,r'$\mathrm{tanh}\ r\ \mathrm{cut}, indiv_brightlims$',color='b')
+    xlegend, ylegend, dy= 0.55, 75., -10.
     bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend,ylegend],'k--',
                         overplot=True)
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{bright}$')

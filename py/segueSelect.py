@@ -477,7 +477,7 @@ class segueSelect:
                     *_sf_tanh(r,[self.rcuts_faint[str(plate)]-0.1,
                                  -3.,0.])
         else:
-            if not self.type_bright.lower() == 'tanhrcut+brightsharprcut' and (r < self.faintbrightDict[str(plate)] or r > self.rmax): return 0.
+            if not self.type_faint.lower() == 'tanhrcut+brightsharprcut' and (r < self.faintbrightDict[str(plate)] or r > self.rmax): return 0.
             elif self.type_faint.lower() == 'constant':
                 return self.weight[str(plate)]
             elif self.type_faint.lower() == 'r':
