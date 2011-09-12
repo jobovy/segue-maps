@@ -4,6 +4,8 @@ NSAMPLES=1000
 
 richdblexp_k: $(OUTDIR)/HWR_rich_k_hRhz.$(EXT)
 richtwodblexp_k: $(OUTDIR)/HWR_rich_k_twoblexp_hRhz.$(EXT)
+poordblexp_k: $(OUTDIR)/HWR_poor_k_hRhz.$(EXT)
+poortwodblexp_k: $(OUTDIR)/HWR_poor_k_twoblexp_hRhz.$(EXT)
 
 richdblexp: $(OUTDIR)/HWR_rich_g_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_rich_g_north_hRhz.$(EXT) \
@@ -622,3 +624,20 @@ $(OUTDIR)/HWR_rich_k_twoblexp_hRhz.$(EXT): fitDensz.py Makefile \
 	$(PYTHON) fitDensz.py HWR_dens_rich_k_twodblexp.sav -o $@ \
 	-n $(NSAMPLES) --model=twodblexp --markovpy --sample=k \
 	--select=program --indiv_brightlims
+
+
+
+#Metal poor K dwarf densities
+$(OUTDIR)/HWR_poor_k_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_k.sav -o $@ \
+	-n $(NSAMPLES) --markovpy --sample=k --select=program \
+	--indiv_brightlims --metal=poor
+#TwoDblExp model
+$(OUTDIR)/HWR_poor_k_twoblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_k_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --model=twodblexp --markovpy --sample=k \
+	--select=program --indiv_brightlims --metal=poor
+
+
+
