@@ -613,5 +613,5 @@ $(OUTDIR)/HWR_arichrich_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile segueSelec
 #Metal rich K dwarf densities
 $(OUTDIR)/HWR_rich_k_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_k.sav -o $@ \
-	-n $(NSAMPLES) --markovpy --sample=k --program \
+	-n $(NSAMPLES) --markovpy --sample=k --select=program \
 	--indiv_brightlims
