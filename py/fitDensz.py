@@ -342,7 +342,8 @@ def fitDensz(parser):
         print "Using %i plates, %i stars ..." %(len(plates),len(XYZ[:,0]))
     sf= segueSelect(plates=plates,type_faint=options.sel_faint,
                     sample=options.sample,type_bright=options.sel_bright,
-                    sn=options.snmin,select=options.select)
+                    sn=options.snmin,select=options.select,
+                    indiv_brightlims=options.indiv_brightlims)
     if options.fake:
         plates= sf.plates
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
@@ -381,7 +382,8 @@ def fitDensz(parser):
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
         sf= segueSelect(plates=plates,type_faint=options.sel_faint,
                         type_bright=options.sel_bright,sample=options.sample,
-                        sn=options.snmin,select=options.select)
+                        sn=options.snmin,select=options.select,
+                        indiv_brightlims=options.indiv_brightlims)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
         indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -399,7 +401,8 @@ def fitDensz(parser):
             plates= sf.plates[sf.faintplateindx]
         sf= segueSelect(plates=plates,type_faint=options.sel_faint,
                         type_bright=options.sel_bright,sample=options.sample,
-                        sn=options.snmin,select=options.select)
+                        sn=options.snmin,select=options.select,
+                        indiv_brightlims=options.indiv_brightlims)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
         indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -425,7 +428,8 @@ def fitDensz(parser):
         plates= numpy.array(list(set(list(rawdata.plate))),dtype='int') #Only load plates that we use
         sf= segueSelect(plates=plates,type_faint=options.sel_faint,
                         type_bright=options.sel_bright,sample=options.sample,
-                        sn=options.snmin,select=options.select)
+                        sn=options.snmin,select=options.select,
+                        indiv_brightlims=options.indiv_brightlims)
         platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                          degree=True)
         indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -1553,6 +1557,10 @@ def get_options():
     parser.add_option("--addfeh",dest='addfeh',type='float',
                       default=0.,
                       help="When evaluating the FeH distribution, add this value")
+    parser.add_option("--indiv_brightlims",action="store_true", 
+                      dest="indiv_brightlims",
+                      default=False,
+                      help="indiv_brightlims keyword for segueSelect")
     return parser
 
 if __name__ == '__main__':

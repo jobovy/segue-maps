@@ -2,6 +2,8 @@ OUTDIR=../figs
 EXT=png
 NSAMPLES=1000
 
+richdblexp_k: $(OUTDIR)/HWR_rich_k_hRhz.$(EXT)
+
 richdblexp: $(OUTDIR)/HWR_rich_g_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_rich_g_north_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_rich_g_south_hRhz.$(EXT) \
@@ -606,3 +608,10 @@ $(OUTDIR)/HWR_arichrich_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile segueSelec
 	-n $(NSAMPLES) --metal=arichrich --markovpy --model=twodblexp
 
 
+
+################################K STARS###########################################
+#Metal rich K dwarf densities
+$(OUTDIR)/HWR_rich_k_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_k.sav -o $@ \
+	-n $(NSAMPLES) --markovpy --sample=k --program \
+	--indiv_brightlims
