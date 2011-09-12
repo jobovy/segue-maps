@@ -676,14 +676,14 @@ def plot_ks(options,args):
     bovy_plot.bovy_hist(kstanhi_faint,
                         range=range,bins=bins,overplot=True,
                         ec='c',ls='solid',histtype='step')
-    xlegend, ylegend, dy= 0.55, 140., -10.
+    xlegend, ylegend, dy= 0.45, 140., -10.
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{constant}$',color='r')
     bovy_plot.bovy_text(xlegend,ylegend+dy,r'$r\ \mathrm{dependent}$',color='orange')
     bovy_plot.bovy_text(xlegend,ylegend+2.*dy,r'$\mathrm{plateSN\_r},r\ \mathrm{dependent}$',color='y')
     bovy_plot.bovy_text(xlegend,ylegend+3.*dy,r'$\mathrm{sharp}\ r\ \mathrm{cut}$',color='g')
     bovy_plot.bovy_text(xlegend,ylegend+4.*dy,r'$\mathrm{tanh}\ r\ \mathrm{cut}$',color='b')
-    bovy_plot.bovy_text(xlegend,ylegend+5.*dy,r'$\mathrm{tanh}\ r\ \mathrm{cut}, indiv_brightlims$',color='b')
-    xlegend, ylegend, dy= 0.55, 75., -10.
+    bovy_plot.bovy_text(xlegend,ylegend+5.*dy,r'$\mathrm{tanh}\ r\ \mathrm{cut,\ indiv\_brightlims}$',color='c')
+    xlegend, ylegend, dy= 0.45, 75., -10.
     bovy_plot.bovy_plot([xlegend-0.2,xlegend-0.1],[ylegend,ylegend],'k--',
                         overplot=True)
     bovy_plot.bovy_text(xlegend,ylegend,r'$\mathrm{bright}$')

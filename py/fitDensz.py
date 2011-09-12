@@ -133,6 +133,9 @@ def fitDensz(parser):
     if options.sample.lower() == 'g':
         grmin, grmax= 0.48, 0.55
         rmin,rmax= 14.5, 20.2
+    elif options.sample.lower() == 'k':
+        grmin, grmax= 0.55, 0.75 #Somewhat odd, but easier
+        rmin,rmax= 14.5, 19.
     #FeH
     fehdist= DistSpline(*numpy.histogram(rawdata.feh,bins=11,range=fehrange),
                          xrange=fehrange,dontcuttorange=(options.addfeh != 0.))
