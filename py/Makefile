@@ -3,6 +3,7 @@ EXT=png
 NSAMPLES=1000
 
 richdblexp_k: $(OUTDIR)/HWR_rich_k_hRhz.$(EXT)
+richtwodblexp: $(OUTDIR)/HWR_rich_k_twoblexp_hRhz.$(EXT)
 
 richdblexp: $(OUTDIR)/HWR_rich_g_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_rich_g_north_hRhz.$(EXT) \
@@ -615,3 +616,9 @@ $(OUTDIR)/HWR_rich_k_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_k.sav -o $@ \
 	-n $(NSAMPLES) --markovpy --sample=k --select=program \
 	--indiv_brightlims
+#TwoDblExp model
+$(OUTDIR)/HWR_rich_k_twoblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	plotData.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_rich_k_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --model=twodblexp --markovpy --sample=k \
+	--select=program --indiv_brightlims
