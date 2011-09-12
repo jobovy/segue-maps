@@ -45,7 +45,7 @@ class segueSelect:
                  binedges_faint=_BINEDGES_G_FAINT,
                  ug=False,ri=False,sn=True,
                  ebv=True,
-                 _rmax=None,_rmin=None,_indiv_brightlims=False,
+                 _rmax=None,_rmin=None,indiv_brightlims=False,
                  _platephot=None,_platespec=None,_spec=None):
         """
         NAME:
@@ -78,6 +78,8 @@ class segueSelect:
               type_faint=, faint_dr, interp_degree_bright, interp_type_faint,
               robust_faint
               = same as the corresponding keywords for bright
+
+              indiv_brightlims= if True, determine the bright/faint boundary as the brightest faint-plate spectrum, or the faintest bright-plate if there is no faint plate in the pair
 
            SPECTROSCOPIC SAMPLE SELECTION:
                ug= if True, cut on u-g, 
@@ -253,7 +255,7 @@ class segueSelect:
             self.platespec= _platespec
             self.spec= _spec
         #Set bright/faint divider
-        if _indiv_brightlims:
+        if indiv_brightlims:
             #Use brightest faint-plate object as the bright/faint interface
             faintbright= numpy.zeros(len(self.plates))
             for ii in range(len(self.plates)):
