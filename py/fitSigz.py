@@ -7,7 +7,7 @@ from optparse import OptionParser
 from scipy import optimize, special
 from galpy.util import bovy_coords, bovy_plot
 import bovy_mcmc
-from segueSelect import read_gdwarfs, _GDWARFFILE, _KDWARFFILE
+from segueSelect import read_gdwarfs, _GDWARFFILE, _KDWARFFILE, read_kdwarfs
 _ZSUN=0.025 #Sun's offset from the plane toward the NGP in kpc
 _VERBOSE=True
 _DEBUG=False
