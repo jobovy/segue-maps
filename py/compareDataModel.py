@@ -772,8 +772,10 @@ def compareRdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             bovy_plot.bovy_text(left_legend,top_left=True,size=_legendsize)
         return (Rdist, hist[0], hist[1])
 
-def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
-                        rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,feh=-0.15,
+def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
+                        rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
+                        fehmin=-0.4,
+                        fehmax=0.5,feh=-0.15,
                         vsx='|sinb|',
                         xrange=None,yrange=None,
                         overplot=False,color='k',marker='v',cumul=False,
@@ -870,7 +872,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,data,plate,
             thisrdist= _predict_rdist_plate(rs,densfunc,params,rmin,rmax,
                                             platel,
                                             plateb,grmin,grmax,
-                                            feh,colordist,sf,p)
+                                            fehmin,fehmax,
+                                            feh,colordist,fehdist,sf,p)
             if 'faint' in sf.platestr[pindx].programname[0]:
                 thisrdist[(rs < 17.8)]= 0.
             else:
