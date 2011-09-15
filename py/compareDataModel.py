@@ -879,8 +879,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             else:
                 thisrdist[(rs > 17.8)]= 0.
             numbers[ii]= numpy.nansum(thisrdist)
-        norm= numpy.nansum(numbers)
-        numbers/= norm
+#        norm= numpy.nansum(numbers)
+#        numbers/= norm
         if xrange is None:
             xrange= [numpy.amin(xs)-addx,numpy.amax(xs)+addx]
         if yrange is None and not cumul:
