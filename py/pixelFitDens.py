@@ -168,7 +168,7 @@ def pixelFitDens(options,args):
         initfits= pickle.load(savefile)
         savefile.close()
     else:
-        initfits= []
+        initfits= None
     #Sample?
     if options.mcsample:
         if ii < len(binned.fehedges)-1 and jj < len(binned.afeedges)-1:
