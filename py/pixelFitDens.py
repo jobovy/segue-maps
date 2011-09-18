@@ -232,6 +232,8 @@ def pixelFitDens(options,args):
                 continue               
             print binned.feh(ii), binned.afe(jj), len(data)
             if not initfits is None:
+                fehindx= binned.fehindx(binned.feh(ii))
+                afeindx= binned.afeindx(binned.afe(jj))
                 thisinitfit= initfits[afeindx+fehindx*binned.npixafe()]
             #Create XYZ and R
             R= ((8.-data.xc)**2.+data.yc**2.)**0.5
