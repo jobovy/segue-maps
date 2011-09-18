@@ -69,6 +69,7 @@ def plotOneDiskVsTwoDisks(options,args):
                     continue
             if len(data) < options.minndata:
                     continue
+            #print tightbinned.feh(ii), tightbinned.afe(jj), numpy.exp(thisonefit), numpy.exp(thistwofit)
             #Which is the dominant two-exp component?
             if thistwofit[4] > 0.5: twoIndx= 1
             else: twoIndx= 0
