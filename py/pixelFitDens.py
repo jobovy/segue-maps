@@ -162,6 +162,13 @@ def pixelFitDens(options,args):
     else:
         fits= []
         ii, jj= 0, 0
+    #Initial conditions?
+    if not options.init is None and os.path.exists(options.init):#Load initial
+        savefile= open(options.init,'rb')
+        initfits= pickle.load(savefile)
+        savefile.close()
+    else:
+        initfits= []
     #Sample?
     if options.mcsample:
         if ii < len(binned.fehedges)-1 and jj < len(binned.afeedges)-1:
@@ -224,6 +231,8 @@ def pixelFitDens(options,args):
                     break
                 continue               
             print binned.feh(ii), binned.afe(jj), len(data)
+            if not initfits is None:
+                thisinitfit= initfits[afeindx+fehindx*binned.npixafe()]
             #Create XYZ and R
             R= ((8.-data.xc)**2.+data.yc**2.)**0.5
             XYZ= numpy.zeros((len(data),3))
@@ -244,9 +253,15 @@ def pixelFitDens(options,args):
                                    xrange=colorrange)
             #Initial condition
             if options.model.lower() == 'hwr':
-                params= numpy.array([numpy.log(0.5),numpy.log(3.),0.05])
+                if not initfits is None:
+                    params= thisinitfit
+                else:
+                    params= numpy.array([numpy.log(0.5),numpy.log(3.),0.05])
             elif options.model.lower() == 'twodblexp':
-                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),0.5])
+                if not initfits is None:
+                    params= numpy.array([thisinitfit[0],numpy.log(0.5),thisinitfit[1],numpy.log(2.5),0.001])
+                else:
+                    params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),0.5])
             #Integration grid when binning
             grs= numpy.linspace(grmin,grmax,_NGR)
             fehs= numpy.linspace(fehrange[0],fehrange[1],_NFEH)
@@ -611,6 +626,8 @@ def get_options():
                       help="If set, plot the errorbars")
     parser.add_option("--nsamples",dest='nsamples',default=1000,type='int',
                       help="Number of MCMC samples to obtain")
+    parser.add_option("--init",dest='init',default=None,
+                      help="Initial conditions for fit from this file (same gridding and format as output file, assumed to be a single-exponential fit for double-exponential)")
     return parser
   
 if __name__ == '__main__':
