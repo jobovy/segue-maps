@@ -39,7 +39,7 @@ def calcMass(options,args):
         fits= []
         ii, jj= 0, 0
     #parameters
-    if os.path.exists(options.init):#Load initial
+    if os.path.exists(args[1]):#Load initial
         savefile= open(args[1],'rb')
         fits= pickle.load(savefile)
         savefile.close()
@@ -74,6 +74,7 @@ def calcMass(options,args):
         grmin, grmax= 0.48, 0.55
         rmin,rmax= 14.5, 20.2
     #Run through the bins
+    mass= []
     while ii < len(binned.fehedges)-1:
         while jj < len(binned.afeedges)-1:
             data= binned(binned.feh(ii),binned.afe(jj))
