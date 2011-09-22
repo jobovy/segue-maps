@@ -82,6 +82,7 @@ aferanges: $(OUTDIR)/HWR_apoorpoor_g_twodblexp_hRhz.$(EXT) \
 
 variations: $(OUTDIR)/HWR_rich_gminks0.1_twodblexp_hRhz.$(EXT) \
 	$(OUTDIR)/HWR_rich_g_twodblexp_logg4.2.$(EXT) \
+	$(OUTDIR)/HWR_poor_g_twodblexp_logg4.2.$(EXT) \
 	$(OUTDIR)/HWR_rich_g_twodblexp_minsn30.$(EXT) \
 	$(OUTDIR)/HWR_rich_g_twodblexp_minsn10.$(EXT) \
 	$(OUTDIR)/HWR_rich_gprogram_twodblexp_hRhz.$(EXT) \
@@ -97,6 +98,10 @@ alttwodblexp: $(OUTDIR)/HWR_rich_g_alttwoblexp_hRhz.$(EXT) \
 $(OUTDIR)/HWR_rich_g_twodblexp_logg4.2.$(EXT): fitDensz.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_logg4.2.sav -o $@ \
 	-n $(NSAMPLES) --markovpy --loggmin=4.2 --model=twodblexp
+$(OUTDIR)/HWR_poor_g_twodblexp_logg4.2.$(EXT): fitDensz.py segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_poor_g_logg4.2.sav -o $@ \
+	-n $(NSAMPLES) --markovpy --loggmin=4.2 --model=twodblexp \
+	--metal=poor
 $(OUTDIR)/HWR_rich_g_twodblexp_minsn30.$(EXT): fitDensz.py segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_rich_g_minsn30.sav -o $@ \
 	-n $(NSAMPLES) --markovpy --snmin=30. --model=twodblexp
