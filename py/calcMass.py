@@ -104,7 +104,7 @@ def calcMass(options,args):
                                    xrange=colorrange)
             
             #Age marginalization
-            afe= binned.afe(ii)
+            afe= binned.afe(jj)
             if afe > 0.25: agemin, agemax= 7.,10.
             else: agemin,agemax= 1.,8.
             mass.append(predictDiskMass(densfunc,

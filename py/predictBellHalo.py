@@ -17,7 +17,7 @@ def predictBellHalo():
                     type_faint='tanhrcut',sn=True)
     cdist= _const_colordist
     fehdist= haloMDF
-    n,d,x= compareDataModel.comparernumberPlate(bellfunc,params,sf,cdist,fehdist,data,'all',fehmin=-1.8,fehmax=-0.8,feh=-2.)
+    n,d,x= compareDataModel.comparernumberPlate(bellfunc,params,sf,cdist,fehdist,data,'all',fehmin=-1.8,fehmax=-0.8,feh=-2.,noplot=True)
     #Normalization of bell
     bell= 10**8./(integrate.dblquad(lambda r,f: r**2*bellfunc(r*numpy.sin(f),r*numpy.cos(f),None),
                             0.,numpy.pi,lambda x:1., lambda x: 40.)[0]*2.*numpy.pi)
@@ -30,7 +30,8 @@ def predictDiskMass(modelfunc,params,sf,cdist,fehdist,fehmin,fehmax,feh,
                                                 'all',
                                                 fehmin=fehmin,
                                                 fehmax=fehmax,
-                                                feh=feh)
+                                                feh=feh,
+                                                noplot=True)
     if not normalize.lower() == 'z':
         #Normalization of model
         norm= integrate.dblquad(lambda r,f: r**2*modelfunc(r*numpy.sin(f),

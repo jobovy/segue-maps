@@ -779,7 +779,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                         vsx='|sinb|',
                         xrange=None,yrange=None,
                         overplot=False,color='k',marker='v',cumul=False,
-                        runavg=0):
+                        runavg=0,noplot=False):
     """
     NAME:
        comparernumberPlate
@@ -902,6 +902,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             data_numbers= numpy.cumsum(data_numbers)
             numbers= numpy.cumsum(numbers)
         xs= numpy.arange(len(plate))
+        if noplot:
+            return (numbers, data_numbers, xs)
         bovy_plot.bovy_plot(xs,numbers,marker=marker,color=color,ls='none',
                             yrange=yrange,
                             xlabel=r'$\mathrm{plates\ sorted\ by\ number}$',
