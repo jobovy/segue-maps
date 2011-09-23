@@ -136,7 +136,6 @@ def calcMass(options,args):
                 thissamples= numpy.random.permutation(thissamples)[0:options.nsamples]
             thismasssamples= []
             for kk in range(len(thissamples)):
-                print kk
                 thisparams= thissamples[kk]
                 thismasssamples.append(predictDiskMass(densfunc,
                                                        thisparams,sf,
