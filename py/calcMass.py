@@ -148,7 +148,7 @@ def calcMass(options,args):
                                                            agemin,agemax,
                                                            normalize=options.normalize))
                 #Print some stuff
-                print numpy.std(numpy.array(thismasssamples))
+                print numpy.mean(numpy.array(thismasssamples)), numpy.std(numpy.array(thismasssamples))
                 masssamples.append(thismasssamples)
             else:
                 thisparams= fits[afeindx+fehindx*binned.npixafe()]
