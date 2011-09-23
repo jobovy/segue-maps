@@ -129,26 +129,39 @@ def calcMass(options,args):
             afe= binned.afe(jj)
             if afe > 0.25: agemin, agemax= 7.,10.
             else: agemin,agemax= 1.,8.
-            #Loop over samples
-            thissamples= denssamples[afeindx+fehindx*binned.npixafe()]
-            if options.nsamples < len(thissamples):
-                #Random permutation
-                thissamples= numpy.random.permutation(thissamples)[0:options.nsamples]
-            thismasssamples= []
-            for kk in range(len(thissamples)):
-                thisparams= thissamples[kk]
-                thismasssamples.append(predictDiskMass(densfunc,
-                                                       thisparams,sf,
-                                                       colordist,fehdist,
-                                                       fehrange[0],
-                                                       fehrange[1],feh,
-                                                       data,colorrange[0],
-                                                       colorrange[1],
-                                                       agemin,agemax,
-                                                       normalize=options.normalize))
-            #Print some stuff
-            print numpy.std(numpy.array(thismasssamples))
-            masssamples.append(thismasssamples)
+            if options.mcsample:
+                #Loop over samples
+                thissamples= denssamples[afeindx+fehindx*binned.npixafe()]
+                if options.nsamples < len(thissamples):
+                    #Random permutation
+                    thissamples= numpy.random.permutation(thissamples)[0:options.nsamples]
+                thismasssamples= []
+                for kk in range(len(thissamples)):
+                    thisparams= thissamples[kk]
+                    thismasssamples.append(predictDiskMass(densfunc,
+                                                           thisparams,sf,
+                                                           colordist,fehdist,
+                                                           fehrange[0],
+                                                           fehrange[1],feh,
+                                                           data,colorrange[0],
+                                                           colorrange[1],
+                                                           agemin,agemax,
+                                                           normalize=options.normalize))
+                #Print some stuff
+                print numpy.std(numpy.array(thismasssamples))
+                masssamples.append(thismasssamples)
+            else:
+                thisparams= fits[afeindx+fehindx*binned.npixafe()]
+                mass.append(predictDiskMass(densfunc,
+                                            thisparams,sf,
+                                            colordist,fehdist,
+                                            fehrange[0],
+                                            fehrange[1],feh,
+                                            data,colorrange[0],
+                                            colorrange[1],
+                                            agemin,agemax,
+                                            normalize=options.normalize))
+                print mass[-1]
             jj+= 1
             if jj == len(binned.afeedges)-1: 
                 jj= 0

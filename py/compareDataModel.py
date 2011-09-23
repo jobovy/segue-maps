@@ -827,6 +827,43 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             if 'faint' in sf.platestr[ii].programname:
                 plate.append(sf.plates[ii])
         faintplates= True
+    #Zmin and Zmax for this rmin, rmax
+    bs= []
+    for p in plate:
+        #l and b?
+        pindx= (sf.plates == p)
+        plateb= platelb[pindx,1][0]
+        bs.append(plateb)
+        if 'faint' in sf.platestr[pindx].programname[0]:
+            allbright= False
+        else:
+            allfaint= False
+    bs= numpy.array(bs)
+    bmin, bmax= numpy.amin(numpy.fabs(bs)),numpy.amax(numpy.fabs(bs))
+    if allbright:
+        thisrmin, thisrmax= rmin, 17.8
+    elif allfaint:
+        thisrmin, thisrmax= 17.8, rmax
+    else:
+        thisrmin, thisrmax= rmin, rmax
+    _NGR, _NFEH= 51, 51
+    grs= numpy.zeros((_NGR,_NFEH))
+    fehs= numpy.zeros((_NGR,_NFEH))
+    for ii in range(_NGR):
+        if feh > -0.5: #rich, actually only starts at 0.05
+            fehs[ii,:]= numpy.linspace(fehmin,0.05,_NFEH)
+        else:
+            fehs[ii,:]= numpy.linspace(fehmin,fehmax,_NFEH)
+    for ii in range(_NFEH):
+        grs[:,ii]= numpy.linspace(grmin,grmax,_NGR)
+    sys.stdout.write('\r'+"Determining minimal and maximal distance")
+    sys.stdout.flush()
+    dmin= numpy.amin(_ivezic_dist(grs,thisrmin,fehs))
+    dmax= numpy.amax(_ivezic_dist(grs,thisrmax,fehs))
+    sys.stdout.write('\r'+_ERASESTR+'\r')
+    sys.stdout.flush()
+    zmin, zmax= dmin*numpy.sin(bmin*_DEGTORAD), dmax*numpy.sin(bmax*_DEGTORAD)
+    zs= numpy.linspace(zmin,zmax,_NZS)
     #Set up x
     if vsx.lower() == 'b' or vsx.lower() == 'l' or vsx.lower() == '|b|' \
             or vsx.lower() == '|sinb|':
@@ -869,6 +906,13 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             plateb= platelb[pindx,1][0]
             platels.append(platel)
             platebs.append(plateb)
+            thiszdist= _predict_zdist_plate(zs,densfunc,params,rmin,rmax,
+                                            platel,
+                                            plateb,grmin,grmax,
+                                            fehmin,fehmax,
+                                            feh,colordist,fehdist,sf,p)
+            numbers[ii]= numpy.nansum(thiszdist)
+            """
             thisrdist= _predict_rdist_plate(rs,densfunc,params,rmin,rmax,
                                             platel,
                                             plateb,grmin,grmax,
@@ -879,8 +923,10 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             else:
                 thisrdist[(rs > 17.8)]= 0.
             numbers[ii]= numpy.nansum(thisrdist)
+            """
 #        norm= numpy.nansum(numbers)
 #        numbers/= norm
+        numbers*= (zs[1]-zs[0])/(20.2-14.5)*1000 #backward compatibility
         if xrange is None:
             xrange= [numpy.amin(xs)-addx,numpy.amax(xs)+addx]
         if yrange is None and not cumul:
@@ -1102,6 +1148,7 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     fehs= numpy.linspace(fehmin,fehmax,nfeh)
     out= numpy.zeros(len(zs))
     ds= (zs-_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
+    norm= 0.
     for kk in range(nfeh):
         for jj in range(ngr):
             #What rs do these zs correspond to
@@ -1111,6 +1158,8 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
             select= numpy.array(sf(plate,r=rs))
             out+= colordist(grs[jj])\
                 *select/numpy.fabs(numpy.sin(b*_DEGTORAD))*fehdist(fehs[kk])
+            norm+= colordist(grs[jj])*fehdist(fehs[kk])
+    out/= norm
     #Calculate (R,z)s
     XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
                                 numpy.array([b for ii in range(len(ds))]),
