@@ -19,8 +19,8 @@ def predictBellHalo():
     fehdist= haloMDF
     n,d,x= compareDataModel.comparernumberPlate(bellfunc,params,sf,cdist,fehdist,data,'all',fehmin=-1.8,fehmax=-0.8,feh=-2.,noplot=True)
     #Normalization of bell
-    bell= 10**8./(integrate.dblquad(lambda r,f: r**2*bellfunc(r*numpy.sin(f),r*numpy.cos(f),None),
-                            0.,numpy.pi,lambda x:1., lambda x: 40.)[0]*2.*numpy.pi)
+    bell= 10**8./(integrate.dblquad(lambda r,f: numpy.sin(f)*r**2*bellfunc(r*numpy.sin(f),r*numpy.cos(f),None),
+                                    0.,numpy.pi,lambda x:1., lambda x: 40.)[0]*2.*numpy.pi)
     return numpy.sum(n)*7.*(numpy.pi/180.)**2.*(20.2-14.5)/1000*bell*0.2*numpy.log(10.) #these are some factors left out of compareDataModel
 
 def predictDiskMass(modelfunc,params,sf,cdist,fehdist,fehmin,fehmax,feh,
@@ -34,13 +34,13 @@ def predictDiskMass(modelfunc,params,sf,cdist,fehdist,fehmin,fehmax,feh,
                                                 noplot=True)
     if not normalize.lower() == 'z':
         #Normalization of model
-        norm= integrate.dblquad(lambda r,f: r**2*modelfunc(r*numpy.sin(f),
+        norm= integrate.dblquad(lambda r,f: r**2*numpy.sin(f)*modelfunc(r*numpy.sin(f),
                                                            r*numpy.cos(f),
                                                            params),
                                 0.,numpy.pi,lambda x:0., lambda x: 200.)[0]\
                                 *2.*numpy.pi
     else:
-        norm= 1.
+        norm= 2.
     pred= numpy.sum(n)*7.*(numpy.pi/180.)**2.*(20.2-14.5)/1000\
           *0.2*numpy.log(10.) #these are some factors left out of compareDataModel
     frac= fracMassGRRange(grmin,grmax,agemin,agemax,feh)
