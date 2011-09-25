@@ -480,7 +480,7 @@ def plotPixelFit(options,args):
         #Gather hR and hz
         hz_err, hr_err, hz, hr,afe, feh, ndata= [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
-            hz_err.append(errors[ii][0])
+            hz_err.append(errors[ii][0]*1000.)
             hr_err.append(errors[ii][1])
             hz.append(plotthis[ii][2])
             hr.append(plotthis[ii][3])
@@ -547,7 +547,7 @@ def plotPixelFit(options,args):
                                                                         numpy.amin(plotc)]),
                                                             numpy.amin([vmax,
                                                                         numpy.amax(plotc)]))),
-                                    elinewidth=2.,capsize=3,zorder=0)
+                                    elinewidth=1.,capsize=3,zorder=0)
         #Overplot upper limits in hR
         colormap = cm.jet
         for jj in range(len(hr)):
@@ -559,7 +559,7 @@ def plotPixelFit(options,args):
                                                             numpy.amin([vmax,
                                                                         numpy.amax(plotc)]))),
 #                            color=colormap(_squeeze(plotc[jj],vmin,vmax)),
-                            elinewidth=2.,capsize=3)
+                            elinewidth=1.,capsize=3)
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',

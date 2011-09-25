@@ -82,7 +82,7 @@ def plotOneDiskVsTwoDisks(options,args):
                 theseonesamples= onesamples[afeindx+fehindx*binned.npixafe()]
                 if options.type == 'hz':
                     xs= numpy.array([s[0] for s in theseonesamples])
-                    theseerrors.append(0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
+                    theseerrors.append(500.*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
                 elif options.type == 'hr':
                     xs= numpy.array([s[1] for s in theseonesamples])
                     theseerrors.append(0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
@@ -90,7 +90,7 @@ def plotOneDiskVsTwoDisks(options,args):
                 thesetwosamples= twosamples[afeindx+fehindx*binned.npixafe()]
                 if options.type == 'hz':
                     xs= numpy.array([s[twoIndx] for s in thesetwosamples])
-                    theseerrors.append(0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
+                    theseerrors.append(500.*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
                 elif options.type == 'hr':
                     xs= numpy.array([s[2+twoIndx] for s in thesetwosamples])
                     theseerrors.append(0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
@@ -135,13 +135,13 @@ def plotOneDiskVsTwoDisks(options,args):
         for ii in range(len(x)):
             #                if (options.type == 'hr' and x[ii] < 5.) or options.type == 'hz':
             pyplot.errorbar(x[ii],y[ii],xerr=x_err[ii],color='k',
-                            elinewidth=2.,capsize=3,zorder=0)
+                            elinewidth=1.,capsize=3,zorder=0)
     if twoerrors:
         #Overplot errors
         for ii in range(len(x)):
             #                if (options.type == 'hr' and x[ii] < 5.) or options.type == 'hz':
             pyplot.errorbar(x[ii],y[ii],yerr=y_err[ii],color='k',
-                            elinewidth=2.,capsize=3,zorder=0)
+                            elinewidth=1.,capsize=3,zorder=0)
     bovy_plot.bovy_end_print(options.plotfile)
     return None   
 
