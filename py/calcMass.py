@@ -383,9 +383,9 @@ def plotMass(options,args):
                 yrange= [-0.1,30.]
         else:
             if options.logmass:
-                yrange= [0.01,2.]
+                yrange= [0.01,10.]
             else:
-                yrange= [-0.1,2.]
+                yrange= [-0.1,10.]
             ylabel=r'$\Sigma(R_0)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
         bovy_plot.bovy_plot(hz,mass,
                             s=ndata,c=plotc,
