@@ -211,6 +211,15 @@ def plotMass(options,args):
         print "Error: must provide parameters of best fits"
         print "Returning ..."
         return None
+    #Mass uncertainties are in savefile3
+    if len(args) > 2 and os.path.exists(args[3]):
+        savefile= open(args[2],'rb')
+        masssamples= pickle.load(savefile)
+        savefile.close()
+        masserrors= True
+    else:
+        masssamples= None
+        masserrors= False
     #Now plot
     #Run through the pixels and gather
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
@@ -232,6 +241,10 @@ def plotMass(options,args):
                     plotthis[ii,jj]= numpy.nan
                     continue
             thismass= mass[afeindx+fehindx*binned.npixafe()]
+            if masserrors:
+                thismasssamples= masssamples[afeindx+fehindx*binned.npixafe()]
+            else:
+                thismasssamples= None
             thisfit= fits[afeindx+fehindx*binned.npixafe()]
             if thisfit is None:
                 if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
@@ -266,7 +279,8 @@ def plotMass(options,args):
                                      numpy.exp(thisfit[0])*1000.,
                                      numpy.exp(thisfit[1]),
                                      len(data),
-                                     thismass/10.**6.])
+                                     thismass/10.**6.,
+                                     thismasssamples])
     #Set up plot
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'mass':
@@ -299,7 +313,7 @@ def plotMass(options,args):
             or options.type.lower() == 'afefeh':
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather hR and hz
-        mass, hz, hr,afe, feh, ndata= [], [], [], [], [], []
+        mass_err, mass, hz, hr,afe, feh, ndata= [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
             mass.append(plotthis[ii][5])
             hz.append(plotthis[ii][2])
@@ -307,7 +321,17 @@ def plotMass(options,args):
             afe.append(plotthis[ii][1])
             feh.append(plotthis[ii][0])
             ndata.append(plotthis[ii][4])
+            if masserrors:
+                mass_err.append(numpy.std(numpy.array(plotthis[ii][6])/10.**6.))
+                """
+                if options.logmass:
+                    mass_err.append(numpy.std(numpy.log10(numpy.array(plotthis[ii][6])/10.**6.)))
+                else:
+                    mass_err.append(numpy.std(numpy.array(plotthis[ii][6])/10.**6.))
+                """
         mass= numpy.array(mass)
+        if masserrors:
+            mass_errors= numpy.array(mass_err)
         hz= numpy.array(hz)
         hr= numpy.array(hr)
         afe= numpy.array(afe)
@@ -374,6 +398,16 @@ def plotMass(options,args):
                             scatter=True,edgecolors='none',
                             colorbar=True,zorder=2,
                             semilogy=options.logmass)
+        if not options.cumul and masserrors and options.ploterrors:
+            colormap = cm.jet
+            for ii in range(len(hz)):
+                pyplot.errorbar(hz[ii],mass[ii],yerr=mass_err[ii],
+                                color=colormap(_squeeze(plotc[ii],
+                                                        numpy.amax([vmin,
+                                                                    numpy.amin(plotc)]),
+                                                        numpy.amin([vmax,
+                                                                    numpy.amax(plotc)]))),
+                                elinewidth=2.,capsize=3,zorder=0)
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
