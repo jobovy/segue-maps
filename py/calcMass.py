@@ -212,7 +212,7 @@ def plotMass(options,args):
         print "Returning ..."
         return None
     #Mass uncertainties are in savefile3
-    if len(args) > 2 and os.path.exists(args[3]):
+    if len(args) > 2 and os.path.exists(args[2]):
         savefile= open(args[2],'rb')
         masssamples= pickle.load(savefile)
         savefile.close()
