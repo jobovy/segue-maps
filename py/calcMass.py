@@ -127,8 +127,11 @@ def calcMass(options,args):
             
             #Age marginalization
             afe= binned.afe(jj)
-            if afe > 0.25: agemin, agemax= 7.,10.
-            else: agemin,agemax= 1.,8.
+            if options.simpleage:
+                agemin= 0.5, 10.
+            else:
+                if afe > 0.25: agemin, agemax= 7.,10.
+                else: agemin,agemax= 1.,8.
             if options.mcsample:
                 #Loop over samples
                 thissamples= denssamples[afeindx+fehindx*binned.npixafe()]
@@ -463,6 +466,9 @@ def get_options():
     parser.add_option("--cumul",action="store_true", dest="cumul",
                       default=False,
                       help="If set, plot cumulative mass as a function of h_z")
+    parser.add_option("--simpleage",action="store_true", dest="simpleage",
+                      default=False,
+                      help="If set, use a simple age prescription (all the same marginalization)")
     return parser
   
 if __name__ == '__main__':
