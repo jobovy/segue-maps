@@ -407,7 +407,7 @@ def plotMass(options,args):
                                                                     numpy.amin(plotc)]),
                                                         numpy.amin([vmax,
                                                                     numpy.amax(plotc)]))),
-                                elinewidth=2.,capsize=3,zorder=0)
+                                elinewidth=1.,capsize=3,zorder=0)
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
