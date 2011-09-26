@@ -151,6 +151,14 @@ def fitDensz(parser):
         colordist= DistSpline(*numpy.histogram(rawdata.dered_g-rawdata.dered_r,
                                            bins=9,range=colorrange),
                            xrange=colorrange)
+    #Only do a range in |Z|?
+    if not options.zmin is None and not options.zmax is None:
+        dataindx= (numpy.fabs(XYZ[:,2]) >= options.zmin)*\
+                  (numpy.fabs(XYZ[:,2]) < options.zmax)
+        rawdata= rawdata[dataindx]
+        XYZ= XYZ[dataindx,:]
+        vxvyvz= vxvyvz[dataindx,:]
+        cov_vxvyvz= cov_vxvyvz[dataindx,:,:]     
     #Only use north or south plates?
     if options.north or options.south:
         segueplatestr= pyfits.getdata(os.path.join(_SEGUESELECTDIR,
@@ -1021,6 +1029,11 @@ def _NormInt(params,XYZ,R,
                                             ds,degree=True)
                 R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
                 XYZ[:,2]+= _ZSUN
+                if not options.zmin is None and not options.zmax is None:
+                    indx= (numpy.fabs(XYZ[:,2]) < options.zmin)
+                    thisout[indx]= 0.
+                    indx= (numpy.fabs(XYZ[:,2]) >= options.zmax)
+                    thisout[indx]= 0.
                 thisout*= ds**2.*densfunc(R,XYZ[:,2],params)
                 out+= numpy.sum(thisout)
     else:
@@ -1417,6 +1430,12 @@ def get_options():
     parser.add_option("--snmin",dest='snmin',type='float',
                       default=15.,
                       help="Minimum SN")
+    parser.add_option("--zmin",dest='zmin',type='float',
+                      default=None,
+                      help="Minimum height")
+    parser.add_option("--zmax",dest='zmax',type='float',
+                      default=None,
+                      help="Maximum height")
     parser.add_option("--cutbrightfaint",action="store_true", 
                       dest="cutbrightfaint",
                       default=False,
