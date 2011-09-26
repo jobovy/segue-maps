@@ -123,7 +123,7 @@ def plotOneDiskVsTwoDisks(options,args):
         ylabel=r'$\mathrm{two-exponentials\ scale\ length}$'
     yrange=xrange
     bovy_plot.bovy_print()
-    bovy_plot.bovy_plot(x,y,s=ndata,color='k',
+    bovy_plot.bovy_plot(x,y,color='k',
                         ylabel=ylabel,
                         xlabel=xlabel,
                         xrange=xrange,yrange=yrange,
