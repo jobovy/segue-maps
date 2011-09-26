@@ -177,7 +177,7 @@ $(OUTDIR)/HWR_g_zranges_0.6_0.9_hRhz.$(EXT):  fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_g_zranges_0.6_0.9.sav -o $@ \
 	-n $(NSAMPLES) --metal=allrichpoor --markovpy --model=HWR \
-	--zmin=0.9 --zmax=0.9
+	--zmin=0.6 --zmax=0.9
 $(OUTDIR)/HWR_g_zranges_0.9_1.2_hRhz.$(EXT):  fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_g_zranges_0.9_1.2.sav -o $@ \
