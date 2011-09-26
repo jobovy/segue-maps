@@ -740,7 +740,8 @@ def fitDensz(parser):
                                            fehdist,options.dontmargfeh,
                                            options.dontbincolorfeh,usertol,
                                            grs,fehs,rhogr,rhofeh,mr,
-                                           options.dontbin,dmin,dmax,ds),
+                                           options.dontbin,dmin,dmax,ds,
+                                           options),
                                      callback=cb)
         #params= numpy.array([-1.34316986e+00,1.75402412e+00,5.14667706e-04])
         if _VERBOSE:
@@ -762,7 +763,7 @@ def fitDensz(parser):
                                                         fehdist,options.dontmargfeh,
                                                         options.dontbincolorfeh,usertol,
                                                         grs,fehs,rhogr,rhofeh,mr,
-                                                        options.dontbin,dmin,dmax,ds),
+                                                        options.dontbin,dmin,dmax,ds,options),
                                                        symmetric=True,
                                                        nsamples=options.nsamples,
                                                        callback=cb)
@@ -786,7 +787,7 @@ def fitDensz(parser):
                                                                       feh,colordist,densfunc,
                                                                       fehdist,options.dontmargfeh,
                                                                       options.dontbincolorfeh,usertol,
-                                                                      grs,fehs,rhogr,rhofeh,mr,options.dontbin,dmin,dmax,ds),threads=1)
+                                                                      grs,fehs,rhogr,rhofeh,mr,options.dontbin,dmin,dmax,ds,options),threads=1)
                 #Set up initial position
                 initial_position= []
                 for ww in range(nwalkers):
@@ -825,7 +826,7 @@ def fitDensz(parser):
                                           feh,colordist,densfunc,
                                           fehdist,options.dontmargfeh,
                                           options.dontbincolorfeh,usertol,
-                                          grs,fehs,rhogr,rhofeh,mr,options.dontbin,dmin,dmax,ds),
+                                          grs,fehs,rhogr,rhofeh,mr,options.dontbin,dmin,dmax,ds,options),
                                          create_method=create_method,
                                          isDomainFinite=isDomainFinite,
                                          domain=domain,
@@ -852,19 +853,19 @@ def _HWRLike(params,XYZ,R,
              grmin,grmax,rmin,rmax,fehmin,fehmax,feh,#sample definition
              colordist,densfunc,fehdist,dontmargfeh, #function that describes the color-distribution, the density, the [Fe/H] distribution, and whether to marginalize over it
              dontbincolorfeh,usertol,
-             grs,fehs,rhogr,rhofeh,mr,dontbin,dmin,dmax,ds):
+             grs,fehs,rhogr,rhofeh,mr,dontbin,dmin,dmax,ds,options):
     """log likelihood for the HWR model"""
     return -_HWRLikeMinus(params,XYZ,R,sf,plates,platel,plateb,platebright,
                           platefaint,Ap,
                           grmin,grmax,rmin,rmax,fehmin,fehmax,feh,
-                          colordist,densfunc,fehdist,dontmargfeh,dontbincolorfeh,usertol,grs,fehs,rhogr,rhofeh,mr,dontbin,dmin,dmax,ds)
+                          colordist,densfunc,fehdist,dontmargfeh,dontbincolorfeh,usertol,grs,fehs,rhogr,rhofeh,mr,dontbin,dmin,dmax,ds,options)
 
 def _HWRLikeMinus(params,XYZ,R,
                   sf,plates,platel,plateb,platebright,platefaint,Ap,#selection,platelist,l,b,area of plates
                   grmin,grmax,rmin,rmax,fehmin,fehmax,feh,#sample definition
                   colordist,densfunc,fehdist,dontmargfeh, #function that describes the color-distribution and function that describes the density and that that describes the metallicity distribution, and whether to marginalize over that
                   dontbincolorfeh,usertol,
-                  grs,fehs,rhogr,rhofeh,mr,dontbin,dmin,dmax,ds):
+                  grs,fehs,rhogr,rhofeh,mr,dontbin,dmin,dmax,ds,options):
     """Minus log likelihood for all models"""
     if densfunc == _HWRDensity:
         if params[0] > 4.6051701859880918 \
@@ -928,7 +929,8 @@ def _HWRLikeMinus(params,XYZ,R,
                   sf,plates,platel,plateb,platebright,platefaint,Ap,
                   grmin,grmax,rmin,rmax,fehmin,fehmax,feh,
                   colordist,densfunc,fehdist,dontmargfeh,dontbincolorfeh,
-                  usertol,grs,fehs,rhogr,rhofeh,mr,dontbin,dmin,dmax,ds)
+                  usertol,grs,fehs,rhogr,rhofeh,mr,dontbin,dmin,dmax,ds,
+                  options)
     out= len(R)*numpy.log(out)
     #Then evaluate the individual densities
     out+= -numpy.sum(numpy.log(densfunc(R,XYZ[:,2],params)))
@@ -942,7 +944,7 @@ def _NormInt(params,XYZ,R,
              sf,plates,platel,plateb,platebright,platefaint,Ap,
              grmin,grmax,rmin,rmax,fehmin,fehmax,feh,
              colordist,densfunc,fehdist,dontmargfeh,dontbincolorfeh,usertol,
-             grs,fehs,rhogr,rhofeh,mr,dontbin,dmin,dmax,ds):
+             grs,fehs,rhogr,rhofeh,mr,dontbin,dmin,dmax,ds,options):
     out= 0.
     if _INTEGRATEPLATESEP:
         for ii in range(len(plates)):
