@@ -2,6 +2,8 @@ OUTDIR=../figs
 EXT=png
 NSAMPLES=1000
 
+zranges: $(OUTDIR)/HWR_g_zranges_0.3_0.6_hRhz.$(EXT)
+
 richdblexp_k: $(OUTDIR)/HWR_rich_k_hRhz.$(EXT)
 richtwodblexp_k: $(OUTDIR)/HWR_rich_k_twoblexp_hRhz.$(EXT)
 poordblexp_k: $(OUTDIR)/HWR_poor_k_hRhz.$(EXT)
@@ -160,6 +162,13 @@ $(OUTDIR)/HWR_allrichpoor_g_threedblexp_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_allrichpoor_g_threedblexp.sav -o $@ \
 	-n $(NSAMPLES) --metal=allrichpoor --markovpy --model=threedblexp
+
+#Z ranges
+$(OUTDIR)/HWR_g_zranges_0.3_0.6_hRhz.$(EXT):  fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_g_zranges_0.3_0.6.sav -o $@ \
+	-n $(NSAMPLES) --metal=allrichpoor --markovpy --model=HWR \
+	--zmin=0.3 --zmax=0.6
 
 #Metal rich G dwarf densities
 $(OUTDIR)/HWR_rich_g_hRhz.$(EXT): fitDensz.py Makefile segueSelect.py
