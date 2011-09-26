@@ -389,6 +389,16 @@ def plotPixelFit(options,args):
     else:
         denssamples= None
         denserrors= False
+    #If --mass is set to a filename, load the masses from that file
+    #and use those for the symbol size
+    if not options.mass is None and os.path.exists(options.mass):
+        savefile= open(options.mass,'rb')
+        mass= pickle.load(savefile)
+        savefile.close()
+        ndata= mass
+        masses= True
+    else:
+        masses= False
     #Now plot
     #Run through the pixels and gather
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
@@ -434,11 +444,18 @@ def plotPixelFit(options,args):
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
                         or options.type.lower() == 'afefeh':
-                    plotthis.append([tightbinned.feh(ii),
-                                     tightbinned.afe(jj),
-                                     numpy.exp(thisfit[0])*1000.,
-                                     numpy.exp(thisfit[1]),
-                                     len(data)])
+                    if masses:
+                        plotthis.append([tightbinned.feh(ii),
+                                         tightbinned.afe(jj),
+                                         numpy.exp(thisfit[0])*1000.,
+                                         numpy.exp(thisfit[1]),
+                                         mass[afeindx+fehindx*binned.npixafe()]])
+                    else:
+                        plotthis.append([tightbinned.feh(ii),
+                                         tightbinned.afe(jj),
+                                         numpy.exp(thisfit[0])*1000.,
+                                         numpy.exp(thisfit[1]),
+                                         len(data)])
                     if denserrors:
                         theseerrors= []
                         thesesamples= denssamples[afeindx+fehindx*binned.npixafe()]
@@ -495,10 +512,16 @@ def plotPixelFit(options,args):
         feh= numpy.array(feh)
         ndata= numpy.array(ndata)
         #Process ndata
-        ndata= ndata**.5
-        ndata= ndata/numpy.median(ndata)*35.
+        if not masses:
+            ndata= ndata**.5
+            ndata= ndata/numpy.median(ndata)*35.
+        else:
+#            ndata= numpy.log(ndata)
+            ndata= _squeeze(ndata,numpy.amin(ndata),numpy.amax(ndata))
+            ndata= ndata*300.+10.
         #ndata= numpy.log(ndata)/numpy.log(numpy.median(ndata))
         #ndata= (ndata-numpy.amin(ndata))/(numpy.amax(ndata)-numpy.amin(ndata))*25+12.
+        print ndata
         if options.type.lower() == 'afe':
             plotc= afe
         elif options.type.lower() == 'feh':
@@ -630,6 +653,8 @@ def get_options():
                       help="Number of MCMC samples to obtain")
     parser.add_option("--init",dest='init',default=None,
                       help="Initial conditions for fit from this file (same gridding and format as output file, assumed to be a single-exponential fit for double-exponential)")
+    parser.add_option("--mass",dest='mass',default=None,
+                      help="If set, use the masses from this file as the symbol size")
     return parser
   
 if __name__ == '__main__':
