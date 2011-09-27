@@ -203,7 +203,7 @@ def plotMass(options,args):
         jj= pickle.load(savefile)
         savefile.close()
     else:
-        fits= []
+        mass= []
         ii, jj= 0, 0
     #parameters
     if os.path.exists(args[1]):#Load initial
