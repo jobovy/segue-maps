@@ -223,6 +223,14 @@ def plotMass(options,args):
     else:
         masssamples= None
         masserrors= False
+    if os.path.exists(args[3]): #Load savefile
+        savefile= open(args[3],'rb')
+        denssamples= pickle.load(savefile)
+        savefile.close()
+        denserrors= True
+    else:
+        denssamples= None
+        denserrors= False
     #Now plot
     #Run through the pixels and gather
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
@@ -231,6 +239,7 @@ def plotMass(options,args):
         plotthis= []
     else:
         plotthis= numpy.zeros((tightbinned.npixfeh(),tightbinned.npixafe()))
+    if denserrors: errors= []
     for ii in range(tightbinned.npixfeh()):
         for jj in range(tightbinned.npixafe()):
             data= binned(tightbinned.feh(ii),tightbinned.afe(jj))
@@ -249,6 +258,10 @@ def plotMass(options,args):
             else:
                 thismasssamples= None
             thisfit= fits[afeindx+fehindx*binned.npixafe()]
+            if denserrors:
+                thisdenssamples= denssamples[afeindx+fehindx*binned.npixafe()]
+            else:
+                thisdenssamples= None
             if thisfit is None:
                 if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
                         or options.type.lower() == 'afefeh':
@@ -284,6 +297,14 @@ def plotMass(options,args):
                                      len(data),
                                      thismass/10.**6.,
                                      thismasssamples])
+                    if denserrors:
+                        theseerrors= []
+                        thesesamples= denssamples[afeindx+fehindx*binned.npixafe()]
+                        if options.model.lower() == 'hwr':
+                            for kk in [0,1]:
+                                xs= numpy.array([s[kk] for s in thesesamples])
+                                theseerrors.append(0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
+                        errors.append(theseerrors)
     #Set up plot
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'mass':
@@ -316,8 +337,11 @@ def plotMass(options,args):
             or options.type.lower() == 'afefeh':
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather hR and hz
-        mass_err, mass, hz, hr,afe, feh, ndata= [], [], [], [], [], [], []
+        hz_err, hr_err, mass_err, mass, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
+            if denserrors:
+                hz_err.append(errors[ii][0]*1000.)
+                hr_err.append(errors[ii][1])
             mass.append(plotthis[ii][5])
             hz.append(plotthis[ii][2])
             hr.append(plotthis[ii][3])
@@ -332,6 +356,9 @@ def plotMass(options,args):
                 else:
                     mass_err.append(numpy.std(numpy.array(plotthis[ii][6])/10.**6.))
                 """
+        if denserrors:
+            hz_err= numpy.array(hz_err)
+            hr_err= numpy.array(hr_err)
         mass= numpy.array(mass)
         if masserrors:
             mass_errors= numpy.array(mass_err)
@@ -386,7 +413,7 @@ def plotMass(options,args):
                 yrange= [-0.1,30.]
         else:
             if options.logmass:
-                yrange= [0.01,10.]
+                yrange= [0.005,10.]
             else:
                 yrange= [-0.1,10.]
             ylabel=r'$\Sigma(R_0)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
@@ -405,6 +432,16 @@ def plotMass(options,args):
             colormap = cm.jet
             for ii in range(len(hz)):
                 pyplot.errorbar(hz[ii],mass[ii],yerr=mass_err[ii],
+                                color=colormap(_squeeze(plotc[ii],
+                                                        numpy.amax([vmin,
+                                                                    numpy.amin(plotc)]),
+                                                        numpy.amin([vmax,
+                                                                    numpy.amax(plotc)]))),
+                                elinewidth=1.,capsize=3,zorder=0)
+        if not options.cumul and denserrors and options.ploterrors:
+            colormap = cm.jet
+            for ii in range(len(hz)):
+                pyplot.errorbar(hz[ii],mass[ii],xerr=hz_err[ii],
                                 color=colormap(_squeeze(plotc[ii],
                                                         numpy.amax([vmin,
                                                                     numpy.amin(plotc)]),
