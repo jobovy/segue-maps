@@ -223,7 +223,7 @@ def plotMass(options,args):
     else:
         masssamples= None
         masserrors= False
-    if os.path.exists(args[3]): #Load savefile
+    if len(args) > 3 and os.path.exists(args[3]): #Load savefile
         savefile= open(args[3],'rb')
         denssamples= pickle.load(savefile)
         savefile.close()
@@ -361,7 +361,7 @@ def plotMass(options,args):
             hr_err= numpy.array(hr_err)
         mass= numpy.array(mass)
         if masserrors:
-            mass_errors= numpy.array(mass_err)
+            mass_err= numpy.array(mass_err)
         hz= numpy.array(hz)
         hr= numpy.array(hr)
         afe= numpy.array(afe)
@@ -400,6 +400,10 @@ def plotMass(options,args):
                         plotc[jj]= feh[jj]-medianfeh
         xrange= [150,1200]
         if options.cumul:
+            #Print total surface mass and uncertainty
+            totmass= numpy.sum(mass)
+            toterr= numpy.sqrt(numpy.sum(mass_err**2.))
+            print "Total surface-mass density: %4.1f +/- %4.2f" %(totmass,toterr)
             ids= numpy.argsort(hz)
             plotc= plotc[ids]
             ndata= ndata[ids]
