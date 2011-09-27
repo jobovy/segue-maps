@@ -92,6 +92,8 @@ def averageMassGRRange(grmin,grmax,agemin,agemax,FeH):
             norm+= 10.**(logage-numpy.amin(logages))
             continue
         iso= iso[indices]
+        #print logage, numpy.amin(iso.M_ini), numpy.amax(iso.M_ini), \
+        #      numpy.amin(iso.int_IMF), numpy.amax(iso.int_IMF)
         out+= numpy.mean(iso.M_ini)*10.**(logage-numpy.amin(logages))
         norm+= 10.**(logage-numpy.amin(logages))
     return out/norm
