@@ -31,7 +31,7 @@ _EPSREL= 1.45e-08
 _EPSABS= 1.45e-08
 _DEGTORAD=math.pi/180.
 _ZSUN=0.025 #Sun's offset from the plane toward the NGP in kpc
-_DZ=6.
+_DZ=8.
 _DR=5.
 _NDS= 1001
 _NGR= 11
@@ -1150,16 +1150,16 @@ def _HWRDensity(R,Z,params):
     params= [loghz,loghR,Pbad]"""
     hR= numpy.exp(params[1])
     hz= numpy.exp(params[0])
-    return ((1.-params[2])/(2.*hz*hR)\
+    return ((1.-params[2])/(2.*hz)\
                 *numpy.exp(-(R-8.)/hR
                             -numpy.fabs(Z)/hz)\
-                +params[2]/(_DZ*8.))
+                +params[2]/(_DZ))
 
 def _DblExpDensity(R,Z,params):
     """Double exponential disk
     params= [loghz,loghR]"""
     hR= numpy.exp(-params[1])
-    return numpy.exp(-(R-8.)/hR
+    return 1./2./numpy.exp(params[0])*numpy.exp(-(R-8.)/hR
                       -numpy.fabs(Z)/numpy.exp(params[0]))
     
 def _TwoVerticalDensity(R,Z,params):
@@ -1169,8 +1169,8 @@ def _TwoVerticalDensity(R,Z,params):
     hz1= numpy.exp(params[0])
     hz2= numpy.exp(params[1])
     return numpy.exp(-(R-8.)/hR)*\
-        ((1.-params[3])/hz1*numpy.exp(-numpy.fabs(Z)/hz1)
-         +params[3]/hz2*numpy.exp(-numpy.fabs(Z)/hz2))
+        ((1.-params[3])/2./hz1*numpy.exp(-numpy.fabs(Z)/hz1)
+         +params[3]/2./hz2*numpy.exp(-numpy.fabs(Z)/hz2))
 
 def _TwoDblExpDensity(R,Z,params):
     """Two Double exponential disks
@@ -1179,8 +1179,8 @@ def _TwoDblExpDensity(R,Z,params):
     hR2= numpy.exp(params[3])
     hz1= numpy.exp(params[0])
     hz2= numpy.exp(params[1])
-    return ((1.-params[4])/hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-8.)/hR1)
-            +params[4]/hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2))
+    return ((1.-params[4])/2./hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-8.)/hR1)
+            +params[4]/2./hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2))
 
 def _GaussianDblExpDensity(R,Z,params):
     """One Double exponential disk + one Gaussian in R, exponential in Z
@@ -1189,8 +1189,8 @@ def _GaussianDblExpDensity(R,Z,params):
     hR2= numpy.exp(params[3])
     hz1= numpy.exp(params[0])
     hz2= numpy.exp(params[1])
-    return ((1.-params[4])/hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-numpy.exp(params[5])**2./2./hR1**2.))
-            +params[4]/hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2))
+    return ((1.-params[4])/2./hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-numpy.exp(params[5])**2./2./hR1**2.))
+            +params[4]/2./hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2))
 
 def _AltTwoDblExpDensity(R,Z,params):
     """Alternative two Double exponential disks
@@ -1199,8 +1199,8 @@ def _AltTwoDblExpDensity(R,Z,params):
     hR2= 1./params[3]
     hz1= numpy.exp(params[0])
     hz2= numpy.exp(params[1])
-    return ((1.-params[4])/hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-8.)/hR1)
-            +params[4]/hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2))
+    return ((1.-params[4])/2./hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-8.)/hR1)
+            +params[4]/2./hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2))
 
 def _ThreeDblExpDensity(R,Z,params):
     """Three Double exponential disks
@@ -1211,9 +1211,9 @@ def _ThreeDblExpDensity(R,Z,params):
     hz1= numpy.exp(params[0])
     hz2= numpy.exp(params[1])
     hz3= numpy.exp(params[2])
-    return ((1.-params[6]-params[7])/hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-8.)/hR1)
-            +params[6]/hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2)
-            +params[7]/hz3*numpy.exp(-numpy.fabs(Z)/hz3-(R-8.)/hR3))
+    return ((1.-params[6]-params[7])/2./hz1*numpy.exp(-numpy.fabs(Z)/hz1-(R-8.)/hR1)
+            +params[6]/2./hz2*numpy.exp(-numpy.fabs(Z)/hz2-(R-8.)/hR2)
+            +params[7]/2./hz3*numpy.exp(-numpy.fabs(Z)/hz3-(R-8.)/hR3))
 
 def _FlareDensity(R,Z,params):
     """Double exponential disk with flaring scale-height
@@ -1221,7 +1221,7 @@ def _FlareDensity(R,Z,params):
     hR= numpy.exp(params[2])
     hz= numpy.exp(params[0])
     hf= hz*numpy.exp((R-8.)/numpy.exp(params[1]))
-    return numpy.exp(-(R-8.)/hR)/hf*numpy.exp(-numpy.fabs(Z)/hf)
+    return numpy.exp(-(R-8.)/hR)/2./hf*numpy.exp(-numpy.fabs(Z)/hf)
 
 def _TwoDblExpFlareDensity(R,Z,params):
     """Two Double exponential disks, first one flares
@@ -1240,7 +1240,7 @@ def _TiedFlareDensity(R,Z,params):
     hR= numpy.exp(params[1])
     hz= numpy.exp(params[0])
     hf= hz*numpy.exp((R-8.)/hR)
-    return numpy.exp(-(R-8.)/hR)/hf*numpy.exp(-numpy.fabs(Z)/hf)
+    return numpy.exp(-(R-8.)/hR)/2./hf*numpy.exp(-numpy.fabs(Z)/hf)
     
 def _ConstDensity(R,Z,params):
     """Constant density"""
