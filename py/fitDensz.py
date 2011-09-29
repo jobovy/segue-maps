@@ -1036,6 +1036,11 @@ def _NormInt(params,XYZ,R,
                     thisout[indx]= 0.
                     indx= (numpy.fabs(XYZ[:,2]) >= options.zmax)
                     thisout[indx]= 0.
+                if not options.rmin is None and not options.rmax is None:
+                    indx= (R < options.rmin)
+                    thisout[indx]= 0.
+                    indx= (R >= options.rmax)
+                    thisout[indx]= 0.
                 thisout*= ds**2.*densfunc(R,XYZ[:,2],params)
                 out+= numpy.sum(thisout)
     else:

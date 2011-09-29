@@ -237,6 +237,12 @@ def pixelFitDens(options,args):
                 thisinitfit= initfits[afeindx+fehindx*binned.npixafe()]
             #Create XYZ and R
             R= ((8.-data.xc)**2.+data.yc**2.)**0.5
+            #Confine to R-range?
+            if not options.rmin is None and not options.rmax is None:
+                dataindx= (R >= options.rmin)*\
+                    (R < options.rmax)
+                data= data[dataindx]
+                R= R[dataindx]
             XYZ= numpy.zeros((len(data),3))
             XYZ[:,0]= data.xc
             XYZ[:,1]= data.yc
@@ -314,7 +320,7 @@ def pixelFitDens(options,args):
                                                    fehdist,False,
                                                    False,1.,
                                                    grs,fehs,rhogr,rhofeh,mr,
-                                                   False,dmin,dmax,ds),
+                                                   False,dmin,dmax,ds,options),
                                              callback=cb)
                 print numpy.exp(params)
                 fits.append(params)
@@ -334,7 +340,7 @@ def pixelFitDens(options,args):
                                                   fehdist,False,
                                                   False,1.,
                                                   grs,fehs,rhogr,rhofeh,mr,
-                                                  False,dmin,dmax,ds),
+                                                  False,dmin,dmax,ds,options),
                                                  isDomainFinite=isDomainFinite,
                                                  domain=domain,
                                                  nsamples=options.nsamples)
@@ -655,6 +661,12 @@ def get_options():
                       help="Initial conditions for fit from this file (same gridding and format as output file, assumed to be a single-exponential fit for double-exponential)")
     parser.add_option("--mass",dest='mass',default=None,
                       help="If set, use the masses from this file as the symbol size")
+    parser.add_option("--rmin",dest='rmin',type='float',
+                      default=None,
+                      help="Minimum radius")
+    parser.add_option("--rmax",dest='rmax',type='float',
+                      default=None,
+                      help="Maximum radius")
     return parser
   
 if __name__ == '__main__':

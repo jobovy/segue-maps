@@ -85,6 +85,12 @@ def pixelFitVel(options,args):
             print binned.feh(ii), binned.afe(jj), len(data)
             #Create XYZ and R, vxvyvz, cov_vxvyvz
             R= ((8.-data.xc)**2.+data.yc**2.)**0.5
+            #Confine to R-range?
+            if not options.rmin is None and not options.rmax is None:
+                dataindx= (R >= options.rmin)*\
+                    (R < options.rmax)
+                data= data[dataindx]
+                R= R[dataindx]
             XYZ= numpy.zeros((len(data),3))
             XYZ[:,0]= data.xc
             XYZ[:,1]= data.yc
@@ -354,6 +360,12 @@ def get_options():
                       help="If set, sample around the best fit, save in args[1]")
     parser.add_option("--nsamples",dest='nsamples',default=1000,type='int',
                       help="Number of MCMC samples to obtain")
+    parser.add_option("--rmin",dest='rmin',type='float',
+                      default=None,
+                      help="Minimum radius")
+    parser.add_option("--rmax",dest='rmax',type='float',
+                      default=None,
+                      help="Maximum radius")
     return parser
   
 if __name__ == '__main__':
