@@ -452,6 +452,14 @@ def plotMass(options,args):
                                                         numpy.amin([vmax,
                                                                     numpy.amax(plotc)]))),
                                 elinewidth=1.,capsize=3,zorder=0)
+        #Overplot histogram
+        ax2 = pyplot.twinx()
+        pyplot.hist(hz,range=xrange,weights=mass,color='k',histtype='step',
+                    normed=True,bins=11)
+        ax2.set_yscale('log')
+        ax2.set_yticklabels('')        
+        pyplot.ylim(10**-5.5,10.**-1.5)
+        pyplot.xlim(xrange[0],xrange[1])
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',

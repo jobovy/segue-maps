@@ -863,6 +863,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     zmin, zmax= dmin*numpy.sin(bmin*_DEGTORAD), dmax*numpy.sin(bmax*_DEGTORAD)
+    zmin-= 2.*_ZSUN #Just to be sure we have the South covered
     zs= numpy.linspace(zmin,zmax,_NZS)
     #Set up x
     if vsx.lower() == 'b' or vsx.lower() == 'l' or vsx.lower() == '|b|' \
@@ -1147,7 +1148,10 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     grs= numpy.linspace(grmin,grmax,ngr)
     fehs= numpy.linspace(fehmin,fehmax,nfeh)
     out= numpy.zeros(len(zs))
-    ds= (zs-_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
+    if b > 0.:
+        ds= (zs-_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
+    else:
+        ds= (zs+_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
     norm= 0.
     for kk in range(nfeh):
         for jj in range(ngr):
@@ -1166,7 +1170,7 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
                                 ds,degree=True)
     XYZ= XYZ.astype(numpy.float64)
     R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
-    #XYZ[:,2]+= _ZSUN #Not here because this is model
+    XYZ[:,2]+= _ZSUN #Not here because this is model
     out*= ds**2.*densfunc(R,XYZ[:,2],params)
     return out
 
