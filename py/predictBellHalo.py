@@ -88,7 +88,7 @@ def averageMassGRRange(grmin,grmax,agemin,agemax,FeH):
                 norm+= 10.**(logage-numpy.amin(logages))
                 continue
             iso= iso[indices]
-        indices= (iso.logg >= 3.5)
+        indices= (iso.logg >= 4.2)
         if numpy.sum(indices) == 0:
             norm+= 10.**(logage-numpy.amin(logages))
             continue
@@ -142,7 +142,7 @@ def massGRRangeInt(grmin,grmax,agemin,agemax,p,FeH,dwarf=False):
                 continue
             iso= iso[indices]
         if dwarf:
-            indices= (iso.logg >= 3.5)
+            indices= (iso.logg >= 4.2)
             if numpy.sum(indices) == 0:
                 norm+= 10.**(logage-numpy.amin(logages))
                 continue

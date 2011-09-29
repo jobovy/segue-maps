@@ -941,6 +941,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
         data_numbers= numpy.array(data_numbers,dtype='float')
         nstars= numpy.sum(data_numbers)
         data_numbers/= nstars
+        if noplot:
+            return (numbers, data_numbers, xs)
         #Sort the data and note the sort index
         sortindx= numpy.argsort(data_numbers)
         data_numbers= data_numbers[sortindx]
@@ -949,8 +951,6 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             data_numbers= numpy.cumsum(data_numbers)
             numbers= numpy.cumsum(numbers)
         xs= numpy.arange(len(plate))
-        if noplot:
-            return (numbers, data_numbers, xs)
         bovy_plot.bovy_plot(xs,numbers,marker=marker,color=color,ls='none',
                             yrange=yrange,
                             xlabel=r'$\mathrm{plates\ sorted\ by\ number}$',
@@ -1153,25 +1153,25 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     else:
         ds= (zs+_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
     norm= 0.
+    logds= 5.*numpy.log10(ds)+10.
     for kk in range(nfeh):
         for jj in range(ngr):
             #What rs do these zs correspond to
             gi= _gi_gr(grs[jj])
             mr= _mr_gi(gi,fehs[kk])
-            rs= 5.*numpy.log10(ds)+10.+mr
+            rs= logds+mr
             select= numpy.array(sf(plate,r=rs))
-            out+= colordist(grs[jj])\
-                *select/numpy.fabs(numpy.sin(b*_DEGTORAD))*fehdist(fehs[kk])
+            out+= colordist(grs[jj])*fehdist(fehs[kk])\
+                *select
             norm+= colordist(grs[jj])*fehdist(fehs[kk])
     out/= norm
     #Calculate (R,z)s
     XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
                                 numpy.array([b for ii in range(len(ds))]),
                                 ds,degree=True)
-    XYZ= XYZ.astype(numpy.float64)
     R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
-    XYZ[:,2]+= _ZSUN #Not here because this is model
-    out*= ds**2.*densfunc(R,XYZ[:,2],params)
+    XYZ[:,2]+= _ZSUN
+    out*= ds**2.*densfunc(R,XYZ[:,2],params)/numpy.fabs(numpy.sin(b*_DEGTORAD))
     return out
 
 def _predict_Rdist_plate(Rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,

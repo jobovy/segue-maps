@@ -141,13 +141,14 @@ def calcMass(options,args):
                 thismasssamples= []
                 for kk in range(len(thissamples)):
                     thisparams= thissamples[kk]
+                print "WARNING: DISK MASS IN CALCMASS ONLY FOR G COLORS"
                     thismasssamples.append(predictDiskMass(densfunc,
                                                            thisparams,sf,
                                                            colordist,fehdist,
                                                            fehrange[0],
                                                            fehrange[1],feh,
-                                                           data,colorrange[0],
-                                                           colorrange[1],
+                                                           data,0.45,
+                                                           0.58,
                                                            agemin,agemax,
                                                            normalize=options.normalize))
                 #Print some stuff
@@ -155,13 +156,14 @@ def calcMass(options,args):
                 masssamples.append(thismasssamples)
             else:
                 thisparams= fits[afeindx+fehindx*binned.npixafe()]
+                print "WARNING: DISK MASS IN CALCMASS ONLY FOR G COLORS"
                 mass.append(predictDiskMass(densfunc,
                                             thisparams,sf,
                                             colordist,fehdist,
                                             fehrange[0],
                                             fehrange[1],feh,
-                                            data,colorrange[0],
-                                            colorrange[1],
+                                            data,0.45,
+                                            0.58,
                                             agemin,agemax,
                                             normalize=options.normalize))
                 print mass[-1]
