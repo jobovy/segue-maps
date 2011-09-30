@@ -191,9 +191,11 @@ def pixelFitDens(options,args):
         domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],[0.,1.]]
     if options.model.lower() == 'kg':
         densfunc= _KGDensity
-        isDomainFinite=[[False,False],[False,False],[False,False],
+        isDomainFinite=[[True,True],[True,True],[False,True],
                         [False,True]]
-        domain=[[0.,0.],[0.,0.],[0.,0.],
+        domain=[[numpy.log(0.0027),numpy.log(54.)],
+                [numpy.log(0.00027),numpy.log(3.*10.**2.)],
+                [0.,4.6051701859880918],
                 [0.,4.6051701859880918]]
     elif options.model.lower() == 'twodblexp':
         densfunc= _TwoDblExpDensity
@@ -277,7 +279,7 @@ def pixelFitDens(options,args):
                 else:
                     sz= 30.
                     params= numpy.array([numpy.log(1350./sz**2.),
-                                         numpy.log(27030/sz**2.),
+                                         numpy.log(270/sz**2.),
                                          numpy.log(0.5),
                                          numpy.log(2.75)])
             elif options.model.lower() == 'twodblexp':
@@ -676,6 +678,12 @@ def get_options():
                       help="Initial conditions for fit from this file (same gridding and format as output file, assumed to be a single-exponential fit for double-exponential)")
     parser.add_option("--mass",dest='mass',default=None,
                       help="If set, use the masses from this file as the symbol size")
+    parser.add_option("--zmin",dest='zmin',type='float',
+                      default=None,
+                      help="Minimum height")
+    parser.add_option("--zmax",dest='zmax',type='float',
+                      default=None,
+                      help="Maximum height")
     parser.add_option("--rmin",dest='rmin',type='float',
                       default=None,
                       help="Minimum radius")

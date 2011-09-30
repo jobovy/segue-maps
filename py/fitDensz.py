@@ -523,7 +523,7 @@ def fitDensz(parser):
             else:
                 sz= 30.
             params= numpy.array([numpy.log(1350./sz**2.),
-                                 numpy.log(27030/sz**2.),
+                                 numpy.log(270/sz**2.),
                                  numpy.log(0.5),
                                  numpy.log(2.75)])
             densfunc= _KGDensity
@@ -533,9 +533,11 @@ def fitDensz(parser):
             else:
                 step= [0.3,0.3,0.3,0.02]
             create_method=['step_out','step_out','step_out']
-            isDomainFinite=[[False,False],[False,False],[False,False],
+            isDomainFinite=[[True,True],[True,True],[False,True],
                             [False,True]]
-            domain=[[0.,0.],[0.,0.],[0.,0.],
+            domain=[[numpy.log(0.0027),numpy.log(54.)],
+                    [numpy.log(0.00027),numpy.log(3.*10.**2.)],
+                    [0.,4.6051701859880918],
                     [0.,4.6051701859880918]]
         elif options.model.lower() == 'dblexp':
             if options.metal == 'rich':
@@ -895,6 +897,12 @@ def _HWRLikeMinus(params,XYZ,R,
         if params[0] > 4.6051701859880918 \
                 or params[1] > 4.6051701859880918 \
                 or params[2] < 0. or params[2] > 1.:
+            return numpy.finfo(numpy.dtype(numpy.float64)).max
+    elif densfunc == _KGDensity:
+        if params[0] > numpy.log(54.) or params[0] < numpy.log(0.0027) \
+           or params[1] > numpy.log(3.*10.**4.) or params[1] < numpy.log(0.027) \
+           or params[2] > 4.6051701859880918 \
+            or params[3] > 4.6051701859880918:
             return numpy.finfo(numpy.dtype(numpy.float64)).max
     elif densfunc == _FlareDensity:
         if params[0] > 4.6051701859880918 \
