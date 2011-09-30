@@ -12,7 +12,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
     segueSelect, _GDWARFFILE, _KDWARFFILE
 from selectFigs import _squeeze
 from fitDensz import _TwoDblExpDensity, _HWRLikeMinus, _ZSUN, DistSpline, \
-    _ivezic_dist, _NDS, cb, _HWRDensity, _HWRLike
+    _ivezic_dist, _NDS, cb, _HWRDensity, _HWRLike, _KGDensity
 _NGR= 11
 _NFEH=11
 class pixelAfeFeh:
@@ -189,6 +189,12 @@ def pixelFitDens(options,args):
         densfunc= _HWRDensity
         isDomainFinite=[[False,True],[False,True],[True,True]]
         domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],[0.,1.]]
+    if options.model.lower() == 'kg':
+        densfunc= _KGDensity
+        isDomainFinite=[[False,False],[False,False],[False,False],
+                        [False,True]]
+        domain=[[0.,0.],[0.,0.],[0.,0.],
+                [0.,4.6051701859880918]]
     elif options.model.lower() == 'twodblexp':
         densfunc= _TwoDblExpDensity
         isDomainFinite=[[False,True],[False,True],[False,True],
@@ -265,6 +271,15 @@ def pixelFitDens(options,args):
                     params= thisinitfit
                 else:
                     params= numpy.array([numpy.log(0.5),numpy.log(3.),0.05])
+            elif options.model.lower() == 'kg':
+                if not initfits is None:
+                    params= thisinitfit
+                else:
+                    sz= 30.
+                    params= numpy.array([numpy.log(1350./sz**2.),
+                                         numpy.log(27030/sz**2.),
+                                         numpy.log(0.5),
+                                         numpy.log(2.75)])
             elif options.model.lower() == 'twodblexp':
                 if not initfits is None:
                     params= numpy.array([thisinitfit[0],numpy.log(0.5),thisinitfit[1],numpy.log(2.5),0.001])

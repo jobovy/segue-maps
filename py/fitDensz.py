@@ -43,6 +43,8 @@ def fitDensz(parser):
         return
     if options.model.lower() == 'hwr':
         densfunc= _HWRDensity
+    elif options.model.lower() == 'kg':
+        densfunc= _KGDensity
     elif options.model.lower() == 'dblexp':
         densfunc= _DblExpDensity
     elif options.model.lower() == 'flare':
@@ -513,6 +515,28 @@ def fitDensz(parser):
             create_method=['step_out','step_out','step_out']
             isDomainFinite=[[False,True],[False,True],[True,True]]
             domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],[0.,1.]]
+        elif options.model.lower() == 'kg':
+            if options.metal == 'rich':
+                sz= 25.
+            elif options.metal == 'poor':
+                sz= 40.
+            else:
+                sz= 30.
+            params= numpy.array([numpy.log(1350./sz**2.),
+                                 numpy.log(27030/sz**2.),
+                                 numpy.log(0.5),
+                                 numpy.log(2.75)])
+            densfunc= _KGDensity
+            #Slice sampling keywords
+            if options.metropolis:
+                step= [0.03,0.03,0.03,0.02]
+            else:
+                step= [0.3,0.3,0.3,0.02]
+            create_method=['step_out','step_out','step_out']
+            isDomainFinite=[[False,False],[False,False],[False,False],
+                            [False,True]]
+            domain=[[0.,0.],[0.,0.],[0.,0.],
+                    [0.,4.6051701859880918]]
         elif options.model.lower() == 'dblexp':
             if options.metal == 'rich':
                 params= numpy.array([numpy.log(0.3),numpy.log(2.5)])
@@ -1154,6 +1178,16 @@ def _HWRDensity(R,Z,params):
                 *numpy.exp(-(R-8.)/hR
                             -numpy.fabs(Z)/hz)\
                 +params[2]/(_DZ))
+
+def _KGDensity(R,Z,params):
+    """Kuijken&Gilmore 1989 vertical potential + radial exponential
+    rho \propto exp(-A(sqrt(Z^2+D^2)-D)-B*Z^2)xexp(-(R-Ro)/hR)
+    params= [logA,logB,logD,loghR]"""
+    hR= numpy.exp(params[3])
+    A= numpy.exp(params[0])
+    B= numpy.exp(params[1])
+    D= numpy.exp(params[2])
+    return numpy.exp(-(R-8.)/hR-A*(numpy.sqrt(Z**2.+D**2)-D)-B*Z**2.)
 
 def _DblExpDensity(R,Z,params):
     """Double exponential disk
