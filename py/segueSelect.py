@@ -22,12 +22,12 @@ _BINEDGES_G_FAINT= [0.,50.,70.,85.,200000000.]
 _BINEDGES_G_BRIGHT= [0.,75.,150.,300.,200000000.]
 ###############################FILENAMES#######################################
 _SEGUESELECTDIR=os.getenv('SEGUESELECTDIR')
-_GDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'gdwarfall_raw_nodups.fit')
-_GDWARFFILE= os.path.join(_SEGUESELECTDIR,'gdwarf_raw_nodups.fit')
+_GDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'gdwarfall_raw_nodups_ysl.fit')
+_GDWARFFILE= os.path.join(_SEGUESELECTDIR,'gdwarf_raw_nodups_ysl.fit')
 _FGSTARALLFILE= os.path.join(_SEGUESELECTDIR,'fgstarall_raw_nodups.fit')
 _FGSTARFILE= os.path.join(_SEGUESELECTDIR,'fgstar_raw_nodups.fit')
-_KDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'kdwarfall_raw_nodups.fit')
-_KDWARFFILE= os.path.join(_SEGUESELECTDIR,'kdwarf_raw_nodups.fit')
+_KDWARFALLFILE= os.path.join(_SEGUESELECTDIR,'kdwarfall_raw_nodups_ysl.fit')
+_KDWARFFILE= os.path.join(_SEGUESELECTDIR,'kdwarf_raw_nodups_ysl.fit')
 _ERASESTR= "                                                                                "
 class segueSelect:
     """Class that contains selection function for SEGUE targets"""

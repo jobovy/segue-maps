@@ -238,7 +238,7 @@ def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
         print "Current params, minus likelihood:", params, out
     return out
 
-def readData(metal='rich',sample='G',loggmin=3.75,snmin=15.,select='all'):
+def readData(metal='rich',sample='G',loggmin=4.2,snmin=15.,select='all'):
     if sample.lower() == 'g':
         if select.lower() == 'program':
             raw= read_gdwarfs(_GDWARFFILE,logg=loggmin,ebv=True,sn=snmin)

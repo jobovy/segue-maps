@@ -482,8 +482,8 @@ def afeh(options,args):
                                          sample=options.sample)
     bovy_plot.bovy_print()
     bovy_plot.scatterplot(data.feh,data.afe,'k,',
-                          xrange=[-2.,0.3],
-                          yrange=[0.,0.45],
+                          xrange=[-2.,0.5],
+                          yrange=[-0.1,0.6],
                           xlabel=r'$[\mathrm{Fe/H}]$',
                           ylabel=r'$[\alpha/\mathrm{Fe}]$',
                           onedhists=True)

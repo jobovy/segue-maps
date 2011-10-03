@@ -1485,6 +1485,12 @@ def get_options():
     parser.add_option("--zmax",dest='zmax',type='float',
                       default=None,
                       help="Maximum height")
+    parser.add_option("--rmin",dest='rmin',type='float',
+                      default=None,
+                      help="Minimum radius")
+    parser.add_option("--rmax",dest='rmax',type='float',
+                      default=None,
+                      help="Maximum radius")
     parser.add_option("--cutbrightfaint",action="store_true", 
                       dest="cutbrightfaint",
                       default=False,
