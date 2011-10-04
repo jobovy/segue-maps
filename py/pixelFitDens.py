@@ -496,7 +496,7 @@ def plotPixelFit(options,args):
         vmin, vmax= 1.35,4.5
         zlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$'
     elif options.type == 'afe':
-        vmin, vmax= 0.05,.4
+        vmin, vmax= 0.0,.5
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
     elif options.type == 'feh':
         vmin, vmax= -1.5,0.

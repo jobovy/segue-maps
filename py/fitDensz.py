@@ -513,8 +513,9 @@ def fitDensz(parser):
             else:
                 step= [0.3,0.3,0.02]
             create_method=['step_out','step_out','step_out']
-            isDomainFinite=[[False,True],[False,True],[True,True]]
-            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],[0.,1.]]
+            isDomainFinite=[[True,True],[True,True],[True,True]]
+            domain=[[-4.6051701859880918,4.6051701859880918],
+                    [-4.6051701859880918,4.6051701859880918],[0.,1.]]
         elif options.model.lower() == 'kg':
             if options.metal == 'rich':
                 sz= 25.
@@ -619,11 +620,12 @@ def fitDensz(parser):
             else:
                 step= [0.3,0.3,0.3,0.3,0.025]
             create_method=['step_out','step_out','step_out','step_out','step_out']
-            isDomainFinite=[[False,True],[False,True],[False,True],
-                            [False,True],[True,True]]
-            domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],
-                    [0.,4.6051701859880918],
-                    [0.,4.6051701859880918],[0.,1.]]
+            isDomainFinite=[[True,True],[True,True],[True,True],
+                            [True,True],[True,True]]
+            domain=[[-4.6051701859880918,4.6051701859880918],
+                    [-4.6051701859880918,4.6051701859880918],
+                    [-4.6051701859880918,4.6051701859880918],
+                    [-4.6051701859880918,4.6051701859880918],[0.,1.]]
         elif options.model.lower() == 'alttwodblexp':
             if options.metal == 'rich':
                 params= numpy.array([numpy.log(0.3),numpy.log(1.),1./2.5,1./2.5,0.025])
@@ -894,8 +896,8 @@ def _HWRLikeMinus(params,XYZ,R,
                   grs,fehs,rhogr,rhofeh,mr,dontbin,dmin,dmax,ds,options):
     """Minus log likelihood for all models"""
     if densfunc == _HWRDensity:
-        if params[0] > 4.6051701859880918 \
-                or params[1] > 4.6051701859880918 \
+        if params[0] > 4.6051701859880918  or params[0] < -4.6051701859880918 \
+                or params[1] > 4.6051701859880918  or params[1] < -4.6051701859880918 \
                 or params[2] < 0. or params[2] > 1.:
             return numpy.finfo(numpy.dtype(numpy.float64)).max
     elif densfunc == _KGDensity:
@@ -920,10 +922,10 @@ def _HWRLikeMinus(params,XYZ,R,
                 or params[3] < 0. or params[3] > 1.:
             return numpy.finfo(numpy.dtype(numpy.float64)).max       
     elif densfunc == _TwoDblExpDensity:
-        if params[0] > 4.6051701859880918 \
-                or params[1] > 4.6051701859880918 \
-                or params[2] > 4.6051701859880918 \
-                or params[3] > 4.6051701859880918 \
+        if params[0] > 4.6051701859880918 or params[0] < -4.6051701859880918 \
+                or params[1] > 4.6051701859880918 or params[1] < -4.6051701859880918 \
+                or params[2] > 4.6051701859880918 or params[2] < -4.6051701859880918 \
+                or params[3] > 4.6051701859880918 or params[3] < -4.6051701859880918 \
                 or params[4] < 0. or params[4] > 1.:
             return numpy.finfo(numpy.dtype(numpy.float64)).max       
     elif densfunc == _AltTwoDblExpDensity:
