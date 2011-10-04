@@ -105,7 +105,7 @@ def compareGRichRdist(options,args):
                               0.01907823])
         params2= numpy.array([-1.05462412,
                               -0.04948601,
-                              numpy.log(3.),
+                              numpy.log(2.),
                               4.57792743,
                               0.01907823])
         params3= numpy.array([-1.05462412,
