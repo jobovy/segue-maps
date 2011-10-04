@@ -139,9 +139,9 @@ def calcMass(options,args):
                     #Random permutation
                     thissamples= numpy.random.permutation(thissamples)[0:options.nsamples]
                 thismasssamples= []
+                print "WARNING: DISK MASS IN CALCMASS ONLY FOR G COLORS"
                 for kk in range(len(thissamples)):
                     thisparams= thissamples[kk]
-                print "WARNING: DISK MASS IN CALCMASS ONLY FOR G COLORS"
                     thismasssamples.append(predictDiskMass(densfunc,
                                                            thisparams,sf,
                                                            colordist,fehdist,
