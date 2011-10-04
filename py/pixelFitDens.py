@@ -520,15 +520,17 @@ def plotPixelFit(options,args):
         #Gather hR and hz
         hz_err, hr_err, hz, hr,afe, feh, ndata= [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
-            hz_err.append(errors[ii][0]*1000.)
-            hr_err.append(errors[ii][1])
+            if denserrors:
+                hz_err.append(errors[ii][0]*1000.)
+                hr_err.append(errors[ii][1])
             hz.append(plotthis[ii][2])
             hr.append(plotthis[ii][3])
             afe.append(plotthis[ii][1])
             feh.append(plotthis[ii][0])
             ndata.append(plotthis[ii][4])
-        hz_err= numpy.array(hz_err)
-        hr_err= numpy.array(hr_err)
+        if denserrors:
+            hz_err= numpy.array(hz_err)
+            hr_err= numpy.array(hr_err)
         hz= numpy.array(hz)
         hr= numpy.array(hr)
         afe= numpy.array(afe)
