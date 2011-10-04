@@ -22,169 +22,169 @@ def compareGRichRdist(options,args):
     #model2= _HWRDensity
     left_legend= None
     if options.metal.lower() == 'rich':
-        params1= numpy.array([-1.37918009,
-                               -0.35668731,
-                               1.30078166,
-                               2.03150534,
-                               0.01578395])
-        params2= numpy.array([-1.37918009,
-                               -0.35668731,
-                               numpy.log(2.),
-                               2.03150534,
-                               0.01578395])
-        params3= numpy.array([-1.37918009,
-                               -0.35668731,
-                               numpy.log(3.),
-                               2.03150534,
-                               0.01578395])
+        params1= numpy.array([-1.38088238,
+                              -0.41780793,
+                              1.2478577,
+                              2.30283571,
+                              0.01203931])
+        params2= numpy.array([-1.38088238,
+                              -0.41780793,
+                              numpy.log(2.),
+                              2.30283571,
+                              0.01203931])
+        params3= numpy.array([-1.38088238,
+                              -0.41780793,
+                              numpy.log(3.),
+                              2.30283571,
+                              0.01203931])
         left_legend= r'$[\mathrm{Fe/H}] > -0.3$'
     elif options.metal.lower() == 'poor':
-        params1= numpy.array([-0.37747094,
-                               0.17812628,
-                               0.64425548,
-                               1.35336549,
-                               0.03208512])
-        params2= numpy.array([-0.37747094,
-                               0.17812628,
-                               numpy.log(3.),
-                               1.35336549,
-                               0.03208512])
-        params3= numpy.array([-0.37747094,
-                               0.17812628,
-                               numpy.log(4.),
-                               1.35336549,
-                               0.03208512])
+        params1= numpy.array([-0.4236958,
+                              0.18884979,
+                              0.67259776,
+                              1.56620062,
+                              0.03062478])
+        params2= numpy.array([-0.4236958,
+                              0.18884979,
+                              numpy.log(3.),
+                              1.56620062,
+                              0.03062478])
+        params3= numpy.array([-0.4236958,
+                              0.18884979,
+                              numpy.log(4.),
+                              1.56620062,
+                              0.03062478])
     elif options.metal.lower() == 'poorpoor':
         model1= _TwoDblExpDensity
         model2= _TwoDblExpDensity
         model3= _TwoDblExpDensity
-        params1= numpy.array([-0.18067109,
-                               0.01134088,
-                               0.66067124,
-                               0.8895566,
-                               0.03603237])
-        params2= numpy.array([-0.18067109,
-                               0.01134088,
-                               numpy.log(3.),
-                               0.8895566,
-                               0.03603237])
-        params3= numpy.array([-0.18067109,
-                               0.01134088,
-                               numpy.log(4.),
-                               0.8895566,
-                               0.03603237])
+        params1= numpy.array([-0.20886303,
+                              0.03382487,
+                              0.71298469,
+                              1.03051919,
+                              0.03884228])
+        params2= numpy.array([-0.20886303,
+                              0.03382487,
+                              numpy.log(3.),
+                              1.03051919,
+                              0.03884228])
+        params3= numpy.array([-0.20886303,
+                              0.03382487,
+                              numpy.log(4.),
+                              1.03051919,
+                              0.03884228])
         left_legend= r'$[\mathrm{Fe/H}] < -0.70$'
     elif options.metal.lower() == 'poorrich':
         model1= _TwoDblExpDensity
         model2= _TwoDblExpDensity
         model3= _TwoDblExpDensity
-        params1= numpy.array([-0.50251388,
-                               0.1131146,
-                               0.63627341,
-                               1.61899483,
-                               0.0251537])
-        params2= numpy.array([-0.50251388,
-                               0.1131146,
-                               numpy.log(3.),
-                               1.61899483,
-                               0.0251537])
-        params3= numpy.array([-0.50251388,
-                               0.1131146,
-                               numpy.log(4.),
-                               1.61899483,
-                               0.0251537])
+        params1= numpy.array([-0.5830984,
+                              0.0290415,
+                              0.64955979,
+                              1.8451332,
+                              0.02453099])
+        params2= numpy.array([-0.5830984,
+                              0.0290415,
+                              numpy.log(3.),
+                              1.8451332,
+                              0.02453099])
+        params3= numpy.array([-0.5830984,
+                              0.0290415,
+                              numpy.log(4.),
+                              1.8451332,
+                              0.02453099])
         left_legend= r'$[\mathrm{Fe/H}] \geq -0.70$'
     elif options.metal.lower() == 'richpoor':
         model1= _TwoDblExpDensity
         model2= _TwoDblExpDensity
         model3= _TwoDblExpDensity
-        params1= numpy.array([-1.01301685,
-                               0.0464526,
-                               3.37326447,
-                               4.59913887,
-                               0.02269872])
-        params2= numpy.array([-1.01301685,
-                               0.0464526,
-                               numpy.log(2.),
-                               4.59913887,
-                               0.02269872])
-        params3= numpy.array([-1.01301685,
-                               0.0464526,
-                               numpy.log(3.),
-                               4.59913887,
-                               0.02269872])
+        params1= numpy.array([-1.05462412,
+                              -0.04948601,
+                              3.26507501,
+                              4.57792743,
+                              0.01907823])
+        params1= numpy.array([-1.05462412,
+                              -0.04948601,
+                              numpy.log(3.),
+                              4.57792743,
+                              0.01907823])
+        params1= numpy.array([-1.05462412,
+                              -0.04948601,
+                              numpy.log(3.),
+                              4.57792743,
+                              0.01907823])
         left_legend= r'$-0.6 < [\mathrm{Fe/H}] < -0.3$'
     elif options.metal.lower() == 'richrich':
         model1= _TwoDblExpDensity
-        params1= numpy.array([-1.41333874,
-                               -0.3890688,
-                               1.18418718,
-                               1.76000367,
-                               0.01449247])
-        params2= numpy.array([-1.41333874,
-                               -0.3890688,
-                               numpy.log(2.),
-                               1.76000367,
-                               0.01449247])
-        params3= numpy.array([-1.41333874,
-                               -0.3890688,
-                               numpy.log(3.),
-                               1.76000367,
-                               0.01449247])
+        params1= numpy.array([-1.38088238,
+                              -0.41780793,
+                              1.2478577,
+                              2.30283571,
+                              0.01203931])
+        params2= numpy.array([-1.38088238,
+                              -0.41780793,
+                              numpy.log(2.),
+                              2.30283571,
+                              0.01203931])
+        params3= numpy.array([-1.38088238,
+                              -0.41780793,
+                              numpy.log(3.),
+                              2.30283571,
+                              0.01203931])
         left_legend= r'$[\mathrm{Fe/H}] \geq -0.25$'
         params3= None
     elif options.metal.lower() == 'richpoorest':
         model1= _TwoDblExpDensity
-        params1= numpy.array([-0.6120614,
-                               1.02817662,
-                               4.60517019,
-                               2.82007867,
-                               0.1037065])
-        params2= numpy.array([-0.6120614,
-                               1.02817662,
-                               numpy.log(2.),
-                               2.82007867,
-                               0.1037065])
-        params3= numpy.array([-0.6120614,
-                               1.02817662,
-                               numpy.log(2.),
-                               2.82007867,
-                               0.1037065])
+        params1= numpy.array([-0.45506959,
+                              1.95207186,
+                              4.60516904,
+                              0.75234905,
+                              0.04171353])
+        params2= numpy.array([-0.45506959,
+                              1.95207186,
+                              numpy.log(2.),
+                              0.75234905,
+                              0.04171353])
+        params3= numpy.array([-0.45506959,
+                              1.95207186,
+                              numpy.log(3.),
+                              0.75234905,
+                              0.04171353])
         left_legend= r'$-1.5 < [\mathrm{Fe/H}] < -0.6$'
     elif options.metal.lower() == 'apoorpoor':
         model1= _TwoDblExpDensity
-        params1= numpy.array([-1.51063316,
-                               -0.46108639,
-                               1.55242222,
-                               2.89724861,
-                               0.01023447])
+        params1= numpy.array([-1.44492082,
+                              -0.44271021,
+                              1.41280402,
+                              3.24651748,
+                              0.00986426])
         params2= None
         left_legend= r'$0.00 < [\alpha/\mathrm{Fe}] < 0.15$'
     elif options.metal.lower() == 'apoorrich':
         model1= _TwoDblExpDensity
-        params1= numpy.array([-1.04527155,
-                               0.08546324,
-                               0.99497963,
-                               1.87062187,
-                               0.01752742])
+        params1= numpy.array([-1.08679341,
+                              -0.10288039,
+                              0.80806902,
+                              1.58458448,
+                              0.01604284])
         params2= None
         left_legend= r'$0.15 \leq [\alpha/\mathrm{Fe}] < 0.25$'
     elif options.metal.lower() == 'arichpoor':
         model1= _TwoDblExpDensity
-        params1= numpy.array([-0.41356108,
-                               -0.06543741,
-                               0.67171854,
-                               1.0909382,
-                               0.03923235])
+        params1= numpy.array([-0.52366195,
+                              0.0181275,
+                              0.77138851,
+                              1.77414754,
+                              0.03052222])
         left_legend= r'$0.25 \leq [\alpha/\mathrm{Fe}] < 0.35$'
         params2= None
     elif options.metal.lower() == 'arichrich':
         model1= _TwoDblExpDensity
-        params1= numpy.array([-0.12320043,
-                               0.00223014,
-                               0.64327929,
-                               0.83901313,
-                               0.03821973])
+        params1= numpy.array([-0.31096375,
+                              -0.08921166,
+                              0.6240429,
+                              0.87705777,
+                              0.04068334])
         params2= None
         left_legend= r'$0.35 \leq [\alpha/\mathrm{Fe}] < 0.45$'
     #Legend
