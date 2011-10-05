@@ -317,7 +317,7 @@ def plotMass(options,args):
             vmin, vmax= 0.,2.
             zlabel=r'$\Sigma(R_0)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
     elif options.type == 'afe':
-        vmin, vmax= 0.05,.4
+        vmin, vmax= 0.0,.5
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
     elif options.type == 'feh':
         vmin, vmax= -1.5,0.
@@ -457,7 +457,7 @@ def plotMass(options,args):
         #Overplot histogram
         ax2 = pyplot.twinx()
         pyplot.hist(hz,range=xrange,weights=mass,color='k',histtype='step',
-                    normed=True,bins=11)
+                    normed=True,bins=12)
         ax2.set_yscale('log')
         ax2.set_yticklabels('')        
         pyplot.ylim(10**-5.5,10.**-1.5)
