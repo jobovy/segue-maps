@@ -499,7 +499,7 @@ def plotPixelFit(options,args):
         vmin, vmax= 0.0,.5
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
     elif options.type == 'feh':
-        vmin, vmax= -1.5,0.
+        vmin, vmax= -1.5,0.2
         zlabel=r'$[\mathrm{Fe/H}]$'
     elif options.type == 'fehafe':
         vmin, vmax= -.7,.7
@@ -591,10 +591,8 @@ def plotPixelFit(options,args):
                 if hr[ii] < 5.:
                     pyplot.errorbar(hr[ii],hz[ii],xerr=hr_err[ii],yerr=hz_err[ii],
                                     color=colormap(_squeeze(plotc[ii],
-                                                            numpy.amax([vmin,
-                                                                        numpy.amin(plotc)]),
-                                                            numpy.amin([vmax,
-                                                                        numpy.amax(plotc)]))),
+                                                            numpy.amax([numpy.amin(plotc)]),
+                                                            numpy.amin([numpy.amax(plotc)]))),
                                     elinewidth=1.,capsize=3,zorder=0)
         #Overplot upper limits in hR
         colormap = cm.jet
@@ -602,10 +600,8 @@ def plotPixelFit(options,args):
             if hr[jj] < 5.: continue
             pyplot.errorbar(4.8,hz[jj],xerr=0.1,xuplims=True,
                                     color=colormap(_squeeze(plotc[jj],
-                                                            numpy.amax([vmin,
-                                                                        numpy.amin(plotc)]),
-                                                            numpy.amin([vmax,
-                                                                        numpy.amax(plotc)]))),
+                                                            numpy.amax([numpy.amin(plotc)]),
+                                                            numpy.amin([numpy.amax(plotc)]))),
 #                            color=colormap(_squeeze(plotc[jj],vmin,vmax)),
                             elinewidth=1.,capsize=3)
     else:
