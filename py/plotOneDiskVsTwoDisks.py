@@ -7,6 +7,7 @@ from optparse import OptionParser
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 from matplotlib import pyplot, cm
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE
+from selectFigs import _squeeze
 from pixelFitDens import pixelAfeFeh
 from fitSigz import _ZSUN
 def plotOneDiskVsTwoDisks(options,args):
@@ -53,6 +54,16 @@ def plotOneDiskVsTwoDisks(options,args):
     else:
         onesamples= None            
         oneerrors= False
+    #If --mass is set to a filename, load the masses from that file
+    #and use those for the symbol size
+    if not options.mass is None and os.path.exists(options.mass):
+        savefile= open(options.mass,'rb')
+        mass= pickle.load(savefile)
+        savefile.close()
+        ndata= mass
+        masses= True
+    else:
+        masses= False
     #Run through the pixels and gather
     plotthis= []
     errors= []
@@ -74,7 +85,14 @@ def plotOneDiskVsTwoDisks(options,args):
             if thistwofit[4] > 0.5: twoIndx= 1
             else: twoIndx= 0
             if options.type == 'hz':
-                plotthis.append([numpy.exp(thisonefit[0])*1000.,numpy.exp(thistwofit[twoIndx])*1000.,len(data)])
+                if masses:
+                    plotthis.append([numpy.exp(thisonefit[0])*1000.,
+                                     numpy.exp(thistwofit[twoIndx])*1000.,
+                                     mass[afeindx+fehindx*binned.npixafe()]])
+                else:
+                    plotthis.append([numpy.exp(thisonefit[0])*1000.,
+                                     numpy.exp(thistwofit[twoIndx])*1000.,
+                                     len(data)])
             elif options.type == 'hr':
                 plotthis.append([numpy.exp(thisonefit[1]),numpy.exp(thistwofit[twoIndx+2]),len(data)])
             theseerrors= []
@@ -110,8 +128,13 @@ def plotOneDiskVsTwoDisks(options,args):
     if twoerrors: y_err= numpy.array(y_err)
     ndata= numpy.array(ndata)
     #Process ndata
-    ndata= ndata**.5
-    ndata= ndata/numpy.median(ndata)*35.
+    if not masses:
+        ndata= ndata**.5
+        ndata= ndata/numpy.median(ndata)*35.
+        ndata= 20
+    else:    
+        ndata= _squeeze(ndata,numpy.amin(ndata),numpy.amax(ndata))
+        ndata= ndata*200.+10.
     #Now plot
     if options.type == 'hz':
         xrange= [150,1200]
@@ -124,6 +147,7 @@ def plotOneDiskVsTwoDisks(options,args):
     yrange=xrange
     bovy_plot.bovy_print()
     bovy_plot.bovy_plot(x,y,color='k',
+                        s=ndata,
                         ylabel=ylabel,
                         xlabel=xlabel,
                         xrange=xrange,yrange=yrange,
@@ -167,6 +191,8 @@ def get_options():
     parser.add_option("--tighten",action="store_true", dest="tighten",
                       default=False,
                       help="If set, tighten axes")
+    parser.add_option("--mass",dest='mass',default=None,
+                      help="If set, use the masses from this file as the symbol size")
     return parser
 
 if __name__ == '__main__':

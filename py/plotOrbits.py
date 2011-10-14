@@ -24,7 +24,7 @@ def plotOrbits(parser):
     orbits= orbits[indx]
     #Load the orbits into the pixel structure
     pix= pixelAfeFeh(orbits,dfeh=options.dfeh,dafe=options.dafe,fehmin=-1.6,
-                     fehmax=0.5,afemin=-0.05,afemax=0.55)
+                     fehmax=0.4,afemin=-0.05,afemax=0.55)
     #Run through the pixels and gather
     plotthis= numpy.zeros((pix.npixfeh(),pix.npixafe()))
     for ii in range(pix.npixfeh()):
@@ -77,8 +77,8 @@ def plotOrbits(parser):
     bovy_plot.bovy_print()
     bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
                           interpolation='nearest',
-                          xrange=[-1.6,0.3],
-                          yrange=[-0.05,0.4],
+                          xrange=[-1.6,0.4],
+                          yrange=[-0.05,0.55],
                           xlabel=r'$[\mathrm{Fe/H}]$',
                           ylabel=r'$[\alpha/\mathrm{Fe}]$',
                           zlabel=zlabel,
