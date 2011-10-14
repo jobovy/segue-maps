@@ -1,4 +1,4 @@
-ntimport os, os.path
+import os, os.path
 import sys
 import math
 import numpy
@@ -457,7 +457,7 @@ def plotMass(options,args):
         #Overplot histogram
         ax2 = pyplot.twinx()
         pyplot.hist(hz,range=xrange,weights=mass,color='k',histtype='step',
-                    normed=True,bins=12)
+                    normed=True,bins=10)
         ax2.set_yscale('log')
         ax2.set_yticklabels('')        
         pyplot.ylim(10**-5.5,10.**-1.5)
