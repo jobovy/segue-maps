@@ -395,7 +395,8 @@ def plotPixelFit(options,args):
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     if options.tighten:
         tightbinned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe,
-                                 fehmin=-2.,fehmax=0.3,afemin=0.,afemax=0.45)
+                                 fehmin=-1.6,fehmax=0.4,afemin=-0.05,
+                                 afemax=0.55)
     else:
         tightbinned= binned
     #Savefile
@@ -543,7 +544,7 @@ def plotPixelFit(options,args):
         else:
 #            ndata= numpy.log(ndata)
             ndata= _squeeze(ndata,numpy.amin(ndata),numpy.amax(ndata))
-            ndata= ndata*300.+10.
+            ndata= ndata*200.+10.
         #ndata= numpy.log(ndata)/numpy.log(numpy.median(ndata))
         #ndata= (ndata-numpy.amin(ndata))/(numpy.amax(ndata)-numpy.amin(ndata))*25+12.
         print ndata
@@ -573,7 +574,7 @@ def plotPixelFit(options,args):
                 for jj in range(len(feh)):
                     if afe[jj] == tightbinned.afe(ii):
                         plotc[jj]= feh[jj]-medianfeh
-        yrange= [150,1200]
+        yrange= [150,1250]
         xrange= [1.2,5.]
         bovy_plot.bovy_plot(hr,hz,s=ndata,c=plotc,
                             cmap='jet',
