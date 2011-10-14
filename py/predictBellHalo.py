@@ -43,7 +43,7 @@ def predictDiskMass(modelfunc,params,sf,cdist,fehdist,fehmin,fehmax,feh,
         norm= 1.
     pred= numpy.sum(n)*7.*(numpy.pi/180.)**2.*(20.2-14.5)/1000#\
 #          *0.2*numpy.log(10.) #these are some factors left out of compareDataModel
-    print pred, len(data), 1.-params[2]
+    #print pred, len(data), 1.-params[2]
     frac= fracMassGRRange(grmin,grmax,agemin,agemax,feh)
     avgmass= averageMassGRRange(grmin,grmax,agemin,agemax,feh)
     return len(data)*norm/pred/frac*avgmass
