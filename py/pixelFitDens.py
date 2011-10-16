@@ -169,6 +169,7 @@ def pixelFitDens(options,args):
         savefile.close()
     else:
         initfits= None
+
     #Sample?
     if options.mcsample:
         if ii < len(binned.fehedges)-1 and jj < len(binned.afeedges)-1:
@@ -423,6 +424,21 @@ def plotPixelFit(options,args):
         masses= True
     else:
         masses= False
+    #Exclude bins better fit by two disks
+    if not options.exclude is None and os.path.exists(options.exclude):#Load two double exponential fits
+        savefile= open(options.exclude,'rb')
+        twofits= pickle.load(savefile)
+        savefile.close()
+    else:
+        twofits= None
+    if not options.exclude_errs is None and os.path.exists(options.exclude_errs):#Load two double exponential fits errors
+        savefile= open(options.exclude_errs,'rb')
+        twosamples= pickle.load(savefile)
+        savefile.close()
+        twoerrors= True
+    else:
+        twosamples= None
+        twoerrors= False
     #Now plot
     #Run through the pixels and gather
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
@@ -458,6 +474,21 @@ def plotPixelFit(options,args):
                     continue
                 else:
                     plotthis[ii,jj]= numpy.nan
+                    continue
+            if not twofits is None:
+                #Exclude the bin if it is better fit by two exponential disks
+                thistwofit= twofits[afeindx+fehindx*binned.npixafe()]
+                if thistwofit[4] > 0.5: twoIndx= 1
+                else: twoIndx= 0
+                hz1= numpy.exp(thisfit[0])*1000.
+                hz2= numpy.exp(thistwofit[twoIndx])*1000.
+                if twoerrors:
+                    thesetwosamples= twosamples[afeindx+fehindx*binned.npixafe()]
+                    xs= numpy.array([s[twoIndx] for s in thesetwosamples])
+                    hz2_err= 500.*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs)))
+                    if numpy.fabs(hz1-hz2)/hz2_err > 1.:
+                        continue
+                elif numpy.fabs(hz1-hz2)/hz1 > 0.15:
                     continue
             if options.model.lower() == 'hwr':
                 if options.type == 'hz':
@@ -675,6 +706,10 @@ def get_options():
                       help="Number of MCMC samples to obtain")
     parser.add_option("--init",dest='init',default=None,
                       help="Initial conditions for fit from this file (same gridding and format as output file, assumed to be a single-exponential fit for double-exponential)")
+    parser.add_option("--exclude",dest='exclude',default=None,
+                      help="Exclude bins better fit with two exponential disks, the two disk-fits are in this file")
+    parser.add_option("--exclude_errs",dest='exclude_errs',default=None,
+                      help="Exclude bins better fit with two exponential disks, the two disk-fits are in this file; errors")
     parser.add_option("--mass",dest='mass',default=None,
                       help="If set, use the masses from this file as the symbol size")
     parser.add_option("--zmin",dest='zmin',type='float',
