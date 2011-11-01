@@ -1,5 +1,6 @@
 import os, os.path
 import sys
+import copy
 import math
 import numpy
 import cPickle as pickle
@@ -419,49 +420,101 @@ def plotMass(options,args):
                 yrange= [-0.1,30.]
         else:
             if options.logmass:
-                yrange= [0.005,10.]
+                yrange= [0.005,2.]
             else:
                 yrange= [-0.1,10.]
             ylabel=r'$\Sigma(R_0)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
-        bovy_plot.bovy_plot(hz,mass,
-                            s=ndata,c=plotc,
-                            cmap='jet',
-                            xlabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$',
-                            ylabel=ylabel,
-                            clabel=zlabel,
-                            xrange=xrange,yrange=yrange,
-                            vmin=vmin,vmax=vmax,
-                            scatter=True,edgecolors='none',
-                            colorbar=True,zorder=2,
-                            semilogy=options.logmass)
-        if not options.cumul and masserrors and options.ploterrors:
-            colormap = cm.jet
+        if not options.vstructure:
+            bovy_plot.bovy_plot(hz,mass,
+                                s=ndata,c=plotc,
+                                cmap='jet',
+                                xlabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$',
+                                ylabel=ylabel,
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True,zorder=2,
+                                semilogy=options.logmass)
+            if not options.cumul and masserrors and options.ploterrors:
+                colormap = cm.jet
+                for ii in range(len(hz)):
+                    pyplot.errorbar(hz[ii],mass[ii],yerr=mass_err[ii],
+                                    color=colormap(_squeeze(plotc[ii],
+                                                            numpy.amax([vmin,
+                                                                        numpy.amin(plotc)]),
+                                                            numpy.amin([vmax,
+                                                                        numpy.amax(plotc)]))),
+                                    elinewidth=1.,capsize=3,zorder=0)
+            if not options.cumul and denserrors and options.ploterrors:
+                colormap = cm.jet
+                for ii in range(len(hz)):
+                    pyplot.errorbar(hz[ii],mass[ii],xerr=hz_err[ii],
+                                    color=colormap(_squeeze(plotc[ii],
+                                                            numpy.amax([vmin,
+                                                                        numpy.amin(plotc)]),
+                                                            numpy.amin([vmax,
+                                                                        numpy.amax(plotc)]))),
+                                    elinewidth=1.,capsize=3,zorder=0)
+            #Add binsize label
+            bovy_plot.bovy_text(r'$\mathrm{points\ use}\ \Delta [\mathrm{Fe/H}] = 0.1,$'+'\n'+r'$\Delta [\alpha/\mathrm{Fe}] = 0.05\ \mathrm{bins}$',
+                                bottom_left=True)
+            #Overplot histogram
+            ax2 = pyplot.twinx()
+            pyplot.hist(hz,range=xrange,weights=mass,color='k',histtype='step',
+                        normed=True,bins=10,lw=3.,zorder=10)
+            ax2.set_yscale('log')
+            ax2.set_yticklabels('')        
+            pyplot.ylim(10**-5.5,10.**-1.5)
+            pyplot.xlim(xrange[0],xrange[1])
+        else:
+            #Make an illustrative plot of the vertical structure
+            nzs= 1001
+            zs= numpy.linspace(200.,3000.,nzs)
+            total= numpy.zeros(nzs)
             for ii in range(len(hz)):
-                pyplot.errorbar(hz[ii],mass[ii],yerr=mass_err[ii],
-                                color=colormap(_squeeze(plotc[ii],
-                                                        numpy.amax([vmin,
-                                                                    numpy.amin(plotc)]),
-                                                        numpy.amin([vmax,
-                                                                    numpy.amax(plotc)]))),
-                                elinewidth=1.,capsize=3,zorder=0)
-        if not options.cumul and denserrors and options.ploterrors:
-            colormap = cm.jet
-            for ii in range(len(hz)):
-                pyplot.errorbar(hz[ii],mass[ii],xerr=hz_err[ii],
-                                color=colormap(_squeeze(plotc[ii],
-                                                        numpy.amax([vmin,
-                                                                    numpy.amin(plotc)]),
-                                                        numpy.amin([vmax,
-                                                                    numpy.amax(plotc)]))),
-                                elinewidth=1.,capsize=3,zorder=0)
-        #Overplot histogram
-        ax2 = pyplot.twinx()
-        pyplot.hist(hz,range=xrange,weights=mass,color='k',histtype='step',
-                    normed=True,bins=10)
-        ax2.set_yscale('log')
-        ax2.set_yticklabels('')        
-        pyplot.ylim(10**-5.5,10.**-1.5)
-        pyplot.xlim(xrange[0],xrange[1])
+                total+= mass[ii]/2./hz[ii]*numpy.exp(-zs/hz[ii])
+            bovy_plot.bovy_plot(zs,total,color='k',ls='-',lw=3.,
+                                semilogy=True,
+                                xrange=[0.,3200.],
+                                yrange=[0.000001,0.02],
+                                xlabel=r'$\mathrm{vertical\ height}\ Z$',
+                                ylabel=r'$\rho_*(R=R_0,Z)\ [\mathrm{M}_\odot\ \mathrm{pc}^{-3}]$',
+                                zorder=10)
+            if options.vbinned:
+                #Bin
+                mhist, edges= numpy.histogram(hz,range=xrange,
+                                              weights=mass,bins=10)
+                stotal= numpy.zeros(nzs)
+                for ii in range(len(mhist)):
+                    hz= (edges[ii+1]+edges[ii])/2.
+                    if options.vcumul:
+                        if ii == 0.:
+                            pstotal= numpy.zeros(nzs)+0.0000001
+                        else:
+                            pstotal= copy.copy(stotal)
+                        stotal+= mhist[ii]/2./hz*numpy.exp(-zs/hz)
+                        pyplot.fill_between(zs,stotal,pstotal,
+                                            color='%.6f' % (0.25+0.5/(len(mhist)-1)*ii))
+                    else:
+                        bovy_plot.bovy_plot([zs[0],zs[-1]],
+                                            1.*numpy.array([mhist[ii]/2./hz*numpy.exp(-zs[0]/hz),
+                                                            mhist[ii]/2./hz*numpy.exp(-zs[-1]/hz)]),
+                                            color='0.5',ls='-',overplot=True,
+                                            zorder=0)
+            else:
+                colormap = cm.jet
+                for ii in range(len(hz)):
+                    bovy_plot.bovy_plot([zs[0],zs[-1]],
+                                        100.*numpy.array([mass[ii]/2./hz[ii]*numpy.exp(-zs[0]/hz[ii]),
+                                                          mass[ii]/2./hz[ii]*numpy.exp(-zs[-1]/hz[ii])]),
+                                        ls='-',overplot=True,alpha=0.5,
+                                        zorder=0,
+                                        color=colormap(_squeeze(plotc[ii],
+                                                                numpy.amax([vmin,
+                                                                        numpy.amin(plotc)]),
+                                                                numpy.amin([vmax,
+                                                                            numpy.amax(plotc)]))))
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
@@ -517,6 +570,15 @@ def get_options():
     parser.add_option("--cumul",action="store_true", dest="cumul",
                       default=False,
                       help="If set, plot cumulative mass as a function of h_z")
+    parser.add_option("--vstructure",action="store_true", dest="vstructure",
+                      default=False,
+                      help="If set, plot the vertical structure of the disk")
+    parser.add_option("--vbinned",action="store_true", dest="vbinned",
+                      default=False,
+                      help="If set, plot the vertical structure in bins in hz when plotting vstructure")
+    parser.add_option("--vcumul",action="store_true", dest="vcumul",
+                      default=False,
+                      help="If set, plot the vertical structure cumulatively")
     parser.add_option("--simpleage",action="store_true", dest="simpleage",
                       default=False,
                       help="If set, use a simple age prescription (all the same marginalization)")
