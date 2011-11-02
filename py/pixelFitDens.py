@@ -622,7 +622,7 @@ def plotPixelFit(options,args):
             for ii in range(len(hz)):
                 if hr[ii] < 5.:
                     if (hz[ii]-((800.-520.)/(4.-2.5)*(hr[ii]-4.)+800.))**2./100.**2. < 1. and hr[ii] > 2.3:
-                        print hr[ii], hz[ii]
+                        print hr[ii], hz[ii], ndata[ii]/numpy.sum(ndata)
                         pyplot.errorbar(hr[ii],hz[ii],xerr=hr_err[ii],yerr=hz_err[ii],
                                         color=colormap(_squeeze(plotc[ii],
                                                                 numpy.amax([numpy.amin(plotc)]),
