@@ -5,6 +5,7 @@ import math
 import numpy
 import cPickle as pickle
 from optparse import OptionParser
+from extreme_deconvolution import extreme_deconvolution
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 from matplotlib import pyplot, cm
 from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
@@ -463,6 +464,34 @@ def plotMass(options,args):
             ax2 = pyplot.twinx()
             pyplot.hist(hz,range=xrange,weights=mass,color='k',histtype='step',
                         normed=True,bins=10,lw=3.,zorder=10)
+            #Also XD?
+            if options.xd:
+                #Set up data
+                ydata= numpy.zeros((len(hz),1))
+                ydata[:,0]= numpy.log(hz)
+                ycovar= numpy.zeros((len(hz),1))
+                ycovar[:,0]= hz_err**2./hz**2.
+                #Set up initial conditions
+                xamp= numpy.ones(options.k)/float(options.k)
+                xmean= numpy.zeros((options.k,1))
+                for kk in range(options.k):
+                    xmean[kk,:]= numpy.mean(ydata,axis=0)\
+                        +numpy.random.normal()*numpy.std(ydata,axis=0)
+                xcovar= numpy.zeros((options.k,1,1))
+                for kk in range(options.k):
+                    xcovar[kk,:,:]= numpy.cov(ydata.T)
+                #Run XD
+                print extreme_deconvolution(ydata,ycovar,xamp,xmean,xcovar,
+                                      weight=mass)*len(hz)
+                print xamp, xmean, xcovar
+                #Plot
+                xs= numpy.linspace(xrange[0],xrange[1],1001)
+                xdys= numpy.zeros(len(xs))
+                for kk in range(options.k):
+                    xdys+= xamp[kk]/numpy.sqrt(2.*numpy.pi*xcovar[kk,0,0])\
+                        *numpy.exp(-0.5*(numpy.log(xs)-xmean[kk,0])**2./xcovar[kk,0,0])
+                xdys/= xs
+                bovy_plot.bovy_plot(xs,xdys,'-',color='0.5',overplot=True)
             ax2.set_yscale('log')
             ax2.set_yticklabels('')        
             pyplot.ylim(10**-5.5,10.**-1.5)
@@ -579,6 +608,11 @@ def get_options():
     parser.add_option("--vcumul",action="store_true", dest="vcumul",
                       default=False,
                       help="If set, plot the vertical structure cumulatively")
+    parser.add_option("--xd",action="store_true", dest="xd",
+                      default=False,
+                      help="If set, also fit XD to the distribution and plot")
+    parser.add_option("-k",dest='k',default=4,type='int',
+                      help="Number of XD Gaussians")   
     parser.add_option("--simpleage",action="store_true", dest="simpleage",
                       default=False,
                       help="If set, use a simple age prescription (all the same marginalization)")
