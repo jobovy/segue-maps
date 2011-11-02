@@ -621,11 +621,29 @@ def plotPixelFit(options,args):
             colormap = cm.jet
             for ii in range(len(hz)):
                 if hr[ii] < 5.:
-                    pyplot.errorbar(hr[ii],hz[ii],xerr=hr_err[ii],yerr=hz_err[ii],
-                                    color=colormap(_squeeze(plotc[ii],
-                                                            numpy.amax([numpy.amin(plotc)]),
-                                                            numpy.amin([numpy.amax(plotc)]))),
-                                    elinewidth=1.,capsize=3,zorder=0)
+                    if (hz[ii]-((800.-520.)/(4.-2.5)*(hr[ii]-4.)+800.))**2./100.**2. < 1. and hr[ii] > 2.3:
+                        print hr[ii], hz[ii]
+                        pyplot.errorbar(hr[ii],hz[ii],xerr=hr_err[ii],yerr=hz_err[ii],
+                                        color=colormap(_squeeze(plotc[ii],
+                                                                numpy.amax([numpy.amin(plotc)]),
+                                                                numpy.amin([numpy.amax(plotc)]))),
+                                        elinewidth=1.,capsize=3,zorder=0,elinestyle='--')
+                        """
+                        Might need to add this to axes.py
+                    if elinestyle:
+                        lines_kw['linestyle'] = elinestyle
+                    else:
+                        if 'linestyle' in kwargs:
+                           lines_kw['linestyle']=kwargs['linstyle']
+                        if 'ls' in kwargs:
+                           lines_kw['ls']=kwargs['ls']
+                         """
+                    else:
+                        pyplot.errorbar(hr[ii],hz[ii],xerr=hr_err[ii],yerr=hz_err[ii],
+                                        color=colormap(_squeeze(plotc[ii],
+                                                                numpy.amax([numpy.amin(plotc)]),
+                                                                numpy.amin([numpy.amax(plotc)]))),
+                                        elinewidth=1.,capsize=3,zorder=0)
         #Overplot upper limits in hR
         colormap = cm.jet
         for jj in range(len(hr)):
