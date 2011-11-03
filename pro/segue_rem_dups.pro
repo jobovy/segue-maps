@@ -20,7 +20,11 @@ while ii lt nmatches-2 do begin
     endwhile
     if jj gt 0 then begin
         ;;these have multiple matches
-        sns= in[m2[ii-jj:ii]].sna
+        if tag_exist(in,'sna') then begin
+            sns= in[m2[ii-jj:ii]].sna
+        endif else if tag_exist(in,'snr') then begin
+            sns= in[m2[ii-jj:ii]].snr
+        endif
         maxsn= max(sns,indx)
         bestindx[sub]= m2[ii-jj+indx]
     endif else begin
