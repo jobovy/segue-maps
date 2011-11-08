@@ -167,7 +167,8 @@ def plotPixelFitVel(options,args):
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     if options.tighten:
         tightbinned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe,
-                                 fehmin=-2.,fehmax=0.3,afemin=0.,afemax=0.45)
+                                 fehmin=-1.6,fehmax=0.4,afemin=-0.05,
+                                 afemax=0.55)
     else:
         tightbinned= binned
     #Savefile

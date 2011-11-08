@@ -165,10 +165,11 @@ def plotsz2hz(options,args):
             or options.type.lower() == 'afefeh':
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather everything
-        sz_err, pivot, zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], [], [], []
+        hs_err, sz_err, pivot, zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
             if velerrors:
                 sz_err.append(errors[ii][0])
+                hs_err.append(errors[ii][1])
             sz.append(plotthis[ii][2])
             hs.append(plotthis[ii][3])
             hz.append(plotthis[ii][10])
@@ -189,6 +190,7 @@ def plotsz2hz(options,args):
         zmax= numpy.array(zmax)
         if velerrors:
             sz_err= numpy.array(sz_err)
+            hs_err= numpy.array(hs_err)
         sz= numpy.array(sz)
         mz= numpy.array(mz)*1000.
         hs= numpy.array(hs)
@@ -228,7 +230,8 @@ def plotsz2hz(options,args):
                 for jj in range(len(feh)):
                     if afe[jj] == tightbinned.afe(ii):
                         plotc[jj]= feh[jj]-medianfeh
-        if not options.subtype == 'zfunc':
+        if not options.subtype == 'zfunc' \
+               and not options.subtype.lower() == 'hs':
             if options.subtype == 'mz':
                 if velerrors: #Don't plot if errors > 30%
                     indx= (sz_err/sz <= .2)
@@ -277,7 +280,7 @@ def plotsz2hz(options,args):
             bovy_plot.bovy_plot(numpy.linspace(0.,2000.,1001),
                                 90.*numpy.linspace(0.,2000.,1001)/numpy.sqrt(numpy.linspace(0.,2000.,1001)**2.+637**2.)+0.01*numpy.linspace(0.,2000.,1001)*2.,
                                 '-.',color='0.5',overplot=True)
-        else:
+        elif options.subtype.lower() == 'zfunc':
             from selectFigs import _squeeze
             colormap = cm.jet
             #Set up plot
@@ -296,6 +299,50 @@ def plotsz2hz(options,args):
                             thiszfunc,'-',
                             color=colormap(_squeeze(plotc[ii],vmin,vmax)),
                             lw=ndata[ii]/15.)
+            #Add colorbar
+            m = cm.ScalarMappable(cmap=cm.jet)
+            m.set_array(plotc)
+            m.set_clim(vmin=vmin,vmax=vmax)
+            cbar= pyplot.colorbar(m,fraction=0.15)
+            cbar.set_clim((vmin,vmax))
+            cbar.set_label(zlabel)
+        elif options.subtype.lower() == 'hs':
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            #plot hs vs. afe/feh, colorcoded using feh/afe
+            if options.type.lower() == 'afe':
+                plotx= feh
+                xrange= [-1.6,0.4]
+            if options.type.lower() == 'feh':
+                plotx= afe
+                xrange= [-0.05,0.55]
+            yrange= [0.,15.]
+            bovy_plot.bovy_plot(plotx,hs,
+                                s=ndata,c=plotc,
+                                cmap='jet',
+                                xlabel=xlabel,ylabel=ylabel,
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True)
+            #Overplot errorbars
+            if options.ploterrors:
+                for ii in range(len(hs)):
+                    pyplot.errorbar(plotx[ii],
+                                    hs[ii],yerr=hs_err[ii],
+                                    color=colormap(_squeeze(plotc[ii],
+                                                            numpy.amax([numpy.amin(plotc)]),
+                                                            numpy.amin([numpy.amax(plotc)]))),
+                                    elinewidth=1.,capsize=3,zorder=0,elinestyle='--')            
+            #Overplot weighted mean + stddev
+            hs_m= numpy.sum(hs/hs_err**2.)/numpy.sum(1./hs_err**2.)
+            hs_std= numpy.sqrt(1./numpy.sum(1./hs_err**2.))
+            bovy_plot.bovy_plot(xrange,[hs_m,hs_m],'k-',overplot=True)
+            bovy_plot.bovy_plot(xrange,[hs_m-hs_std,hs_m-hs_std],'-',
+                                color='0.5',overplot=True)
+            bovy_plot.bovy_plot(xrange,[hs_m+hs_std,hs_m+hs_std],'-',
+                                color='0.5',overplot=True)
             #Add colorbar
             m = cm.ScalarMappable(cmap=cm.jet)
             m.set_array(plotc)
@@ -343,6 +390,9 @@ def get_options():
                       help="Velocity model used")
     parser.add_option("--densmodel",dest='densmodel',default='hwr',
                       help="Density model used")
+    parser.add_option("--ploterrors",action="store_true", dest="ploterrors",
+                      default=False,
+                      help="If set, plot the errorbars")
     return parser
 
 if __name__ == '__main__':
