@@ -106,7 +106,7 @@ def plotsz2hz(options,args):
                     thisplot=[tightbinned.feh(ii),
                               tightbinned.afe(jj),
                               numpy.exp(thisvelfit[1]),
-                              numpy.exp(thisvelfit[3]),
+                              numpy.exp(thisvelfit[4]),
                               len(data),
                               thisvelfit[1],
                               thisvelfit[2]]
@@ -143,10 +143,10 @@ def plotsz2hz(options,args):
         vmin, vmax= 15.,100.
         zlabel= r'$\sigma_z^2(z=1000\ \mathrm{pc}) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
     elif options.type == 'afe':
-        vmin, vmax= 0.05,.4
+        vmin, vmax= 0.0,.5
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
     elif options.type == 'feh':
-        vmin, vmax= -1.5,0.
+        vmin, vmax= -1.6,0.4
         zlabel=r'$[\mathrm{Fe/H}]$'
     elif options.type == 'fehafe':
         vmin, vmax= -.7,.7
@@ -310,17 +310,20 @@ def plotsz2hz(options,args):
             from selectFigs import _squeeze
             colormap = cm.jet
             #plot hs vs. afe/feh, colorcoded using feh/afe
-            if options.type.lower() == 'afe':
-                plotx= feh
+            if options.type.lower() == 'afe' or options.type.lower() == 'afefeh':
+                plotx= feh+numpy.random.random(len(hs))*0.05 #jitter
                 xrange= [-1.6,0.4]
-            if options.type.lower() == 'feh':
-                plotx= afe
+                xlabel=r'$[\mathrm{Fe/H}]$'
+            elif options.type.lower() == 'feh' or options.type.lower() == 'fehafe':
+                plotx= afe+numpy.random.random(len(hs))*0.025 #jitter
                 xrange= [-0.05,0.55]
-            yrange= [0.,15.]
+                xlabel=r'$[\alpha\mathrm{/H}]$'
+            yrange= [0.,20.]
             bovy_plot.bovy_plot(plotx,hs,
                                 s=ndata,c=plotc,
                                 cmap='jet',
-                                xlabel=xlabel,ylabel=ylabel,
+                                xlabel=xlabel,
+                                ylabel=r'$h_\sigma\ [\mathrm{kpc}]$',
                                 clabel=zlabel,
                                 xrange=xrange,yrange=yrange,
                                 vmin=vmin,vmax=vmax,
@@ -334,22 +337,16 @@ def plotsz2hz(options,args):
                                     color=colormap(_squeeze(plotc[ii],
                                                             numpy.amax([numpy.amin(plotc)]),
                                                             numpy.amin([numpy.amax(plotc)]))),
-                                    elinewidth=1.,capsize=3,zorder=0,elinestyle='--')            
+                                    elinewidth=1.,capsize=3,zorder=0,elinestyle='-')  
             #Overplot weighted mean + stddev
             hs_m= numpy.sum(hs/hs_err**2.)/numpy.sum(1./hs_err**2.)
             hs_std= numpy.sqrt(1./numpy.sum(1./hs_err**2.))
+            print hs_m, hs_std
             bovy_plot.bovy_plot(xrange,[hs_m,hs_m],'k-',overplot=True)
             bovy_plot.bovy_plot(xrange,[hs_m-hs_std,hs_m-hs_std],'-',
                                 color='0.5',overplot=True)
             bovy_plot.bovy_plot(xrange,[hs_m+hs_std,hs_m+hs_std],'-',
                                 color='0.5',overplot=True)
-            #Add colorbar
-            m = cm.ScalarMappable(cmap=cm.jet)
-            m.set_array(plotc)
-            m.set_clim(vmin=vmin,vmax=vmax)
-            cbar= pyplot.colorbar(m,fraction=0.15)
-            cbar.set_clim((vmin,vmax))
-            cbar.set_label(zlabel)
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
