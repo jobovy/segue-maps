@@ -396,7 +396,7 @@ def plotPixelFit(options,args):
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     if options.tighten:
         tightbinned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe,
-                                 fehmin=-1.6,fehmax=0.4,afemin=-0.05,
+                                 fehmin=-1.6,fehmax=0.5,afemin=-0.05,
                                  afemax=0.55)
     else:
         tightbinned= binned
@@ -540,8 +540,8 @@ def plotPixelFit(options,args):
         vmin, vmax= -.15,.15
         zlabel=r'$[\alpha/\mathrm{Fe}]-[\alpha/\mathrm{Fe}]_{1/2}([\mathrm{Fe/H}])$'
     if options.tighten:
-        xrange=[-2.,0.3]
-        yrange=[0.,0.45]
+        xrange=[-1.6,0.5]
+        yrange=[-0.05,0.55]
     else:
         xrange=[-2.,0.6]
         yrange=[-0.1,0.6]

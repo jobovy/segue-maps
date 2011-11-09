@@ -196,7 +196,8 @@ def plotMass(options,args):
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     if options.tighten:
         tightbinned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe,
-                                 fehmin=-2.,fehmax=0.3,afemin=0.,afemax=0.45)
+                                 fehmin=-1.6,fehmax=0.5,afemin=-0.05,
+                                 afemax=0.55)
     else:
         tightbinned= binned
     #Savefile
@@ -285,6 +286,11 @@ def plotMass(options,args):
                     plotthis[ii,jj]= numpy.log10(thismass/10**6.)
                 else:
                     plotthis[ii,jj]= thismass/10**6.
+            elif options.type == 'nstars':
+                if options.logmass:
+                    plotthis[ii,jj]= numpy.log10(len(data))
+                else:
+                    plotthis[ii,jj]= len(data)
             elif options.model.lower() == 'hwr':
                 if options.type == 'hz':
                     plotthis[ii,jj]= numpy.exp(thisfit[0])*1000.
@@ -313,11 +319,20 @@ def plotMass(options,args):
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'mass':
         if options.logmass:
-            vmin, vmax= numpy.log10(0.001), numpy.log10(2.)
+            vmin, vmax= numpy.log10(0.01), numpy.log10(2.)
             zlabel=r'$\log_{10} \Sigma(R_0)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
         else:
-            vmin, vmax= 0.,2.
+            vmin, vmax= 0.,1.
             zlabel=r'$\Sigma(R_0)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
+        title=r'$\mathrm{mass\ weighted}$'
+    elif options.type == 'nstars':
+        if options.logmass:
+            vmin, vmax= 2., 3.
+            zlabel=r'$\log_{10} \mathrm{raw\ number\ of\ G}$-$\mathrm{type\ dwarfs}$'
+        else:
+            vmin, vmax= 100.,1000.
+            zlabel=r'$\mathrm{raw\ number\ of\ G}$-$\mathrm{type\ dwarfs}$'
+        title= r'$\mathrm{raw\ sample\ counts}$'
     elif options.type == 'afe':
         vmin, vmax= 0.0,.5
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
@@ -331,8 +346,8 @@ def plotMass(options,args):
         vmin, vmax= -.15,.15
         zlabel=r'$[\alpha/\mathrm{Fe}]-[\alpha/\mathrm{Fe}]_{1/2}([\mathrm{Fe/H}])$'
     if options.tighten:
-        xrange=[-2.,0.3]
-        yrange=[0.,0.45]
+        xrange=[-1.6,0.5]
+        yrange=[-0.05,0.55]
     else:
         xrange=[-2.,0.6]
         yrange=[-0.1,0.6]
@@ -546,15 +561,15 @@ def plotMass(options,args):
                                                                             numpy.amax(plotc)]))))
     else:
         bovy_plot.bovy_print()
-        bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
+        bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='gist_yarg',
                               interpolation='nearest',
                               xlabel=r'$[\mathrm{Fe/H}]$',
                               ylabel=r'$[\alpha/\mathrm{Fe}]$',
                               zlabel=zlabel,
                               xrange=xrange,yrange=yrange,
                               vmin=vmin,vmax=vmax,
-                              contours=False,
-                              colorbar=True,shrink=0.78)
+                              contours=False)
+        bovy_plot.bovy_text(title,title=True,fontsize=16)
     bovy_plot.bovy_end_print(options.plotfile)
     return None
 
