@@ -441,10 +441,20 @@ def plotMass(options,args):
                 yrange= [-0.1,10.]
             ylabel=r'$\Sigma(R_0)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
         if not options.vstructure:
-            bovy_plot.bovy_plot(hz,mass,
+            if options.hr:
+                ploth= hr
+                plotherr= hr_err
+                xlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$'
+                xrange= [1.2,4.]
+            else:
+                ploth= hz
+                plotherr= hz_err
+                xlabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$'
+                xrange= [150,1200]
+            bovy_plot.bovy_plot(ploth,mass,
                                 s=ndata,c=plotc,
                                 cmap='jet',
-                                xlabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$',
+                                xlabel=xlabel,
                                 ylabel=ylabel,
                                 clabel=zlabel,
                                 xrange=xrange,yrange=yrange,
@@ -455,7 +465,7 @@ def plotMass(options,args):
             if not options.cumul and masserrors and options.ploterrors:
                 colormap = cm.jet
                 for ii in range(len(hz)):
-                    pyplot.errorbar(hz[ii],mass[ii],yerr=mass_err[ii],
+                    pyplot.errorbar(ploth[ii],mass[ii],yerr=mass_err[ii],
                                     color=colormap(_squeeze(plotc[ii],
                                                             numpy.amax([vmin,
                                                                         numpy.amin(plotc)]),
@@ -465,7 +475,7 @@ def plotMass(options,args):
             if not options.cumul and denserrors and options.ploterrors:
                 colormap = cm.jet
                 for ii in range(len(hz)):
-                    pyplot.errorbar(hz[ii],mass[ii],xerr=hz_err[ii],
+                    pyplot.errorbar(ploth[ii],mass[ii],xerr=plotherr[ii],
                                     color=colormap(_squeeze(plotc[ii],
                                                             numpy.amax([vmin,
                                                                         numpy.amin(plotc)]),
@@ -477,7 +487,7 @@ def plotMass(options,args):
                                 bottom_left=True)
             #Overplot histogram
             ax2 = pyplot.twinx()
-            pyplot.hist(hz,range=xrange,weights=mass,color='k',histtype='step',
+            pyplot.hist(ploth,range=xrange,weights=mass,color='k',histtype='step',
                         normed=True,bins=10,lw=3.,zorder=10)
             #Also XD?
             if options.xd:
@@ -509,7 +519,10 @@ def plotMass(options,args):
                 bovy_plot.bovy_plot(xs,xdys,'-',color='0.5',overplot=True)
             ax2.set_yscale('log')
             ax2.set_yticklabels('')        
-            pyplot.ylim(10**-5.5,10.**-1.5)
+            if options.hr:
+                pyplot.ylim(10**-2.,10.**0.)
+            else:
+                pyplot.ylim(10**-5.5,10.**-1.5)
             pyplot.xlim(xrange[0],xrange[1])
         else:
             #Make an illustrative plot of the vertical structure
@@ -568,8 +581,9 @@ def plotMass(options,args):
                               zlabel=zlabel,
                               xrange=xrange,yrange=yrange,
                               vmin=vmin,vmax=vmax,
+                              onedhists=True,
                               contours=False)
-        bovy_plot.bovy_text(title,title=True,fontsize=16)
+        bovy_plot.bovy_text(title,top_right=True,fontsize=16)
     bovy_plot.bovy_end_print(options.plotfile)
     return None
 
@@ -631,6 +645,9 @@ def get_options():
     parser.add_option("--simpleage",action="store_true", dest="simpleage",
                       default=False,
                       help="If set, use a simple age prescription (all the same marginalization)")
+    parser.add_option("--hr",action="store_true", dest="hr",
+                      default=False,
+                      help="If set, plot hR rather than hz")
     return parser
   
 if __name__ == '__main__':
