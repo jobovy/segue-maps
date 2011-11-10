@@ -440,7 +440,7 @@ def plotMass(options,args):
             else:
                 yrange= [-0.1,10.]
             ylabel=r'$\Sigma(R_0)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
-        if not options.vstructure:
+        if not options.vstructure and not options.hzhr:
             if options.hr:
                 ploth= hr
                 plotherr= hr_err
@@ -524,6 +524,18 @@ def plotMass(options,args):
             else:
                 pyplot.ylim(10**-5.5,10.**-1.5)
             pyplot.xlim(xrange[0],xrange[1])
+        elif options.hzhr:
+            #Make density plot in hR and hz
+            bovy_plot.scatterplot(hr,hz,'k,',
+                                  levels=[1.01],#HACK such that outliers aren't plotted
+                                  cmap='gist_yarg',
+                                  bins=11,
+                                  xrange=[1.,7.],
+                                  yrange=[150.,1200.],
+                                  ylabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$',
+                                  xlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$',
+                                  onedhists=False,
+                                  weights=mass)
         else:
             #Make an illustrative plot of the vertical structure
             nzs= 1001
@@ -648,6 +660,9 @@ def get_options():
     parser.add_option("--hr",action="store_true", dest="hr",
                       default=False,
                       help="If set, plot hR rather than hz")
+    parser.add_option("--hzhr",action="store_true", dest="hzhr",
+                      default=False,
+                      help="If set, plot both hR and hz")
     return parser
   
 if __name__ == '__main__':
