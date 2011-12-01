@@ -230,16 +230,6 @@ def pixelFitDens(options,args):
     while ii < len(binned.fehedges)-1:
         while jj < len(binned.afeedges)-1:
             data= binned(binned.feh(ii),binned.afe(jj))
-            if len(data) < options.minndata:
-                if options.mcsample: samples.append(None)
-                else: fits.append(None)
-                jj+= 1
-                if jj == len(binned.afeedges)-1: 
-                    jj= 0
-                    ii+= 1
-                    break
-                continue               
-            print binned.feh(ii), binned.afe(jj), len(data)
             if not initfits is None:
                 fehindx= binned.fehindx(binned.feh(ii))
                 afeindx= binned.afeindx(binned.afe(jj))
@@ -256,6 +246,16 @@ def pixelFitDens(options,args):
             XYZ[:,0]= data.xc
             XYZ[:,1]= data.yc
             XYZ[:,2]= data.zc+_ZSUN
+            if len(data) < options.minndata:
+                if options.mcsample: samples.append(None)
+                else: fits.append(None)
+                jj+= 1
+                if jj == len(binned.afeedges)-1: 
+                    jj= 0
+                    ii+= 1
+                    break
+                continue               
+            print binned.feh(ii), binned.afe(jj), len(data)
             #Fit this data, set up feh and color
             feh= binned.feh(ii)
             fehrange= [binned.fehedges[ii],binned.fehedges[ii+1]]

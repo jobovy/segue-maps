@@ -24,7 +24,8 @@ def plotsz2hz(options,args):
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     if options.tighten:
         tightbinned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe,
-                                 fehmin=-2.,fehmax=0.3,afemin=0.,afemax=0.45)
+                                 fehmin=-1.6,fehmax=0.5,afemin=-0.05,
+                                 afemax=0.55)
     else:
         tightbinned= binned
     #Savefile1
@@ -96,7 +97,8 @@ def plotsz2hz(options,args):
                     plotthis[ii,jj]= numpy.nan
                     continue
             if options.velmodel.lower() == 'hwr':
-                if options.type == 'sz2hz':
+                if options.type == 'sz2hz' or options.type.lower() == 'asz' \
+                       or options.type.lower() == 'bsz':
                     numerator= numpy.exp(2.*thisvelfit[1])
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
@@ -135,6 +137,19 @@ def plotsz2hz(options,args):
                                      numpy.exp(thisdensfit[1]),
                                      numpy.median(numpy.fabs(data.zc)-_ZSUN)])
                     plotthis.append(thisplot)
+            elif options.densmodel.lower() == 'kg':
+                if options.type.lower() == 'asz':
+                    plotthis[ii,jj]= numerator*numpy.exp(thisdensfit[0])/1000.
+                elif options.type.lower() == 'bsz':
+                    plotthis[ii,jj]= numerator*numpy.exp(thisdensfit[1])/10.**6.
+                elif options.type.lower() == 'afe' \
+                        or options.type.lower() == 'feh' \
+                        or options.type.lower() == 'fehafe' \
+                        or options.type.lower() == 'afefeh':
+                    thisplot.extend([numpy.exp(thisdensfit[0])/1000.,
+                                     numpy.exp(thisdensfit[1])/10.**6.,
+                                     numpy.median(numpy.fabs(data.zc)-_ZSUN)])
+                    plotthis.append(thisplot)
     #Set up plot
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'sz2hz':
@@ -142,6 +157,16 @@ def plotsz2hz(options,args):
         print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
         vmin, vmax= 15.,100.
         zlabel= r'$\sigma_z^2(z=1000\ \mathrm{pc}) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
+    elif options.type == 'asz':
+        plotthis/= 2.*numpy.pi*4.302*10.**-3 #2piG
+        print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
+        vmin, vmax= 15.,100.
+        zlabel= r'$\Sigma_{\mathrm{disk}}\ [M_\odot\ \mathrm{pc^{-2}}]$'
+    elif options.type == 'bsz':
+        plotthis/= 2.*numpy.pi*4.302*10.**-3 #2piG
+        print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
+        vmin, vmax= 0.,.02
+        zlabel= r'$\rho_{\mathrm{DM}}(z=0)\ [M_\odot\ \mathrm{pc^{-3}}]$'
     elif options.type == 'afe':
         vmin, vmax= 0.0,.5
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
@@ -155,8 +180,8 @@ def plotsz2hz(options,args):
         vmin, vmax= -.15,.15
         zlabel=r'$[\alpha/\mathrm{Fe}]-[\alpha/\mathrm{Fe}]_{1/2}([\mathrm{Fe/H}])$'
     if options.tighten:
-        xrange=[-2.,0.3]
-        yrange=[0.,0.45]
+        xrange=[-1.6,0.5]
+        yrange=[-0.05,0.55]
     else:
         xrange=[-2.,0.6]
         yrange=[-0.1,0.6]
@@ -231,7 +256,9 @@ def plotsz2hz(options,args):
                     if afe[jj] == tightbinned.afe(ii):
                         plotc[jj]= feh[jj]-medianfeh
         if not options.subtype == 'zfunc' \
-               and not options.subtype.lower() == 'hs':
+               and not options.subtype.lower() == 'hs' \
+               and not options.subtype.lower() == 'asz' \
+               and not options.subtype.lower() == 'bsz':
             if options.subtype == 'mz':
                 if velerrors: #Don't plot if errors > 30%
                     indx= (sz_err/sz <= .2)
@@ -347,6 +374,73 @@ def plotsz2hz(options,args):
                                 color='0.5',overplot=True)
             bovy_plot.bovy_plot(xrange,[hs_m+hs_std,hs_m+hs_std],'-',
                                 color='0.5',overplot=True)
+        elif options.subtype.lower() == 'asz':
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            #plot hs vs. afe/feh, colorcoded using feh/afe
+            if options.type.lower() == 'afe' or options.type.lower() == 'afefeh':
+                plotx= feh+numpy.random.random(len(hs))*0.05 #jitter
+                xrange= [-1.6,0.4]
+                xlabel=r'$[\mathrm{Fe/H}]$'
+            elif options.type.lower() == 'feh' or options.type.lower() == 'fehafe':
+                plotx= afe+numpy.random.random(len(hs))*0.025 #jitter
+                xrange= [-0.05,0.55]
+                xlabel=r'$[\alpha\mathrm{\alpha/Fe}]$'
+            yrange= [15.,100.]
+            bovy_plot.bovy_plot(plotx,
+                                hz*sz**2./(2.*numpy.pi*4.302*10.**-3), #2piG
+                                s=ndata,c=plotc,
+                                cmap='jet',
+                                xlabel=xlabel,
+                                ylabel=r'$\Sigma_{\mathrm{disk}}\ [M_\odot\ \mathrm{pc}^{-2}]$',
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True)
+        elif options.subtype.lower() == 'bsz':
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            #plot hs vs. afe/feh, colorcoded using feh/afe
+            if options.type.lower() == 'afe' or options.type.lower() == 'afefeh':
+                plotx= feh+numpy.random.random(len(hs))*0.05 #jitter
+                xrange= [-1.6,0.4]
+                xlabel=r'$[\mathrm{Fe/H}]$'
+            elif options.type.lower() == 'feh' or options.type.lower() == 'fehafe':
+                plotx= afe+numpy.random.random(len(hs))*0.025 #jitter
+                xrange= [-0.05,0.55]
+                xlabel=r'$[\alpha\mathrm{\alpha/Fe}]$'
+            yrange= [0.,0.02]
+            bovy_plot.bovy_plot(plotx,
+                                hr*sz**2./(2.*numpy.pi*4.302*10.**-3), #2piG
+                                s=ndata,c=plotc,
+                                cmap='jet',
+                                xlabel=xlabel,
+                                ylabel=r'$\rho_{\mathrm{DM}}\ [M_\odot\ \mathrm{pc}^{-3}]$',
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True)
+            #Overplot errorbars
+            if options.ploterrors:
+                print "UPDATE!!"
+                for ii in range(len(hs)):
+                    pyplot.errorbar(plotx[ii],
+                                    hs[ii],yerr=hs_err[ii],
+                                    color=colormap(_squeeze(plotc[ii],
+                                                            numpy.amax([numpy.amin(plotc)]),
+                                                            numpy.amin([numpy.amax(plotc)]))),
+                                    elinewidth=1.,capsize=3,zorder=0,elinestyle='-')  
+                #Overplot weighted mean + stddev
+                hs_m= numpy.sum(hs/hs_err**2.)/numpy.sum(1./hs_err**2.)
+                hs_std= numpy.sqrt(1./numpy.sum(1./hs_err**2.))
+                print hs_m, hs_std
+                bovy_plot.bovy_plot(xrange,[hs_m,hs_m],'k-',overplot=True)
+                bovy_plot.bovy_plot(xrange,[hs_m-hs_std,hs_m-hs_std],'-',
+                                    color='0.5',overplot=True)
+                bovy_plot.bovy_plot(xrange,[hs_m+hs_std,hs_m+hs_std],'-',
+                                    color='0.5',overplot=True)
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
