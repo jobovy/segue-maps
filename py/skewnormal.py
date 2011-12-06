@@ -58,11 +58,16 @@ def multiskewnormal(x,m=None,V=None,a=None):
        2011-12-05 - Written - Bovy (IAS)
     """
     Vinv= linalg.inv(V)
-    t= numpy.sum((x-m)*numpy.dot(Vinv,(x-m)),axis=0)
     v= numpy.sqrt(numpy.diag(V))
-    z= numpy.dot(a,(x-m)/v)
+    xm= numpy.zeros(x.shape)
+    xmv= numpy.zeros(xm.shape)
+    for ii in range(x.shape[0]):
+        xm[ii,:]= x[ii,:]-m[ii]
+        xmv[ii,:]= xm[ii,:]/v[ii]
+    t= numpy.sum((xm)*numpy.dot(Vinv,(xm)),axis=0)
+    z= numpy.dot(a,xmv)
     mnorm= (2.*numpy.pi)**(-0.5*len(m))
-    return mnorm*numpy.sqrt(linalg.det(Vinv))*numpy.exp(-0.5*t**2.)
+    return 2.*mnorm*numpy.sqrt(linalg.det(Vinv))*numpy.exp(-0.5*t**2.)*norm.cdf(z)
 
 def logmultiskewnormal(x,m=None,V=None,a=None):
     """
