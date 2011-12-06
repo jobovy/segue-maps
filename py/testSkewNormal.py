@@ -1,4 +1,4 @@
-plotSigmas= False
+plotSigmas= True
 plotVars= True
 
 import os, os.path
@@ -66,7 +66,7 @@ if plotSigmas:
     bovy_plot.bovy_text(-0.3,4.,r'$\sigma_R = 0.1\ v_0$',size=14)
     bovy_plot.bovy_text(-0.3,2.,r'$\sigma_R = 0.2\ v_0$',size=14)
     bovy_plot.bovy_text(-0.3,1.,r'$\sigma_R = 0.4\ v_0$',size=14)
-    bovy_plot.bovy_end_print('testSkewSigmas.ps')
+    bovy_plot.bovy_end_print('../tex-vel/testSkewSigmas.ps')
 
 if plotVars:
     def optm(l,x):
@@ -196,4 +196,5 @@ if plotVars:
     pyplot.xlim(0.,1.5)
     pyplot.ylim(0.,3.3)
     bovy_plot.bovy_text(r'$\beta = -0.2$',top_left=True)
-    bovy_plot.bovy_end_print('testSkewVars.png')
+    bovy_plot.bovy_end_print('../tex-vel/testSkewVars.ps')
+    
