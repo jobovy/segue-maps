@@ -21,7 +21,7 @@ def skewnormal(x,m=0,s=1,a=0):
        2011-12-05 - Written - Bovy (IAS)
     """
     t = (x-m) / s
-    return 2 / s * norm.pdf(t) * norm.cdf(a*t)
+    return 2. / s * norm.pdf(t) * norm.cdf(a*t)
 
 def logskewnormal(x,m=0,s=1,a=0):
     """
@@ -58,16 +58,17 @@ def multiskewnormal(x,m=None,V=None,a=None):
        2011-12-05 - Written - Bovy (IAS)
     """
     Vinv= linalg.inv(V)
+    L= linalg.cholesky(Vinv,lower=True)
     v= numpy.sqrt(numpy.diag(V))
     xm= numpy.zeros(x.shape)
     xmv= numpy.zeros(xm.shape)
     for ii in range(x.shape[0]):
         xm[ii,:]= x[ii,:]-m[ii]
-        xmv[ii,:]= xm[ii,:]/v[ii]
+    xmv= numpy.dot(L,xm)
     t= numpy.sum((xm)*numpy.dot(Vinv,(xm)),axis=0)
     z= numpy.dot(a,xmv)
     mnorm= (2.*numpy.pi)**(-0.5*len(m))
-    return 2.*mnorm*numpy.sqrt(linalg.det(Vinv))*numpy.exp(-0.5*t**2.)*norm.cdf(z)
+    return 2.*mnorm*numpy.sqrt(linalg.det(Vinv))*numpy.exp(-0.5*t)*norm.cdf(z)
 
 def logmultiskewnormal(x,m=None,V=None,a=None):
     """
