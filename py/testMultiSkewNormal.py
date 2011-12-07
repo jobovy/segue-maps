@@ -221,4 +221,4 @@ if plots2:
                         +'\n'+
                         r'$\langle \hat{v}_T \rangle = %.3f\ v_0$' % fitvT,
                         bottom_right=True)
-    bovy_plot.bovy_end_print('testMultiSkew.ps')
+    bovy_plot.bovy_end_print('../tex-vel/testMultiSkew.ps')
