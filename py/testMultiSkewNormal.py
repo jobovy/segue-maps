@@ -32,7 +32,7 @@ if plots2:
     savefilename= 'testMultiSkews2.sav'
     dfstr= 'dehnen'
     s= numpy.exp(numpy.linspace(numpy.log(0.0125),numpy.log(0.2),21))
-    so= s[-2]
+    so= s[-1]
     #so= 0.2
     elsavefilename= os.path.join(OUTDIR,
                                  'el_rect_so_%.6f_res_%i_grid_%i_tform_%.5f_tsteady_%.5f_cp_%.5f_nsigma_%.1f' % (so,101,101,-150.,125.,0.05,5) + 
@@ -59,7 +59,7 @@ if plots2:
         vrs= numpy.take(vrs,sortindx)
         vts= numpy.take(vts,sortindx)
         #Now sample
-        nsamples= 10000
+        nsamples= 100000
         samples= []
         for ii in range(nsamples):
             kk= 0
