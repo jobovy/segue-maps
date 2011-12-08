@@ -131,8 +131,8 @@ def convskewnormal(x,m=0,s=1,a=0,e=0.):
        2011-12-08 - Written - Bovy (IAS)
     """
     out= integrate.quad(_convskewnormalIntegrand,
-                        -integrate.Inf,
-                        integrate.Inf,
+                        -numpy.Inf,
+                        numpy.Inf,
                         args=(x,m,s,a,e))
     return out
 
