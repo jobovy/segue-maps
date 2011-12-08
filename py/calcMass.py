@@ -439,7 +439,7 @@ def plotMass(options,args):
                 yrange= [0.005,2.]
             else:
                 yrange= [-0.1,10.]
-            ylabel=r'$\Sigma(R_0)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
+            ylabel=r'$\Sigma_{R_0}(h_z)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
         if not options.vstructure and not options.hzhr:
             if options.hr:
                 ploth= hr
@@ -449,7 +449,7 @@ def plotMass(options,args):
             else:
                 ploth= hz
                 plotherr= hz_err
-                xlabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$'
+                xlabel=r'$\mathrm{vertical\ scale\ height}\ h_z\ \mathrm{[pc]}$'
                 xrange= [150,1200]
             bovy_plot.bovy_plot(ploth,mass,
                                 s=ndata,c=plotc,
