@@ -1,5 +1,5 @@
-plotSigmas= False
-plotVars= False
+plotSigmas= True
+plotVars= True
 plotSkews= True
 
 import os, os.path
@@ -39,6 +39,7 @@ if plotSigmas:
         save_pickles(savefilename,vts01,vts02,vts04)
     xs= numpy.linspace(-1.,2.,1001)
     bf= optimize.fmin(optm,[.8,0.4,-0.3],(vts04,))
+    print bf[2]
     ys= skewnormal(xs,bf[0],numpy.exp(bf[1]),bf[2])
     bovy_plot.bovy_print()
     bovy_plot.bovy_plot(xs,ys,'k-',zorder=2,
@@ -51,6 +52,7 @@ if plotSigmas:
                         histtype='step',
                         color='k')
     bf= optimize.fmin(optm,[9.,0.2,-0.1],(vts02,))
+    print bf[2]
     ys= skewnormal(xs,bf[0],numpy.exp(bf[1]),bf[2])
     bovy_plot.bovy_hist(vts02,bins=101,normed=True,
                         histtype='step',
@@ -58,6 +60,7 @@ if plotSigmas:
                         color='k')
     bovy_plot.bovy_plot(xs,ys,'k-',overplot=True)
     bf= optimize.fmin(optm,[1.,0.1,0.1],(vts01,))
+    print bf[2]
     ys= skewnormal(xs,bf[0],numpy.exp(bf[1]),bf[2])
     bovy_plot.bovy_hist(vts01,bins=101,normed=True,
                         histtype='step',
