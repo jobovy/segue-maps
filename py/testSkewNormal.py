@@ -1,5 +1,6 @@
-plotSigmas= True
-plotVars= True
+plotSigmas= False
+plotVars= False
+plotSkews= True
 
 import os, os.path
 import cPickle as pickle
@@ -9,7 +10,7 @@ from matplotlib import pyplot
 from galpy.df import dehnendf
 from galpy.util import bovy_plot, save_pickles
 from skewnormal import skewnormal, logskewnormal, \
-    multiskewnormal,logmultiskewnormal
+    multiskewnormal,logmultiskewnormal, alphaskew
 
 if plotSigmas:
     def optm(l,x):
@@ -198,3 +199,43 @@ if plotVars:
     bovy_plot.bovy_text(r'$\beta = -0.2$',top_left=True)
     bovy_plot.bovy_end_print('../tex-vel/testSkewVars.ps')
     
+if plotSkews:
+    dfc1= dehnendf(beta=0.,correct=False,
+                   profileParams=(1./3.,1.,0.1))
+    dfc2= dehnendf(beta=0.,correct=False,
+                   profileParams=(1./3.,1.,0.2))
+    dfc4= dehnendf(beta=0.,correct=False,
+                   profileParams=(1./3.,1.,0.4))
+    nrs= 101
+    rs= numpy.linspace(0.1,2.2,nrs)
+    savefilename= 'testSkewAlphas.sav'
+    if os.path.exists(savefilename):
+        savefile= open(savefilename,'rb')
+        alphas1= pickle.load(savefile)
+        alphas2= pickle.load(savefile)
+        alphas4= pickle.load(savefile)
+        savefile.close()
+    else:
+        alphas1= numpy.zeros(nrs)
+        alphas2= numpy.zeros(nrs)
+        alphas4= numpy.zeros(nrs)
+        for ii in range(nrs):
+            alphas1[ii]= alphaskew(dfc1.skewvT(rs[ii]))
+            alphas2[ii]= alphaskew(dfc2.skewvT(rs[ii]))
+            alphas4[ii]= alphaskew(dfc4.skewvT(rs[ii]))
+            print alphas1[ii], alphas2[ii], alphas4[ii]
+        save_pickles(savefilename,alphas1,alphas2,alphas4)
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_plot(rs,alphas4,'k-',
+                        xlabel=r'$R / R_0$',
+                        ylabel=r'$\mathrm{shape}\ \alpha$',
+                        xrange=[0.,2.3],
+                        yrange=[-1.,1.])
+    bovy_plot.bovy_plot(rs,alphas2,'k-',
+                        overplot=True)
+    bovy_plot.bovy_plot(rs,alphas1,'k-',
+                        overplot=True)
+    bovy_plot.bovy_text(1.8,-.35.,r'$\sigma_R = 0.1\ v_0$',size=14)
+    bovy_plot.bovy_text(1.8,-.6,r'$\sigma_R = 0.2\ v_0$',size=14)
+    bovy_plot.bovy_text(1.8,-1.,r'$\sigma_R = 0.4\ v_0$',size=14)
+    bovy_plot.bovy_end_print('../tex-vel/testSkewAlphas.ps')

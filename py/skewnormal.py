@@ -3,7 +3,7 @@
 ###############################################################################
 import numpy
 from scipy.stats import norm
-from scipy import linalg
+from scipy import linalg, optimize
 def skewnormal(x,m=0,s=1,a=0):
     """
     NAME:
@@ -87,3 +87,28 @@ def logmultiskewnormal(x,m=None,V=None,a=None):
        2011-12-05 - Written - Bovy (IAS)
     """
     return numpy.log(multiskewnormal(x,m=m,V=V,a=a))
+
+def alphaskew(skew):
+    """
+    NAME:
+       alphaskew
+    PURPOSE:
+       estimate alpha (shape parameter) based on the skew of a distribution
+    INPUT:
+       skew - skew
+    OUTPUT:
+       alpha estimate
+    HISTORY:
+       2011-12-07 - Written - Bovy (IAS)
+    """
+    delta2= optimize.brentq(_alphaskewEq,
+                            0.,1.,args=((2.*skew/(4.-numpy.pi))**2.,))
+    #delta2= numpy.pi/2./(1.+((4.-numpy.pi)/(2.*numpy.fabs(skew)))**2./3.)
+    if skew > 0.:
+        return numpy.sqrt(delta2/(1.-delta2))
+    if skew <= 0.:
+        return -numpy.sqrt(delta2/(1.-delta2))
+
+def _alphaskewEq(d2,s2):
+    """skew^2 includes 2/4-pi"""
+    return s2*(1-d2)**3.-d2
