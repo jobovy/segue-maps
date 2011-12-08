@@ -3,7 +3,7 @@
 ###############################################################################
 import numpy
 from scipy.stats import norm
-from scipy import linalg, optimize
+from scipy import linalg, optimize, integrate
 def skewnormal(x,m=0,s=1,a=0):
     """
     NAME:
@@ -112,3 +112,29 @@ def alphaskew(skew):
 def _alphaskewEq(d2,s2):
     """skew^2 includes 2/4-pi"""
     return s2*(1-d2)**3.-d2
+
+def convskewnormal(x,m=0,s=1,a=0,e=0.):
+    """
+    NAME:
+        convskewnormal
+    PURPOSE:
+        one-D skew-normal distribution convolved with Gaussian uncertainty
+    INPUT:
+       x - value(s) to evaluate
+       m= mean
+       s= std
+       a= shape parameter
+       e= uncertainty
+    OUTPUT:
+       value(s)
+    HISTORY:
+       2011-12-08 - Written - Bovy (IAS)
+    """
+    out= integrate.quad(_convskewnormalIntegrand,
+                        -integrate.Inf,
+                        integrate.Inf,
+                        args=(x,m,s,a,e))
+    return out
+
+def _convskewnormalIntegrand(t,x,m,s,a,e):
+    return skewnormal(t,m=m,s=s,a=a) / e * norm.pdf(x-t)
