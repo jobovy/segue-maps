@@ -1,6 +1,7 @@
 plotSigmas= True
-plotVars= True
+plotVars= False
 plotSkews= True
+sampleSkews= True
 
 import os, os.path
 import cPickle as pickle
@@ -12,10 +13,11 @@ from galpy.util import bovy_plot, save_pickles
 from skewnormal import skewnormal, logskewnormal, \
     multiskewnormal,logmultiskewnormal, alphaskew
 
+def optm(l,x):
+    return -numpy.sum(logskewnormal(x,l[0],numpy.exp(l[1]),
+                                    l[2]))
+
 if plotSigmas:
-    def optm(l,x):
-        return -numpy.sum(logskewnormal(x,l[0],numpy.exp(l[1]),
-                                        l[2]))
     savefilename= 'testSkewSigmas.sav'
     if os.path.exists(savefilename):
         savefile= open(savefilename,'rb')
@@ -209,9 +211,16 @@ if plotSkews:
                    profileParams=(1./3.,1.,0.2))
     dfc4= dehnendf(beta=0.,correct=False,
                    profileParams=(1./3.,1.,0.4))
-    nrs= 101
+    if sampleSkews:
+        nrs= 31
+        nsamples= 50000
+    else:
+        nrs= 101
     rs= numpy.linspace(0.1,2.2,nrs)
-    savefilename= 'testSkewAlphas.sav'
+    if sampleSkews:
+        savefilename= 'testSkewAlphasSample.sav'
+    else:
+        savefilename= 'testSkewAlphas.sav'
     if os.path.exists(savefilename):
         savefile= open(savefilename,'rb')
         alphas1= pickle.load(savefile)
@@ -222,18 +231,57 @@ if plotSkews:
         alphas1= numpy.zeros(nrs)
         alphas2= numpy.zeros(nrs)
         alphas4= numpy.zeros(nrs)
-        for ii in range(nrs):
-            alphas1[ii]= alphaskew(dfc1.skewvT(rs[ii]))
-            alphas2[ii]= alphaskew(dfc2.skewvT(rs[ii]))
-            alphas4[ii]= alphaskew(dfc4.skewvT(rs[ii]))
-            print alphas1[ii], alphas2[ii], alphas4[ii]
+        alpha_init= [-3.,-1.,0.005,1.,3.]
+        if sampleSkews:
+            for ii in range(nrs):
+                vs= dfc1.sampleVRVT(rs[ii],n=nsamples,nsigma=5)
+                vts= vs[:,1].flatten()
+                ll= numpy.finfo(numpy.dtype(numpy.float64)).max
+                for ai in alpha_init:
+                    bf= optimize.fmin_powell(optm,[1.,0.,ai],(vts,))
+                    thisll= optm(bf,vts)
+                    if thisll < ll:
+                        alphas1[ii]= bf[2]
+                        ll= thisll
+#                alphas1[ii]= bf[2]
+                vs= dfc2.sampleVRVT(rs[ii],n=nsamples,nsigma=5)
+                vts= vs[:,1].flatten()
+                ll= numpy.finfo(numpy.dtype(numpy.float64)).max
+                for ai in alpha_init:
+                    bf= optimize.fmin(optm,[.9,numpy.log(0.2)-(rs[ii]-1.)*1.,
+                                             ai],(vts,))
+                    thisll= optm(bf,vts)
+                    if thisll < ll:
+                        alphas2[ii]= bf[2]
+                        ll= thisll
+#                alphas2[ii]= bf[2]
+                vs= dfc4.sampleVRVT(rs[ii],n=nsamples,nsigma=5)
+                vts= vs[:,1].flatten()
+                ll= numpy.finfo(numpy.dtype(numpy.float64)).max
+                for ai in alpha_init:
+                    bf= optimize.fmin(optm,[.8,numpy.log(0.4)-(rs[ii]-1.)*1.,
+                                             ai],(vts,))
+                    thisll= optm(bf,vts)
+                    if thisll < ll:
+                        alphas4[ii]= bf[2]
+                        ll= thisll
+#                alphas4[ii]= bf[2]
+                print alphas1[ii], alphas2[ii], alphas4[ii]
+        else:
+            for ii in range(nrs):
+                alphas1[ii]= alphaskew(dfc1.skewvT(rs[ii]))
+                alphas2[ii]= alphaskew(dfc2.skewvT(rs[ii]))
+                alphas4[ii]= alphaskew(dfc4.skewvT(rs[ii]))
+                print alphas1[ii], alphas2[ii], alphas4[ii]
         save_pickles(savefilename,alphas1,alphas2,alphas4)
     bovy_plot.bovy_print()
+    if sampleSkews: yrange=[-4,1.]
+    else: yrange=[-1.,1.]
     bovy_plot.bovy_plot(rs,alphas4,'k-',
                         xlabel=r'$R / R_0$',
                         ylabel=r'$\mathrm{shape}\ \alpha$',
                         xrange=[0.,2.3],
-                        yrange=[-1.,1.])
+                        yrange=yrange)
     bovy_plot.bovy_plot(rs,alphas2,'k-',
                         overplot=True)
     bovy_plot.bovy_plot(rs,alphas1,'k-',
