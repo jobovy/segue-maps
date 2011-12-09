@@ -286,7 +286,12 @@ if plotSkews:
                         overplot=True)
     bovy_plot.bovy_plot(rs,alphas1,'k-',
                         overplot=True)
-    bovy_plot.bovy_text(1.4,-.45,r'$\sigma_R(R_0) = 0.1\ v_0$',size=14)
-    bovy_plot.bovy_text(1.4,-.7,r'$\sigma_R(R_0) = 0.2\ v_0$',size=14)
-    bovy_plot.bovy_text(1.4,-.93,r'$\sigma_R(R_0) = 0.4\ v_0$',size=14)
+    if sampleSkews:
+        bovy_plot.bovy_text(1.4,-1.,r'$\sigma_R(R_0) = 0.1\ v_0$',size=14)
+        bovy_plot.bovy_text(1.4,-2.2,r'$\sigma_R(R_0) = 0.2\ v_0$',size=14)
+        bovy_plot.bovy_text(1.4,-3.,r'$\sigma_R(R_0) = 0.4\ v_0$',size=14)
+    else:
+        bovy_plot.bovy_text(1.4,-.45,r'$\sigma_R(R_0) = 0.1\ v_0$',size=14)
+        bovy_plot.bovy_text(1.4,-.7,r'$\sigma_R(R_0) = 0.2\ v_0$',size=14)
+        bovy_plot.bovy_text(1.4,-.93,r'$\sigma_R(R_0) = 0.4\ v_0$',size=14)
     bovy_plot.bovy_end_print('../tex-vel/testSkewAlphas.ps')
