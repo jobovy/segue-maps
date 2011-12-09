@@ -287,7 +287,7 @@ if plotSkews:
     bovy_plot.bovy_plot(rs,alphas1,'k-',
                         overplot=True)
     if sampleSkews:
-        bovy_plot.bovy_text(1.4,-1.1,r'$\sigma_R(R_0) = 0.1\ v_0$',size=14,
+        bovy_plot.bovy_text(1.4,-1.2,r'$\sigma_R(R_0) = 0.1\ v_0$',size=14,
                             zorder=10)
         bovy_plot.bovy_text(1.4,-2.,r'$\sigma_R(R_0) = 0.2\ v_0$',size=14,
                             zorder=10)
