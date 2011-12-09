@@ -294,4 +294,6 @@ if plotSkews:
         bovy_plot.bovy_text(1.4,-.45,r'$\sigma_R(R_0) = 0.1\ v_0$',size=14)
         bovy_plot.bovy_text(1.4,-.7,r'$\sigma_R(R_0) = 0.2\ v_0$',size=14)
         bovy_plot.bovy_text(1.4,-.93,r'$\sigma_R(R_0) = 0.4\ v_0$',size=14)
+    bovy_plot.bovy_plot([5./8.,5./8.],yrange,'-',color='0.75',overplot=True)
+    bovy_plot.bovy_plot([12./8.,12./8.],yrange,'-',color='0.75',overplot=True)
     bovy_plot.bovy_end_print('../tex-vel/testSkewAlphas.ps')
