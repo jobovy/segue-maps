@@ -134,7 +134,7 @@ def convskewnormal(x,m=0,s=1,a=0,e=0.):
                         -numpy.Inf,
                         numpy.Inf,
                         args=(x,m,s,a,e))
-    return out
+    return out[0]
 
 def _convskewnormalIntegrand(t,x,m,s,a,e):
     return skewnormal(t,m=m,s=s,a=a) / e * norm.pdf((x-t)/e)
