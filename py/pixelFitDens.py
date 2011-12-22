@@ -159,9 +159,9 @@ def pixelFitDens(options,args):
         ii= pickle.load(savefile)
         jj= pickle.load(savefile)
         savefile.close()
+        print
     else:
         fits= []
-        ii, jj= 0, 0
     #Initial conditions?
     if not options.init is None and os.path.exists(options.init):#Load initial
         savefile= open(options.init,'rb')
