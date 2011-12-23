@@ -387,7 +387,7 @@ def plotsz2hz(options,args):
                 xrange= [-0.05,0.55]
                 xlabel=r'$[\alpha\mathrm{\alpha/Fe}]$'
             yrange= [15.,100.]
-            print numpy.mean(ndata**2.*hz*sz**2./(2.*numpy.pi*4.302*10.**-3))/numpy.mean(ndata**2.)
+            #print numpy.mean(ndata**2.*hz*sz**2./(2.*numpy.pi*4.302*10.**-3))/numpy.mean(ndata**2.)
             bovy_plot.bovy_plot(plotx,
                                 hz*sz**2./(2.*numpy.pi*4.302*10.**-3), #2piG
                                 s=ndata,c=plotc,
@@ -412,7 +412,7 @@ def plotsz2hz(options,args):
                 xrange= [-0.05,0.55]
                 xlabel=r'$[\alpha\mathrm{\alpha/Fe}]$'
             yrange= [0.,0.02]
-            print numpy.mean(ndata**2.*hr*sz**2./(2.*numpy.pi*4.302*10.**-3))/numpy.mean(ndata**2.)
+            #print numpy.mean(ndata**2.*hr*sz**2./(2.*numpy.pi*4.302*10.**-3))/numpy.mean(ndata**2.)
             bovy_plot.bovy_plot(plotx,
                                 hr*sz**2./(2.*numpy.pi*4.302*10.**-3), #2piG
                                 s=ndata,c=plotc,
