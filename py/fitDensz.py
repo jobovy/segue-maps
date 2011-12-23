@@ -1476,7 +1476,7 @@ def get_options():
                       default=None,
                       help="If set, only use plates centered on a |b| < bmin (deg0")
     parser.add_option("--loggmin",dest='loggmin',type='float',
-                      default=3.75,
+                      default=4.2,
                       help="Minimum logg to define dwarfs")
     parser.add_option("--snmin",dest='snmin',type='float',
                       default=15.,

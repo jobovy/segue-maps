@@ -1278,7 +1278,7 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     PURPOSE:
        read the spectroscopic G dwarf sample
     INPUT:
-       logg= if True, cut on logg, if number, cut on logg > the number (3.75)
+       logg= if True, cut on logg, if number, cut on logg > the number (4.2)
        ug= if True, cut on u-g, if list/array cut to ug[0] < u-g< ug[1]
        ri= if True, cut on r-i, if list/array cut to ri[0] < r-i< ri[1]
        sn= if False, don't cut on SN, if number cut on SN > the number (15)
@@ -1303,7 +1303,7 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     raw= raw[indx]
     #Cut on logg?
     if (isinstance(logg,bool) and logg):
-        indx= (raw.field('logga') > 3.75)
+        indx= (raw.field('logga') > 4.2)
         raw= raw[indx]
     elif not isinstance(logg,bool):
         indx= (raw.field('logga') > logg)
@@ -1351,7 +1351,7 @@ def read_kdwarfs(file=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     PURPOSE:
        read the spectroscopic K dwarf sample
     INPUT:
-       logg= if True, cut on logg
+       logg= if True, cut on logg (default: 4.2)
        ug= if True, cut on u-g
        ri= if True, cut on r-i
        sn= if False, don't cut on SN
@@ -1376,7 +1376,7 @@ def read_kdwarfs(file=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     raw= raw[indx]
     #Cut on logg?
     if isinstance(logg,bool) and logg:
-        indx= (raw.field('logga') > 3.75)
+        indx= (raw.field('logga') > 4.2)
         raw= raw[indx]
     elif not isinstance(logg,bool):
         indx= (raw.field('logga') > logg)
@@ -1449,7 +1449,7 @@ def read_fgstars(file=_FGSTARALLFILE,logg=False,ug=False,ri=False,sn=True,
     raw= raw[indx]
     #Cut on logg?
     if logg:
-        indx= (raw.field('logga') > 3.75)
+        indx= (raw.field('logga') > 4.2)
         raw= raw[indx]
     if ug: #BOVY UPDATE FOR F/G
         indx= ((raw.field('dered_u')-raw.field('dered_g')) < 2.)\
