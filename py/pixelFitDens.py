@@ -10,6 +10,7 @@ from matplotlib import pyplot, cm
 import bovy_mcmc
 from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
     segueSelect, _GDWARFFILE, _KDWARFFILE
+from fitSigz import _FAKEBIMODALGDWARFFILE
 from selectFigs import _squeeze
 from fitDensz import _TwoDblExpDensity, _HWRLikeMinus, _ZSUN, DistSpline, \
     _ivezic_dist, _NDS, cb, _HWRDensity, _HWRLike, _KGDensity
@@ -143,6 +144,10 @@ def pixelFitDens(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
             raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
+        elif options.select.lower() == 'fakebimodal':
+            raw= read_gdwarfs(_FAKEBIMODALGDWARFFILE,
+                              logg=True,ebv=True,sn=True)
+            options.select= 'all'
         else:
             raw= read_gdwarfs(logg=True,ebv=True,sn=True)
     elif options.sample.lower() == 'k':
@@ -162,6 +167,7 @@ def pixelFitDens(options,args):
         print
     else:
         fits= []
+        ii, jj= 0, 0
     #Initial conditions?
     if not options.init is None and os.path.exists(options.init):#Load initial
         savefile= open(options.init,'rb')
@@ -385,6 +391,10 @@ def plotPixelFit(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
             raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
+        elif select.lower() == 'fakebimodal':
+            raw= read_gdwarfs(_FAKEBIMODALGDWARFFILE,
+                              logg=True,ebv=True,sn=True)
+            options.select= 'all'
         else:
             raw= read_gdwarfs(logg=True,ebv=True,sn=True)
     elif options.sample.lower() == 'k':

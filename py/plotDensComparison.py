@@ -233,7 +233,7 @@ def compareGRichRdist(options,args):
         feh= -0.5 
         fehrange= [-1.5,0.5]
     #Load data
-    XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
+    XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,select=options.select,
                                          sample=options.sample)
     #Cut out bright stars on faint plates and vice versa
     indx= []
@@ -434,6 +434,7 @@ def scatterData(options,args):
     else:
         #Load data
         XYZ,vxvyvz,cov_vxvyvz,data= readData(metal=options.metal,
+                                             select=options.select,
                                              sample=options.sample)
         #Cut out bright stars on faint plates and vice versa
         indx= []
@@ -527,6 +528,8 @@ def get_options():
     parser = OptionParser(usage=usage)
     parser.add_option("--sample",dest='sample',default='g',
                       help="Use 'G' or 'K' dwarf sample")
+    parser.add_option("--select",dest='select',default='all',
+                      help="'all' or 'program' to select all or program stars")
     parser.add_option("--metal",dest='metal',default='rich',
                       help="Use metal-poor or rich sample ('poor', 'rich' or 'all')")
     parser.add_option("-t","--type",dest='type',default='r',

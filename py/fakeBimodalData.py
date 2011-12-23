@@ -200,14 +200,14 @@ def plotComps(options,args,comps):
 def readRealData(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True,nocoords=True)
         else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(logg=True,ebv=True,sn=True,nocoords=True)
     elif options.sample.lower() == 'k':
         if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=True,nocoords=True)
         else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(logg=True,ebv=True,sn=True,nocoords=True)
     #Cut
     raw= raw[(raw.feh > -1.5)*(raw.feh < 0.5)\
                  *(raw.afe > -0.05)*(raw.afe < 0.55)]

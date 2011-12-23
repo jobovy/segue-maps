@@ -7,7 +7,9 @@ from optparse import OptionParser
 from scipy import optimize, special
 from galpy.util import bovy_coords, bovy_plot
 import bovy_mcmc
-from segueSelect import read_gdwarfs, _GDWARFFILE, _KDWARFFILE, read_kdwarfs
+from segueSelect import read_gdwarfs, _GDWARFFILE, _KDWARFFILE, read_kdwarfs, \
+    _SEGUESELECTDIR
+_FAKEBIMODALGDWARFFILE= os.path.join(_SEGUESELECTDIR,'fakeBimodalGdwarfs.fit')
 _ZSUN=0.025 #Sun's offset from the plane toward the NGP in kpc
 _VERBOSE=True
 _DEBUG=False
@@ -239,9 +241,13 @@ def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
     return out
 
 def readData(metal='rich',sample='G',loggmin=4.2,snmin=15.,select='all'):
+    """select= 'program', 'all', 'fakebimodal'"""
     if sample.lower() == 'g':
         if select.lower() == 'program':
             raw= read_gdwarfs(_GDWARFFILE,logg=loggmin,ebv=True,sn=snmin)
+        elif select.lower() == 'fakebimodal':
+            raw= read_gdwarfs(_FAKEBIMODALGDWARFFILE,
+                              logg=loggmin,ebv=True,sn=snmin)
         else:
             raw= read_gdwarfs(logg=loggmin,ebv=True,sn=snmin)
     elif sample.lower() == 'k':
