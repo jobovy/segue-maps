@@ -39,16 +39,18 @@ def resampleMags(raw,comps,options,args):
                     type_bright='tanhrcut',
                     type_faint='tanhrcut')
     #Cut out bright stars on faint plates and vice versa
-    indx= []
-    for ii in range(len(raw.feh)):
-        if sf.platebright[str(raw[ii].plate)] and raw[ii].dered_r >= 17.8:
-            indx.append(False)
-        elif not sf.platebright[str(raw[ii].plate)] and raw[ii].dered_r < 17.8:
-            indx.append(False)
-        else:
-            indx.append(True)
-    indx= numpy.array(indx,dtype='bool')
-    raw= raw[indx]
+    cutbright= False
+    if cutbright:
+        indx= []
+        for ii in range(len(raw.feh)):
+            if sf.platebright[str(raw[ii].plate)] and raw[ii].dered_r >= 17.8:
+                indx.append(False)
+            elif not sf.platebright[str(raw[ii].plate)] and raw[ii].dered_r < 17.8:
+                indx.append(False)
+            else:
+                indx.append(True)
+        indx= numpy.array(indx,dtype='bool')
+        raw= raw[indx]
     #Metallicity and color
     fehrange= [-1.,0.5]
     if options.sample.lower() == 'g':
@@ -65,7 +67,7 @@ def resampleMags(raw,comps,options,args):
     cdist= DistSpline(*numpy.histogram(raw.dered_g-raw.dered_r,
                                        bins=9,range=colorrange),
                        xrange=colorrange)
-    rs_bright= numpy.linspace(14.5,17.8,1001)
+    rs_bright= numpy.linspace(14.50000001,17.8,1001)#Avoid sample cut
     rs_faint= numpy.linspace(17.8,rmax,1001)
     for ii in range(len(raw)):
         sys.stdout.write('\r'+"Resampling star %i / %i" % (ii+1,len(raw)))
@@ -91,8 +93,10 @@ def resampleMags(raw,comps,options,args):
                                     -.5,cdist,fehdist,
                                     sf,int(raw.plate[ii]),
                                     dontmarginalizecolorfeh=False,
-                                    ngr=1,nfeh=1)
+                                    ngr=1,nfeh=1,
+                                    dontmultiplycolorfehdist=True)
         #Sample from this
+        rdist[(numpy.isnan(rdist))]= 0.
         crdist= numpy.cumsum(rdist)/numpy.sum(rdist)
         kk= 0
         randnum= numpy.random.uniform()

@@ -1100,7 +1100,8 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
                          fehmin,fehmax,
                          feh,colordist,fehdist,
                          sf,plate,dontmarginalizecolorfeh=False,
-                         ngr=11,nfeh=11):
+                         ngr=11,nfeh=11,
+                         dontmultiplycolorfehdist=False):
     """Predict the r distribution for a plate"""
     #BOVY: APPROXIMATELY INTEGRATE OVER GR AND FEH
     grs= numpy.linspace(grmin,grmax,ngr)
@@ -1123,6 +1124,9 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
             XYZ[:,2]+= _ZSUN
             if dontmarginalizecolorfeh:
                 out[:,jj,kk]= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])*fehdist(fehs[kk])
+            elif dontmultiplycolorfehdist:
+                out+= ds**3.*densfunc(R,XYZ[:,2],params)
+                norm+= 1.
             else:
                 out+= ds**3.*densfunc(R,XYZ[:,2],params)*colordist(grs[jj])\
                     *fehdist(fehs[kk])

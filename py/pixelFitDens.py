@@ -164,7 +164,6 @@ def pixelFitDens(options,args):
         ii= pickle.load(savefile)
         jj= pickle.load(savefile)
         savefile.close()
-        print
     else:
         fits= []
         ii, jj= 0, 0
