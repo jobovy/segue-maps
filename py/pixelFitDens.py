@@ -390,7 +390,7 @@ def plotPixelFit(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
             raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
-        elif select.lower() == 'fakebimodal':
+        elif options.select.lower() == 'fakebimodal':
             raw= read_gdwarfs(_FAKEBIMODALGDWARFFILE,
                               logg=True,ebv=True,sn=True)
             options.select= 'all'
