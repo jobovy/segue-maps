@@ -282,6 +282,13 @@ def plotMass(options,args):
                     plotthis[ii,jj]= numpy.nan
                     continue
             if options.type == 'mass':
+                if not options.distzmin is None or not options.distzmax is None:
+                    if options.distzmin is None and not options.distzmax is None:
+                        thismass*= (1.-numpy.exp(-options.distzmax/numpy.exp(thisfit[0])/1000.))
+                    elif not options.distzmin is None and options.distzmax is None:
+                        thismass*= numpy.exp(-options.distzmin/numpy.exp(thisfit[0])/1000.)
+                    else:
+                        thismass*= (numpy.exp(-options.distzmin/numpy.exp(thisfit[0])/1000.)-numpy.exp(-options.distzmax/numpy.exp(thisfit[0])/1000.))
                 if options.logmass:
                     plotthis[ii,jj]= numpy.log10(thismass/10**6.)
                 else:
@@ -324,6 +331,8 @@ def plotMass(options,args):
         else:
             vmin, vmax= 0.,1.
             zlabel=r'$\Sigma(R_0)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
+            if not options.distzmin is None or not options.distzmax is None:
+                vmin, vmax= None, None
         title=r'$\mathrm{mass\ weighted}$'
     elif options.type == 'nstars':
         if options.logmass:
@@ -596,6 +605,14 @@ def plotMass(options,args):
                               onedhists=True,
                               contours=False)
         bovy_plot.bovy_text(title,top_right=True,fontsize=16)
+        if not options.distzmin is None or not options.distzmax is None:
+            if options.distzmin is None:
+                distlabel= r'$|Z| < %i\ \mathrm{pc}$' % int(options.distzmax)
+            elif options.distzmax is None:
+                distlabel= r'$|Z| > %i\ \mathrm{pc}$' % int(options.distzmin)
+            else:
+                distlabel= r'$%i < |Z| < %i\ \mathrm{pc}$' % (int(options.distzmin),int(options.distzmax))
+            bovy_plot.bovy_text(distlabel,bottom_left=True,fontsize=16)
     bovy_plot.bovy_end_print(options.plotfile)
     return None
 
@@ -663,6 +680,12 @@ def get_options():
     parser.add_option("--hzhr",action="store_true", dest="hzhr",
                       default=False,
                       help="If set, plot both hR and hz")
+    parser.add_option("--distzmin",dest='distzmin',type='float',
+                      default=None,
+                      help="Plot the mass-weighted distriution from this zmin (pc)")
+    parser.add_option("--distzmax",dest='distzmax',type='float',
+                      default=None,
+                      help="Plot the mass-weighted distriution to this zmax (pc)")  
     return parser
   
 if __name__ == '__main__':
