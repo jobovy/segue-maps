@@ -4,7 +4,7 @@ import numpy
 import cPickle as pickle
 from matplotlib import pyplot
 from optparse import OptionParser
-from scipy import optimize, special
+from scipy import optimize, special, integrate
 from galpy.util import bovy_coords, bovy_plot
 import bovy_mcmc
 from segueSelect import read_gdwarfs, _GDWARFFILE, _KDWARFFILE, read_kdwarfs, \
@@ -239,6 +239,13 @@ def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
     if _DEBUG:
         print "Current params, minus likelihood:", params, out
     return out
+
+def KGSigmadF(x,b):
+    return numpy.exp(x)*integrate.quad(_SigmaFIntegrand,0.,1./x,
+                                       args=(b,))[0]
+
+def _SigmaFIntegrand(x,b):
+    return 1./x**2./numpy.sqrt(1.+(b*x)**2.)*numpy.exp(-1./x)
 
 def readData(metal='rich',sample='G',loggmin=4.2,snmin=15.,select='all'):
     """select= 'program', 'all', 'fakebimodal'"""
