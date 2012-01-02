@@ -636,7 +636,7 @@ def plotPixelFit(options,args):
                                         color=colormap(_squeeze(plotc[ii],
                                                                 numpy.amax([numpy.amin(plotc)]),
                                                                 numpy.amin([numpy.amax(plotc)]))),
-                                        elinewidth=1.,capsize=3,zorder=0,elinestyle='--')
+                                        elinewidth=1.,capsize=3,zorder=0)#,elinestyle='--')
                         """
                         Might need to add this to axes.py
                     if elinestyle:
