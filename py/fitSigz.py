@@ -186,11 +186,11 @@ def zfunc(ds,params):
 def Rfunc(Rs,params):
     return numpy.exp(-(R-8.)/math.exp(params[4]))
 
-def _HWRLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
+def _HWRLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False):
     """log likelihood for the HWR model"""
-    return -_HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d)
+    return -_HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=vr)
 
-def _HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
+def _HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False):
     """Minus log likelihood for the HWR model"""
     if params[0] < 0. or params[0] > 1.\
             or params[1] < -10. or params[1] > 10. \
@@ -202,24 +202,29 @@ def _HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
     sigo= math.exp(params[1])
     Rs= math.exp(params[4])
     sigz= (sigo+params[2]*d+params[3]*d**2.)*numpy.exp(-(R-8.)/Rs)
-    sigz2= sigz**2.+cov_vxvyvz[:,2,2]
+    if vr:
+        vz= vxvyvz[:,0]
+        ez2= cov_vxvyvz[:,0,0]
+    else:
+        vz= vxvyvz[:,2]
+        ez2= cov_vxvyvz[:,2,2]
+    sigz2= sigz**2.+ez2
     sigz= numpy.sqrt(sigz2)
-    vz= vxvyvz[:,2]
     out= -numpy.sum(numpy.log(params[0]/numpy.sqrt(100.**2.+
-                                                   cov_vxvyvz[:,2,2])\
+                                                   ez2)\
                                   *numpy.exp(-vz**2./2./(100.**2.+
-                                                         cov_vxvyvz[:,2,2]))+
+                                                         ez2))+
                               (1.-params[0])/sigz*numpy.exp(-vz**2./2./\
                                                                  sigz2)))
     if _DEBUG:
         print "Current params, minus likelihood:", params, out
     return out
 
-def _IsothermLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
+def _IsothermLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False):
     """log likelihood for the HWR model"""
-    return -_IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d)
+    return -_IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=vr)
 
-def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d):
+def _IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False):
     """Minus log likelihood for the isothermal model"""
     if params[0] < 0. or params[0] > 1. or params[2] > 10.:
         return numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -404,6 +409,9 @@ def get_options():
     parser.add_option("--noplots",action="store_true", dest="noplots",
                       default=False,
                       help="If set, do not plot")
+    parser.add_option("--vr",action="store_true", dest="vr",
+                      default=False,
+                      help="If set, fit vR instead of vz")
     parser.add_option("--plotnsamples",dest='plotnsamples',default=10,
                       type='int',
                       help="Plot this number of function samples")

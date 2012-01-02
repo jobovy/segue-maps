@@ -311,10 +311,16 @@ def plotsz2hz(options,args):
             from selectFigs import _squeeze
             colormap = cm.jet
             #Set up plot
+            if options.vr:
+                yrange= [30.,80.]
+                ylabel=r'$\sigma_R(z)\ [\mathrm{km\ s}^{-1}]$'
+            else:
+                yrange= [0.,60.]
+                ylabel=r'$\sigma_z(z)\ [\mathrm{km\ s}^{-1}]$'
             bovy_plot.bovy_plot([-100.,-100.],[100.,100.],'k,',
-                                xrange=[0,2700],yrange=[0.,70.],
+                                xrange=[0,2700],yrange=yrange,
                                 xlabel=r'$|Z|\ [\mathrm{pc}]$',
-                                ylabel=r'$\sigma_z(z)\ [\mathrm{km\ s}^{-1}]$')
+                                ylabel=ylabel)
             #Calculate and plot all zfuncs
             for ii in numpy.random.permutation(len(afe)):
                 if velerrors: #Don't plot if errors > 30%
@@ -364,7 +370,7 @@ def plotsz2hz(options,args):
                                     color=colormap(_squeeze(plotc[ii],
                                                             numpy.amax([numpy.amin(plotc)]),
                                                             numpy.amin([numpy.amax(plotc)]))),
-                                    elinewidth=1.,capsize=3,zorder=0,elinestyle='-')  
+                                    elinewidth=1.,capsize=3,zorder=0)  
             #Overplot weighted mean + stddev
             hs_m= numpy.sum(hs/hs_err**2.)/numpy.sum(1./hs_err**2.)
             hs_std= numpy.sqrt(1./numpy.sum(1./hs_err**2.))
@@ -486,6 +492,9 @@ def get_options():
     parser.add_option("--ploterrors",action="store_true", dest="ploterrors",
                       default=False,
                       help="If set, plot the errorbars")
+    parser.add_option("--vr",action="store_true", dest="vr",
+                      default=False,
+                      help="If set, fit vR instead of vz")
     return parser
 
 if __name__ == '__main__':

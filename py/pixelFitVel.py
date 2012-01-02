@@ -116,7 +116,8 @@ def pixelFitVel(options,args):
             if not options.mcsample:
                 #Optimize likelihood
                 params= optimize.fmin_powell(like_func,params,
-                                             args=(XYZ,vxvyvz,cov_vxvyvz,R,d))
+                                             args=(XYZ,vxvyvz,cov_vxvyvz,R,d,
+                                                   options.vr))
                 print numpy.exp(params)
                 fits.append(params)
             else:
@@ -128,7 +129,8 @@ def pixelFitVel(options,args):
                                                  #step,
                                                  0.01,
                                                  pdf_func,
-                                                 (XYZ,vxvyvz,cov_vxvyvz,R,d),
+                                                 (XYZ,vxvyvz,cov_vxvyvz,R,d,
+                                                  options.vr),
                                                  #create_method=create_method,
                                                  isDomainFinite=isDomainFinite,
                                                  domain=domain,
@@ -230,14 +232,26 @@ def plotPixelFitVel(options,args):
     #Set up plot
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'sz':
-        vmin, vmax= 15.,60.
-        zlabel= r'$\sigma_z(z = \langle z \rangle)\ [\mathrm{km\ s}^{-1}]$'
+        if options.vr:
+            vmin, vmax= 40.,80.
+            zlabel= r'$\sigma_R(z = \langle z \rangle)\ [\mathrm{km\ s}^{-1}]$'
+        else:
+            vmin, vmax= 15.,60.
+            zlabel= r'$\sigma_z(z = \langle z \rangle)\ [\mathrm{km\ s}^{-1}]$'
     elif options.type == 'sz2':
-        vmin, vmax= 15.**2.,50.**2.
-        zlabel= r'$\sigma_z^2(z= \langle z \rangle)\ [\mathrm{km\ s}^{-1}]$'
+        if options.vr:
+            vmin, vmax= 40.**2.,80.**2.
+            zlabel= r'$\sigma_R^2(z= \langle z \rangle)\ [\mathrm{km\ s}^{-1}]$'
+        else:
+            vmin, vmax= 15.**2.,50.**2.
+            zlabel= r'$\sigma_z^2(z= \langle z \rangle)\ [\mathrm{km\ s}^{-1}]$'
     elif options.type == 'hs':
-        vmin, vmax= 3.,15.
-        zlabel= r'$h_\sigma\ [\mathrm{kpc}]$'
+        if options.vr:
+            vmin, vmax= 3.,25.
+            zlabel= r'$h_\sigma\ [\mathrm{kpc}]$'
+        else:
+            vmin, vmax= 3.,15.
+            zlabel= r'$h_\sigma\ [\mathrm{kpc}]$'
     elif options.type == 'afe':
         vmin, vmax= 0.05,.4
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
@@ -259,7 +273,7 @@ def plotPixelFitVel(options,args):
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
             or options.type.lower() == 'fehafe' \
             or options.type.lower() == 'afefeh':
-        print "Update!!"
+        print "Update!! Never used until now (afe etc. type fitting is in plotsz2hz"
         return None
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather hR and hz
@@ -367,6 +381,9 @@ def get_options():
     parser.add_option("--rmax",dest='rmax',type='float',
                       default=None,
                       help="Maximum radius")
+    parser.add_option("--vr",action="store_true", dest="vr",
+                      default=False,
+                      help="If set, fit vR instead of vz")
     return parser
   
 if __name__ == '__main__':
