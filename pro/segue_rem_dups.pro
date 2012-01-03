@@ -9,12 +9,14 @@ ii=0L
 sub= 0L
 bestindx= lonarr(n_elements(in.ra))-1
 while ii lt nmatches-2 do begin
+    print, format = '("Working on ",i7," of ",i7,a1,$)' $
+      , (ii+1), nmatches, string(13b)
     if ii eq nmatches-1 then begin
         bestindx[sub]= m2[ii]
         break
     endif
     jj=0
-    while m1[ii] eq m1[ii+1] do begin
+    while (m1[ii] eq m1[ii+1]) and ii lt nmatches-2 do begin
         jj+= 1
         ii+= 1
     endwhile
@@ -24,6 +26,8 @@ while ii lt nmatches-2 do begin
             sns= in[m2[ii-jj:ii]].sna
         endif else if tag_exist(in,'snr') then begin
             sns= in[m2[ii-jj:ii]].snr
+        endif else if tag_exist(in,'vraderr') then begin
+            sns= in[m2[ii-jj:ii]].vraderr
         endif
         maxsn= max(sns,indx)
         bestindx[sub]= m2[ii-jj+indx]
