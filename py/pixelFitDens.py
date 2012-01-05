@@ -452,7 +452,8 @@ def plotPixelFit(options,args):
     #Run through the pixels and gather
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
             or options.type.lower() == 'fehafe' \
-            or options.type.lower() == 'afefeh':
+            or options.type.lower() == 'afefeh' \
+            or options.type.lower() == 'press':
         plotthis= []
         errors= []
     else:
@@ -464,7 +465,7 @@ def plotPixelFit(options,args):
             afeindx= binned.afeindx(tightbinned.afe(jj))
             if afeindx+fehindx*binned.npixafe() >= len(fits):
                 if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
-                        or options.type.lower() == 'afefeh':
+                        or options.type.lower() == 'afefeh' or options.type.lower() == 'press':
                     continue
                 else:
                     plotthis[ii,jj]= numpy.nan
@@ -472,14 +473,14 @@ def plotPixelFit(options,args):
             thisfit= fits[afeindx+fehindx*binned.npixafe()]
             if thisfit is None:
                 if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
-                        or options.type.lower() == 'afefeh':
+                        or options.type.lower() == 'afefeh' or options.type.lower() == 'press':
                     continue
                 else:
                     plotthis[ii,jj]= numpy.nan
                     continue
             if len(data) < options.minndata:
                 if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
-                        or options.type.lower() == 'afefeh':
+                        or options.type.lower() == 'afefeh' or options.type.lower() == 'press':
                     continue
                 else:
                     plotthis[ii,jj]= numpy.nan
@@ -507,7 +508,8 @@ def plotPixelFit(options,args):
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
-                        or options.type.lower() == 'afefeh':
+                        or options.type.lower() == 'afefeh' \
+                        or options.type.lower() == 'press':
                     if masses:
                         plotthis.append([tightbinned.feh(ii),
                                          tightbinned.afe(jj),
@@ -663,6 +665,74 @@ def plotPixelFit(options,args):
                                                             numpy.amin([numpy.amax(plotc)]))),
 #                            color=colormap(_squeeze(plotc[jj],vmin,vmax)),
                             elinewidth=1.,capsize=3)
+    elif options.type.lower() == 'press':
+        #python pixelFitDens.py ../fits/pixelFitG_DblExp_BigPix0.1.sav --dfeh=0.1 --dafe=0.05 -o ../press/afe_hr.ps --plot -t press --model=hwr --tighten --ploterrors ../fits/pixelFitG_DblExp_BigPix0.1_1000samples.sav
+        bovy_plot.bovy_print(fig_height=4.5,fig_width=6.)
+        #Gather hR and hz
+        hz_err, hr_err, hz, hr,afe, feh, ndata= [], [], [], [], [], [], []
+        for ii in range(len(plotthis)):
+            if denserrors:
+                hz_err.append(errors[ii][0]*1000.)
+                hr_err.append(errors[ii][1])
+            hz.append(plotthis[ii][2])
+            hr.append(plotthis[ii][3])
+            afe.append(plotthis[ii][1])
+            feh.append(plotthis[ii][0])
+            ndata.append(plotthis[ii][4])
+        if denserrors:
+            hz_err= numpy.array(hz_err)
+            hr_err= numpy.array(hr_err)
+        hz= numpy.array(hz)
+        hr= numpy.array(hr)
+        afe= numpy.array(afe)
+        feh= numpy.array(feh)
+        ndata= numpy.array(ndata)
+        #Process ndata
+        if not masses:
+            ndata= ndata**.5
+            ndata= ndata/numpy.median(ndata)*35.
+        else:
+#            ndata= numpy.log(ndata)
+            ndata= _squeeze(ndata,numpy.amin(ndata),numpy.amax(ndata))
+            ndata= ndata*200.+10.
+        keepIndx= numpy.zeros(len(afe),dtype='bool')+True
+        keepIndx[((hz-((850.-520.)/(4.-2.5)*(hr-4.)+800.))**2./200.**2. < 1.)*(hr > 2.3)]= False
+        afe= afe[keepIndx]
+        hr= hr[keepIndx]
+        hr_err= hr_err[keepIndx]
+        afe= afe+numpy.random.random(len(afe))*0.025 #jitter
+        bovy_plot.bovy_plot(-afe,
+                             hr,'ko',
+                             xrange=[-0.55,0.05],
+                             yrange=[1.6,4.],
+                             xlabel=r'$-[\alpha/\mathrm{Fe}]\ \approx\ \mathrm{time\ since\ disk\ formation}$',
+                             ylabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$')
+        
+        for ii in range(len(hr)):
+            if hr[ii] < 4.:
+                pyplot.errorbar(-afe[ii],hr[ii],yerr=hr_err[ii],color='k',
+                                 elinewidth=1.,capsize=3,zorder=0)
+        bovy_plot.bovy_text(r"$\mathrm{SEGUE\ data\ show\ that\ Milky\ Way's\ disk\ has\ formed\ inside\ out}$",title=True)
+        bovy_plot.bovy_text(0.07,2.78,r'$\mathrm{disk\ size}$',rotation=90.,
+                            horizontalalignment='center',
+                            verticalalignment='center',
+                            size=20.,weight='regular')
+        bovy_plot.bovy_text(0.07,1.78,r'$\mathrm{small}$',rotation=90.,
+                            horizontalalignment='center',
+                            verticalalignment='center',
+                            size=16.,weight='regular')
+        bovy_plot.bovy_text(0.07,3.85,r'$\mathrm{large}$',rotation=90.,
+                            horizontalalignment='center',
+                            verticalalignment='center',
+                            size=16.,weight='regular')
+        bovy_plot.bovy_text(-0.53,1.43,r'$\mathrm{early}$',rotation=0.,
+                            horizontalalignment='center',
+                            verticalalignment='center',
+                            size=16.,weight='regular')
+        bovy_plot.bovy_text(0.03,1.43,r'$\mathrm{late}$',rotation=0.,
+                             horizontalalignment='center',
+                             verticalalignment='center',
+                             size=16.,weight='regular')
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
