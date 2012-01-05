@@ -531,7 +531,7 @@ def plotPixelFit(options,args):
     #Set up plot
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'hz':
-        vmin, vmax= 180,1200
+        vmin, vmax= 180,1000
         zlabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$'
     elif options.type == 'hr':
         vmin, vmax= 1.35,4.5
@@ -614,7 +614,7 @@ def plotPixelFit(options,args):
                 for jj in range(len(feh)):
                     if afe[jj] == tightbinned.afe(ii):
                         plotc[jj]= feh[jj]-medianfeh
-        yrange= [150,1250]
+        yrange= [150,1050]
         xrange= [1.2,5.]
         bovy_plot.bovy_plot(hr,hz,s=ndata,c=plotc,
                             cmap='jet',
@@ -630,13 +630,13 @@ def plotPixelFit(options,args):
             colormap = cm.jet
             for ii in range(len(hz)):
                 if hr[ii] < 5.:
-                    if (hz[ii]-((800.-520.)/(4.-2.5)*(hr[ii]-4.)+800.))**2./100.**2. < 1. and hr[ii] > 2.3:
+                    if (hz[ii]-((850.-520.)/(4.-2.5)*(hr[ii]-4.)+800.))**2./200.**2. < 1. and hr[ii] > 2.3:
                         print hr[ii], hz[ii], ndata[ii]/numpy.sum(ndata)
                         pyplot.errorbar(hr[ii],hz[ii],xerr=hr_err[ii],yerr=hz_err[ii],
                                         color=colormap(_squeeze(plotc[ii],
                                                                 numpy.amax([numpy.amin(plotc)]),
                                                                 numpy.amin([numpy.amax(plotc)]))),
-                                        elinewidth=1.,capsize=3,zorder=0)#,elinestyle='--')
+                                        elinewidth=1.,capsize=3,zorder=0,elinestyle='--')
                         """
                         Might need to add this to axes.py
                     if elinestyle:
