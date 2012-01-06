@@ -667,7 +667,9 @@ def plotPixelFit(options,args):
                             elinewidth=1.,capsize=3)
     elif options.type.lower() == 'press':
         #python pixelFitDens.py ../fits/pixelFitG_DblExp_BigPix0.1.sav --dfeh=0.1 --dafe=0.05 -o ../press/afe_hr.ps --plot -t press --model=hwr --tighten --ploterrors ../fits/pixelFitG_DblExp_BigPix0.1_1000samples.sav
-        bovy_plot.bovy_print(fig_height=4.5,fig_width=6.)
+        bovy_plot.bovy_print(fig_height=4.5,fig_width=6.,
+                             xtick_labelsize=7,ytick_labelsize=7,
+                             axes_labelsize=12)
         #Gather hR and hz
         hz_err, hr_err, hz, hr,afe, feh, ndata= [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
@@ -705,14 +707,22 @@ def plotPixelFit(options,args):
                              hr,'ko',
                              xrange=[-0.55,0.05],
                              yrange=[1.6,4.],
-                             xlabel=r'$-[\alpha/\mathrm{Fe}]\ \approx\ \mathrm{time\ since\ disk\ formation}$',
                              ylabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$')
         
         for ii in range(len(hr)):
             if hr[ii] < 4.:
                 pyplot.errorbar(-afe[ii],hr[ii],yerr=hr_err[ii],color='k',
                                  elinewidth=1.,capsize=3,zorder=0)
+        #Plot shading
+        xs= numpy.linspace(-0.5,0.,1001)
+        ysTop= 10.*(xs+0.5)**2.+2.
+        ysBottom= 4.*1.4*(xs+0.5)**2.+1.6
+        pyplot.fill_between(xs,ysBottom,ysTop,color='0.7',zorder=-2)
         bovy_plot.bovy_text(r"$\mathrm{SEGUE\ data\ show\ that\ Milky\ Way's\ disk\ has\ formed\ inside\ out}$",title=True)
+        bovy_plot.bovy_text(-0.25,1.4,r'$-[\alpha/\mathrm{Fe}]\ \approx\ \mathrm{time\ since\ disk\ formation}$',
+                             horizontalalignment='center',
+                             verticalalignment='center',
+                             size=16.,weight='regular')
         bovy_plot.bovy_text(0.07,2.78,r'$\mathrm{disk\ size}$',rotation=90.,
                             horizontalalignment='center',
                             verticalalignment='center',
