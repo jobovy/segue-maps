@@ -10,7 +10,8 @@ from matplotlib import pyplot, cm
 import bovy_mcmc
 from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
     segueSelect, _GDWARFFILE, _KDWARFFILE
-from fitSigz import _FAKEBIMODALGDWARFFILE
+from fitSigz import _FAKEBIMODALGDWARFFILE, _FAKETHINBIMODALGDWARFFILE, \
+    _FAKETHICKBIMODALGDWARFFILE
 from selectFigs import _squeeze
 from fitDensz import _TwoDblExpDensity, _HWRLikeMinus, _ZSUN, DistSpline, \
     _ivezic_dist, _NDS, cb, _HWRDensity, _HWRLike, _KGDensity, _DblExpDensity
@@ -146,6 +147,14 @@ def pixelFitDens(options,args):
             raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
         elif options.select.lower() == 'fakebimodal':
             raw= read_gdwarfs(_FAKEBIMODALGDWARFFILE,
+                              logg=True,ebv=True,sn=True)
+            options.select= 'all'
+        elif options.select.lower() == 'fakebimodal_allthin':
+            raw= read_gdwarfs(_FAKETHINBIMODALGDWARFFILE,
+                              logg=True,ebv=True,sn=True)
+            options.select= 'all'
+        elif options.select.lower() == 'fakebimodal_allthick':
+            raw= read_gdwarfs(_FAKETHICKBIMODALGDWARFFILE,
                               logg=True,ebv=True,sn=True)
             options.select= 'all'
         else:
@@ -401,6 +410,14 @@ def plotPixelFit(options,args):
             raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
         elif options.select.lower() == 'fakebimodal':
             raw= read_gdwarfs(_FAKEBIMODALGDWARFFILE,
+                              logg=True,ebv=True,sn=True)
+            options.select= 'all'
+        elif options.select.lower() == 'fakebimodal_allthin':
+            raw= read_gdwarfs(_FAKETHINBIMODALGDWARFFILE,
+                              logg=True,ebv=True,sn=True)
+            options.select= 'all'
+        elif options.select.lower() == 'fakebimodal_allthick':
+            raw= read_gdwarfs(_FAKETHICKBIMODALGDWARFFILE,
                               logg=True,ebv=True,sn=True)
             options.select= 'all'
         else:

@@ -10,6 +10,8 @@ import bovy_mcmc
 from segueSelect import read_gdwarfs, _GDWARFFILE, _KDWARFFILE, read_kdwarfs, \
     _SEGUESELECTDIR
 _FAKEBIMODALGDWARFFILE= os.path.join(_SEGUESELECTDIR,'fakeBimodalGdwarfs.fit')
+_FAKETHINBIMODALGDWARFFILE= os.path.join(_SEGUESELECTDIR,'fakeBimodalGdwarfs_allthin.fit')
+_FAKETHICKBIMODALGDWARFFILE= os.path.join(_SEGUESELECTDIR,'fakeBimodalGdwarfs_allthick.fit')
 _ZSUN=0.025 #Sun's offset from the plane toward the NGP in kpc
 _VERBOSE=True
 _DEBUG=False
@@ -259,6 +261,12 @@ def readData(metal='rich',sample='G',loggmin=4.2,snmin=15.,select='all'):
             raw= read_gdwarfs(_GDWARFFILE,logg=loggmin,ebv=True,sn=snmin)
         elif select.lower() == 'fakebimodal':
             raw= read_gdwarfs(_FAKEBIMODALGDWARFFILE,
+                              logg=loggmin,ebv=True,sn=snmin)
+        elif select.lower() == 'fakebimodal_allthin':
+            raw= read_gdwarfs(_FAKETHINBIMODALGDWARFFILE,
+                              logg=loggmin,ebv=True,sn=snmin)
+        elif select.lower() == 'fakebimodal_allthick':
+            raw= read_gdwarfs(_FAKETHICKBIMODALGDWARFFILE,
                               logg=loggmin,ebv=True,sn=snmin)
         else:
             raw= read_gdwarfs(logg=loggmin,ebv=True,sn=snmin)
