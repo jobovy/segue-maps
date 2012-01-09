@@ -13,7 +13,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
 from fitSigz import _FAKEBIMODALGDWARFFILE
 from selectFigs import _squeeze
 from fitDensz import _TwoDblExpDensity, _HWRLikeMinus, _ZSUN, DistSpline, \
-    _ivezic_dist, _NDS, cb, _HWRDensity, _HWRLike, _KGDensity
+    _ivezic_dist, _NDS, cb, _HWRDensity, _HWRLike, _KGDensity, _DblExpDensity
 _NGR= 11
 _NFEH=11
 class pixelAfeFeh:
@@ -195,7 +195,11 @@ def pixelFitDens(options,args):
         densfunc= _HWRDensity
         isDomainFinite=[[False,True],[False,True],[True,True]]
         domain=[[0.,4.6051701859880918],[0.,4.6051701859880918],[0.,1.]]
-    if options.model.lower() == 'kg':
+    elif options.model.lower() == 'dblexp':
+        densfunc= _DblExpDensity
+        isDomainFinite=[[False,True],[False,True]]
+        domain=[[0.,4.6051701859880918],[0.,4.6051701859880918]]
+    elif options.model.lower() == 'kg':
         densfunc= _KGDensity
         isDomainFinite=[[True,True],[True,True],[False,True],
                         [False,True]]
@@ -279,6 +283,11 @@ def pixelFitDens(options,args):
                     params= thisinitfit
                 else:
                     params= numpy.array([numpy.log(0.5),numpy.log(3.),0.05])
+            elif options.model.lower() == 'dblexp':
+                if not initfits is None:
+                    params= thisinitfit
+                else:
+                    params= numpy.array([numpy.log(0.5),numpy.log(3.)])
             elif options.model.lower() == 'kg':
                 if not initfits is None:
                     params= thisinitfit
@@ -500,11 +509,17 @@ def plotPixelFit(options,args):
                         continue
                 elif numpy.fabs(hz1-hz2)/hz1 > 0.15:
                     continue
-            if options.model.lower() == 'hwr':
+            if options.model.lower() == 'hwr' \
+                    or options.model.lower() == 'dblexp':
                 if options.type == 'hz':
                     plotthis[ii,jj]= numpy.exp(thisfit[0])*1000.
                 elif options.type == 'hr':
-                    plotthis[ii,jj]= numpy.exp(thisfit[1])
+                    if options.type.lower() == 'dblexp':
+                        plotthis[ii,jj]= numpy.exp(-thisfit[1])
+                    else:
+                        plotthis[ii,jj]= numpy.exp(thisfit[1])
+                elif options.type == 'const':
+                    plotthis[ii,jj]= thisfit[2]
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
@@ -525,7 +540,8 @@ def plotPixelFit(options,args):
                     if denserrors:
                         theseerrors= []
                         thesesamples= denssamples[afeindx+fehindx*binned.npixafe()]
-                        if options.model.lower() == 'hwr':
+                        if options.model.lower() == 'hwr' \
+                                or options.model.lower() == 'dblexp':
                             for kk in [0,1]:
                                 xs= numpy.array([s[kk] for s in thesesamples])
                                 theseerrors.append(0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
@@ -538,6 +554,9 @@ def plotPixelFit(options,args):
     elif options.type == 'hr':
         vmin, vmax= 1.35,4.5
         zlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$'
+    elif options.type == 'const':
+        vmin, vmax= 0.,0.02
+        zlabel=r'$\mathrm{constant\ density\ amplitude}$'
     elif options.type == 'afe':
         vmin, vmax= 0.0,.5
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
