@@ -124,6 +124,8 @@ def plotsz2hz(options,args):
                         for kk in [1,4]:
                             xs= numpy.array([s[kk] for s in thesesamples])
                             theseerrors.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
+                        xs= numpy.array([1./s[4] for s in thesesamples])
+                        theseerrors.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
                         errors.append(theseerrors)
             if options.densmodel.lower() == 'hwr':
                 if options.type == 'sz2hz':
@@ -190,11 +192,12 @@ def plotsz2hz(options,args):
             or options.type.lower() == 'afefeh':
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather everything
-        hs_err, sz_err, pivot, zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
+        hsm_err, hs_err, sz_err, pivot, zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
             if velerrors:
                 sz_err.append(errors[ii][0])
                 hs_err.append(errors[ii][1])
+                hsm_err.append(errors[ii][2])
             sz.append(plotthis[ii][2])
             hs.append(plotthis[ii][3])
             hz.append(plotthis[ii][10])
@@ -216,6 +219,7 @@ def plotsz2hz(options,args):
         if velerrors:
             sz_err= numpy.array(sz_err)
             hs_err= numpy.array(hs_err)
+            hsm_err= numpy.array(hsm_err)
         sz= numpy.array(sz)
         mz= numpy.array(mz)*1000.
         hs= numpy.array(hs)
@@ -257,10 +261,11 @@ def plotsz2hz(options,args):
                         plotc[jj]= feh[jj]-medianfeh
         if not options.subtype == 'zfunc' \
                and not options.subtype.lower() == 'hs' \
+               and not options.subtype.lower() == 'hsm' \
                and not options.subtype.lower() == 'asz' \
                and not options.subtype.lower() == 'bsz':
             if options.subtype == 'mz':
-                if velerrors: #Don't plot if errors > 30%
+                if velerrors: #Don't plot if errors > 20%
                     indx= (sz_err/sz <= .2)
                     sz= sz[indx]
                     mz= mz[indx]
@@ -374,6 +379,47 @@ def plotsz2hz(options,args):
             #Overplot weighted mean + stddev
             hs_m= numpy.sum(hs/hs_err**2.)/numpy.sum(1./hs_err**2.)
             hs_std= numpy.sqrt(1./numpy.sum(1./hs_err**2.))
+            print hs_m, hs_std
+            bovy_plot.bovy_plot(xrange,[hs_m,hs_m],'k-',overplot=True)
+            bovy_plot.bovy_plot(xrange,[hs_m-hs_std,hs_m-hs_std],'-',
+                                color='0.5',overplot=True)
+            bovy_plot.bovy_plot(xrange,[hs_m+hs_std,hs_m+hs_std],'-',
+                                color='0.5',overplot=True)
+        elif options.subtype.lower() == 'hsm':
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            #plot hs vs. afe/feh, colorcoded using feh/afe
+            if options.type.lower() == 'afe' or options.type.lower() == 'afefeh':
+                plotx= feh+numpy.random.random(len(hs))*0.05 #jitter
+                xrange= [-1.6,0.4]
+                xlabel=r'$[\mathrm{Fe/H}]$'
+            elif options.type.lower() == 'feh' or options.type.lower() == 'fehafe':
+                plotx= afe+numpy.random.random(len(hs))*0.025 #jitter
+                xrange= [-0.05,0.55]
+                xlabel=r'$[\alpha\mathrm{/H}]$'
+            yrange= [0.,20.]
+            bovy_plot.bovy_plot(plotx,1./hs,
+                                s=ndata,c=plotc,
+                                cmap='jet',
+                                xlabel=xlabel,
+                                ylabel=r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$',
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True)
+            #Overplot errorbars
+            if options.ploterrors:
+                for ii in range(len(hs)):
+                    pyplot.errorbar(plotx[ii],
+                                    1./hs[ii],yerr=hsm_err[ii],
+                                    color=colormap(_squeeze(plotc[ii],
+                                                            numpy.amax([numpy.amin(plotc)]),
+                                                            numpy.amin([numpy.amax(plotc)]))),
+                                    elinewidth=1.,capsize=3,zorder=0)  
+            #Overplot weighted mean + stddev
+            hs_m= numpy.sum(1./hs/hsm_err**2.)/numpy.sum(1./hsm_err**2.)
+            hs_std= numpy.sqrt(1./numpy.sum(1./hsm_err**2.))
             print hs_m, hs_std
             bovy_plot.bovy_plot(xrange,[hs_m,hs_m],'k-',overplot=True)
             bovy_plot.bovy_plot(xrange,[hs_m-hs_std,hs_m-hs_std],'-',

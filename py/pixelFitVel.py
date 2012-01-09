@@ -220,6 +220,8 @@ def plotPixelFitVel(options,args):
                     plotthis[ii,jj]= numpy.exp(2.*thisfit[1])
                 elif options.type == 'hs':
                     plotthis[ii,jj]= numpy.exp(thisfit[4])
+                elif options.type == 'hsm':
+                    plotthis[ii,jj]= numpy.exp(-thisfit[4])
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
@@ -252,6 +254,13 @@ def plotPixelFitVel(options,args):
         else:
             vmin, vmax= 3.,15.
             zlabel= r'$h_\sigma\ [\mathrm{kpc}]$'
+    elif options.type == 'hsm':
+        if options.vr:
+            vmin, vmax= 0.,0.3
+            zlabel= r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$'
+        else:
+            vmin, vmax= 0.,0.3
+            zlabel= r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$'
     elif options.type == 'afe':
         vmin, vmax= 0.05,.4
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
