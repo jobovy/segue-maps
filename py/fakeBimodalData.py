@@ -34,6 +34,10 @@ def resampleMags(raw,comps,options,args):
                               numpy.log(options.hr_thick)])
     params_thin= numpy.array([numpy.log(options.hz_thin/1000.),
                              numpy.log(options.hr_thin)])
+    if options.allthin:
+        params_thick= params_thin
+    elif options.allthick:
+        params_thin= params_thick
     #Load sf
     sf= segueSelect(sample=options.sample,sn=True,
                     type_bright='tanhrcut',
@@ -276,6 +280,12 @@ def get_options():
                       help="'thick' disk scale length (kpc)")
     parser.add_option("--hr_thin",dest='hr_thin',default=3.5,type='float',
                       help="'thin' disk scale length (kpc)")
+    parser.add_option("--allthin",action="store_true", dest="allthin",
+                      default=False,
+                      help="If set, resample all stars as thin (for testing)")
+    parser.add_option("--allthick",action="store_true", dest="allthick",
+                      default=False,
+                      help="If set, resample all stars as thick (for testing)")
     return parser
 
 if __name__ == '__main__':
