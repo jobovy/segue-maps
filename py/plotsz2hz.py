@@ -108,6 +108,16 @@ def plotsz2hz(options,args):
                 if options.type == 'sz2hz' or options.type.lower() == 'asz' \
                        or options.type.lower() == 'bsz':
                     numerator= numpy.exp(2.*thisvelfit[1])
+                elif options.type == 'slopes': 
+                    if velerrors: #Don't plot if errors > 20%
+                        sz= numpy.exp(thisvelfit[1])
+                        thesesamples= velsamples[afeindx+fehindx*binned.npixafe()]
+                        xs= numpy.array([s[1] for s in thesesamples])
+                        sz_err= 0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs)))
+                        if sz_err/sz > .2:
+                            plotthis[ii,jj]= numpy.nan
+                        else:
+                            plotthis[ii,jj]= thisvelfit[2]
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
@@ -118,8 +128,8 @@ def plotsz2hz(options,args):
                               numpy.exp(thisvelfit[1]),
                               numpy.exp(thisvelfit[4]),
                               len(data),
-                              thisvelfit[1],
-                              thisvelfit[2]]
+                              thisvelfit[2],
+                              thisvelfit[3]]
                     if thisvelfit[2] > 10.:
                         print "Strange point: ", tightbinned.feh(ii), \
                             tightbinned.afe(jj)
@@ -554,6 +564,14 @@ def plotsz2hz(options,args):
                                     color='0.5',overplot=True)
                 bovy_plot.bovy_plot(xrange,[hs_m+hs_std,hs_m+hs_std],'-',
                                     color='0.5',overplot=True)
+    elif options.type.lower() == 'slopes':
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_hist(plotthis.flatten(),
+                            range=[-5.,5.],
+                            bins=11,
+                            histtype='step',
+                            color='k',
+                            xlabel=r'$\sigma_z(Z)\ \mathrm{slope\ [km\ s}^{-1}\ \mathrm{kpc}^{-1}]$')
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
