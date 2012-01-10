@@ -1201,7 +1201,7 @@ def _KGDensity(R,Z,params):
 
 def _DblExpDensity(R,Z,params):
     """Double exponential disk
-    params= [loghz,loghR]"""
+    params= [loghz,-loghR]"""
     hR= numpy.exp(-params[1])
     return 1./2./numpy.exp(params[0])*numpy.exp(-(R-8.)/hR
                       -numpy.fabs(Z)/numpy.exp(params[0]))

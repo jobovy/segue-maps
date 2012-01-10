@@ -93,6 +93,9 @@ def plotOneDiskVsTwoDisks(options,args):
                     plotthis.append([numpy.exp(thisonefit[0])*1000.,
                                      numpy.exp(thistwofit[twoIndx])*1000.,
                                      len(data)])
+                #Discrepant point
+                if plotthis[-1][1] < 250. and plotthis[-1][0] > 500.:
+                    print "strange point: ", tightbinned.feh(ii),tightbinned.afe(jj)
             elif options.type == 'hr':
                 plotthis.append([numpy.exp(thisonefit[1]),numpy.exp(thistwofit[twoIndx+2]),len(data)])
             theseerrors= []
