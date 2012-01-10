@@ -73,6 +73,28 @@ class pixelAfeFeh:
                              *(self.data.feh <= self.fehedges[fehbin+1])\
                              *(self.data.afe > self.afeedges[afebin])\
                              *(self.data.afe <= self.afeedges[afebin+1])]
+    def callIndx(self,*args,**kwargs):
+        """
+        NAME:
+           callIndx
+        PURPOSE:
+           return index of the part of the sample in a afe and feh pixel
+        INPUT:
+           feh, afe
+        OUTPUT:
+           returns index into data recarray in the bin that feh and afe are in
+        HISTORY:
+           2012-01-10 - Written - Bovy (NYU)
+        """
+        #Find bin
+        fehbin= int(math.floor((args[0]-self.fehmin)/self.dfeh))
+        afebin= int(math.floor((args[1]-self.afemin)/self.dafe))
+        #Return data
+        return (self.data.feh > self.fehedges[fehbin])\
+            *(self.data.feh <= self.fehedges[fehbin+1])\
+            *(self.data.afe > self.afeedges[afebin])\
+            *(self.data.afe <= self.afeedges[afebin+1])
+
     def feh(self,i):
         """
         NAME:

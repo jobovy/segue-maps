@@ -38,8 +38,8 @@ def resampleMags(raw,comps,options,args):
     if options.allthin:
         params_thick= params_thin
     elif options.allthick:
-        params_thin= params_thick
-    #Load sf
+        params_thin= params_thick 
+   #Load sf
     sf= segueSelect(sample=options.sample,sn=True,
                     type_bright='tanhrcut',
                     type_faint='tanhrcut')
@@ -82,6 +82,7 @@ def resampleMags(raw,comps,options,args):
     while ii < len(binned.fehedges)-1:
         while jj < len(binned.afeedges)-1:
             data= binned(binned.feh(ii),binned.afe(jj))
+            rawIndx= binned.callIndx(binned.feh(ii),binned.afe(jj))
             if len(data) < 1:
                 jj+= 1
                 if jj == len(binned.afeedges)-1: 
@@ -164,6 +165,7 @@ def resampleMags(raw,comps,options,args):
                 data.dered_r[nout]= rs[ll]
                 data.dered_g[nout]= oldgr+data.dered_r[nout]
                 nout+= 1
+            raw[rawIndx]= data
             jj+= 1
         ii+= 1
         jj= 0
