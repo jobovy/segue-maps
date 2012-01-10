@@ -3,12 +3,19 @@ import sys
 import math
 import numpy
 import cPickle as pickle
+from scipy.stats import gaussian_kde
 from optparse import OptionParser
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 from matplotlib import pyplot, cm
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE
 from pixelFitDens import pixelAfeFeh
 from fitSigz import _ZSUN
+class kde_mult:
+    def __init__(self,kde_list):
+        """Input: list of kde instances, function is product of all"""
+        self._kde_list= kde_list
+    def __call__(self,x):
+        return numpy.prod(numpy.array([l(x) for l in self._kde_list]))
 def plotsz2hz(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
@@ -64,6 +71,7 @@ def plotsz2hz(options,args):
         errors= []
     else:
         plotthis= numpy.zeros((tightbinned.npixfeh(),tightbinned.npixafe()))
+    if options.kde: allsamples= []
     for ii in range(tightbinned.npixfeh()):
         for jj in range(tightbinned.npixafe()):
             data= binned(tightbinned.feh(ii),tightbinned.afe(jj))
@@ -124,9 +132,10 @@ def plotsz2hz(options,args):
                         for kk in [1,4]:
                             xs= numpy.array([s[kk] for s in thesesamples])
                             theseerrors.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
-                        xs= numpy.array([1./s[4] for s in thesesamples])
-                        theseerrors.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
+                        xs= numpy.array([s[4] for s in thesesamples])
+                        theseerrors.append(0.5*(numpy.exp(-numpy.mean(xs))-numpy.exp(numpy.mean(-xs)-numpy.std(-xs))-numpy.exp(numpy.mean(-xs))+numpy.exp(numpy.mean(-xs)+numpy.std(-xs))))
                         errors.append(theseerrors)
+                        if options.kde: allsamples.append(numpy.exp(-xs))
             if options.densmodel.lower() == 'hwr':
                 if options.type == 'sz2hz':
                     denominator= numpy.exp(thisdensfit[0])*1000.
@@ -376,9 +385,26 @@ def plotsz2hz(options,args):
                                                             numpy.amax([numpy.amin(plotc)]),
                                                             numpy.amin([numpy.amax(plotc)]))),
                                     elinewidth=1.,capsize=3,zorder=0)  
+            #KDE estimate?
+            #Form KDE estimates of all PDFs, multiply and display
+            if options.kde:
+                kde_list= []
+                hss= numpy.linspace(0.,20.,101)
+                for ii in range(len(hs)):
+                    kde_list.append(gaussian_kde(1./allsamples[ii].reshape((1,len(allsamples[ii])))))
+                kde_est= kde_mult(kde_list)
+                hss= numpy.linspace(0.,20.,1001)
+                pdf= numpy.zeros(len(hss))
+                for ii in range(len(hss)):
+                    pdf[ii]= kde_est(hss[ii])
+                hs_m= numpy.sum(hss*pdf)/numpy.sum(pdf)
+                hs_std= numpy.sqrt(numpy.sum(hss**2.*pdf)/numpy.sum(pdf)-hs_m**2.)
+                #Rescale
+                pdf*= 0.4/numpy.amax(pdf)
+                pdf-= 1.6
+                #Overplot
+                bovy_plot.bovy_plot(pdf,hss,'k-',overplot=True)
             #Overplot weighted mean + stddev
-            hs_m= numpy.sum(hs/hs_err**2.)/numpy.sum(1./hs_err**2.)
-            hs_std= numpy.sqrt(1./numpy.sum(1./hs_err**2.))
             print hs_m, hs_std
             bovy_plot.bovy_plot(xrange,[hs_m,hs_m],'k-',overplot=True)
             bovy_plot.bovy_plot(xrange,[hs_m-hs_std,hs_m-hs_std],'-',
@@ -397,7 +423,7 @@ def plotsz2hz(options,args):
                 plotx= afe+numpy.random.random(len(hs))*0.025 #jitter
                 xrange= [-0.05,0.55]
                 xlabel=r'$[\alpha\mathrm{/H}]$'
-            yrange= [0.,20.]
+            yrange= [0.,.3]
             bovy_plot.bovy_plot(plotx,1./hs,
                                 s=ndata,c=plotc,
                                 cmap='jet',
@@ -417,9 +443,25 @@ def plotsz2hz(options,args):
                                                             numpy.amax([numpy.amin(plotc)]),
                                                             numpy.amin([numpy.amax(plotc)]))),
                                     elinewidth=1.,capsize=3,zorder=0)  
+            #KDE estimate?
+            #Form KDE estimates of all PDFs, multiply and display
+            if options.kde:
+                kde_list= []
+                for ii in range(len(hs)):
+                    kde_list.append(gaussian_kde(1./allsamples[ii].reshape((1,len(allsamples[ii])))))
+                kde_est= kde_mult(kde_list)
+                hsms= numpy.linspace(0.01,0.3,1001)
+                pdf= numpy.zeros(len(hsms))
+                for ii in range(len(hsms)):
+                    pdf[ii]= kde_est(1./hsms[ii])*hsms[ii]**-2.
+                hs_m= numpy.sum(hsms*pdf)/numpy.sum(pdf)
+                hs_std= numpy.sqrt(numpy.sum(hsms**2.*pdf)/numpy.sum(pdf)-hs_m**2.)
+                #Rescale
+                pdf*= 0.4/numpy.amax(pdf)
+                pdf-= 1.6
+                #Overplot
+                bovy_plot.bovy_plot(pdf,hsms,'k-',overplot=True)
             #Overplot weighted mean + stddev
-            hs_m= numpy.sum(1./hs/hsm_err**2.)/numpy.sum(1./hsm_err**2.)
-            hs_std= numpy.sqrt(1./numpy.sum(1./hsm_err**2.))
             print hs_m, hs_std
             bovy_plot.bovy_plot(xrange,[hs_m,hs_m],'k-',overplot=True)
             bovy_plot.bovy_plot(xrange,[hs_m-hs_std,hs_m-hs_std],'-',
@@ -451,6 +493,13 @@ def plotsz2hz(options,args):
                                 vmin=vmin,vmax=vmax,
                                 scatter=True,edgecolors='none',
                                 colorbar=True)
+            #Overplot weighted mean + stddev
+            print hs_m, hs_std
+            bovy_plot.bovy_plot(xrange,[hs_m,hs_m],'k-',overplot=True)
+            bovy_plot.bovy_plot(xrange,[hs_m-hs_std,hs_m-hs_std],'-',
+                                color='0.5',overplot=True)
+            bovy_plot.bovy_plot(xrange,[hs_m+hs_std,hs_m+hs_std],'-',
+                                color='0.5',overplot=True)
         elif options.subtype.lower() == 'bsz':
             from selectFigs import _squeeze
             colormap = cm.jet
@@ -541,6 +590,9 @@ def get_options():
     parser.add_option("--vr",action="store_true", dest="vr",
                       default=False,
                       help="If set, fit vR instead of vz")
+    parser.add_option("--kde",action="store_true", dest="kde",
+                      default=False,
+                      help="Perform KDE estimate of hs")
     return parser
 
 if __name__ == '__main__':
