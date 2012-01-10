@@ -222,6 +222,8 @@ def plotPixelFitVel(options,args):
                     plotthis[ii,jj]= numpy.exp(thisfit[4])
                 elif options.type == 'hsm':
                     plotthis[ii,jj]= numpy.exp(-thisfit[4])
+                elif options.type == 'slopes':
+                    plotthis[ii,jj]= thisfit[2]
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
@@ -340,6 +342,14 @@ def plotPixelFitVel(options,args):
                             vmin=vmin,vmax=vmax,
                             scatter=True,edgecolors='none',
                             colorbar=True)
+    elif options.type.lower() == 'slopes':
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_hist(plotthis.flatten(),
+                            range=[-5.,5.],
+                            bins=11,
+                            histtype='step',
+                            color='k',
+                            xlabel=r'$\sigma_z(Z)\ \mathrm{slope\ [km\ s}^{-1}\ \mathrm{kpc}^{-1}]$')
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
