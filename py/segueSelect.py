@@ -226,7 +226,7 @@ class segueSelect:
                     self.spec= read_gdwarfs(ug=ug,ri=ri,sn=sn,
                                             ebv=ebv,nocoords=True)
                 elif select.lower() == 'program':
-                    self.spec= read_gdwarfs(file=_GDWARFFILE,
+                    self.spec= read_gdwarfs(datafile=_GDWARFFILE,
                                             ug=ug,ri=ri,sn=sn,
                                             ebv=ebv,nocoords=True)
             elif sample.lower() == 'k':
@@ -234,7 +234,7 @@ class segueSelect:
                     self.spec= read_kdwarfs(ug=ug,ri=ri,sn=sn,
                                             ebv=ebv,nocoords=True)
                 elif select.lower() == 'program':
-                    self.spec= read_kdwarfs(file=_KDWARFFILE,
+                    self.spec= read_kdwarfs(datafile=_KDWARFFILE,
                                             ug=ug,ri=ri,sn=sn,
                                             ebv=ebv,nocoords=True)
             elif sample.lower() == 'fg':
@@ -242,7 +242,7 @@ class segueSelect:
                     self.spec= read_fgstars(ug=ug,ri=ri,sn=sn,
                                             ebv=ebv,nocoords=True)
                 elif select.lower() == 'program':
-                    self.spec= read_fgstars(file=_FGSTARFILE,
+                    self.spec= read_fgstars(datafile=_FGSTARFILE,
                                             ug=ug,ri=ri,sn=sn,
                                             ebv=ebv,nocoords=True)
             self.platespec= {}
@@ -259,15 +259,15 @@ class segueSelect:
         if indiv_brightlims:
             if _program_brightlims and not select.lower() == 'program': #Grab the bright/faint interface from the program stars
                 if sample.lower() == 'g':
-                    bfspec= read_gdwarfs(file=_GDWARFFILE,
+                    bfspec= read_gdwarfs(datafile=_GDWARFFILE,
                                          ug=ug,ri=ri,sn=sn,
                                          ebv=ebv,nocoords=True)
                 elif sample.lower() == 'k':
-                    bfspec= read_kdwarfs(file=_KDWARFFILE,
+                    bfspec= read_kdwarfs(datafile=_KDWARFFILE,
                                             ug=ug,ri=ri,sn=sn,
                                             ebv=ebv,nocoords=True)
                 elif sample.lower() == 'fg':
-                    bfspec= read_fgstars(file=_FGSTARFILE,
+                    bfspec= read_fgstars(datafile=_FGSTARFILE,
                                          ug=ug,ri=ri,sn=sn,
                                          ebv=ebv,nocoords=True)
                 bfplatespec= {}
@@ -1270,7 +1270,7 @@ def juric_dist_gr(g,r,dg=0.,dr=0.,return_error=False,
     derrs= 0.2*numpy.log(10.)*numpy.sqrt(dmr**2.+dr**2.)*ds
     return (ds,derrs)
 
-def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
+def read_gdwarfs(datafile=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
                  ebv=True,nocoords=False):
     """
     NAME:
@@ -1289,7 +1289,7 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     HISTORY:
        2011-07-08 - Written - Bovy@MPIA (NYU)
     """
-    raw= _load_fits(file)
+    raw= _load_fits(datafile)
     #First cut on r
     indx= (raw.field('dered_r') < 20.2)*(raw.field('dered_r') > 14.5)
     raw= raw[indx]
@@ -1343,7 +1343,7 @@ def read_gdwarfs(file=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     raw= _add_velocities(raw)
     return raw
 
-def read_kdwarfs(file=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
+def read_kdwarfs(datafile=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
                  ebv=True,nocoords=False):
     """
     NAME:
@@ -1362,7 +1362,7 @@ def read_kdwarfs(file=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     HISTORY:
        2011-07-11 - Written - Bovy@MPIA (NYU)
     """
-    raw= _load_fits(file)
+    raw= _load_fits(datafile)
     #First cut on r
     indx= (raw.field('dered_r') < 19.)*(raw.field('dered_r') > 14.5)
     raw= raw[indx]
@@ -1416,7 +1416,7 @@ def read_kdwarfs(file=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     raw= _add_velocities(raw)
     return raw
 
-def read_fgstars(file=_FGSTARALLFILE,logg=False,ug=False,ri=False,sn=True,
+def read_fgstars(datafile=_FGSTARALLFILE,logg=False,ug=False,ri=False,sn=True,
                  ebv=False,nocoords=False):
     """
     NAME:
@@ -1435,7 +1435,7 @@ def read_fgstars(file=_FGSTARALLFILE,logg=False,ug=False,ri=False,sn=True,
     HISTORY:
        2011-07-23 - Written - Bovy@MPIA (NYU)
     """
-    raw= _load_fits(file)
+    raw= _load_fits(datafile)
     #First cut on r
     indx= (raw.field('dered_r') < 20.)*(raw.field('dered_r') > 14.5)
     raw= raw[indx]

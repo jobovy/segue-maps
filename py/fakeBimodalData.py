@@ -75,8 +75,6 @@ def resampleMags(raw,comps,options,args):
     ngr, nfeh, nrs= 2, 2, 201
     grs= numpy.linspace(grmin,grmax,ngr)
     rs= numpy.linspace(rmin,rmax,nrs)
-    rdists_thin= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
-    rdists_thick= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
     #Run through the bins
     ii, jj= 0, 0
     while ii < len(binned.fehedges)-1:
@@ -105,6 +103,8 @@ def resampleMags(raw,comps,options,args):
             #Predict the r-distribution for all plate
             #Thick or thin?
             thick_amp= numpy.mean(data.comps)
+            rdists_thin= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
+            rdists_thick= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
             for pp in range(len(sf.plates)):
                 sys.stdout.write('\r'+"Working on bin %i / %i: plate %i / %i" \
                                      % (ii*(len(binned.afeedges)-1)+jj+1,
@@ -159,13 +159,24 @@ def resampleMags(raw,comps,options,args):
                 ff= int(numpy.floor((data[nout].feh-fehrange[0])/(fehrange[1]-fehrange[0])*nfeh))
                 while rdists[kk,ll,cc,ff] < ran and ll < nrs-1: ll+= 1
                 #r=ll
-                data
                 oldgr= data.dered_g[nout]-data.dered_r[nout]
                 oldr= data.dered_r[nout]
                 data.dered_r[nout]= rs[ll]
                 data.dered_g[nout]= oldgr+data.dered_r[nout]
+                #Also change plate and l and b
+                data.plate[nout]= sf.plates[kk]
+                data.ra[nout]= sf.platestr.ra[kk]
+                data.dec[nout]= sf.platestr.dec[kk]
+                data.l[nout]= platelb[kk,0]
+                data.b[nout]= platelb[kk,1]
                 nout+= 1
-            raw[rawIndx]= data
+            raw.dered_r[rawIndx]= data.dered_r
+            raw.dered_g[rawIndx]= data.dered_g
+            raw.plate[rawIndx]= data.plate
+            raw.ra[rawIndx]= data.ra
+            raw.dec[rawIndx]= data.dec
+            raw.l[rawIndx]= data.l
+            raw.b[rawIndx]= data.b
             jj+= 1
         ii+= 1
         jj= 0
