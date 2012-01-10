@@ -170,7 +170,7 @@ def resampleMags(raw,comps,options,args):
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     #Dump raw
-    fitsio.write(args[0],raw)
+    fitsio.write(args[0],raw,clobber=True)
 def reassignStars(options,args):
     #Restore deconvolution
     outfile= open(options.xdfile,'rb')
