@@ -120,6 +120,9 @@ def plotsz2hz(options,args):
                               len(data),
                               thisvelfit[1],
                               thisvelfit[2]]
+                    if thisvelfit[2] > 10.:
+                        print "Strange point: ", tightbinned.feh(ii), \
+                            tightbinned.afe(jj)
                     #Als find min and max z for this data bin, and median
                     zsorted= sorted(numpy.fabs(data.zc+_ZSUN))
                     zmin= zsorted[int(numpy.ceil(0.16*len(zsorted)))]
@@ -136,6 +139,13 @@ def plotsz2hz(options,args):
                         theseerrors.append(0.5*(numpy.exp(-numpy.mean(xs))-numpy.exp(numpy.mean(-xs)-numpy.std(-xs))-numpy.exp(numpy.mean(-xs))+numpy.exp(numpy.mean(-xs)+numpy.std(-xs))))
                         errors.append(theseerrors)
                         if options.kde: allsamples.append(numpy.exp(-xs))
+                        if thisvelfit[2] > 10.:
+                            xs= numpy.array([s[2] for s in thesesamples])
+                            strerr= 0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs)))
+                            print "Strange errors: ", thisvelfit[2], strerr
+                            #Remove
+                            errors.pop()
+                            continue
             if options.densmodel.lower() == 'hwr':
                 if options.type == 'sz2hz':
                     denominator= numpy.exp(thisdensfit[0])*1000.
