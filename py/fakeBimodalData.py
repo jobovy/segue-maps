@@ -32,9 +32,9 @@ def resampleMags(raw,comps,options,args):
     model_thick= _DblExpDensity
     model_thin= _DblExpDensity
     params_thick= numpy.array([numpy.log(options.hz_thick/1000.),
-                              numpy.log(options.hr_thick)])
+                              -numpy.log(options.hr_thick)])
     params_thin= numpy.array([numpy.log(options.hz_thin/1000.),
-                             numpy.log(options.hr_thin)])
+                             -numpy.log(options.hr_thin)])
     if options.allthin:
         params_thick= params_thin
     elif options.allthick:
@@ -58,6 +58,7 @@ def resampleMags(raw,comps,options,args):
                 indx.append(True)
         indx= numpy.array(indx,dtype='bool')
         raw= raw[indx]
+        comps= comps[indx]
     #Loadthe data into the pixelAfeFeh structure
     raw= _append_field_recarray(raw,'comps',comps)
     binned= pixelAfeFeh(raw,dfeh=0.1,dafe=0.05)  
@@ -129,7 +130,7 @@ def resampleMags(raw,comps,options,args):
                                                              fehdist,sf,sf.plates[pp],
                                                              dontmarginalizecolorfeh=True,
                                                              ngr=ngr,nfeh=nfeh)
-                rdists= thick_amp*rdists_thick+(1.-thick_amp)*rdists_thin
+            rdists= thick_amp*rdists_thick+(1.-thick_amp)*rdists_thin
             rdists[numpy.isnan(rdists)]= 0.
             numbers= numpy.sum(rdists,axis=3)
             numbers= numpy.sum(numbers,axis=2)
@@ -142,7 +143,7 @@ def resampleMags(raw,comps,options,args):
                     for kk in range(nfeh):
                         if rdists[ww,-1,ll,kk] != 0.:
                             rdists[ww,:,ll,kk]/= rdists[ww,-1,ll,kk]
-             #Now sample
+            #Now sample
             nout= 0
             while nout < len(data):
                 #First sample a plate
@@ -156,7 +157,7 @@ def resampleMags(raw,comps,options,args):
                 cc= int(numpy.floor((data[nout].dered_g-data[nout].dered_r-colorrange[0])/(colorrange[1]-colorrange[0])*ngr))
                 ff= int(numpy.floor((data[nout].feh-fehrange[0])/(fehrange[1]-fehrange[0])*nfeh))
                 while rdists[kk,ll,cc,ff] < ran and ll < nrs-1: ll+= 1
-                #r=jj
+                #r=ll
                 data
                 oldgr= data.dered_g[nout]-data.dered_r[nout]
                 oldr= data.dered_r[nout]
