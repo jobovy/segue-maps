@@ -3,6 +3,7 @@ import sys
 import math
 import numpy
 import cPickle as pickle
+from scipy import special
 from scipy.stats import gaussian_kde
 from optparse import OptionParser
 from galpy.util import bovy_coords, bovy_plot, save_pickles
@@ -72,6 +73,9 @@ def plotsz2hz(options,args):
     else:
         plotthis= numpy.zeros((tightbinned.npixfeh(),tightbinned.npixafe()))
     if options.kde: allsamples= []
+    sausageFehAfe= [[-0.85,0.425],[-0.45,0.275],[-0.15,0.075]]
+    if options.subtype.lower() == 'sausage':
+        sausageSamples= []
     for ii in range(tightbinned.npixfeh()):
         for jj in range(tightbinned.npixafe()):
             data= binned(tightbinned.feh(ii),tightbinned.afe(jj))
@@ -164,6 +168,11 @@ def plotsz2hz(options,args):
                             #Remove
                             errors.pop()
                             continue
+                        if options.subtype.lower() == 'sausage':
+                            indx= [True for kk in range(len(sausageFehAfe)) if numpy.fabs(tightbinned.feh(ii)-sausageFehAfe[kk][0])< 0.01 and numpy.fabs(tightbinned.afe(jj) - sausageFehAfe[kk][1]) < 0.01]
+                            if len(indx) == 1:
+                                print tightbinned.feh(ii), tightbinned.afe(jj)
+                                sausageSamples.append(thesesamples)
             if options.densmodel.lower() == 'hwr':
                 if options.type == 'sz2hz':
                     denominator= numpy.exp(thisdensfit[0])*1000.
@@ -300,6 +309,7 @@ def plotsz2hz(options,args):
                         plotc[jj]= feh[jj]-medianfeh
         if not options.subtype == 'zfunc' \
                and not options.subtype.lower() == 'hs' \
+               and not options.subtype.lower() == 'sausage' \
                and not options.subtype.lower() == 'hsm' \
                and not options.subtype.lower() == 'slope' \
                and not options.subtype.lower() == 'asz' \
@@ -377,6 +387,74 @@ def plotsz2hz(options,args):
                             thiszfunc,'-',
                             color=colormap(_squeeze(plotc[ii],vmin,vmax)),
                             lw=ndata[ii]/15.)
+            #Add colorbar
+            m = cm.ScalarMappable(cmap=cm.jet)
+            m.set_array(plotc)
+            m.set_clim(vmin=vmin,vmax=vmax)
+            cbar= pyplot.colorbar(m,fraction=0.15)
+            cbar.set_clim((vmin,vmax))
+            cbar.set_label(zlabel)
+        elif options.subtype.lower() == 'sausage':
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            #Set up plot
+            if options.vr:
+                yrange= [30.,80.]
+                ylabel=r'$\sigma_R(z)\ [\mathrm{km\ s}^{-1}]$'
+            else:
+                yrange= [0.,60.]
+                ylabel=r'$\sigma_z(z)\ [\mathrm{km\ s}^{-1}]$'
+            bovy_plot.bovy_plot([-100.,-100.],[100.,100.],'k,',
+                                xrange=[0,2700],yrange=yrange,
+                                xlabel=r'$|Z|\ [\mathrm{pc}]$',
+                                ylabel=ylabel)
+            #Calculate and plot all zfuncs
+            nsigs= 1
+            for kk in range(len(sausageFehAfe)):
+                #Find index corresponding to this kk
+                indx= (numpy.fabs(feh-sausageFehAfe[kk][0]) < 0.01)*(numpy.fabs(afe - sausageFehAfe[kk][1]) < 0.01)
+                ii= (list(indx)).index(True)
+                if velerrors: #Don't plot if errors > 30%
+                    if sz_err[ii]/sz[ii] > .2: 
+                        print "sausage %i has large errors" % ii
+                        continue
+                    #if sz_err[ii] > 20.: continue
+                ds= numpy.linspace(zmin[ii]*1000.,zmax[ii]*1000.,1001)/1000.-pivot[ii]
+                thiszfunc= sz[ii]+p1[ii]*ds+p2[ii]*ds**2.
+                zs= numpy.linspace(zmin[ii]*1000.,1000*zmax[ii],1001)
+                pyplot.plot(numpy.linspace(zmin[ii]*1000.,1000*zmax[ii],1001),
+                            thiszfunc,'-',
+                            color=colormap(_squeeze(plotc[ii],vmin,vmax)),
+                            lw=ndata[ii]/15.)
+                #Also calculate envelope
+                thesesamples= sausageSamples[kk]
+                fs= numpy.zeros((len(ds),len(thesesamples)))
+                for ll in range(len(thesesamples)):
+                    fs[:,ll]= numpy.exp(thesesamples[ll][1])\
+                        +thesesamples[ll][2]*ds\
+                        +thesesamples[ll][3]*ds**2.
+                zsigs= numpy.zeros((len(ds),2*nsigs))
+                for ll in range(nsigs):
+                    for jj in range(len(ds)):
+                        thisf= sorted(fs[jj,:])
+                        thiscut= 0.5*special.erfc((ll+1.)/math.sqrt(2.))
+                        zsigs[jj,2*ll]= thisf[int(math.floor(thiscut*len(thesesamples)))]
+                        thiscut= 1.-thiscut
+                        zsigs[jj,2*ll+1]= thisf[int(math.floor(thiscut*len(thesesamples)))]
+                pyplot.fill_between(zs,zsigs[:,0],zsigs[:,1],
+                                    color=colormap(_squeeze(plotc[ii],vmin,vmax)))
+                nsigma= nsigs
+                cc= 1
+                while nsigma > 1:
+                    pyplot.fill_between(zs,zsigs[:,cc+1],zsigs[:,cc-1],
+                                        color=colormap(_squeeze(plotc[ii],vmin,vmax)))
+                    pyplot.fill_between(zs,zsigs[:,cc],zsigs[:,cc+2],
+                                        color=colormap(_squeeze(plotc[ii],vmin,vmax)))
+                    cc+= 1.
+                    nsigma-= 1
+                pyplot.plot(numpy.linspace(zmin[ii]*1000.,1000*zmax[ii],1001),
+                            thiszfunc,'--',
+                            color='k')#colormap(_squeeze(plotc[ii],vmin,vmax)),
             #Add colorbar
             m = cm.ScalarMappable(cmap=cm.jet)
             m.set_array(plotc)
