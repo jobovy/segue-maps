@@ -224,6 +224,8 @@ def plotPixelFitVel(options,args):
                     plotthis[ii,jj]= numpy.exp(-thisfit[4])
                 elif options.type == 'slopes':
                     plotthis[ii,jj]= thisfit[2]
+                elif options.type == 'slope':
+                    plotthis[ii,jj]= thisfit[2]
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
@@ -263,6 +265,9 @@ def plotPixelFitVel(options,args):
         else:
             vmin, vmax= 0.,0.3
             zlabel= r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$'
+    elif options.type == 'slope':
+        vmin, vmax= -5.,5.
+        zlabel= r'$\frac{\mathrm{d} \sigma_z(Z_{1/2})}{\mathrm{d} Z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
     elif options.type == 'afe':
         vmin, vmax= 0.05,.4
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
