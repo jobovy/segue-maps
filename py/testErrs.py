@@ -6,10 +6,12 @@ import numpy
 from scipy import special, maxentropy, stats
 from monoAbundanceMW import *
 from galpy.util import bovy_plot, save_pickles
-from segueSelect import _ERASESTR
+from segueSelect import _ERASESTR, read_gdwarfs
+from pixelFitDens import pixelAfeFeh
 _DFEH= 0.1
 _DAFE= 0.05
 _SQRTTWO= numpy.sqrt(2.)
+_MINNDATA= 100
 #Pre-define
 sig2zs= numpy.array([sigmaz(results['feh'][ii],results['afe'][ii])**2. for ii in range(len(results))])
 fehs= results['feh']
@@ -145,6 +147,43 @@ def plotIllustrative(plotfilename):
     bovy_plot.bovy_plot(zs,sigs,'k-.',overplot=True)
     bovy_plot.bovy_end_print(plotfilename)
 
+def fakeSlopesFig1(options,args):
+    #Read data for bins
+    raw= read_gdwarfs(logg=True,ebv=True,sn=True)
+    binned= pixelAfeFeh(raw,dfeh=_DFEH,dafe=_DAFE)#these dfehs are binsizes
+    tightbinned= pixelAfeFeh(raw,dfeh=_DFEH,dafe=_DAFE,
+                             fehmin=-1.6,fehmax=0.5,afemin=-0.05,
+                             afemax=0.55)
+    plotthis= numpy.zeros((tightbinned.npixfeh(),tightbinned.npixafe()))
+    for ii in range(tightbinned.npixfeh()):
+        for jj in range(tightbinned.npixafe()):
+            data= binned(tightbinned.feh(ii),tightbinned.afe(jj))
+            fehindx= binned.fehindx(tightbinned.feh(ii))#Map onto regular binning
+            afeindx= binned.afeindx(tightbinned.afe(jj))
+            if len(data) < _MINNDATA:
+                plotthis[ii,jj]= numpy.nan
+                continue
+            plotthis[ii,jj]= calcSlope(tightbinned.feh(ii),tightbinned.afe(jj),
+                                       options.dfeh,options.dafe,options)
+    vmin, vmax= -5.,5.
+    zlabel= r'$\frac{\mathrm{d} \sigma_z(Z_{1/2})}{\mathrm{d} Z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
+    xrange=[-1.6,0.5]
+    yrange=[-0.05,0.55]
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
+                          interpolation='nearest',
+                          xlabel=r'$[\mathrm{Fe/H}]$',
+                          ylabel=r'$[\alpha/\mathrm{Fe}]$',
+                          zlabel=zlabel,
+                          xrange=xrange,yrange=yrange,
+                          vmin=vmin,vmax=vmax,
+                          contours=False,
+                          colorbar=True,shrink=0.78)
+    bovy_plot.bovy_text(r'$\sigma_{[\mathrm{Fe/H}]} = %.2f$' % options.dfeh
+                        +'\n'+r'$\sigma_{[\alpha/\mathrm{Fe}]} = %.2f$' % options.dafe,
+                        top_right=True,size=18.)
+    bovy_plot.bovy_end_print(options.plotfile)
+
 def get_options():
     usage = "usage: %prog [options] <savefilename>\n\nsavefilename= name of the file that the loglikes will be saved to"
     parser = OptionParser(usage=usage)
@@ -162,6 +201,20 @@ def get_options():
                       dest="prior",
                       default=False,
                       help="Use a prior")
+    parser.add_option("--fake1",action="store_true",
+                      dest="fake1",
+                      default=False,
+                      help="Make a fake slopes figure")
+    parser.add_option("--fake2",action="store_true",
+                      dest="fake2",
+                      default=False,
+                      help="Make a fake slopes figure")
+    parser.add_option("--dfeh",dest='dfeh',type='float',
+                      default=0.2,
+                      help="FeH error for fake figures")
+    parser.add_option("--dafe",dest='dafe',type='float',
+                      default=0.2,
+                      help="aFe error for fake figures")
     return parser
 
 if __name__ == '__main__':
@@ -169,5 +222,9 @@ if __name__ == '__main__':
     (options,args)= parser.parse_args()
     if options.plotillustrative:
         plotIllustrative(options.plotfile)
+    elif options.fake1:
+        fakeSlopesFig1(options,args)
+    elif options.fake2:
+        fakeSlopesFig2(options,args)
     else:
         testErrs(options,args)
