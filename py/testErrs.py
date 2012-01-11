@@ -3,7 +3,7 @@ import os, os.path
 import cPickle as pickle
 from optparse import OptionParser
 import numpy
-from scipy import special, maxentropy
+from scipy import special, maxentropy, stats
 from monoAbundanceMW import *
 from galpy.util import bovy_plot, save_pickles
 from segueSelect import _ERASESTR
@@ -54,11 +54,16 @@ def errsLogLike(dfeh,dafe,options):
     for ii in range(nbins):
         tslope= calcSlope(fehs[ii],afes[ii],dfeh,dafe,options)
         dslope, dslope_err= sigmazSlope(fehs[ii],afes[ii],err=True)
-        loglike+= -0.5*(tslope-dslope)/dslope_err**2.
-    return loglike
+        #print dfeh, dafe, tslope, dslope, -0.5*(tslope-dslope)**2./dslope_err**2.
+        loglike+= -0.5*(tslope-dslope)**2./dslope_err**2.
+    if options.chi2:
+        loglike= -2.*loglike
+        return stats.chi2.logpdf(loglike,nbins)
+    else:
+        return loglike
 
 def testErrs(options,args):
-    ndfehs, ndafes= 21, 21
+    ndfehs, ndafes= 201,201
     dfehs= numpy.linspace(0.01,0.4,ndfehs)
     dafes= numpy.linspace(0.01,0.3,ndafes)
     if os.path.exists(args[0]):
@@ -76,14 +81,18 @@ def testErrs(options,args):
             sys.stdout.flush()
             loglike[ii,jj]= errsLogLike(dfehs[ii],dafes[jj],options)
             jj+= 1
-            save_pickles(args[0],loglike,ii,jj)
         ii+= 1
         jj= 0
         save_pickles(args[0],loglike,ii,jj)
     save_pickles(args[0],loglike,ii,jj)
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
-    loglike/= maxentropy.logsumexp(loglike)
+    if options.prior:
+        prior= numpy.zeros((ndfehs,ndafes))
+        for ii in range(ndfehs):
+            prior[ii,:]= -0.5*(dafes-0.1)**2./0.1**2.-0.5*(dfehs[ii]-0.2)**2./0.1**2.
+        loglike+= prior
+    loglike-= maxentropy.logsumexp(loglike)
     loglike= numpy.exp(loglike)
     loglike/= numpy.sum(loglike)*(dfehs[1]-dfehs[0])*(dafes[1]-dafes[0])
     #Plot
@@ -98,6 +107,11 @@ def testErrs(options,args):
                           cntrmass=True,
                           onedhists=True,
                           levels= special.erf(0.5*numpy.arange(1,4)))
+    if options.prior:
+        bovy_plot.bovy_text(r'$\mathrm{with\ Gaussian\ prior:}$'+
+                            '\n'+r'$\sigma_{[\mathrm{Fe/H}]}= 0.2 \pm 0.1$'
+                            +'\n'+r'$\sigma_{[\alpha/\mathrm{Fe}]}= 0.1 \pm 0.1$',
+top_right=True)
     bovy_plot.bovy_end_print(options.plotfile)
 
 def plotIllustrative(plotfilename):
@@ -140,6 +154,14 @@ def get_options():
                       dest="plotillustrative",
                       default=False,
                       help="Make an illustrative plot")
+    parser.add_option("--chi2",action="store_true",
+                      dest="chi2",
+                      default=False,
+                      help="Use chi2 distribution")
+    parser.add_option("--prior",action="store_true",
+                      dest="prior",
+                      default=False,
+                      help="Use a prior")
     return parser
 
 if __name__ == '__main__':
