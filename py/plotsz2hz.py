@@ -589,7 +589,7 @@ def plotsz2hz(options,args):
                 plotx= afe+numpy.random.random(len(hs))*0.025 #jitter
                 xrange= [-0.05,0.55]
                 xlabel=r'$[\alpha\mathrm{/H}]$'
-            yrange= [-5.,5.]
+            yrange= [-20.,20.]
             bovy_plot.bovy_plot(plotx,p1,
                                 s=ndata,c=plotc,
                                 cmap='jet',
