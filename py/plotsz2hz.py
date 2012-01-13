@@ -728,7 +728,7 @@ def plotsz2hz(options,args):
             bovy_plot.bovy_plot(p2,p1,
                                 s=ndata,c=plotc,
                                 cmap='jet',
-                                xlabel=r'$\frac{\mathrm{d}^2 \sigma_z(z_{1/2})}{\mathrm{d} Z^2}\ [\mathrm{km}^2\ \mathrm{s}^{-2}\ \mathrm{kpc}^{-1}]$',
+                                xlabel=r'$\frac{\mathrm{d}^2 \sigma_z(z_{1/2})}{\mathrm{d} z^2}\ [\mathrm{km}^2\ \mathrm{s}^{-2}\ \mathrm{kpc}^{-1}]$',
                                 ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
                                 clabel=zlabel,
                                 xrange=xrange,yrange=yrange,
@@ -921,7 +921,7 @@ def plotsz2hz(options,args):
                             bins=11,
                             histtype='step',
                             color='k',
-                            xlabel=r'$\sigma_z(Z)\ \mathrm{slope\ [km\ s}^{-1}\ \mathrm{kpc}^{-1}]$')
+                            xlabel=r'$\sigma_z(z)\ \mathrm{slope\ [km\ s}^{-1}\ \mathrm{kpc}^{-1}]$')
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
