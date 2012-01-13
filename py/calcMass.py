@@ -241,6 +241,21 @@ def plotMass(options,args):
     else:
         denssamples= None
         denserrors= False
+    if len(args) > 4 and os.path.exists(args[4]):#Load savefile
+        savefile= open(args[4],'rb')
+        velfits= pickle.load(savefile)
+        savefile.close()
+        velfitsLoaded= True
+    else:
+        velfitsLoaded= False
+    if len(args) > 5 and os.path.exists(args[5]):
+        savefile= open(args[5],'rb')
+        velsamples= pickle.load(savefile)
+        savefile.close()
+        velerrors= True
+    else:
+        velsamples= None            
+        velerrors= False
     #Now plot
     #Run through the pixels and gather
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
@@ -272,6 +287,10 @@ def plotMass(options,args):
                 thisdenssamples= denssamples[afeindx+fehindx*binned.npixafe()]
             else:
                 thisdenssamples= None
+            if velfitsLoaded:
+                thisvelfit= velfits[afeindx+fehindx*binned.npixafe()]
+            if velerrors:
+                thisvelsamples= velsamples[afeindx+fehindx*binned.npixafe()]
             if thisfit is None:
                 if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
                         or options.type.lower() == 'afefeh':
@@ -327,6 +346,21 @@ def plotMass(options,args):
                                 xs= numpy.array([s[kk] for s in thesesamples])
                                 theseerrors.append(0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
                         errors.append(theseerrors)
+                    if velfitsLoaded:
+                        if options.velmodel.lower() == 'hwr':
+                            plotthis[-1].extend([numpy.exp(thisvelfit[1]),
+                                                 numpy.exp(thisvelfit[4]),
+                                                 thisvelfit[2],
+                                                 thisvelfit[3]])
+                            if velerrors:
+                                theseerrors= []
+                                thesesamples= velsamples[afeindx+fehindx*binned.npixafe()]
+                                for kk in [1,4]:
+                                    xs= numpy.array([s[kk] for s in thesesamples])
+                                    theseerrors.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
+                                xs= numpy.array([s[4] for s in thesesamples])
+                                theseerrors.append(0.5*(numpy.exp(-numpy.mean(xs))-numpy.exp(numpy.mean(-xs)-numpy.std(-xs))-numpy.exp(numpy.mean(-xs))+numpy.exp(numpy.mean(-xs)+numpy.std(-xs))))
+                                errors[-1].extend(theseerrors)
     #Set up plot
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'mass':
@@ -370,7 +404,7 @@ def plotMass(options,args):
             or options.type.lower() == 'afefeh':
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather hR and hz
-        hz_err, hr_err, mass_err, mass, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], []
+        sz_err, sz, hz_err, hr_err, mass_err, mass, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
             if denserrors:
                 hz_err.append(errors[ii][0]*1000.)
@@ -381,8 +415,13 @@ def plotMass(options,args):
             afe.append(plotthis[ii][1])
             feh.append(plotthis[ii][0])
             ndata.append(plotthis[ii][4])
+            if velfitsLoaded:
+                sz.append(plotthis[ii][7])
+            if velerrors:
+                sz_err.append(errors[ii][2])
             if masserrors:
                 mass_err.append(numpy.std(numpy.array(plotthis[ii][6])/10.**6.))
+                
                 """
                 if options.logmass:
                     mass_err.append(numpy.std(numpy.log10(numpy.array(plotthis[ii][6])/10.**6.)))
@@ -392,6 +431,10 @@ def plotMass(options,args):
         if denserrors:
             hz_err= numpy.array(hz_err)
             hr_err= numpy.array(hr_err)
+        if velfitsLoaded:
+            sz= numpy.array(sz)
+        if velerrors:
+            sz_err= numpy.array(sz_err)
         mass= numpy.array(mass)
         if masserrors:
             mass_err= numpy.array(mass_err)
@@ -460,6 +503,11 @@ def plotMass(options,args):
                 plotherr= hr_err
                 xlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$'
                 xrange= [1.2,4.]
+            elif options.sz:
+                ploth= sz
+                plotherr= sz_err
+                xlabel=r'$\mathrm{vertical\ velocity\ dispersion\ [km\ s]}^{-1}$'
+                xrange= [0.,60.]
             else:
                 ploth= hz
                 plotherr= hz_err
@@ -636,6 +684,8 @@ def get_options():
                       help="Minimum number of objects in a bin to perform a fit")   
     parser.add_option("--model",dest='model',default='twodblexp',
                       help="Model to fit")
+    parser.add_option("--velmodel",dest='velmodel',default='hwr',
+                      help="Velocity Model to fit")
     parser.add_option("-o","--plotfile",dest='plotfile',default=None,
                       help="Name of the file for plot")
     parser.add_option("-t","--type",dest='type',default='mass',
@@ -682,6 +732,9 @@ def get_options():
     parser.add_option("--hr",action="store_true", dest="hr",
                       default=False,
                       help="If set, plot hR rather than hz")
+    parser.add_option("--sz",action="store_true", dest="sz",
+                      default=False,
+                      help="If set, plot sz rather than hz")
     parser.add_option("--hzhr",action="store_true", dest="hzhr",
                       default=False,
                       help="If set, plot both hR and hz")
