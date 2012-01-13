@@ -155,8 +155,12 @@ def plotsz2hz(options,args):
                         #theseerrors.append(0.5*(numpy.exp(-numpy.mean(xs))-numpy.exp(numpy.mean(-xs)-numpy.std(-xs))-numpy.exp(numpy.mean(-xs))+numpy.exp(numpy.mean(-xs)+numpy.std(-xs))))
                         if options.kde and \
                                 (options.subtype.lower() == 'hs' \
-                                     or options.subtype.lower() == 'hsm'):
+                                     or options.subtype.lower() == 'hsm'): \
                             allsamples.append(numpy.exp(-xs))
+                        elif options.kde and options.subtype.lower() == 'slopequad':
+                            xs= numpy.array([s[3] for s in thesesamples])
+                            ys= numpy.array([s[2] for s in thesesamples])
+                            allsamples.append(numpy.array([xs,ys]))
                         xs= numpy.array([s[2] for s in thesesamples])
                         theseerrors.append(numpy.std(xs))
                         xs= numpy.array([s[3] for s in thesesamples])
@@ -715,7 +719,7 @@ def plotsz2hz(options,args):
                                2*math.sqrt(eigs[0][1]),angle)
                     ax.add_artist(e)
                     e.set_facecolor('none')
-                    e.set_linewidth(1.)
+                    e.set_linewidth(.5)
                     e.set_zorder(-10.)
                     e.set_edgecolor(colormap(_squeeze(plotc[ii],
                                                       numpy.amax([numpy.amin(plotc)]),
@@ -753,19 +757,52 @@ def plotsz2hz(options,args):
                     ax.add_artist(e)
                     e.set_facecolor('none')
                     e.set_linewidth(.5)
+                    e.set_zorder(-10.)
                     e.set_edgecolor(colormap(_squeeze(plotc[ii],
                                                       numpy.amax([numpy.amin(plotc)]),
                                                       numpy.amin([numpy.amax(plotc)]))))
-            bovy_plot.bovy_plot(p2,p1,
-                                s=ndata,c=plotc,
-                                cmap='jet',
-                                xlabel=r'$\frac{\mathrm{d}^2 \sigma_z(z_{1/2})}{\mathrm{d} z^2}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
-                                ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
-                                clabel=zlabel,
-                                xrange=xrange,yrange=yrange,
-                                vmin=vmin,vmax=vmax,
-                                scatter=True,edgecolors='none',
-                                colorbar=False,overplot=True)
+            #KDE estimate?
+            #Form KDE estimates of all PDFs, multiply and display
+            if options.kde:
+                kde_list= []
+                print "Forming KDE ..."
+                for ii in range(len(p1)):
+                    kde_list.append(gaussian_kde(allsamples[ii]))
+                kde_est= kde_mult(kde_list)
+                p1s= numpy.linspace(-5.,5.,51)
+                p2s= numpy.linspace(-5.,5.,51)
+                pdf= numpy.zeros((len(p2s),len(p1s)))
+                print "Evaluating KDE ..."
+                for ii in range(len(p2s)):
+                    for jj in range(len(p1s)):
+                        pdf[ii,jj]= kde_est([p2s[ii],p1s[jj]])
+                p2m= numpy.dot(p2s**1.,numpy.dot(pdf,p1s**0.))/numpy.sum(pdf)
+                p1m= numpy.dot(p2s**0.,numpy.dot(pdf,p1s**1.))/numpy.sum(pdf)
+                s22= numpy.dot(p2s**2.,numpy.dot(pdf,p1s**0.))/numpy.sum(pdf)-p2m**2.
+                s11= numpy.dot(p2s**0.,numpy.dot(pdf,p1s**2.))/numpy.sum(pdf)-p1m**2.
+                s12= numpy.dot(p2s**1.,numpy.dot(pdf,p1s**1.))/numpy.sum(pdf)-p1m*p2m
+                print p2m, p1m, s22, s12, s11
+                pyplot.plot(p2m,p1m,'kx',markersize=12.,zorder=100,mew=3.)
+                #Overplot joint PDF ellipse
+                nsigs= 3
+                for ii in range(nsigs):
+                    #Calculate the eigenvalues and the rotation angle
+                    ycovar= numpy.zeros((2,2))
+                    ycovar[0,0]= (ii+1.)*s22
+                    ycovar[1,1]= (ii+1.)*s11
+                    ycovar[0,1]= (ii+1.)*s12
+                    ycovar[1,0]= ycovar[0,1]
+                    eigs= linalg.eig(ycovar)
+                    angle= math.atan(-eigs[1][0,1]/eigs[1][1,1])/math.pi*180.
+                    print angle
+                    e= Ellipse(numpy.array([p2m,p1m]),
+                               2*math.sqrt(eigs[0][0]),
+                               2*math.sqrt(eigs[0][1]),angle)
+                    ax.add_artist(e)
+                    e.set_facecolor('none')
+                    e.set_linewidth(2.)
+                    e.set_zorder(99.)
+                    e.set_edgecolor('k')
         elif options.subtype.lower() == 'slopesz':
             from selectFigs import _squeeze
             colormap = cm.jet
@@ -799,6 +836,7 @@ def plotsz2hz(options,args):
                     ax.add_artist(e)
                     e.set_facecolor('none')
                     e.set_linewidth(.5)
+                    e.set_zorder(-10.)
                     e.set_edgecolor(colormap(_squeeze(plotc[ii],
                                                       numpy.amax([numpy.amin(plotc)]),
                                                       numpy.amin([numpy.amax(plotc)]))))
@@ -835,6 +873,7 @@ def plotsz2hz(options,args):
                     ax.add_artist(e)
                     e.set_facecolor('none')
                     e.set_linewidth(.5)
+                    e.set_zorder(-10.)
                     e.set_edgecolor(colormap(_squeeze(plotc[ii],
                                                       numpy.amax([numpy.amin(plotc)]),
                                                       numpy.amin([numpy.amax(plotc)]))))
