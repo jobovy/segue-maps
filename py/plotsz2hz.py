@@ -3,11 +3,12 @@ import sys
 import math
 import numpy
 import cPickle as pickle
-from scipy import special
+from scipy import special, linalg
 from scipy.stats import gaussian_kde
 from optparse import OptionParser
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 from matplotlib import pyplot, cm
+from matplotlib.patches import Ellipse
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE
 from pixelFitDens import pixelAfeFeh
 from fitSigz import _ZSUN
@@ -151,12 +152,31 @@ def plotsz2hz(options,args):
                             theseerrors.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
                         xs= numpy.array([s[4] for s in thesesamples])
                         theseerrors.append(0.5*(numpy.exp(-numpy.mean(xs))-numpy.exp(numpy.mean(-xs)-numpy.std(-xs))-numpy.exp(numpy.mean(-xs))+numpy.exp(numpy.mean(-xs)+numpy.std(-xs))))
+                        #theseerrors.append(0.5*(numpy.exp(-numpy.mean(xs))-numpy.exp(numpy.mean(-xs)-numpy.std(-xs))-numpy.exp(numpy.mean(-xs))+numpy.exp(numpy.mean(-xs)+numpy.std(-xs))))
                         if options.kde and \
                                 (options.subtype.lower() == 'hs' \
                                      or options.subtype.lower() == 'hsm'):
                             allsamples.append(numpy.exp(-xs))
                         xs= numpy.array([s[2] for s in thesesamples])
                         theseerrors.append(numpy.std(xs))
+                        xs= numpy.array([s[3] for s in thesesamples])
+                        theseerrors.append(numpy.std(xs))
+                        if options.subtype.lower() == 'slopehsm':
+                            xs= numpy.array([s[2] for s in thesesamples])
+                            ys= numpy.exp(-numpy.array([s[4] for s in thesesamples]))
+                            theseerrors.append(numpy.corrcoef(xs,ys)[0,1])
+                        elif options.subtype.lower() == 'slopequad':
+                            xs= numpy.array([s[2] for s in thesesamples])
+                            ys= numpy.array([s[3] for s in thesesamples])
+                            theseerrors.append(numpy.corrcoef(xs,ys)[0,1])
+                        elif options.subtype.lower() == 'slopesz':
+                            xs= numpy.array([s[2] for s in thesesamples])
+                            ys= numpy.exp(numpy.array([s[1] for s in thesesamples]))
+                            theseerrors.append(numpy.corrcoef(xs,ys)[0,1])
+                        elif options.subtype.lower() == 'szhsm':
+                            xs= numpy.exp(-numpy.array([s[4] for s in thesesamples]))
+                            ys= numpy.exp(numpy.array([s[1] for s in thesesamples]))
+                            theseerrors.append(numpy.corrcoef(xs,ys)[0,1])
                         errors.append(theseerrors)
                         if options.kde and \
                                      options.subtype.lower() == 'slope':
@@ -238,13 +258,19 @@ def plotsz2hz(options,args):
             or options.type.lower() == 'afefeh':
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather everything
-        p1_err, hsm_err, hs_err, sz_err, pivot, zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
+        p2_err, p1hsm_corr, p1_err, hsm_err, hs_err, sz_err, pivot, zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
             if velerrors:
                 sz_err.append(errors[ii][0])
                 hs_err.append(errors[ii][1])
                 hsm_err.append(errors[ii][2])
                 p1_err.append(errors[ii][3])
+                p2_err.append(errors[ii][4])
+                if options.subtype.lower() == 'slopehsm' \
+                        or options.subtype.lower() == 'slopequad' \
+                        or options.subtype.lower() == 'slopesz' \
+                        or options.subtype.lower() == 'szhsm':
+                    p1hsm_corr.append(errors[ii][5])
             sz.append(plotthis[ii][2])
             hs.append(plotthis[ii][3])
             hz.append(plotthis[ii][10])
@@ -268,6 +294,12 @@ def plotsz2hz(options,args):
             hs_err= numpy.array(hs_err)
             hsm_err= numpy.array(hsm_err)
             p1_err= numpy.array(p1_err)
+            p2_err= numpy.array(p2_err)
+            if options.subtype.lower() == 'slopehsm' \
+                    or options.subtype.lower() == 'slopequad' \
+                    or options.subtype.lower() == 'slopesz' \
+                    or options.subtype.lower() == 'szhsm':
+                p1hsm_corr= numpy.array(p1hsm_corr)
         sz= numpy.array(sz)
         mz= numpy.array(mz)*1000.
         hs= numpy.array(hs)
@@ -312,6 +344,10 @@ def plotsz2hz(options,args):
                and not options.subtype.lower() == 'sausage' \
                and not options.subtype.lower() == 'hsm' \
                and not options.subtype.lower() == 'slope' \
+               and not options.subtype.lower() == 'slopehsm' \
+               and not options.subtype.lower() == 'slopequad' \
+               and not options.subtype.lower() == 'szhsm' \
+               and not options.subtype.lower() == 'slopesz' \
                and not options.subtype.lower() == 'asz' \
                and not options.subtype.lower() == 'bsz':
             if options.subtype == 'mz':
@@ -374,7 +410,7 @@ def plotsz2hz(options,args):
                 ylabel=r'$\sigma_z(z)\ [\mathrm{km\ s}^{-1}]$'
             bovy_plot.bovy_plot([-100.,-100.],[100.,100.],'k,',
                                 xrange=[0,2700],yrange=yrange,
-                                xlabel=r'$|Z|\ [\mathrm{pc}]$',
+                                xlabel=r'$|z|\ [\mathrm{pc}]$',
                                 ylabel=ylabel)
             #Calculate and plot all zfuncs
             for ii in numpy.random.permutation(len(afe)):
@@ -406,10 +442,11 @@ def plotsz2hz(options,args):
                 ylabel=r'$\sigma_z(z)\ [\mathrm{km\ s}^{-1}]$'
             bovy_plot.bovy_plot([-100.,-100.],[100.,100.],'k,',
                                 xrange=[0,2700],yrange=yrange,
-                                xlabel=r'$|Z|\ [\mathrm{pc}]$',
+                                xlabel=r'$|z|\ [\mathrm{pc}]$',
                                 ylabel=ylabel)
             #Calculate and plot all zfuncs
             nsigs= 1
+            nsamples= 12
             for kk in range(len(sausageFehAfe)):
                 #Find index corresponding to this kk
                 indx= (numpy.fabs(feh-sausageFehAfe[kk][0]) < 0.01)*(numpy.fabs(afe - sausageFehAfe[kk][1]) < 0.01)
@@ -426,35 +463,48 @@ def plotsz2hz(options,args):
                             thiszfunc,'-',
                             color=colormap(_squeeze(plotc[ii],vmin,vmax)),
                             lw=ndata[ii]/15.)
-                #Also calculate envelope
+                #Plot some samples
                 thesesamples= sausageSamples[kk]
-                fs= numpy.zeros((len(ds),len(thesesamples)))
-                for ll in range(len(thesesamples)):
-                    fs[:,ll]= numpy.exp(thesesamples[ll][1])\
-                        +thesesamples[ll][2]*ds\
-                        +thesesamples[ll][3]*ds**2.
-                zsigs= numpy.zeros((len(ds),2*nsigs))
-                for ll in range(nsigs):
-                    for jj in range(len(ds)):
-                        thisf= sorted(fs[jj,:])
-                        thiscut= 0.5*special.erfc((ll+1.)/math.sqrt(2.))
-                        zsigs[jj,2*ll]= thisf[int(math.floor(thiscut*len(thesesamples)))]
-                        thiscut= 1.-thiscut
-                        zsigs[jj,2*ll+1]= thisf[int(math.floor(thiscut*len(thesesamples)))]
-                pyplot.fill_between(zs,zsigs[:,0],zsigs[:,1],
-                                    color=colormap(_squeeze(plotc[ii],vmin,vmax)))
-                nsigma= nsigs
-                cc= 1
-                while nsigma > 1:
-                    pyplot.fill_between(zs,zsigs[:,cc+1],zsigs[:,cc-1],
+                randIndx= numpy.random.permutation(len(thesesamples))
+                for ll in range(nsamples):
+                    thissample= thesesamples[randIndx[ll]]
+                    thiszfunc= numpy.exp(thissample[1])+thissample[2]*ds+thissample[3]*ds**2.
+                    pyplot.plot(numpy.linspace(zmin[ii]*1000.,1000*zmax[ii],1001),
+                                thiszfunc,'-',
+                                color=colormap(_squeeze(plotc[ii],vmin,vmax)),
+                                lw=0.3,
+                                zorder=0)
+                if options.envelope:
+                    #Also calculate envelope
+                    fs= numpy.zeros((len(ds),len(thesesamples)))
+                    for ll in range(len(thesesamples)):
+                        fs[:,ll]= numpy.exp(thesesamples[ll][1])\
+                            +thesesamples[ll][2]*ds\
+                            +thesesamples[ll][3]*ds**2.
+                    zsigs= numpy.zeros((len(ds),2*nsigs))
+                    for ll in range(nsigs):
+                        for jj in range(len(ds)):
+                            thisf= sorted(fs[jj,:])
+                            thiscut= 0.5*special.erfc((ll+1.)/math.sqrt(2.))
+                            zsigs[jj,2*ll]= thisf[int(math.floor(thiscut*len(thesesamples)))]
+                            thiscut= 1.-thiscut
+                            zsigs[jj,2*ll+1]= thisf[int(math.floor(thiscut*len(thesesamples)))]
+                    pyplot.fill_between(zs,zsigs[:,0],zsigs[:,1],
                                         color=colormap(_squeeze(plotc[ii],vmin,vmax)))
-                    pyplot.fill_between(zs,zsigs[:,cc],zsigs[:,cc+2],
-                                        color=colormap(_squeeze(plotc[ii],vmin,vmax)))
-                    cc+= 1.
-                    nsigma-= 1
-                pyplot.plot(numpy.linspace(zmin[ii]*1000.,1000*zmax[ii],1001),
-                            thiszfunc,'--',
-                            color='k')#colormap(_squeeze(plotc[ii],vmin,vmax)),
+                    nsigma= nsigs
+                    cc= 1
+                    while nsigma > 1:
+                        pyplot.fill_between(zs,zsigs[:,cc+1],zsigs[:,cc-1],
+                                            color=colormap(_squeeze(plotc[ii],vmin,vmax)))
+                        pyplot.fill_between(zs,zsigs[:,cc],zsigs[:,cc+2],
+                                            color=colormap(_squeeze(plotc[ii],vmin,vmax)))
+                        cc+= 1.
+                        nsigma-= 1
+                        pyplot.plot(numpy.linspace(zmin[ii]*1000.,1000*zmax[ii],1001),
+                                    thiszfunc,'-',
+                                    color=colormap(_squeeze(plotc[ii],vmin,vmax)),
+                                    lw=ndata[ii]/15.,
+                                    zorder=2.)
             #Add colorbar
             m = cm.ScalarMappable(cmap=cm.jet)
             m.set_array(plotc)
@@ -594,7 +644,7 @@ def plotsz2hz(options,args):
                                 s=ndata,c=plotc,
                                 cmap='jet',
                                 xlabel=xlabel,
-                                ylabel=r'$\frac{\mathrm{d} \sigma_z(Z_{1/2})}{\mathrm{d} Z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
+                                ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
                                 clabel=zlabel,
                                 xrange=xrange,yrange=yrange,
                                 vmin=vmin,vmax=vmax,
@@ -634,6 +684,160 @@ def plotsz2hz(options,args):
                                 color='0.5',overplot=True)
             bovy_plot.bovy_plot(xrange,[hs_m+hs_std,hs_m+hs_std],'-',
                                 color='0.5',overplot=True)
+        elif options.subtype.lower() == 'slopehsm':
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            xrange= [0.,.3]
+            yrange= [-20.,20.]
+            bovy_plot.bovy_plot(1./hs,p1,
+                                s=ndata,c=plotc,
+                                cmap='jet',
+                                xlabel=r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$',                                ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True)
+            #Overplot errorbars
+            ax= pyplot.gca()
+            if options.ploterrors:
+                for ii in range(len(hs)):
+                    #Calculate the eigenvalues and the rotation angle
+                    ycovar= numpy.zeros((2,2))
+                    ycovar[0,0]= hsm_err[ii]**2.
+                    ycovar[1,1]= p1_err[ii]**2.
+                    ycovar[0,1]= p1hsm_corr[ii]*math.sqrt(ycovar[0,0]*ycovar[1,1])
+                    ycovar[1,0]= ycovar[0,1]
+                    eigs= linalg.eig(ycovar)
+                    angle= math.atan(-eigs[1][0,1]/eigs[1][1,1])/math.pi*180.
+                    e= Ellipse(numpy.array([1./hs[ii],p1[ii]]),
+                               2*math.sqrt(eigs[0][0]),
+                               2*math.sqrt(eigs[0][1]),angle)
+                    ax.add_artist(e)
+                    e.set_facecolor('none')
+                    e.set_linewidth(1.)
+                    e.set_zorder(-10.)
+                    e.set_edgecolor(colormap(_squeeze(plotc[ii],
+                                                      numpy.amax([numpy.amin(plotc)]),
+                                                      numpy.amin([numpy.amax(plotc)]))))
+        elif options.subtype.lower() == 'slopequad':
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            xrange= [-10.,10.]
+            yrange= [-20.,20.]
+            bovy_plot.bovy_plot(p2,p1,
+                                s=ndata,c=plotc,
+                                cmap='jet',
+                                xlabel=r'$\frac{\mathrm{d}^2 \sigma_z(z_{1/2})}{\mathrm{d} Z^2}\ [\mathrm{km}^2\ \mathrm{s}^{-2}\ \mathrm{kpc}^{-1}]$',
+                                ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True,zorder=100)
+            #Overplot errorbars
+            ax= pyplot.gca()
+            if options.ploterrors:
+                for ii in range(len(hs)):
+                    #Calculate the eigenvalues and the rotation angle
+                    ycovar= numpy.zeros((2,2))
+                    ycovar[0,0]= p2_err[ii]**2.
+                    ycovar[1,1]= p1_err[ii]**2.
+                    ycovar[0,1]= p1hsm_corr[ii]*math.sqrt(ycovar[0,0]*ycovar[1,1])
+                    ycovar[1,0]= ycovar[0,1]
+                    eigs= linalg.eig(ycovar)
+                    angle= math.atan(-eigs[1][0,1]/eigs[1][1,1])/math.pi*180.
+                    e= Ellipse(numpy.array([p2[ii],p1[ii]]),
+                               2*math.sqrt(eigs[0][0]),
+                               2*math.sqrt(eigs[0][1]),angle)
+                    ax.add_artist(e)
+                    e.set_facecolor('none')
+                    e.set_linewidth(.5)
+                    e.set_edgecolor(colormap(_squeeze(plotc[ii],
+                                                      numpy.amax([numpy.amin(plotc)]),
+                                                      numpy.amin([numpy.amax(plotc)]))))
+            bovy_plot.bovy_plot(p2,p1,
+                                s=ndata,c=plotc,
+                                cmap='jet',
+                                xlabel=r'$\frac{\mathrm{d}^2 \sigma_z(z_{1/2})}{\mathrm{d} z^2}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
+                                ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=False,overplot=True)
+        elif options.subtype.lower() == 'slopesz':
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            xrange= [0.,60.]
+            yrange= [-20.,20.]
+            bovy_plot.bovy_plot(sz,p1,
+                                s=ndata,c=plotc,
+                                cmap='jet',
+                                xlabel=r'$\sigma_z(z_{1/2}) [\mathrm{km\ s}^{-1}$',
+                                ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True,zorder=100)
+            #Overplot errorbars
+            ax= pyplot.gca()
+            if options.ploterrors:
+                for ii in range(len(hs)):
+                    #Calculate the eigenvalues and the rotation angle
+                    ycovar= numpy.zeros((2,2))
+                    ycovar[0,0]= sz_err[ii]**2.
+                    ycovar[1,1]= p1_err[ii]**2.
+                    ycovar[0,1]= p1hsm_corr[ii]*math.sqrt(ycovar[0,0]*ycovar[1,1])
+                    ycovar[1,0]= ycovar[0,1]
+                    eigs= linalg.eig(ycovar)
+                    angle= math.atan(-eigs[1][0,1]/eigs[1][1,1])/math.pi*180.
+                    e= Ellipse(numpy.array([sz[ii],p1[ii]]),
+                               2*math.sqrt(eigs[0][0]),
+                               2*math.sqrt(eigs[0][1]),angle)
+                    ax.add_artist(e)
+                    e.set_facecolor('none')
+                    e.set_linewidth(.5)
+                    e.set_edgecolor(colormap(_squeeze(plotc[ii],
+                                                      numpy.amax([numpy.amin(plotc)]),
+                                                      numpy.amin([numpy.amax(plotc)]))))
+        elif options.subtype.lower() == 'szhsm':
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            xrange= [0.,0.3]
+            yrange= [0.,60.]
+            bovy_plot.bovy_plot(1./hs,sz,
+                                s=ndata,c=plotc,
+                                cmap='jet',
+                                xlabel=r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$',
+                                ylabel=r'$\sigma_z(z_{1/2}) [\mathrm{km\ s}^{-1}$',
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True,zorder=100)
+            #Overplot errorbars
+            ax= pyplot.gca()
+            if options.ploterrors:
+                for ii in range(len(hs)):
+                    #Calculate the eigenvalues and the rotation angle
+                    ycovar= numpy.zeros((2,2))
+                    ycovar[0,0]= hsm_err[ii]**2.
+                    ycovar[1,1]= sz_err[ii]**2.
+                    ycovar[0,1]= p1hsm_corr[ii]*math.sqrt(ycovar[0,0]*ycovar[1,1])
+                    ycovar[1,0]= ycovar[0,1]
+                    eigs= linalg.eig(ycovar)
+                    angle= math.atan(-eigs[1][0,1]/eigs[1][1,1])/math.pi*180.
+                    e= Ellipse(numpy.array([1./hs[ii],sz[ii]]),
+                               2*math.sqrt(eigs[0][0]),
+                               2*math.sqrt(eigs[0][1]),angle)
+                    ax.add_artist(e)
+                    e.set_facecolor('none')
+                    e.set_linewidth(.5)
+                    e.set_edgecolor(colormap(_squeeze(plotc[ii],
+                                                      numpy.amax([numpy.amin(plotc)]),
+                                                      numpy.amin([numpy.amax(plotc)]))))
         elif options.subtype.lower() == 'asz':
             from selectFigs import _squeeze
             colormap = cm.jet
@@ -767,9 +971,13 @@ def get_options():
     parser.add_option("--kde",action="store_true", dest="kde",
                       default=False,
                       help="Perform KDE estimate of hs")
+    parser.add_option("--envelope",action="store_true", dest="envelope",
+                      default=False,
+                      help="Plot the error sausage envolope")
     return parser
 
 if __name__ == '__main__':
+    numpy.random.seed(1)
     parser= get_options()
     options,args= parser.parse_args()
     plotsz2hz(options,args)
