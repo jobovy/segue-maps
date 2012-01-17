@@ -512,7 +512,7 @@ def plotMass(options,args):
                 ploth= hz
                 plotherr= hz_err
                 xlabel=r'$\mathrm{vertical\ scale\ height}\ h_z\ \mathrm{[pc]}$'
-                xrange= [150,1200]
+                xrange= [165,1200]
             bovy_plot.bovy_plot(ploth,mass,
                                 s=ndata,c=plotc,
                                 cmap='jet',
@@ -550,7 +550,7 @@ def plotMass(options,args):
             #Overplot histogram
             ax2 = pyplot.twinx()
             pyplot.hist(ploth,range=xrange,weights=mass,color='k',histtype='step',
-                        normed=True,bins=10,lw=3.,zorder=10)
+                        normed=True,bins=12,lw=3.,zorder=10)
             #Also XD?
             if options.xd:
                 #Set up data

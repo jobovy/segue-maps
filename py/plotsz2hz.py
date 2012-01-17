@@ -157,7 +157,8 @@ def plotsz2hz(options,args):
                                 (options.subtype.lower() == 'hs' \
                                      or options.subtype.lower() == 'hsm'): \
                             allsamples.append(numpy.exp(-xs))
-                        elif options.kde and options.subtype.lower() == 'slopequad':
+                        elif options.kde and (options.subtype.lower() == 'slopequad' \
+                                                  or options.subtype.lower() == 'slopequadquantiles'):
                             xs= numpy.array([s[3] for s in thesesamples])
                             ys= numpy.array([s[2] for s in thesesamples])
                             allsamples.append(numpy.array([xs,ys]))
@@ -169,7 +170,8 @@ def plotsz2hz(options,args):
                             xs= numpy.array([s[2] for s in thesesamples])
                             ys= numpy.exp(-numpy.array([s[4] for s in thesesamples]))
                             theseerrors.append(numpy.corrcoef(xs,ys)[0,1])
-                        elif options.subtype.lower() == 'slopequad':
+                        elif (options.subtype.lower() == 'slopequad' \
+                                  or options.subtype.lower() == 'slopequadquantiles'):
                             xs= numpy.array([s[2] for s in thesesamples])
                             ys= numpy.array([s[3] for s in thesesamples])
                             theseerrors.append(numpy.corrcoef(xs,ys)[0,1])
@@ -272,6 +274,7 @@ def plotsz2hz(options,args):
                 p2_err.append(errors[ii][4])
                 if options.subtype.lower() == 'slopehsm' \
                         or options.subtype.lower() == 'slopequad' \
+                        or options.subtype.lower() == 'slopequadquantiles' \
                         or options.subtype.lower() == 'slopesz' \
                         or options.subtype.lower() == 'szhsm':
                     p1hsm_corr.append(errors[ii][5])
@@ -301,6 +304,7 @@ def plotsz2hz(options,args):
             p2_err= numpy.array(p2_err)
             if options.subtype.lower() == 'slopehsm' \
                     or options.subtype.lower() == 'slopequad' \
+                    or options.subtype.lower() == 'slopequadquantiles' \
                     or options.subtype.lower() == 'slopesz' \
                     or options.subtype.lower() == 'szhsm':
                 p1hsm_corr= numpy.array(p1hsm_corr)
@@ -350,6 +354,7 @@ def plotsz2hz(options,args):
                and not options.subtype.lower() == 'slope' \
                and not options.subtype.lower() == 'slopehsm' \
                and not options.subtype.lower() == 'slopequad' \
+               and not options.subtype.lower() == 'slopequadquantiles' \
                and not options.subtype.lower() == 'szhsm' \
                and not options.subtype.lower() == 'slopesz' \
                and not options.subtype.lower() == 'asz' \
@@ -719,7 +724,7 @@ def plotsz2hz(options,args):
                                2*math.sqrt(eigs[0][1]),angle)
                     ax.add_artist(e)
                     e.set_facecolor('none')
-                    e.set_linewidth(.5)
+                    e.set_linewidth(ndata[ii]/50.)
                     e.set_zorder(-10.)
                     e.set_edgecolor(colormap(_squeeze(plotc[ii],
                                                       numpy.amax([numpy.amin(plotc)]),
@@ -756,7 +761,8 @@ def plotsz2hz(options,args):
                                2*math.sqrt(eigs[0][1]),angle)
                     ax.add_artist(e)
                     e.set_facecolor('none')
-                    e.set_linewidth(.5)
+                    e.set_linewidth(ndata[ii]/50.)
+                    #e.set_linestyle('dashed')
                     e.set_zorder(-10.)
                     e.set_edgecolor(colormap(_squeeze(plotc[ii],
                                                       numpy.amax([numpy.amin(plotc)]),
@@ -800,9 +806,87 @@ def plotsz2hz(options,args):
                                2*math.sqrt(eigs[0][1]),angle)
                     ax.add_artist(e)
                     e.set_facecolor('none')
-                    e.set_linewidth(2.)
+                    e.set_linewidth(ndata)
                     e.set_zorder(99.)
                     e.set_edgecolor('k')
+        elif options.subtype.lower() == 'slopequadquantiles':
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            #KDE estimate?
+            #Form KDE estimates of all PDFs, multiply, calculate quantiles
+            if options.kde:
+                if os.path.exists(options.savekde):
+                    savekdefile= open(options.savekde,'rb')
+                    nps= pickle.load(savekdefile)
+                    p1s= pickle.load(savekdefile)
+                    p2s= pickle.load(savekdefile)
+                    pdf= pickle.load(savekdefile)
+                    ip1s= pickle.load(savekdefile)
+                    ip2s= pickle.load(savekdefile)
+                    ipdf= pickle.load(savekdefile)
+                    savekdefile.close()
+                else:
+                    kde_list= []
+                    print "Forming KDE ..."
+                    for ii in range(len(p1)):
+                        kde_list.append(gaussian_kde(allsamples[ii]))
+                    kde_est= kde_mult(kde_list)
+                    nps= 101
+                    p1s= numpy.linspace(-5.,5.,nps)
+                    p2s= numpy.linspace(-5.,5.,nps)
+                    ip1s= numpy.linspace(-20.,20.,nps)
+                    ip2s= numpy.linspace(-10.,10.,nps)
+                    pdf= numpy.zeros((len(p2s),len(p1s)))
+                    ipdf= numpy.zeros((len(p1),len(p2s),len(p1s)))
+                    print "Evaluating KDE ..."
+                    for ii in range(len(p2s)):
+                        for jj in range(len(p1s)):
+                            pdf[ii,jj]= kde_est([p2s[ii],p1s[jj]])
+                            for kk in range(len(p1)):
+                                ipdf[kk,ii,jj]= kde_list[kk]([ip2s[ii],ip1s[jj]])
+                    save_pickles(options.savekde,nps,p1s,p2s,pdf,ip1s,ip2s,ipdf)
+                p2m= numpy.dot(p2s**1.,numpy.dot(pdf,p1s**0.))/numpy.sum(pdf)
+                p1m= numpy.dot(p2s**0.,numpy.dot(pdf,p1s**1.))/numpy.sum(pdf)
+                s22= numpy.dot(p2s**2.,numpy.dot(pdf,p1s**0.))/numpy.sum(pdf)-p2m**2.
+                s11= numpy.dot(p2s**0.,numpy.dot(pdf,p1s**2.))/numpy.sum(pdf)-p1m**2.
+                s12= numpy.dot(p2s**1.,numpy.dot(pdf,p1s**1.))/numpy.sum(pdf)-p1m*p2m
+                print p2m, p1m, s22, s12, s11
+                #Also calculate p1m if p2==
+                p1mp20= numpy.sum(pdf[int((nps-1)/2),:]*p1s)/numpy.sum(pdf[int((nps-1)/2),:])
+                s11p20= numpy.sqrt(numpy.sum(pdf[int((nps-1)/2),:]*p1s**2.)/numpy.sum(pdf[int((nps-1)/2),:])-p1mp20**2.)
+                print p1mp20, s11p20
+                #Calculate quantiles
+                quants= numpy.zeros(len(p1))
+                #Find bin of best fit
+                mjj, mii= int((p1m+20.)/40.*(nps-1)), int((p2m+10.)/20.*(nps-1))
+                for kk in range(len(p1)):
+                    #Sum from the top down!
+                    X= ipdf[kk,:,:]
+                    X[numpy.isnan(X)]= 0.
+                    sortindx= numpy.argsort(X.flatten())[::-1]
+                    cumul= numpy.cumsum(numpy.sort(X.flatten())[::-1])/numpy.sum(X.flatten())
+                    cntrThis= numpy.zeros(numpy.prod(X.shape))
+                    cntrThis[sortindx]= cumul
+                    cntrThis= numpy.reshape(cntrThis,X.shape)
+                    quants[kk]= cntrThis[mii,mjj]
+                #Overplot data points
+                bovy_plot.bovy_plot(quants,numpy.random.uniform(size=len(p1))*0.5+0.25,
+                                    c=plotc,s=ndata,overplot=False,
+                                    scatter=True,
+                                    xlabel=r'$\mathrm{quantile\ of}\ (\hat{p}_2,\hat{p}_3)\ \mathrm{in\ individual\ PDF}$',
+                                    xrange=[0.,1.],
+                                    yrange=[0.,1.4],
+                                    colorbar=True,
+                                    vmin=vmin,vmax=vmax,clabel=zlabel,
+                                    edgecolors='none')
+                bovy_plot.bovy_hist(quants,range=[0.,1.],bins=7,overplot=True,
+                                    histtype='step',normed=True,color='k',lw=2.)
+                #Also overplot KDE estimate of the histogram
+                histkde= gaussian_kde(quants)
+                qs= numpy.linspace(0.,1.,1001)
+                hqs= numpy.zeros(len(qs))
+                for ii in range(len(qs)): hqs[ii]= histkde(qs[ii])
+                bovy_plot.bovy_plot(qs,hqs,'k-',overplot=True)
         elif options.subtype.lower() == 'slopesz':
             from selectFigs import _squeeze
             colormap = cm.jet
@@ -835,7 +919,7 @@ def plotsz2hz(options,args):
                                2*math.sqrt(eigs[0][1]),angle)
                     ax.add_artist(e)
                     e.set_facecolor('none')
-                    e.set_linewidth(.5)
+                    e.set_linewidth(ndata[ii]/50.)
                     e.set_zorder(-10.)
                     e.set_edgecolor(colormap(_squeeze(plotc[ii],
                                                       numpy.amax([numpy.amin(plotc)]),
@@ -1013,6 +1097,8 @@ def get_options():
     parser.add_option("--envelope",action="store_true", dest="envelope",
                       default=False,
                       help="Plot the error sausage envolope")
+    parser.add_option("--savekde",dest='savekde',default=None,
+                      help="Name of the file to save KDE estimates")
     return parser
 
 if __name__ == '__main__':
