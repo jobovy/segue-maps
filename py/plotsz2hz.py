@@ -831,7 +831,7 @@ def plotsz2hz(options,args):
                     for ii in range(len(p1)):
                         kde_list.append(gaussian_kde(allsamples[ii]))
                     kde_est= kde_mult(kde_list)
-                    nps= 101
+                    nps= 51
                     p1s= numpy.linspace(-5.,5.,nps)
                     p2s= numpy.linspace(-5.,5.,nps)
                     ip1s= numpy.linspace(-20.,20.,nps)
@@ -879,14 +879,15 @@ def plotsz2hz(options,args):
                                     colorbar=True,
                                     vmin=vmin,vmax=vmax,clabel=zlabel,
                                     edgecolors='none')
-                bovy_plot.bovy_hist(quants,range=[0.,1.],bins=7,overplot=True,
+                bovy_plot.bovy_hist(quants,range=[0.,1.],bins=8,overplot=True,
                                     histtype='step',normed=True,color='k',lw=2.)
-                #Also overplot KDE estimate of the histogram
-                histkde= gaussian_kde(quants)
-                qs= numpy.linspace(0.,1.,1001)
-                hqs= numpy.zeros(len(qs))
-                for ii in range(len(qs)): hqs[ii]= histkde(qs[ii])
-                bovy_plot.bovy_plot(qs,hqs,'k-',overplot=True)
+                if False:
+                    #Also overplot KDE estimate of the histogram
+                    histkde= gaussian_kde(quants)
+                    qs= numpy.linspace(0.,1.,1001)
+                    hqs= numpy.zeros(len(qs))
+                    for ii in range(len(qs)): hqs[ii]= histkde(qs[ii])
+                    bovy_plot.bovy_plot(qs,hqs,'k-',overplot=True)
         elif options.subtype.lower() == 'slopesz':
             from selectFigs import _squeeze
             colormap = cm.jet

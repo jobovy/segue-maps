@@ -8,6 +8,7 @@ from optparse import OptionParser
 from extreme_deconvolution import extreme_deconvolution
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 from matplotlib import pyplot, cm
+from matplotlib.ticker import FuncFormatter, MultipleLocator
 from segueSelect import read_gdwarfs, read_kdwarfs, _gi_gr, _mr_gi, \
     segueSelect, _GDWARFFILE, _KDWARFFILE
 from selectFigs import _squeeze
@@ -503,16 +504,20 @@ def plotMass(options,args):
                 plotherr= hr_err
                 xlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$'
                 xrange= [1.2,4.]
+                bins= 11
             elif options.sz:
-                ploth= sz
-                plotherr= sz_err
-                xlabel=r'$\mathrm{vertical\ velocity\ dispersion\ [km\ s]}^{-1}$'
-                xrange= [0.,60.]
+                ploth= sz**2.
+                plotherr= 2.*sz_err*sz
+                xlabel=r'$\mathrm{vertical\ velocity\ dispersion\ squared\ [km}^2\ \mathrm{s}^{-2}]$'
+                xrange= [12.**2.,50.**2.]
+                ylabel=r'$\Sigma_{R_0}(\sigma^2_z)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
+                bins= 9
             else:
                 ploth= hz
                 plotherr= hz_err
                 xlabel=r'$\mathrm{vertical\ scale\ height}\ h_z\ \mathrm{[pc]}$'
                 xrange= [165,1200]
+                bins= 12
             bovy_plot.bovy_plot(ploth,mass,
                                 s=ndata,c=plotc,
                                 cmap='jet',
@@ -550,14 +555,20 @@ def plotMass(options,args):
             #Overplot histogram
             ax2 = pyplot.twinx()
             pyplot.hist(ploth,range=xrange,weights=mass,color='k',histtype='step',
-                        normed=True,bins=12,lw=3.,zorder=10)
+                        normed=True,bins=bins,lw=3.,zorder=10)
             #Also XD?
             if options.xd:
                 #Set up data
                 ydata= numpy.zeros((len(hz),1))
-                ydata[:,0]= numpy.log(hz)
+                if options.sz:
+                    ydata[:,0]= numpy.log(sz)
+                else:
+                    ydata[:,0]= numpy.log(hz)
                 ycovar= numpy.zeros((len(hz),1))
-                ycovar[:,0]= hz_err**2./hz**2.
+                if options.sz:
+                    ycovar[:,0]= sz_err**2./sz**2.
+                else:
+                    ycovar[:,0]= hz_err**2./hz**2.
                 #Set up initial conditions
                 xamp= numpy.ones(options.k)/float(options.k)
                 xmean= numpy.zeros((options.k,1))
@@ -583,9 +594,22 @@ def plotMass(options,args):
             ax2.set_yticklabels('')        
             if options.hr:
                 pyplot.ylim(10**-2.,10.**0.)
+            if options.sz:
+                pyplot.ylim(10**-5.,10.**-2.5)
             else:
                 pyplot.ylim(10**-5.5,10.**-1.5)
             pyplot.xlim(xrange[0],xrange[1])
+            ax= pyplot.gca()
+            if options.sz:
+                def my_formatter(x, pos):
+                    """s^2"""
+                    xs= int(round(math.sqrt(x)))
+                    return r'$%i^2$' % xs
+                major_formatter = FuncFormatter(my_formatter)
+                ax.xaxis.set_major_formatter(major_formatter)
+            xstep= ax.xaxis.get_majorticklocs()
+            xstep= xstep[1]-xstep[0]
+            ax.xaxis.set_minor_locator(MultipleLocator(xstep/5.))
         elif options.hzhr:
             #Make density plot in hR and hz
             bovy_plot.scatterplot(hr,hz,'k,',
