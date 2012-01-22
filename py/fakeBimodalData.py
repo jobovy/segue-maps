@@ -32,9 +32,9 @@ def resampleMags(raw,comps,options,args):
     model_thick= _DblExpDensity
     model_thin= _DblExpDensity
     params_thick= numpy.array([numpy.log(options.hz_thick/1000.),
-                              -numpy.log(options.hr_thick)])
+                               -numpy.log(options.hr_thick)])
     params_thin= numpy.array([numpy.log(options.hz_thin/1000.),
-                             -numpy.log(options.hr_thin)])
+                              -numpy.log(options.hr_thin)])
     if options.allthin:
         params_thick= params_thin
     elif options.allthick:
@@ -61,7 +61,8 @@ def resampleMags(raw,comps,options,args):
         comps= comps[indx]
     #Loadthe data into the pixelAfeFeh structure
     raw= _append_field_recarray(raw,'comps',comps)
-    binned= pixelAfeFeh(raw,dfeh=0.1,dafe=0.05)  
+    binned= pixelAfeFeh(raw,dfeh=0.1,dafe=0.05,fehmin=-1.6,
+                        fehmax=0.5,afemin=-0.05,afemax=0.55)
     #Color
     if options.sample.lower() == 'g':
         colorrange=[0.48,0.55]
@@ -100,7 +101,7 @@ def resampleMags(raw,comps,options,args):
                                                        -data.dered_r,
                                                    bins=9,range=colorrange),
                                    xrange=colorrange)
-            #Predict the r-distribution for all plate
+            #Predict the r-distribution for all plates
             #Thick or thin?
             thick_amp= numpy.mean(data.comps)
             rdists_thin= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
@@ -178,8 +179,9 @@ def resampleMags(raw,comps,options,args):
             raw.l[rawIndx]= data.l
             raw.b[rawIndx]= data.b
             jj+= 1
-        ii+= 1
-        jj= 0
+            if jj == len(binned.afeedges)-1: 
+                jj= 0
+                ii+= 1
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     #Dump raw
