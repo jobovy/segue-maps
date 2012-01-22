@@ -134,6 +134,12 @@ def plotVelPDFs(options,args):
                           xlabel=xlabel,ylabel=ylabel,
                           xrange=xrange,
                           yrange=yrange)
+    #Label
+    bovy_plot.bovy_text(r'$[\mathrm{Fe/H}]\ =\ %.2f$' % options.feh
+                        +'\n'
+                        +r'$[\alpha/\mathrm{fe}]\ =\ %.2f$' % options.afe,
+                        top_right=True,
+                        size=18)                     
     bovy_plot.bovy_end_print(options.plotfile)
             
 def get_options():
