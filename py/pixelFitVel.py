@@ -245,7 +245,7 @@ def plotPixelFitVel(options,args):
             zlabel= r'$\sigma_R(z = \langle z \rangle)\ [\mathrm{km\ s}^{-1}]$'
         else:
             vmin, vmax= 15.,60.
-            zlabel= r'$\sigma_z(z = \langle z \rangle)\ [\mathrm{km\ s}^{-1}]$'
+            zlabel= r'$\sigma_z(z_{1/2})\ [\mathrm{km\ s}^{-1}]$'
     elif options.type == 'sz2':
         if options.vr:
             vmin, vmax= 40.**2.,80.**2.
