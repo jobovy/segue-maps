@@ -269,7 +269,7 @@ def plotPixelFitVel(options,args):
             zlabel= r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$'
     elif options.type == 'slope':
         vmin, vmax= -5.,5.
-        zlabel= r'$\frac{\mathrm{d} \sigma_z(Z_{1/2})}{\mathrm{d} Z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
+        zlabel= r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
     elif options.type == 'pbad':
         vmin, vmax= 0.,0.1
         zlabel= r'$P_{\mathrm{bad}}$'
@@ -359,7 +359,7 @@ def plotPixelFitVel(options,args):
                             bins=11,
                             histtype='step',
                             color='k',
-                            xlabel=r'$\sigma_z(Z)\ \mathrm{slope\ [km\ s}^{-1}\ \mathrm{kpc}^{-1}]$')
+                            xlabel=r'$\sigma_z(z)\ \mathrm{slope\ [km\ s}^{-1}\ \mathrm{kpc}^{-1}]$')
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
