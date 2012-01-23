@@ -256,17 +256,17 @@ def plotPixelFitVel(options,args):
     elif options.type == 'hs':
         if options.vr:
             vmin, vmax= 3.,25.
-            zlabel= r'$h_\sigma\ [\mathrm{kpc}]$'
+            zlabel= r'$R_\sigma\ [\mathrm{kpc}]$'
         else:
             vmin, vmax= 3.,15.
             zlabel= r'$h_\sigma\ [\mathrm{kpc}]$'
     elif options.type == 'hsm':
         if options.vr:
             vmin, vmax= 0.,0.3
-            zlabel= r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$'
+            zlabel= r'$R^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$'
         else:
             vmin, vmax= 0.,0.3
-            zlabel= r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$'
+            zlabel= r'$R^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$'
     elif options.type == 'slope':
         vmin, vmax= -5.,5.
         zlabel= r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'

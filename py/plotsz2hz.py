@@ -601,7 +601,7 @@ def plotsz2hz(options,args):
                                 s=ndata,c=plotc,
                                 cmap='jet',
                                 xlabel=xlabel,
-                                ylabel=r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$',
+                                ylabel=r'$R^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$',
                                 clabel=zlabel,
                                 xrange=xrange,yrange=yrange,
                                 vmin=vmin,vmax=vmax,
