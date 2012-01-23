@@ -371,6 +371,9 @@ def plotPixelFitVel(options,args):
                               vmin=vmin,vmax=vmax,
                               contours=False,
                               colorbar=True,shrink=0.78)
+    if options.observed:
+        bovy_plot.bovy_text(r'$\mathrm{observed}$',
+                            top_right=True,size=18.)
     bovy_plot.bovy_end_print(options.plotfile)
     return None
 
@@ -413,6 +416,9 @@ def get_options():
     parser.add_option("--vr",action="store_true", dest="vr",
                       default=False,
                       help="If set, fit vR instead of vz")
+    parser.add_option("--observed",action="store_true", dest="observed",
+                      default=False,
+                      help="If set, write observed on it")
     return parser
   
 if __name__ == '__main__':
