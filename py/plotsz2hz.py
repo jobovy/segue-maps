@@ -737,7 +737,7 @@ def plotsz2hz(options,args):
             bovy_plot.bovy_plot(p2,p1,
                                 s=ndata,c=plotc,
                                 cmap='jet',
-                                xlabel=r'$\frac{\mathrm{d}^2 \sigma_z(z_{1/2})}{\mathrm{d} z^2}\ [\mathrm{km}^2\ \mathrm{s}^{-2}\ \mathrm{kpc}^{-1}]$',
+                                xlabel=r'$\frac{\mathrm{d}^2 \sigma_z(z_{1/2})}{\mathrm{d} z^2}\ [\mathrm{km}\ \mathrm{s}^{-1}\ \mathrm{kpc}^{-2}]$',
                                 ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
                                 clabel=zlabel,
                                 xrange=xrange,yrange=yrange,
@@ -831,7 +831,7 @@ def plotsz2hz(options,args):
                     for ii in range(len(p1)):
                         kde_list.append(gaussian_kde(allsamples[ii]))
                     kde_est= kde_mult(kde_list)
-                    nps= 51
+                    nps= 101
                     p1s= numpy.linspace(-5.,5.,nps)
                     p2s= numpy.linspace(-5.,5.,nps)
                     ip1s= numpy.linspace(-20.,20.,nps)
@@ -879,7 +879,7 @@ def plotsz2hz(options,args):
                                     colorbar=True,
                                     vmin=vmin,vmax=vmax,clabel=zlabel,
                                     edgecolors='none')
-                bovy_plot.bovy_hist(quants,range=[0.,1.],bins=8,overplot=True,
+                bovy_plot.bovy_hist(quants,range=[0.,1.],bins=6,overplot=True,
                                     histtype='step',normed=True,color='k',lw=2.)
                 if False:
                     #Also overplot KDE estimate of the histogram

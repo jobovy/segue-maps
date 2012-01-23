@@ -104,7 +104,7 @@ def plotVelPDFs(options,args):
         ploty= numpy.array([thesesamples[ii][2] for ii in range(len(thesesamples))])
         xrange= [-10.,10.]
         yrange= [-20.,20.]
-        xlabel=r'$\frac{\mathrm{d}^2 \sigma_z(z_{1/2})}{\mathrm{d} z^2}\ [\mathrm{km}^2\ \mathrm{s}^{-2}\ \mathrm{kpc}^{-1}]$'
+        xlabel=r'$\frac{\mathrm{d}^2 \sigma_z(z_{1/2})}{\mathrm{d} z^2}\ [\mathrm{km}\ \mathrm{s}^{-1}\ \mathrm{kpc}^{-2}]$'
         ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
     elif options.type.lower() == 'slopehsm':
         ploty= numpy.array([thesesamples[ii][2] for ii in range(len(thesesamples))])
@@ -137,7 +137,7 @@ def plotVelPDFs(options,args):
     #Label
     bovy_plot.bovy_text(r'$[\mathrm{Fe/H}]\ =\ %.2f$' % options.feh
                         +'\n'
-                        +r'$[\alpha/\mathrm{fe}]\ =\ %.2f$' % options.afe,
+                        +r'$[\alpha/\mathrm{Fe}]\ =\ %.3f$' % options.afe,
                         top_right=True,
                         size=18)                     
     bovy_plot.bovy_end_print(options.plotfile)
