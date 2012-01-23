@@ -142,7 +142,9 @@ def plotsz2hz(options,args):
                     zsorted= sorted(numpy.fabs(data.zc+_ZSUN))
                     zmin= zsorted[int(numpy.ceil(0.16*len(zsorted)))]
                     zmax= zsorted[int(numpy.floor(0.84*len(zsorted)))]
-                    thisplot.extend([zmin,zmax,numpy.mean(numpy.fabs(data.zc+_ZSUN))])
+                    zmin= zsorted[int(numpy.ceil(0.025*len(zsorted)))]
+                    zmax= zsorted[int(numpy.floor(0.975*len(zsorted)))]
+                    thisplot.extend([zmin,zmax,numpy.median(numpy.fabs(data.zc+_ZSUN))])
                     #Errors
                     if velerrors:
                         theseerrors= []
@@ -378,7 +380,7 @@ def plotsz2hz(options,args):
                 ylabel=r'$\sigma_z^2(z = z_{1/2}) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
             elif options.subtype == 'hz':
                 if velerrors: #Don't plot if errors > 30%
-                    indx= (sz_err/sz <= .2)
+                    indx= (sz_err/sz <= 12.2)
                     sz= sz[indx]
                     hz= hz[indx]
                     pivot= pivot[indx]
@@ -432,6 +434,9 @@ def plotsz2hz(options,args):
                             thiszfunc,'-',
                             color=colormap(_squeeze(plotc[ii],vmin,vmax)),
                             lw=ndata[ii]/15.)
+                #Also plot pivot
+                pyplot.plot(1000.*pivot[ii],sz[ii],'o',ms=8.,mec='none',
+                            color=colormap(_squeeze(plotc[ii],vmin,vmax)))
             #Add colorbar
             m = cm.ScalarMappable(cmap=cm.jet)
             m.set_array(plotc)
@@ -701,7 +706,7 @@ def plotsz2hz(options,args):
             bovy_plot.bovy_plot(1./hs,p1,
                                 s=ndata,c=plotc,
                                 cmap='jet',
-                                xlabel=r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$',                                ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
+                                xlabel=r'$R^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$',                                ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$',
                                 clabel=zlabel,
                                 xrange=xrange,yrange=yrange,
                                 vmin=vmin,vmax=vmax,
@@ -933,7 +938,7 @@ def plotsz2hz(options,args):
             bovy_plot.bovy_plot(1./hs,sz,
                                 s=ndata,c=plotc,
                                 cmap='jet',
-                                xlabel=r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$',
+                                xlabel=r'$R^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$',
                                 ylabel=r'$\sigma_z(z_{1/2})\ [\mathrm{km\ s}^{-1}]$',
                                 clabel=zlabel,
                                 xrange=xrange,yrange=yrange,
