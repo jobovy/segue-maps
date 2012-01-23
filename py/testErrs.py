@@ -166,7 +166,7 @@ def fakeSlopesFig1(options,args):
             plotthis[ii,jj]= calcSlope(tightbinned.feh(ii),tightbinned.afe(jj),
                                        options.dfeh,options.dafe,options)
     vmin, vmax= -5.,5.
-    zlabel= r'$\frac{\mathrm{d} \sigma_z(Z_{1/2})}{\mathrm{d} Z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
+    zlabel= r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
     xrange=[-1.6,0.5]
     yrange=[-0.05,0.55]
     bovy_plot.bovy_print()
