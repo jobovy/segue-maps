@@ -66,6 +66,14 @@ def plotVelocityData(options,args):
     pyplot.fill_between(rs,smin,medians,color='0.5',zorder=-10,where=indx)
     #bovy_plot.bovy_plot(rs,smin,'--',overplot=True,lw=2.,color='0.6')
     #bovy_plot.bovy_plot(rs,splus,'g--',overplot=True,lw=2.,color='0.6')
+    if not options.type.lower() == 'datavzz':
+        if options.metal.lower() == 'poor':
+            txt= r'$\alpha\mathrm{-old}$'
+        else:
+            txt= r'$\alpha\mathrm{-young}$'
+        pyplot.annotate(txt,(0.5,1.06),xycoords='axes fraction',
+                        horizontalalignment='center',
+                        verticalalignment='top',size=20.)
     bovy_plot.bovy_end_print(os.path.join(args[0],options.type+'_'
                                           +options.sample+'_'+
                                           options.metal+'.'+ext))
