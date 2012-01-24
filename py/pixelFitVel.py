@@ -165,6 +165,7 @@ def plotPixelFitVel(options,args):
             raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=True)
         else:
             raw= read_kdwarfs(logg=True,ebv=True,sn=True)
+    #print len(raw)
     #Bin the data   
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     if options.tighten:
@@ -186,6 +187,7 @@ def plotPixelFitVel(options,args):
         plotthis= []
     else:
         plotthis= numpy.zeros((tightbinned.npixfeh(),tightbinned.npixafe()))
+    #ndata= 0
     for ii in range(tightbinned.npixfeh()):
         for jj in range(tightbinned.npixafe()):
             data= binned(tightbinned.feh(ii),tightbinned.afe(jj))
@@ -213,6 +215,7 @@ def plotPixelFitVel(options,args):
                 else:
                     plotthis[ii,jj]= numpy.nan
                     continue
+            #ndata+= len(data)
             if options.model.lower() == 'hwr':
                 if options.type == 'sz':
                     plotthis[ii,jj]= numpy.exp(thisfit[1])
@@ -237,6 +240,7 @@ def plotPixelFitVel(options,args):
                                      numpy.exp(thisfit[1]),
                                      numpy.exp(thisfit[3]),
                                      len(data)])
+    #print ndata
     #Set up plot
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'sz':
