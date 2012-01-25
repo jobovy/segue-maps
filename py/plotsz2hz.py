@@ -213,6 +213,13 @@ def plotsz2hz(options,args):
                                      numpy.exp(thisdensfit[1]),
                                      numpy.median(numpy.fabs(data.zc)-_ZSUN)])
                     plotthis.append(thisplot)
+                    if denserrors:
+                        thesedenserrors= []
+                        thesesamples= denssamples[afeindx+fehindx*binned.npixafe()]
+                        for kk in [0,1]:
+                            xs= numpy.array([s[kk] for s in thesesamples])
+                            theseerrors.append(0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
+                        errors.extend(thesedenserrors)
             elif options.densmodel.lower() == 'kg':
                 if options.type.lower() == 'asz':
                     plotthis[ii,jj]= numerator*numpy.exp(thisdensfit[0])/1000.
@@ -266,7 +273,7 @@ def plotsz2hz(options,args):
             or options.type.lower() == 'afefeh':
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         #Gather everything
-        p2_err, p1hsm_corr, p1_err, hsm_err, hs_err, sz_err, pivot, zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
+        hz_err, p2_err, p1hsm_corr, p1_err, hsm_err, hs_err, sz_err, pivot, zmin, zmax, mz, p1, p2, sz, hs, hz, hr,afe, feh, ndata= [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
         for ii in range(len(plotthis)):
             if velerrors:
                 sz_err.append(errors[ii][0])
@@ -280,6 +287,8 @@ def plotsz2hz(options,args):
                         or options.subtype.lower() == 'slopesz' \
                         or options.subtype.lower() == 'szhsm':
                     p1hsm_corr.append(errors[ii][5])
+            if denserrors:
+                hz_err.append(errors[ii][5]*1000.)
             sz.append(plotthis[ii][2])
             hs.append(plotthis[ii][3])
             hz.append(plotthis[ii][10])
@@ -310,6 +319,8 @@ def plotsz2hz(options,args):
                     or options.subtype.lower() == 'slopesz' \
                     or options.subtype.lower() == 'szhsm':
                 p1hsm_corr= numpy.array(p1hsm_corr)
+        if denserrors:
+            hz_err= numpy.array(hz_err)
         sz= numpy.array(sz)
         mz= numpy.array(mz)*1000.
         hs= numpy.array(hs)
@@ -391,7 +402,8 @@ def plotsz2hz(options,args):
                 yrange= [0,130.]
                 xrange= [0,1200]
                 plotx= hz
-                ploty= (sz+(hz/1000.-pivot)*p1+p2*(hz/1000.-pivot)**2.)**2./hz/2./numpy.pi/4.302/10**-3.
+                k= 1./2./numpy.pi/4.302/10**-3.
+                ploty= (sz+(hz/1000.-pivot)*p1+p2*(hz/1000.-pivot)**2.)**2./hz*k
                 ylabel=r'$\sigma_z^2(z = h_z) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
                 xlabel=r'$\mathrm{vertical\ scale\ height}\ h_z\ \mathrm{[pc]}$'
             bovy_plot.bovy_plot(plotx,ploty,
@@ -403,12 +415,39 @@ def plotsz2hz(options,args):
                                 vmin=vmin,vmax=vmax,
                                 scatter=True,edgecolors='none',
                                 colorbar=True)
+            #Overplot error ellipses
+            #Overplot errorbars
+            ax= pyplot.gca()
+            if options.ploterrors:
+                from selectFigs import _squeeze
+                colormap = cm.jet
+                for ii in range(len(hs)):
+                    #Calculate the eigenvalues and the rotation angle
+                    thissz= (sz[ii]+(hz[ii]/1000.-pivot[ii])*p1[ii]+p2[ii]*(hz[ii]/1000.-pivot[ii])**2.)
+                    ycovar= numpy.zeros((2,2))
+                    ycovar[0,0]= k**2.*2.*sz_err[ii]**2.*thissz**2./hz[ii]**2.\
+                        +hz_err[ii]**2./hz[ii]**4.*k**2.*thissz**4.
+                    ycovar[1,1]= hz_err[ii]**2.
+                    ycovar[0,1]= -hz_err[ii]**2./hz[ii]**2.*k*thissz**2.
+                    ycovar[1,0]= ycovar[0,1]
+                    eigs= linalg.eig(ycovar)
+                    angle= math.atan(-eigs[1][0,1]/eigs[1][1,1])/math.pi*180.
+                    e= Ellipse(numpy.array([hz[ii],thissz**2.*k/hz[ii]]),
+                               2*math.sqrt(eigs[0][0]),
+                               2*math.sqrt(eigs[0][1]),angle)
+                    ax.add_artist(e)
+                    e.set_facecolor('none')
+                    e.set_linewidth(ndata[ii]/50.)
+                    e.set_zorder(-10.)
+                    e.set_edgecolor(colormap(_squeeze(plotc[ii],
+                                                      numpy.amax([numpy.amin(plotc)]),
+                                                      numpy.amin([numpy.amax(plotc)]))))
             #Add local density
-            bovy_plot.bovy_plot([0.,2000],[0.,200],'--',color='0.5',overplot=True)
+            #bovy_plot.bovy_plot([0.,2000],[0.,200],'--',color='0.5',overplot=True)
             #add Siebert
-            bovy_plot.bovy_plot(numpy.linspace(0.,2000.,1001),
-                                90.*numpy.linspace(0.,2000.,1001)/numpy.sqrt(numpy.linspace(0.,2000.,1001)**2.+637**2.)+0.01*numpy.linspace(0.,2000.,1001)*2.,
-                                '-.',color='0.5',overplot=True)
+            #bovy_plot.bovy_plot(numpy.linspace(0.,2000.,1001),
+            #                    90.*numpy.linspace(0.,2000.,1001)/numpy.sqrt(numpy.linspace(0.,2000.,1001)**2.+637**2.)+0.01*numpy.linspace(0.,2000.,1001)*2.,
+            #                    '-.',color='0.5',overplot=True)
         elif options.subtype.lower() == 'zfunc':
             from selectFigs import _squeeze
             colormap = cm.jet
