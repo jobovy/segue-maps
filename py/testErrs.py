@@ -179,8 +179,8 @@ def fakeSlopesFig1(options,args):
                           vmin=vmin,vmax=vmax,
                           contours=False,
                           colorbar=True,shrink=0.78)
-    bovy_plot.bovy_text(r'$\sigma_{[\mathrm{Fe/H}]} = %.2f$' % options.dfeh
-                        +'\n'+r'$\sigma_{[\alpha/\mathrm{Fe}]} = %.2f$' % options.dafe,
+    bovy_plot.bovy_text(r'$\delta_{[\mathrm{Fe/H}]} = %.2f$' % options.dfeh
+                        +'\n'+r'$\delta_{[\alpha/\mathrm{Fe}]} = %.2f$' % options.dafe,
                         top_right=True,size=18.)
     bovy_plot.bovy_end_print(options.plotfile)
 
