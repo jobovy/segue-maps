@@ -128,12 +128,25 @@ def plotVelPDFs(options,args):
         xlabel=r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$'
         ylabel=r'$\sigma_z(z_{1/2}) [\mathrm{km\ s}^{-1}$'
     bovy_plot.bovy_print()
-    bovy_plot.scatterplot(plotx,ploty,'k,',
-                          onedhists=True,
-                          bins=31,
-                          xlabel=xlabel,ylabel=ylabel,
-                          xrange=xrange,
-                          yrange=yrange)
+    axScatter, axHistx, axHisty= bovy_plot.scatterplot(plotx,ploty,'k,',
+                                                       onedhists=True,
+                                                       bins=31,
+                                                       xlabel=xlabel,ylabel=ylabel,
+                                                       xrange=xrange,
+                                                       onedhistynormed=True,
+                                                       yrange=yrange,
+                                                       retAxes=True)
+    if options.type.lower() == 'slopequad':
+        #Also add `quadratic term = 0' to vertical histogram
+        ploty= ploty[(numpy.fabs(plotx) < 0.5)]
+        histy, edges, patches= axHisty.hist(ploty,
+                                            bins=51,
+                                            orientation='horizontal',
+                                            weights=numpy.ones(len(ploty))/float(len(ploty))/2.,
+                                            histtype='step',
+                                            range=sorted(yrange),
+                                            color='0.6',
+                                            lw=2.)
     #Label
     bovy_plot.bovy_text(r'$[\mathrm{Fe/H}]\ =\ %.2f$' % options.feh
                         +'\n'
