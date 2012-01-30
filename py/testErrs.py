@@ -101,8 +101,8 @@ def testErrs(options,args):
     bovy_plot.bovy_print()
     bovy_plot.bovy_dens2d(loglike.T,origin='lower',
                           cmap='gist_yarg',
-                          xlabel=r'\sigma_{[\mathrm{Fe/H}]}',
-                          ylabel=r'\sigma_{[\alpha/\mathrm{Fe}]}',
+                          xlabel=r'\delta_{[\mathrm{Fe/H}]}',
+                          ylabel=r'\delta_{[\alpha/\mathrm{Fe}]}',
                           xrange=[dfehs[0],dfehs[-1]],
                           yrange=[dafes[0],dafes[-1]],
                           contours=True,
@@ -111,8 +111,8 @@ def testErrs(options,args):
                           levels= special.erf(0.5*numpy.arange(1,4)))
     if options.prior:
         bovy_plot.bovy_text(r'$\mathrm{with\ Gaussian\ prior:}$'+
-                            '\n'+r'$\sigma_{[\mathrm{Fe/H}]}= 0.2 \pm 0.1$'
-                            +'\n'+r'$\sigma_{[\alpha/\mathrm{Fe}]}= 0.1 \pm 0.1$',
+                            '\n'+r'$\delta_{[\mathrm{Fe/H}]}= 0.2 \pm 0.1$'
+                            +'\n'+r'$\delta_{[\alpha/\mathrm{Fe}]}= 0.1 \pm 0.1$',
 top_right=True)
     bovy_plot.bovy_end_print(options.plotfile)
 
