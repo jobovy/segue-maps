@@ -508,7 +508,7 @@ def plotMass(options,args):
             elif options.sz:
                 ploth= sz**2.
                 plotherr= 2.*sz_err*sz
-                xlabel=r'$\mathrm{vertical\ velocity\ dispersion\ squared\ [km}^2\ \mathrm{s}^{-2}]$'
+                xlabel=r'$\sigma_z^2\ \mathrm{[km}^2\ \mathrm{s}^{-2}]$'
                 xrange= [12.**2.,50.**2.]
                 ylabel=r'$\Sigma_{R_0}(\sigma^2_z)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
                 bins= 9

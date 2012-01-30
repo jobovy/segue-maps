@@ -273,7 +273,7 @@ def plotPixelFitVel(options,args):
             zlabel= r'$R^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$'
     elif options.type == 'slope':
         vmin, vmax= -5.,5.
-        zlabel= r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
+        zlabel= r'$\frac{\mathrm{d} \sigma_z}{\mathrm{d} z}(z_{1/2})\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
     elif options.type == 'pbad':
         vmin, vmax= 0.,0.1
         zlabel= r'$P_{\mathrm{bad}}$'

@@ -104,22 +104,22 @@ def plotVelPDFs(options,args):
         ploty= numpy.array([thesesamples[ii][2] for ii in range(len(thesesamples))])
         xrange= [-10.,10.]
         yrange= [-20.,20.]
-        xlabel=r'$\frac{\mathrm{d}^2 \sigma_z(z_{1/2})}{\mathrm{d} z^2}\ [\mathrm{km}\ \mathrm{s}^{-1}\ \mathrm{kpc}^{-2}]$'
-        ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
+        xlabel=r'$\frac{\mathrm{d}^2 \sigma_z}{\mathrm{d} z^2}(z_{1/2})\ [\mathrm{km}\ \mathrm{s}^{-1}\ \mathrm{kpc}^{-2}]$'
+        ylabel=r'$\frac{\mathrm{d} \sigma_z}{\mathrm{d} z}(z_{1/2})\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
     elif options.type.lower() == 'slopehsm':
         ploty= numpy.array([thesesamples[ii][2] for ii in range(len(thesesamples))])
         plotx= numpy.exp(-numpy.array([thesesamples[ii][4] for ii in range(len(thesesamples))]))
         xrange= [0.,0.3]
         yrange= [-20.,20.]
         xlabel=r'$h^{-1}_\sigma\ [\mathrm{kpc}^{-1}]$'
-        ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
+        ylabel=r'$\frac{\mathrm{d} \sigma_z}{\mathrm{d} z}(z_{1/2})\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
     elif options.type.lower() == 'slopesz':
         ploty= numpy.array([thesesamples[ii][2] for ii in range(len(thesesamples))])
         plotx= numpy.exp(numpy.array([thesesamples[ii][1] for ii in range(len(thesesamples))]))
         xrange= [0.,60.]
         yrange= [-20.,20.]
         xlabel=r'$\sigma_z(z_{1/2}) [\mathrm{km\ s}^{-1}$'
-        ylabel=r'$\frac{\mathrm{d} \sigma_z(z_{1/2})}{\mathrm{d} z}\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
+        ylabel=r'$\frac{\mathrm{d} \sigma_z}{\mathrm{d} z}(z_{1/2})\ [\mathrm{km\ s}^{-1}\ \mathrm{kpc}^{-1}]$'
     elif options.type.lower() == 'szhsm':
         plotx= numpy.exp(-numpy.array([thesesamples[ii][4] for ii in range(len(thesesamples))]))
         ploty= numpy.exp(numpy.array([thesesamples[ii][1] for ii in range(len(thesesamples))]))
