@@ -610,7 +610,11 @@ def fitDensz(parser):
             if options.metal == 'rich':
                 params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),0.025])
             elif options.metal == 'poor':
-                params= numpy.array([numpy.log(1.),numpy.log(2.),numpy.log(2.5),numpy.log(2.5),0.025])
+                if not options.bmin is None or not options.bmax is None:
+                    print "Using custom initial conditions ..."
+                    params= numpy.array([numpy.log(.7),numpy.log(1.),numpy.log(2.),numpy.log(2.5),0.01])
+                else:
+                    params= numpy.array([numpy.log(1.),numpy.log(2.),numpy.log(2.5),numpy.log(2.5),0.025])
             else:
                 params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),0.025])
             densfunc= _TwoDblExpDensity
