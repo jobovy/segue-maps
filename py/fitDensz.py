@@ -616,7 +616,7 @@ def fitDensz(parser):
                 else:
                     params= numpy.array([numpy.log(1.),numpy.log(2.),numpy.log(2.5),numpy.log(2.5),0.025])
             else:
-                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(2.5),numpy.log(2.5),0.025])
+                params= numpy.array([numpy.log(0.3),numpy.log(1.),numpy.log(4.5),numpy.log(2.),0.025])
             densfunc= _TwoDblExpDensity
             #Slice sampling keywords
             if options.metropolis:
