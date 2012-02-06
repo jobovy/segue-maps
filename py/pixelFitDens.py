@@ -256,7 +256,8 @@ def pixelFitDens(options,args):
     print "Using %i plates, %i stars ..." %(len(plates),len(raw))
     sf= segueSelect(plates=plates,type_faint='tanhrcut',
                     sample=options.sample,type_bright='tanhrcut',
-                    sn=True,select=options.select)
+                    sn=True,select=options.select,
+                    indiv_brightlims=options.indiv_brightlims)
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                      degree=True)
     indx= [not 'faint' in name for name in sf.platestr.programname]
@@ -266,6 +267,9 @@ def pixelFitDens(options,args):
     if options.sample.lower() == 'g':
         grmin, grmax= 0.48, 0.55
         rmin,rmax= 14.5, 20.2
+    if options.sample.lower() == 'k':
+        grmin, grmax= 0.55, 0.75
+        rmin,rmax= 14.5, 19.
     #Run through the bins
     while ii < len(binned.fehedges)-1:
         while jj < len(binned.afeedges)-1:
@@ -353,10 +357,12 @@ def pixelFitDens(options,args):
                     allbright= False
                 else:
                     allfaint= False
-            if allbright:
-                thisrmin, thisrmax= rmin, 17.8
-            elif allfaint:
-                thisrmin, thisrmax= 17.8, rmax
+            if not (options.sample.lower() == 'k' \
+                        and options.indiv_brightlims):
+                if allbright:
+                    thisrmin, thisrmax= rmin, 17.8
+                elif allfaint:
+                    thisrmin, thisrmax= 17.8, rmax
             else:
                 thisrmin, thisrmax= rmin, rmax
             _THISNGR, _THISNFEH= 51, 51
@@ -889,6 +895,10 @@ def get_options():
     parser.add_option("--rmax",dest='rmax',type='float',
                       default=None,
                       help="Maximum radius")
+    parser.add_option("--indiv_brightlims",action="store_true", 
+                      dest="indiv_brightlims",
+                      default=False,
+                      help="indiv_brightlims keyword for segueSelect")
     return parser
   
 if __name__ == '__main__':
