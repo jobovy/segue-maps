@@ -14,14 +14,14 @@ from pixelFitDens import pixelAfeFeh
 def pixelFitVel(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin)
         else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin)
     elif options.sample.lower() == 'k':
         if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin)
         else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin)
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     #Savefile
@@ -157,14 +157,14 @@ def pixelFitVel(options,args):
 def plotPixelFitVel(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin)
         else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin)
     elif options.sample.lower() == 'k':
         if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin)
         else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin)
     #print len(raw)
     #Bin the data   
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
@@ -417,6 +417,9 @@ def get_options():
     parser.add_option("--rmax",dest='rmax',type='float',
                       default=None,
                       help="Maximum radius")
+    parser.add_option("--snmin",dest='snmin',type='float',
+                      default=15.,
+                      help="Minimum S/N")
     parser.add_option("--vr",action="store_true", dest="vr",
                       default=False,
                       help="If set, fit vR instead of vz")
