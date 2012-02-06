@@ -158,6 +158,10 @@ $(OUTDIR)/HWR_all_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_all_g_twodblexp.sav -o $@ \
 	-n $(NSAMPLES) --metal=all --markovpy --model=twodblexp
+$(OUTDIR)/HWR_allrichpoor_g_twodblexp_hRhz.$(EXT): fitDensz.py Makefile \
+	segueSelect.py
+	$(PYTHON) fitDensz.py HWR_dens_allrichpoor_g_twodblexp.sav -o $@ \
+	-n $(NSAMPLES) --metal=allrichpoor --markovpy --model=twodblexp
 $(OUTDIR)/HWR_all_g_threedblexp_hRhz.$(EXT): fitDensz.py Makefile \
 	segueSelect.py
 	$(PYTHON) fitDensz.py HWR_dens_all_g_threedblexp.sav -o $@ \
