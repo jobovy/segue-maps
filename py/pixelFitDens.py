@@ -363,6 +363,8 @@ def pixelFitDens(options,args):
                     thisrmin, thisrmax= rmin, 17.8
                 elif allfaint:
                     thisrmin, thisrmax= 17.8, rmax
+                else:
+                    thisrmin, thisrmax= rmin, rmax
             else:
                 thisrmin, thisrmax= rmin, rmax
             _THISNGR, _THISNFEH= 51, 51
