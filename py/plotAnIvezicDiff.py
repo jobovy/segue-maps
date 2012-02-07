@@ -18,7 +18,7 @@ def plotAnIvezicDiff(dir):
                         yrange=[-0.25,.25],
                         xlabel=r'$g-r\ [\mathrm{mag}]$',
                         ylabel=r'$\mathrm{DM}_{\mathrm{An}}-\mathrm{DM}_{\mathrm{Ivezi\acute{c}}}\ [\mathrm{mag}]$')
-    xlegend, ylegend, dy= 0.55, 0.2,-0.03
+    xlegend, ylegend, dy= 0.545, 0.2,-0.03
     for ii in range(len(fehs)):
         iso= a(numpy.log10(10.),feh=fehs[ii])
         #Get G dwarfs
