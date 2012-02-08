@@ -494,9 +494,9 @@ def plotMass(options,args):
                 yrange= [-0.1,30.]
         else:
             if options.logmass:
-                yrange= [0.005,2.]
+                yrange= [0.005*0.13/.07,10.*.13/.07]
             else:
-                yrange= [-0.1,10.]
+                yrange= [-0.1,10.*.13/.07]
             ylabel=r'$\Sigma_{R_0}(h_z)\ [M_{\odot}\ \mathrm{pc}^{-2}]$'
         if not options.vstructure and not options.hzhr:
             if options.hr:
@@ -518,7 +518,7 @@ def plotMass(options,args):
                 xlabel=r'$\mathrm{vertical\ scale\ height}\ h_z\ \mathrm{[pc]}$'
                 xrange= [165,1200]
                 bins= 12
-            bovy_plot.bovy_plot(ploth,mass,
+            bovy_plot.bovy_plot(ploth,mass*.13/0.07,
                                 s=ndata,c=plotc,
                                 cmap='jet',
                                 xlabel=xlabel,
@@ -553,9 +553,9 @@ def plotMass(options,args):
             bovy_plot.bovy_text(r'$\mathrm{points\ use}\ \Delta [\mathrm{Fe/H}] = 0.1,$'+'\n'+r'$\Delta [\alpha/\mathrm{Fe}] = 0.05\ \mathrm{bins}$',
                                 bottom_left=True)
             #Overplot histogram
-            ax2 = pyplot.twinx()
-            pyplot.hist(ploth,range=xrange,weights=mass,color='k',histtype='step',
-                        normed=True,bins=bins,lw=3.,zorder=10)
+            #ax2 = pyplot.twinx()
+            pyplot.hist(ploth,range=xrange,weights=mass*0.13/0.07,color='k',histtype='step',
+                        bins=bins,lw=3.,zorder=10)
             #Also XD?
             if options.xd:
                 #Set up data
@@ -590,15 +590,15 @@ def plotMass(options,args):
                         *numpy.exp(-0.5*(numpy.log(xs)-xmean[kk,0])**2./xcovar[kk,0,0])
                 xdys/= xs
                 bovy_plot.bovy_plot(xs,xdys,'-',color='0.5',overplot=True)
-            ax2.set_yscale('log')
-            ax2.set_yticklabels('')        
-            if options.hr:
-                pyplot.ylim(10**-2.,10.**0.)
-            if options.sz:
-                pyplot.ylim(10**-5.,10.**-2.5)
-            else:
-                pyplot.ylim(10**-5.5,10.**-1.5)
-            pyplot.xlim(xrange[0],xrange[1])
+#            ax2.set_yscale('log')
+#            ax2.set_yticklabels('')        
+#            if options.hr:
+#                pyplot.ylim(10**-2.,10.**0.)
+#            if options.sz:
+#                pyplot.ylim(10**-5.,10.**-2.5)
+#            else:
+#                pyplot.ylim(10**-5.5,10.**-1.5)
+#            pyplot.xlim(xrange[0],xrange[1])
             ax= pyplot.gca()
             if options.sz:
                 def my_formatter(x, pos):
