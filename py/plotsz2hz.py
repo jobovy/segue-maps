@@ -361,6 +361,7 @@ def plotsz2hz(options,args):
                     if afe[jj] == tightbinned.afe(ii):
                         plotc[jj]= feh[jj]-medianfeh
         if not options.subtype == 'zfunc' \
+               and not options.subtype.lower() == 'rfunc' \
                and not options.subtype.lower() == 'hs' \
                and not options.subtype.lower() == 'sausage' \
                and not options.subtype.lower() == 'hsm' \
@@ -476,6 +477,39 @@ def plotsz2hz(options,args):
                 #Also plot pivot
                 pyplot.plot(1000.*pivot[ii],sz[ii],'o',ms=8.,mec='none',
                             color=colormap(_squeeze(plotc[ii],vmin,vmax)))
+            #Add colorbar
+            m = cm.ScalarMappable(cmap=cm.jet)
+            m.set_array(plotc)
+            m.set_clim(vmin=vmin,vmax=vmax)
+            cbar= pyplot.colorbar(m,fraction=0.15)
+            cbar.set_clim((vmin,vmax))
+            cbar.set_label(zlabel)
+        elif options.subtype.lower() == 'rfunc':
+            from selectFigs import _squeeze
+            colormap = cm.jet
+            #Set up plot
+            if options.vr:
+                yrange= [30.,80.]
+                ylabel=r'$\log \sigma_R(R)\ [\mathrm{km\ s}^{-1}]$'
+            else:
+                yrange= [numpy.log(10.),numpy.log(100.)]
+                ylabel=r'$\log \left(\sigma_z(R)\, \exp\left[\frac{R-R_0}{7\ \mathrm{kpc}}\right]\right)\ [\mathrm{km\ s}^{-1}]$'
+                #ylabel=r'$\log \sigma_z(R)\ [\mathrm{km\ s}^{-1}]$'
+            bovy_plot.bovy_plot([-100.,-100.],[100.,100.],'k,',
+                                xrange=[4.,13.],yrange=yrange,
+                                xlabel=r'$R\ [\mathrm{pc}]$',
+                                ylabel=ylabel)
+            #Calculate and plot all Rfuncs
+            Rs= numpy.array([5.,12.])
+            for ii in numpy.random.permutation(len(afe)):
+                if velerrors: #Don't plot if errors > 30%
+                    if sz_err[ii]/sz[ii] > .2: continue
+                    #if sz_err[ii] > 20.: continue
+                thisrfunc= numpy.log(sz[ii])-(Rs-8.)/hs[ii]+(Rs-8.)/7.
+                pyplot.plot(Rs,
+                            thisrfunc,'-',
+                            color=colormap(_squeeze(plotc[ii],vmin,vmax)),
+                            lw=ndata[ii]/15.)
             #Add colorbar
             m = cm.ScalarMappable(cmap=cm.jet)
             m.set_array(plotc)
