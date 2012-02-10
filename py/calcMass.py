@@ -481,7 +481,10 @@ def plotMass(options,args):
         if options.cumul:
             #Print total surface mass and uncertainty
             totmass= numpy.sum(mass)
-            toterr= numpy.sqrt(numpy.sum(mass_err**2.))
+            if options.ploterrors:
+                toterr= numpy.sqrt(numpy.sum(mass_err**2.))
+            else:
+                toterr= 0.
             print "Total surface-mass density: %4.1f +/- %4.2f" %(totmass,toterr)
             ids= numpy.argsort(hz)
             plotc= plotc[ids]
