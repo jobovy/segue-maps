@@ -139,7 +139,10 @@ def plotsz2hz(options,args):
                         print "Strange point: ", tightbinned.feh(ii), \
                             tightbinned.afe(jj)
                     #Als find min and max z for this data bin, and median
-                    zsorted= sorted(numpy.fabs(data.zc+_ZSUN))
+                    if options.subtype.lower() == 'rfunc':
+                        zsorted= sorted(numpy.sqrt((8.-data.xc)**2.+data.yc**2.))
+                    else:
+                        zsorted= sorted(numpy.fabs(data.zc+_ZSUN))
                     zmin= zsorted[int(numpy.ceil(0.16*len(zsorted)))]
                     zmax= zsorted[int(numpy.floor(0.84*len(zsorted)))]
                     zmin= zsorted[int(numpy.ceil(0.025*len(zsorted)))]
@@ -492,9 +495,9 @@ def plotsz2hz(options,args):
                 yrange= [30.,80.]
                 ylabel=r'$\log \sigma_R(R)\ [\mathrm{km\ s}^{-1}]$'
             else:
-                yrange= [numpy.log(10.),numpy.log(100.)]
-                ylabel=r'$\log \left(\sigma_z(R)\, \exp\left[\frac{R-R_0}{7\ \mathrm{kpc}}\right]\right)\ [\mathrm{km\ s}^{-1}]$'
-                #ylabel=r'$\log \sigma_z(R)\ [\mathrm{km\ s}^{-1}]$'
+                yrange= [numpy.log(8.),numpy.log(60.)]
+                #ylabel=r'$\log \left(\sigma_z(R)\, \exp\left[\frac{R-R_0}{7\ \mathrm{kpc}}\right]\right)\ [\mathrm{km\ s}^{-1}]$'
+                ylabel=r'$\log \sigma_z(R)\ [\mathrm{km\ s}^{-1}]$'
             bovy_plot.bovy_plot([-100.,-100.],[100.,100.],'k,',
                                 xrange=[4.,13.],yrange=yrange,
                                 xlabel=r'$R\ [\mathrm{pc}]$',
@@ -505,7 +508,8 @@ def plotsz2hz(options,args):
                 if velerrors: #Don't plot if errors > 30%
                     if sz_err[ii]/sz[ii] > .2: continue
                     #if sz_err[ii] > 20.: continue
-                thisrfunc= numpy.log(sz[ii])-(Rs-8.)/hs[ii]+(Rs-8.)/7.
+                Rs= numpy.array([zmin[ii],zmax[ii]])
+                thisrfunc= numpy.log(sz[ii])-(Rs-8.)/hs[ii]#+(Rs-8.)/7.
                 pyplot.plot(Rs,
                             thisrfunc,'-',
                             color=colormap(_squeeze(plotc[ii],vmin,vmax)),
