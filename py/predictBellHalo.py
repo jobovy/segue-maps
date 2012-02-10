@@ -1,7 +1,7 @@
 #Predict the number of halo stars in our sample from the Bell et al. (2008) model
 import numpy
 from scipy import integrate
-import isodist
+import isodist, isodist.imf
 from segueSelect import segueSelect, read_gdwarfs
 from fitDensz import _const_colordist
 import compareDataModel
@@ -24,7 +24,8 @@ def predictBellHalo():
     return numpy.sum(n)*7.*(numpy.pi/180.)**2.*(20.2-14.5)/1000*bell*0.2*numpy.log(10.) #these are some factors left out of compareDataModel
 
 def predictDiskMass(modelfunc,params,sf,cdist,fehdist,fehmin,fehmax,feh,
-                    data,grmin,grmax,agemin,agemax,normalize='Z'):
+                    data,grmin,grmax,agemin,agemax,normalize='Z',
+                    imfmodel='lognormalChabrier2001'):
     n,d,x= compareDataModel.comparernumberPlate(modelfunc,params,sf,
                                                 cdist,fehdist,data,
                                                 'all',
@@ -44,7 +45,7 @@ def predictDiskMass(modelfunc,params,sf,cdist,fehdist,fehmin,fehmax,feh,
     pred= numpy.sum(n)*7.*(numpy.pi/180.)**2.*(20.2-14.5)/1000#\
 #          *0.2*numpy.log(10.) #these are some factors left out of compareDataModel
     #print pred, len(data), 1.-params[2]
-    frac= fracMassGRRange(grmin,grmax,agemin,agemax,feh)
+    frac= fracMassGRRange(grmin,grmax,agemin,agemax,feh,imfmodel)
     avgmass= averageMassGRRange(grmin,grmax,agemin,agemax,feh)
     return len(data)*norm/pred/frac*avgmass
 
@@ -99,7 +100,7 @@ def averageMassGRRange(grmin,grmax,agemin,agemax,FeH):
         norm+= 10.**(logage-numpy.amin(logages))
     return out/norm
 
-def fracMassGRRange(grmin,grmax,agemin,agemax,FeH):
+def fracMassGRRange(grmin,grmax,agemin,agemax,FeH,imfmodel):
     """
     NAME:
        fracMassGRRange
@@ -117,10 +118,10 @@ def fracMassGRRange(grmin,grmax,agemin,agemax,FeH):
     #Load Padova Isochrones
     p= isodist.PadovaIsochrone(type='sdss-ukidss',
                                Z=[0.001+ii*0.001 for ii in range(30)])
-    return massGRRangeInt(grmin,grmax,agemin,agemax,p,FeH,dwarf=True)/\
-           massGRRangeInt(None,None,agemin,agemax,p,FeH)
+    return massGRRangeInt(grmin,grmax,agemin,agemax,p,FeH,imfmodel,dwarf=True)/\
+           massGRRangeInt(None,None,agemin,agemax,p,FeH,imfmodel)
 
-def massGRRangeInt(grmin,grmax,agemin,agemax,p,FeH,dwarf=False):
+def massGRRangeInt(grmin,grmax,agemin,agemax,p,FeH,imfmodel,dwarf=False):
     #Find closest Z
     Zs= p.Zs()
     Z= isodist.FEH2Z(FeH)
@@ -147,6 +148,16 @@ def massGRRangeInt(grmin,grmax,agemin,agemax,p,FeH,dwarf=False):
                 norm+= 10.**(logage-numpy.amin(logages))
                 continue
             iso= iso[indices]
+        #Calculate int_IMF for this IMF model
+        if not imfmodel == 'lognormalChabrier2001': #That would be the default
+            if imfmodel == 'exponentialChabrier2001':
+                iso.int_IMF= isodist.imf.exponentialChabrier2001(iso.M_ini,int=True)
+            elif imfmodel == 'kroupa2003':
+                iso.int_IMF= isodist.imf.kroupa2003(iso.M_ini,int=True)
+            elif imfmodel == 'chabrier2003':
+                iso.int_IMF= isodist.imf.chabrier2003(iso.M_ini,int=True)
+            else:
+                raise IOError("imfmodel option not understood (non-existing model)")
         #Sort on int_IMF and integrate
         iso= numpy.sort(iso,order='int_IMF')
         for jj in range(len(iso.M_ini)-1):

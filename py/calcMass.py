@@ -158,7 +158,8 @@ def calcMass(options,args):
                                                            data,0.45,
                                                            0.58,
                                                            agemin,agemax,
-                                                           normalize=options.normalize))
+                                                           normalize=options.normalize,
+                                                           imfmodel=options.imfmodel))
                 #Print some stuff
                 print numpy.mean(numpy.array(thismasssamples)), numpy.std(numpy.array(thismasssamples))
                 masssamples.append(thismasssamples)
@@ -173,7 +174,8 @@ def calcMass(options,args):
                                             data,0.45,
                                             0.58,
                                             agemin,agemax,
-                                            normalize=options.normalize))
+                                            normalize=options.normalize,
+                                            imfmodel=options.imfmodel))
                 print mass[-1]
             jj+= 1
             if jj == len(binned.afeedges)-1: 
@@ -532,7 +534,8 @@ def plotMass(options,args):
             if not options.cumul and masserrors and options.ploterrors:
                 colormap = cm.jet
                 for ii in range(len(hz)):
-                    pyplot.errorbar(ploth[ii],mass[ii],yerr=mass_err[ii],
+                    pyplot.errorbar(ploth[ii],mass[ii]*.13/0.07,
+                                    yerr=mass_err[ii]*.13/0.07,
                                     color=colormap(_squeeze(plotc[ii],
                                                             numpy.amax([vmin,
                                                                         numpy.amin(plotc)]),
@@ -542,7 +545,7 @@ def plotMass(options,args):
             if not options.cumul and denserrors and options.ploterrors:
                 colormap = cm.jet
                 for ii in range(len(hz)):
-                    pyplot.errorbar(ploth[ii],mass[ii],xerr=plotherr[ii],
+                    pyplot.errorbar(ploth[ii],mass[ii]*.13/0.07,xerr=plotherr[ii],
                                     color=colormap(_squeeze(plotc[ii],
                                                             numpy.amax([vmin,
                                                                         numpy.amin(plotc)]),
@@ -708,6 +711,8 @@ def get_options():
                       help="Minimum number of objects in a bin to perform a fit")   
     parser.add_option("--model",dest='model',default='twodblexp',
                       help="Model to fit")
+    parser.add_option("--imfmodel",dest='imfmodel',default='lognormalChabrier2001',
+                      help="IMF model to use (see isodist package)")
     parser.add_option("--velmodel",dest='velmodel',default='hwr',
                       help="Velocity Model to fit")
     parser.add_option("-o","--plotfile",dest='plotfile',default=None,
