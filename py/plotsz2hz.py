@@ -477,9 +477,10 @@ def plotsz2hz(options,args):
                             thiszfunc,'-',
                             color=colormap(_squeeze(plotc[ii],vmin,vmax)),
                             lw=ndata[ii]/15.)
-                #Also plot pivot
-                pyplot.plot(1000.*pivot[ii],sz[ii],'o',ms=8.,mec='none',
-                            color=colormap(_squeeze(plotc[ii],vmin,vmax)))
+                if not options.nofatdots:
+                    #Also plot pivot
+                    pyplot.plot(1000.*pivot[ii],sz[ii],'o',ms=8.,mec='none',
+                                color=colormap(_squeeze(plotc[ii],vmin,vmax)))
             #Add colorbar
             m = cm.ScalarMappable(cmap=cm.jet)
             m.set_array(plotc)
@@ -1182,6 +1183,9 @@ def get_options():
                       help="Plot the error sausage envolope")
     parser.add_option("--savekde",dest='savekde',default=None,
                       help="Name of the file to save KDE estimates")
+    parser.add_option("--nofatdots",action="store_true", dest="nofatdots",
+                      default=False,
+                      help="Don't plot the fat dots")
     return parser
 
 if __name__ == '__main__':

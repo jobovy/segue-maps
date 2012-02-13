@@ -684,21 +684,36 @@ def plotPixelFit(options,args):
                         plotc[jj]= feh[jj]-medianfeh
         yrange= [150,1050]
         xrange= [1.2,5.]
-        bovy_plot.bovy_plot(hr,hz,s=ndata,c=plotc,
-                            cmap='jet',
-                            ylabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$',
-                            xlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$',
-                            clabel=zlabel,
-                            xrange=xrange,yrange=yrange,
-                            vmin=vmin,vmax=vmax,
-                            scatter=True,edgecolors='none',
-                            colorbar=True,zorder=2)
+        if options.nodashed:
+            indx= ((hz-((850.-520.)/(4.-2.5)*(hr-4.)+800.))**2./200.**2. < 1.)*(hr > 2.3)
+            indx= 1-indx
+            indx= indx.astype('bool')
+            bovy_plot.bovy_plot(hr[indx],hz[indx],s=ndata[indx],c=plotc[indx],
+                                cmap='jet',
+                                ylabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$',
+                                xlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$',
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True,zorder=2)
+        
+        else:
+            bovy_plot.bovy_plot(hr,hz,s=ndata,c=plotc,
+                                cmap='jet',
+                                ylabel=r'$\mathrm{vertical\ scale\ height\ [pc]}$',
+                                xlabel=r'$\mathrm{radial\ scale\ length\ [kpc]}$',
+                                clabel=zlabel,
+                                xrange=xrange,yrange=yrange,
+                                vmin=vmin,vmax=vmax,
+                                scatter=True,edgecolors='none',
+                                colorbar=True,zorder=2)
         #Overplot errors
         if options.ploterrors:
             colormap = cm.jet
             for ii in range(len(hz)):
                 if hr[ii] < 5.:
-                    if (hz[ii]-((850.-520.)/(4.-2.5)*(hr[ii]-4.)+800.))**2./200.**2. < 1. and hr[ii] > 2.3:
+                    if (hz[ii]-((850.-520.)/(4.-2.5)*(hr[ii]-4.)+800.))**2./200.**2. < 1. and hr[ii] > 2.3 and not options.nodashed:
                         print hr[ii], hz[ii], ndata[ii]/numpy.sum(ndata)
                         pyplot.errorbar(hr[ii],hz[ii],xerr=hr_err[ii],yerr=hz_err[ii],
                                         color=colormap(_squeeze(plotc[ii],
@@ -715,6 +730,8 @@ def plotPixelFit(options,args):
                         if 'ls' in kwargs:
                            lines_kw['ls']=kwargs['ls']
                          """
+                    elif (hz[ii]-((850.-520.)/(4.-2.5)*(hr[ii]-4.)+800.))**2./200.**2. < 1. and hr[ii] > 2.3 and options.nodashed:
+                        pass
                     else:
                         pyplot.errorbar(hr[ii],hz[ii],xerr=hr_err[ii],yerr=hz_err[ii],
                                         color=colormap(_squeeze(plotc[ii],
@@ -901,6 +918,10 @@ def get_options():
                       dest="indiv_brightlims",
                       default=False,
                       help="indiv_brightlims keyword for segueSelect")
+    parser.add_option("--nodashed",action="store_true", 
+                      dest="nodashed",
+                      default=False,
+                      help="Just don't plot the bins that would be dashed")
     return parser
   
 if __name__ == '__main__':
