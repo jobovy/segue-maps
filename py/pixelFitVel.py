@@ -107,6 +107,20 @@ def pixelFitVel(options,args):
             cov_vxvyvz[:,0,1]= data.vxvyc_rho*data.vxc_err*data.vyc_err
             cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err
             cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err
+            if options.vr:
+                #Rotate vxvyvz to vRvTvz
+                cosphi= (8.-XYZ[:,0])/R
+                sinphi= XYZ[:,1]/R
+                vR= vxvyvz[:,0]*cosphi+vxvyvz[:,1]*sinphi
+                vT= -vxvyvz[:,0]*sinphi+vxvyvz[:,1]*cosphi
+                vxvyvz[:,0]= vR
+                vxvyvz[:,1]= vT
+                for rr in range(len(XYZ[:,0])):
+                    rot= numpy.array([[cosphi[rr],sinphi[rr]],
+                                      [-sinphi[rr],cosphi[rr]]])
+                    sxy= cov_vxvyvz[rr,0:2,0:2]
+                    sRT= numpy.dot(rot,numpy.dot(sxy,rot.T))
+                    cov_vxvyvz[rr,0:2,0:2]= sRT
             #Fit this data
             #Initial condition
             if options.model.lower() == 'hwr':

@@ -1071,6 +1071,8 @@ def plotsz2hz(options,args):
                                 scatter=True,edgecolors='none',
                                 colorbar=True)
             #Overplot weighted mean + stddev
+            hs_m= numpy.mean(hz*sz**2./(2.*numpy.pi*4.302*10.**-3))
+            hs_std= numpy.std(hz*sz**2./(2.*numpy.pi*4.302*10.**-3))
             print hs_m, hs_std
             bovy_plot.bovy_plot(xrange,[hs_m,hs_m],'k-',overplot=True)
             bovy_plot.bovy_plot(xrange,[hs_m-hs_std,hs_m-hs_std],'-',
@@ -1102,6 +1104,14 @@ def plotsz2hz(options,args):
                                 vmin=vmin,vmax=vmax,
                                 scatter=True,edgecolors='none',
                                 colorbar=True)
+            hs_m= numpy.mean(hr*sz**2./(2.*numpy.pi*4.302*10.**-3))
+            hs_std= numpy.std(hr*sz**2./(2.*numpy.pi*4.302*10.**-3))
+            print hs_m, hs_std
+            bovy_plot.bovy_plot(xrange,[hs_m,hs_m],'k-',overplot=True)
+            bovy_plot.bovy_plot(xrange,[hs_m-hs_std,hs_m-hs_std],'-',
+                                color='0.5',overplot=True)
+            bovy_plot.bovy_plot(xrange,[hs_m+hs_std,hs_m+hs_std],'-',
+                                color='0.5',overplot=True)
             #Overplot errorbars
             if options.ploterrors:
                 print "UPDATE!!"
