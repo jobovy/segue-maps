@@ -56,7 +56,8 @@ def jz(z,vz,R,pot=MWPotential):
     Ez= 0.5+evaluatePotentials(R,z,pot)/vz**2.-potzero
     #Integrate to get Jz
     out= 2.*numpy.fabs(vz)/math.pi*integrate.quad(_jzIntegrand,0.,numpy.inf,
-                                                  args=(R,pot,Ez,potzero,vz))[0]
+                                                  args=(R,pot,
+                                                        Ez,potzero,vz))[0]
     #if out == 0.: print Ez, z, vz
     return out
 
