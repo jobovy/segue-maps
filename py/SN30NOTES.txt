@@ -1,3 +1,5 @@
+270 plates, 16777 stars
+
 HWR model:
 
 python pixelFitDens.py ../fits/pixelFitG_DblExp_BigPix0.1_SN30.sav --dfeh=0.1 --dafe=0.05 --model=hwr --sn=30.
