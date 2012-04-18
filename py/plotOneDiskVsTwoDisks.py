@@ -13,14 +13,14 @@ from fitSigz import _ZSUN
 def plotOneDiskVsTwoDisks(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.sn)
         else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.sn)
     elif options.sample.lower() == 'k':
         if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.sn)
         else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.sn)
     #Bin the data   
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     if options.tighten:
@@ -196,6 +196,9 @@ def get_options():
                       help="If set, tighten axes")
     parser.add_option("--mass",dest='mass',default=None,
                       help="If set, use the masses from this file as the symbol size")
+    parser.add_option("--sn",dest='sn',type='float',
+                      default=15.,
+                      help="Minimum SN")
     return parser
 
 if __name__ == '__main__':
