@@ -14,7 +14,8 @@ def plotAnIvezicDiff(dir):
     #Set up plot
     bovy_plot.bovy_print()
     bovy_plot.bovy_plot([-100.,-100.],[-100.,-100],'k,',
-                        xrange=[0.47,0.58],
+                        #xrange=[0.47,0.58],
+                        xrange=[0.53,0.78],
                         yrange=[-0.25,.25],
                         xlabel=r'$g-r\ [\mathrm{mag}]$',
                         ylabel=r'$\mathrm{DM}_{\mathrm{An}}-\mathrm{DM}_{\mathrm{Ivezi\acute{c}}}\ [\mathrm{mag}]$')
@@ -22,7 +23,7 @@ def plotAnIvezicDiff(dir):
     for ii in range(len(fehs)):
         iso= a(numpy.log10(10.),feh=fehs[ii])
         #Get G dwarfs
-        indx= (iso['g']-iso['r'] <= 0.55)*(iso['g']-iso['r'] >= 0.48)\
+        indx= (iso['g']-iso['r'] <= 0.75)*(iso['g']-iso['r'] >= 0.55)\
             *(iso['logg'] > 4.1)
         y= -1.*(iso['r'][indx]-_mr_gi(_gi_gr(iso['g'][indx]
                                              -iso['r'][indx]),fehs[ii]))

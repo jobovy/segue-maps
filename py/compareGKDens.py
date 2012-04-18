@@ -121,47 +121,46 @@ def compareGKDens(parser):
     #Now plot
     plotc= afe
     if options.type.lower() == 'hz':
-        yrange= [150,1050]
+        yrange= [0.6,1.4]
         xrange= [150,1050]
-        bovy_plot.bovy_plot(hz,hzk,s=ndata,c=plotc,
+        bovy_plot.bovy_plot(hz,hzk/hz,s=ndata,c=plotc,
                             cmap='jet',
-                            xlabel=r'$\mathrm{G-dwarf\ vertical\ scale\ height\ [pc]}$',
-                            ylabel=r'$\mathrm{K-dwarf\ vertical\ scale\ height\ [pc]}$',
+                            xlabel=r'$\mathrm{G-dwarf\ vertical\ scale\ height}\ h_z^G\ \mathrm{[pc]}$',
+                            ylabel=r'$h_z^K/h_z^G$',
                             clabel=zlabel,
                             xrange=xrange,yrange=yrange,
                             vmin=vmin,vmax=vmax,
                             scatter=True,edgecolors='none',
                             colorbar=True,zorder=2)
-        bovy_plot.bovy_plot(xrange,yrange,'-',color='0.5',overplot=True)
+        bovy_plot.bovy_plot(xrange,[1.,1.],'-',color='0.5',overplot=True)
         #Overplot errors
         colormap = cm.jet
         for ii in range(len(hz)):
-            if hr[ii] < 5.:
-                pyplot.errorbar(hz[ii],hzk[ii],
-                                xerr=hz_err[ii],yerr=hzk_err[ii],
-                                color=colormap(_squeeze(plotc[ii],
-                                                        numpy.amax([numpy.amin(plotc)]),
-                                                        numpy.amin([numpy.amax(plotc)]))),
-                                elinewidth=1.,capsize=3,zorder=0)
+            pyplot.errorbar(hz[ii],hzk[ii]/hz[ii],
+                            xerr=hz_err[ii],yerr=hzk_err[ii]/hz[ii], #assume that K error is much larger than G error
+                            color=colormap(_squeeze(plotc[ii],
+                                                    numpy.amax([numpy.amin(plotc)]),
+                                                    numpy.amin([numpy.amax(plotc)]))),
+                            elinewidth=1.,capsize=3,zorder=0)
     elif options.type.lower() == 'hr':
-        xrange= [.5,5.]
-        yrange= [.5,5.]
-        bovy_plot.bovy_plot(hr,hrk,s=ndata,c=plotc,
+        xrange= [1.2,5.]
+        yrange= [0.6,1.4]
+        bovy_plot.bovy_plot(hr,hrk/hr,s=ndata,c=plotc,
                             cmap='jet',
-                            xlabel=r'$\mathrm{G-dwarf\ radial\ scale\ length\ [kpc]}$',
-                            ylabel=r'$\mathrm{K-dwarf\ radial\ scale\ length\ [kpc]}$',
+                            xlabel=r'$\mathrm{G}-\mathrm{dwarf\ radial\ scale\ length}\ h_R^G\ \mathrm{[kpc]}$',
+                            ylabel=r'$h_R^K/h_R^G$',
                             clabel=zlabel,
                             xrange=xrange,yrange=yrange,
                             vmin=vmin,vmax=vmax,
                             scatter=True,edgecolors='none',
                             colorbar=True,zorder=2)
-        bovy_plot.bovy_plot(xrange,yrange,'-',color='0.5',overplot=True)
+        bovy_plot.bovy_plot(xrange,[1.,1.],'-',color='0.5',overplot=True)
         #Overplot errors
         colormap = cm.jet
         for ii in range(len(hz)):
             if hr[ii] < 5.:
-                pyplot.errorbar(hr[ii],hrk[ii],
-                                xerr=hr_err[ii],yerr=hrk_err[ii],
+                pyplot.errorbar(hr[ii],hrk[ii]/hr[ii],
+                                xerr=hr_err[ii],yerr=hrk_err[ii]/hr[ii],
                                 color=colormap(_squeeze(plotc[ii],
                                                         numpy.amax([numpy.amin(plotc)]),
                                                         numpy.amin([numpy.amax(plotc)]))),

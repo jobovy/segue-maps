@@ -166,26 +166,26 @@ class pixelAfeFeh:
 def pixelFitDens(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.sn)
         elif options.select.lower() == 'fakebimodal':
             raw= read_gdwarfs(_FAKEBIMODALGDWARFFILE,
-                              logg=True,ebv=True,sn=True)
+                              logg=True,ebv=True,sn=options.sn)
             options.select= 'all'
         elif options.select.lower() == 'fakebimodal_allthin':
             raw= read_gdwarfs(_FAKETHINBIMODALGDWARFFILE,
-                              logg=True,ebv=True,sn=True)
+                              logg=True,ebv=True,sn=options.sn)
             options.select= 'all'
         elif options.select.lower() == 'fakebimodal_allthick':
             raw= read_gdwarfs(_FAKETHICKBIMODALGDWARFFILE,
-                              logg=True,ebv=True,sn=True)
+                              logg=True,ebv=True,sn=options.sn)
             options.select= 'all'
         else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.sn)
     elif options.sample.lower() == 'k':
         if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.sn)
         else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.sn)
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     #Savefile
@@ -256,7 +256,7 @@ def pixelFitDens(options,args):
     print "Using %i plates, %i stars ..." %(len(plates),len(raw))
     sf= segueSelect(plates=plates,type_faint='tanhrcut',
                     sample=options.sample,type_bright='tanhrcut',
-                    sn=True,select=options.select,
+                    sn=options.sn,select=options.select,
                     indiv_brightlims=options.indiv_brightlims)
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                      degree=True)
@@ -437,26 +437,26 @@ def pixelFitDens(options,args):
 def plotPixelFit(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.sn)
         elif options.select.lower() == 'fakebimodal':
             raw= read_gdwarfs(_FAKEBIMODALGDWARFFILE,
-                              logg=True,ebv=True,sn=True)
+                              logg=True,ebv=True,sn=options.sn)
             options.select= 'all'
         elif options.select.lower() == 'fakebimodal_allthin':
             raw= read_gdwarfs(_FAKETHINBIMODALGDWARFFILE,
-                              logg=True,ebv=True,sn=True)
+                              logg=True,ebv=True,sn=options.sn)
             options.select= 'all'
         elif options.select.lower() == 'fakebimodal_allthick':
             raw= read_gdwarfs(_FAKETHICKBIMODALGDWARFFILE,
-                              logg=True,ebv=True,sn=True)
+                              logg=True,ebv=True,sn=options.sn)
             options.select= 'all'
         else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.sn)
     elif options.sample.lower() == 'k':
         if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.sn)
         else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=True)
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.sn)
     #Bin the data   
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     if options.tighten:
@@ -922,6 +922,9 @@ def get_options():
                       dest="nodashed",
                       default=False,
                       help="Just don't plot the bins that would be dashed")
+    parser.add_option("--sn",dest='sn',type='float',
+                      default=15.,
+                      help="Minimum SN")
     return parser
   
 if __name__ == '__main__':
