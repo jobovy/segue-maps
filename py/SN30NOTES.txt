@@ -6,6 +6,15 @@ python pixelFitDens.py ../fits/pixelFitG_DblExp_BigPix0.1_SN30.sav --dfeh=0.1 --
 
 python pixelFitDens.py ../fits/pixelFitG_DblExp_BigPix0.1_SN30.sav --dfeh=0.1 --dafe=0.05 --model=hwr --sn=30. --mcsample --nsamples=1000 ../fits/pixelFitG_DblExp_BigPix0.1_SN30_1000samples.sav
 
+python pixelFitDens.py ../fits/pixelFitG_DblExp_BigPix0.1_SN30.sav --dfeh=0.1 --dafe=0.05 -o ~/Desktop/pixelFit_g_hz_SN30.png --plot -t hz --model=hwr --tighten
+
+python pixelFitDens.py ../fits/pixelFitG_DblExp_BigPix0.1_SN30.sav --dfeh=0.1 --dafe=0.05 -o ~/Desktop/pixelFit_g_hr_SN30.png --plot -t hr --model=hwr --tighten
+
+python pixelFitDens.py ../fits/pixelFitG_DblExp_BigPix0.1_SN30.sav --dfeh=0.1 --dafe=0.05 -o ~/Desktop/pixelFit_g_afe.png --plot -t afe --model=hwr --tighten --ploterrors ../fits/pixelFitG_DblExp_BigPix0.1_SN30_1000samples.sav
+
+python plotOneDiskVsTwoDisks.py ../fits/pixelFitG_DblExp_BigPix0.1_SN30.sav ../fits/pixelFitG_TwoDblExp_BigPix0.1_SN30.sav ../fits/pixelFitG_DblExp_BigPix0.1_SN30_1000samples.sav ../fits/pixelFitG_TwoDblExp_BigPix0.1_SN30_1000samples.sav --dfeh=0.1 --dafe=0.05 -o ~/Desktop/one_vs_two.png -t hz
+
+
 twodblexp model:
 
 python pixelFitDens.py ../fits/pixelFitG_TwoDblExp_BigPix0.1_SN30.sav --dfeh=0.1 --dafe=0.05 --model=twodblexp --sn=30. --mcsample --nsamples=1000 ../fits/pixelFitG_TwoDblExp_BigPix0.1_SN30_1000samples.sav
