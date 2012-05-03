@@ -80,7 +80,13 @@ def collateFits(options,args):
                                      ('sz_err',float),
                                      ('hsz_err',float),
                                      ('p1_err',float),
-                                     ('p2_err',float)])
+                                     ('p2_err',float),
+                                     ('szp1_corr',float),
+                                     ('szp2_corr',float),
+                                     ('szhsz_corr',float),
+                                     ('p1hsz_corr',float),
+                                     ('p2hsz_corr',float),
+                                     ('p1p2_corr',float)])
     nout= 0
     #Start filling it up
     for ii in range(binned.npixfeh()):
@@ -142,6 +148,20 @@ def collateFits(options,args):
                 out[nout]['p1_err']= numpy.std(xs)
                 xs= numpy.array([s[3] for s in thesevelsamples])
                 out[nout]['p2_err']= numpy.std(xs)
+                xs= numpy.exp(numpy.array([s[1] for s in thesevelsamples]))
+                ys= numpy.array([s[2] for s in thesevelsamples])
+                out[nout]['szp1_corr']= numpy.corrcoef(xs,ys)[0,1]
+                ys= numpy.array([s[3] for s in thesevelsamples])
+                out[nout]['szp2_corr']= numpy.corrcoef(xs,ys)[0,1]
+                xs= numpy.array([s[2] for s in thesevelsamples])
+                out[nout]['p1p2_corr']= numpy.corrcoef(xs,ys)[0,1]
+                xs= numpy.exp(numpy.array([s[4] for s in thesevelsamples]))
+                ys= numpy.exp(numpy.array([s[1] for s in thesevelsamples]))
+                out[nout]['szhsz_corr']= numpy.corrcoef(xs,ys)[0,1]
+                ys= numpy.array([s[2] for s in thesevelsamples])
+                out[nout]['p1hsz_corr']= numpy.corrcoef(xs,ys)[0,1]
+                ys= numpy.array([s[3] for s in thesevelsamples])
+                out[nout]['p2hsz_corr']= numpy.corrcoef(xs,ys)[0,1]
             nout+= 1
     #Write output
     fitsio.write(options.outfile,out,clobber=True)
