@@ -1271,7 +1271,7 @@ def juric_dist_gr(g,r,dg=0.,dr=0.,return_error=False,
     return (ds,derrs)
 
 def read_gdwarfs(datafile=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
-                 ebv=True,nocoords=False):
+                 ebv=True,nocoords=False,distfac=None):
     """
     NAME:
        read_gdwarfs
@@ -1284,6 +1284,7 @@ def read_gdwarfs(datafile=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
        sn= if False, don't cut on SN, if number cut on SN > the number (15)
        ebv= if True, cut on E(B-V), if number cut on EBV < the number (0.3)
        nocoords= if True, don't calculate distances or transform coordinates
+       distfac= if set, apply this distance factor
     OUTPUT:
        cut data, returns numpy.recarray
     HISTORY:
@@ -1338,13 +1339,13 @@ def read_gdwarfs(datafile=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
         raw= raw[indx]
     if nocoords: return raw
     #BOVY: distances
-    raw= _add_distances(raw)
+    raw= _add_distances(raw,distfac=distfac)
     #velocities
     raw= _add_velocities(raw)
     return raw
 
 def read_kdwarfs(datafile=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
-                 ebv=True,nocoords=False):
+                 ebv=True,nocoords=False,distfac=None):
     """
     NAME:
        read_kdwarfs
@@ -1357,6 +1358,7 @@ def read_kdwarfs(datafile=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
        sn= if False, don't cut on SN
        ebv= if True, cut on E(B-V)
        nocoords= if True, don't calculate distances or transform coordinates
+       distfac= if set, apply this distance factor
     OUTPUT:
        cut data, returns numpy.recarray
     HISTORY:
@@ -1411,7 +1413,7 @@ def read_kdwarfs(datafile=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
         raw= raw[indx]
     if nocoords: return raw
     #BOVY: distances
-    raw= _add_distances(raw)
+    raw= _add_distances(raw,distfac=distfac)
     #velocities
     raw= _add_velocities(raw)
     return raw
@@ -1472,11 +1474,14 @@ def read_fgstars(datafile=_FGSTARALLFILE,logg=False,ug=False,ri=False,sn=True,
     raw= _add_velocities(raw)
     return raw
 
-def _add_distances(raw):
+def _add_distances(raw,distfac=None):
     """Add distances"""
     ds,derrs= ivezic_dist_gr(raw.dered_g,raw.dered_r,raw.feh,
                              return_error=True,dg=raw.g_err,
                              dr=raw.r_err,dfeh=raw.feh_err)
+    if not distfac is None:
+        ds*= distfac
+        derrs*= distfac
     raw= _append_field_recarray(raw,'dist',ds)
     raw= _append_field_recarray(raw,'dist_err',derrs)
     return raw

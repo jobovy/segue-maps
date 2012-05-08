@@ -14,14 +14,18 @@ from pixelFitDens import pixelAfeFeh
 def pixelFitVel(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin)
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,
+                              distfac=options.distfac)
         else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin)
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,
+                              distfac=options.distfac)
     elif options.sample.lower() == 'k':
         if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin)
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin,
+                              distfac=options.distfac)
         else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin)
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,
+                              distfac=options.distfac)
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     #Savefile
@@ -171,14 +175,18 @@ def pixelFitVel(options,args):
 def plotPixelFitVel(options,args):
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin)
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,
+                              distfac=options.distfac)
         else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin)
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,
+                              distfac=options.distfac)
     elif options.sample.lower() == 'k':
         if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin)
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin,
+                              distfac=options.distfac)
         else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin)
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,
+                              distfac=options.distfac)
     #print len(raw)
     #Bin the data   
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
@@ -440,6 +448,9 @@ def get_options():
     parser.add_option("--observed",action="store_true", dest="observed",
                       default=False,
                       help="If set, write observed on it")
+    parser.add_option("--distfac",dest="distfac",
+                      default=None,type='float',
+                      help="If set, apply a distance factor of this value")
     return parser
   
 if __name__ == '__main__':
