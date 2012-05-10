@@ -4,9 +4,37 @@ python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1.sav --dfeh=
 
 python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1.sav --dfeh=0.1 --dafe=0.05 --model=hwr --mcsample --nsamples=10000 ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1_10ksamples.sav --distfac=1.1
 
+Plotting:
+
 python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../distfac/pixelFit_g_sz_distfac1.1.ps -t sz --plot --tighten --distfac=1.1
 
 python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../distfac/pixelFit_g_slope_distfac1.1.ps -t slope --plot --tighten --distfac=1.1
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../distfac/pixelFit_g_zfunc_afe_distfac1.1.ps -t afe --subtype=zfunc
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../distfac/pixelFit_g_slopequad_afe_distfac1.1.ps -t afe --subtype=slopequad --ploterrors --kde
+
+mean slope = 1.1 +/- 0.34
+mean quadratic = -0.17 +/- 0.1
+
+Fits with distances 6% larger
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.06.sav --dfeh=0.1 --dafe=0.05 --model=hwr --distfac=1.06
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.06.sav --dfeh=0.1 --dafe=0.05 --model=hwr --mcsample --nsamples=10000 ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.06_10ksamples.sav --distfac=1.06
+
+Plotting:
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.06.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../distfac/pixelFit_g_sz_distfac1.06.ps -t sz --plot --tighten --distfac=1.06
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.06.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../distfac/pixelFit_g_slope_distfac1.06.ps -t slope --plot --tighten --distfac=1.06
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.06.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.06_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../distfac/pixelFit_g_zfunc_afe_distfac1.06.ps -t afe --subtype=zfunc
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.06.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.06_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../distfac/pixelFit_g_slopequad_afe_distfac1.06.ps -t afe --subtype=slopequad --ploterrors --kde
+
+mean slope = 1.1 +/- 0.35
+mean quadratic = -0.13 +/- 0.1
 
 
 
@@ -16,8 +44,36 @@ python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9.sav --dfeh=
 
 python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9.sav --dfeh=0.1 --dafe=0.05 --model=hwr --mcsample --nsamples=10000 ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9_10ksamples.sav --distfac=0.9
 
+Plotting:
+
 python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../distfac/pixelFit_g_sz_distfac0.9.ps -t sz --plot --tighten --distfac=0.9
 
 python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../distfac/pixelFit_g_slope_distfac0.9.ps -t slope --plot --tighten --distfac=0.9
 
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../distfac/pixelFit_g_zfunc_afe_distfac0.9.ps -t afe --subtype=zfunc
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../distfac/pixelFit_g_slopequad_afe_distfac0.9.ps -t afe --subtype=slopequad --ploterrors --kde
+
+mean slope = 0.5 +/- 0.36
+mean quadratic = -0.02 +/- 0.1
+
+
+Fits with distances 6% smaller
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.94.sav --dfeh=0.1 --dafe=0.05 --model=hwr --distfac=0.94
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.94.sav --dfeh=0.1 --dafe=0.05 --model=hwr --mcsample --nsamples=10000 ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.94_10ksamples.sav --distfac=0.94
+
+Plotting:
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.94.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../distfac/pixelFit_g_sz_distfac0.94.ps -t sz --plot --tighten --distfac=0.94
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.94.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../distfac/pixelFit_g_slope_distfac0.94.ps -t slope --plot --tighten --distfac=0.94
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.94.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.94_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../distfac/pixelFit_g_zfunc_afe_distfac0.94.ps -t afe --subtype=zfunc
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.94.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.94_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../distfac/pixelFit_g_slopequad_afe_distfac0.94.ps -t afe --subtype=slopequad --ploterrors --kde
+
+mean slope = 0.7 +/- 0.37
+mean quadratic = -0.04 +/- 0.1
 
