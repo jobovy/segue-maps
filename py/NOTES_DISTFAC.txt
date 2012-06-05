@@ -17,6 +17,8 @@ python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1.sav ../fits/p
 mean slope = 1.1 +/- 0.34
 mean quadratic = -0.17 +/- 0.1
 
+quadratic zero slope = 0.65 +/- 0.2
+
 python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.1_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../distfac/pixelFit_g_hsm_afefeh_distfac1.1.ps -t afefeh --subtype=hsm --ploterrors --kde
 
 hsm = 0.14 +/- 0.01
@@ -40,6 +42,8 @@ python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac1.06.sav ../fits/
 mean slope = 1.1 +/- 0.35
 mean quadratic = -0.13 +/- 0.1
 
+quadratic slope zero = 0.7 +/- 0.2
+
 Fits with distances 10% smaller
 
 python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9.sav --dfeh=0.1 --dafe=0.05 --model=hwr --distfac=0.9
@@ -58,6 +62,8 @@ python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9.sav ../fits/p
 
 mean slope = 0.5 +/- 0.36
 mean quadratic = -0.02 +/- 0.1
+
+quadratic zero slope = 0.43 +/- 0.2
 
 python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.9_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../distfac/pixelFit_g_hsm_afefeh_distfac0.9.ps -t afefeh --subtype=hsm --ploterrors --kde
 
@@ -81,4 +87,6 @@ python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_distfac0.94.sav ../fits/
 
 mean slope = 0.7 +/- 0.37
 mean quadratic = -0.04 +/- 0.1
+
+quadratic zero slope = 0.6 +/- 0.2
 
