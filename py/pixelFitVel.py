@@ -216,6 +216,7 @@ def plotPixelFitVel(options,args):
     else:
         plotthis= numpy.zeros((tightbinned.npixfeh(),tightbinned.npixafe()))
     #ndata= 0
+    #maxndata= 0
     for ii in range(tightbinned.npixfeh()):
         for jj in range(tightbinned.npixafe()):
             data= binned(tightbinned.feh(ii),tightbinned.afe(jj))
@@ -243,6 +244,7 @@ def plotPixelFitVel(options,args):
                 else:
                     plotthis[ii,jj]= numpy.nan
                     continue
+            #if len(data) > maxndata: maxndata= len(data)
             #ndata+= len(data)
             if options.model.lower() == 'hwr':
                 if options.type == 'sz':
@@ -269,6 +271,7 @@ def plotPixelFitVel(options,args):
                                      numpy.exp(thisfit[3]),
                                      len(data)])
     #print ndata
+    #print maxndata
     #Set up plot
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
     if options.type == 'sz':
