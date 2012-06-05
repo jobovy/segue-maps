@@ -1,0 +1,53 @@
+Fits with |b| > 60. degree
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin60.sav --dfeh=0.1 --dafe=0.05 --model=hwr --bmin=60.
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin60.sav --dfeh=0.1 --dafe=0.05 --model=hwr --mcsample --nsamples=10000 ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin60_10ksamples.sav --bmin=60.
+
+Plotting:
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin60.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../bmin/pixelFit_g_sz_bmin60.ps -t sz --plot --tighten --bmin=60.
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin60.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../bmin/pixelFit_g_slope_bmin60.ps -t slope --plot --tighten --bmin=60.
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin60.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin60_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../bmin/pixelFit_g_zfunc_afe_bmin60.ps -t afe --subtype=zfunc
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin60.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin60_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../bmin/pixelFit_g_slopequad_afe_bmin60.ps -t afe --subtype=slopequad --ploterrors --kde
+
+mean slope =  0.03 +/- 1.0
+mean quadratic =  0.08 +/- 0.25
+
+quadratic zero slope = 0.3 +/- 0.5
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin60.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin60_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../bmin/pixelFit_g_hsm_afefeh_bmin60.ps -t afefeh --subtype=hsm --ploterrors --kde
+
+hsm =  0.13 +/- 0.03 (8 +/- 2 kpc)
+
+
+Fits with |b| > 50. degree
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin50.sav --dfeh=0.1 --dafe=0.05 --model=hwr --bmin=50.
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin50.sav --dfeh=0.1 --dafe=0.05 --model=hwr --mcsample --nsamples=10000 ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin50_10ksamples.sav --bmin=50.
+
+Plotting:
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin50.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../bmin/pixelFit_g_sz_bmin50.ps -t sz --plot --tighten --bmin=50.
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin50.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../bmin/pixelFit_g_slope_bmin50.ps -t slope --plot --tighten --bmin=50.
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin50.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin50_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../bmin/pixelFit_g_zfunc_afe_bmin50.ps -t afe --subtype=zfunc
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin50.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin50_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../bmin/pixelFit_g_slopequad_afe_bmin50.ps -t afe --subtype=slopequad --ploterrors --kde
+
+mean slope =  0.06 +/- 0.6
+mean quadratic =  -0.03 +/- 0.2
+
+quadratic zero slope = -0.03 +/- 0.3
+
+-0.0316237216491 0.0573711031168 0.035702710361 -0.101183451436 0.370560563477
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin50.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_bmin50_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../bmin/pixelFit_g_hsm_afefeh_bmin50.ps -t afefeh --subtype=hsm --ploterrors --kde
+
+hsm =  0.16 +/- 0.024 (6.4 +/- 1 kpc)
+

@@ -26,6 +26,9 @@ def pixelFitVel(options,args):
         else:
             raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,
                               distfac=options.distfac)
+    if not options.bmin is None:
+        #Cut on |b|
+        raw= raw[(numpy.fabs(raw.b) > options.bmin)]
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     #Savefile
@@ -187,6 +190,9 @@ def plotPixelFitVel(options,args):
         else:
             raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,
                               distfac=options.distfac)
+    if not options.bmin is None:
+        #Cut on |b|
+        raw= raw[(numpy.fabs(raw.b) > options.bmin)]
     #print len(raw)
     #Bin the data   
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
@@ -416,6 +422,9 @@ def get_options():
                       help="[a/Fe] bin size")   
     parser.add_option("--minndata",dest='minndata',default=100,type='int',
                       help="Minimum number of objects in a bin to perform a fit")   
+    parser.add_option("--bmin",dest='bmin',type='float',
+                      default=None,
+                      help="Minimum Galactic latitude")
     parser.add_option("--model",dest='model',default='hwr',
                       help="Model to fit")
     parser.add_option("-o","--plotfile",dest='plotfile',default=None,
