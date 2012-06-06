@@ -1,0 +1,30 @@
+Fits pivotting on zmean
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean.sav --dfeh=0.1 --dafe=0.05 --model=hwr --pivotmean
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean.sav --dfeh=0.1 --dafe=0.05 --model=hwr --mcsample --nsamples=10000 ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean_10ksamples.sav --pivotmean
+
+Plotting:
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../pivotmean/pixelFit_g_sz_pivotmean.ps -t sz --plot --tighten --pivotmean
+
+python pixelFitVel.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../pivotmean/pixelFit_g_slope_pivotmean.ps -t slope --plot --tighten --pivotmean
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../pivotmean/pixelFit_g_slopequad_afe.ps -t afe --subtype=slopequad --ploterrors --pivotmean
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../pivotmean/pixelFit_g_slopesz_afe.ps -t afe --subtype=slopesz --ploterrors --pivotmean
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../pivotmean/pixelFit_g_zfunc_afe_pivotmean.ps -t afe --subtype=zfunc --pivotmean
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../pivotmean/pixelFit_g_slopequad_afe_pivotmean.ps -t afe --subtype=slopequad --ploterrors --kde --pivotmean
+
+mean slope =  
+mean quadratic =  
+
+quadratic zero slope = 
+
+python plotsz2hz.py ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_pivotmean_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../pivotmean/pixelFit_g_hsm_afefeh_pivotmean.ps -t afefeh --subtype=hsm --ploterrors --kde --pivotmean
+
+hsm =  
+
+

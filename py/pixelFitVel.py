@@ -102,7 +102,10 @@ def pixelFitVel(options,args):
             XYZ[:,0]= data.xc
             XYZ[:,1]= data.yc
             XYZ[:,2]= data.zc+_ZSUN
-            d= numpy.fabs((XYZ[:,2]-numpy.median(numpy.fabs(XYZ[:,2]))))
+            if options.pivotmean:
+                d= numpy.fabs((XYZ[:,2]-numpy.mean(numpy.fabs(XYZ[:,2]))))
+            else:
+                d= numpy.fabs((XYZ[:,2]-numpy.median(numpy.fabs(XYZ[:,2]))))
             vxvyvz= numpy.zeros((len(data),3))
             vxvyvz[:,0]= data.vxc
             vxvyvz[:,1]= data.vyc
@@ -261,8 +264,6 @@ def plotPixelFitVel(options,args):
                     plotthis[ii,jj]= thisfit[2]
                 elif options.type == 'slope':
                     plotthis[ii,jj]= thisfit[2]
-                elif options.type == 'zmedian':
-                    plotthis[ii,jj]= numpy.median(numpy.fabs(XYZ[:,2]))))
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
@@ -465,6 +466,9 @@ def get_options():
     parser.add_option("--distfac",dest="distfac",
                       default=None,type='float',
                       help="If set, apply a distance factor of this value")
+    parser.add_option("--pivotmean",action="store_true", dest="pivotmean",
+                      default=False,
+                      help="If set, pivot on the mean z rather than on the median")
     return parser
   
 if __name__ == '__main__':

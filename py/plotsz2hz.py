@@ -161,7 +161,10 @@ def plotsz2hz(options,args):
                     zmax= zsorted[int(numpy.floor(0.84*len(zsorted)))]
                     zmin= zsorted[int(numpy.ceil(0.025*len(zsorted)))]
                     zmax= zsorted[int(numpy.floor(0.975*len(zsorted)))]
-                    thisplot.extend([zmin,zmax,numpy.median(numpy.fabs(data.zc+_ZSUN))])
+                    if options.pivotmean:
+                        thisplot.extend([zmin,zmax,numpy.mean(numpy.fabs(data.zc+_ZSUN))])
+                    else:
+                        thisplot.extend([zmin,zmax,numpy.median(numpy.fabs(data.zc+_ZSUN))])
                     #Errors
                     if velerrors:
                         theseerrors= []
@@ -226,9 +229,14 @@ def plotsz2hz(options,args):
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
                         or options.type.lower() == 'afefeh':
-                    thisplot.extend([numpy.exp(thisdensfit[0])*1000.,
-                                     numpy.exp(thisdensfit[1]),
-                                     numpy.median(numpy.fabs(data.zc)-_ZSUN)])
+                    if options.pivotmean:
+                        thisplot.extend([numpy.exp(thisdensfit[0])*1000.,
+                                         numpy.exp(thisdensfit[1]),
+                                         numpy.mean(numpy.fabs(data.zc)-_ZSUN)])
+                    else:
+                        thisplot.extend([numpy.exp(thisdensfit[0])*1000.,
+                                         numpy.exp(thisdensfit[1]),
+                                         numpy.median(numpy.fabs(data.zc)-_ZSUN)])
                     plotthis.append(thisplot)
                     if denserrors:
                         thesedenserrors= []
@@ -246,9 +254,14 @@ def plotsz2hz(options,args):
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
                         or options.type.lower() == 'afefeh':
-                    thisplot.extend([numpy.exp(thisdensfit[0])/1000.,
-                                     numpy.exp(thisdensfit[1])/10.**6.,
-                                     numpy.median(numpy.fabs(data.zc)-_ZSUN)])
+                    if options.pivotmean:
+                        thisplot.extend([numpy.exp(thisdensfit[0])/1000.,
+                                         numpy.exp(thisdensfit[1])/10.**6.,
+                                         numpy.mean(numpy.fabs(data.zc)-_ZSUN)])
+                    else:
+                        thisplot.extend([numpy.exp(thisdensfit[0])/1000.,
+                                         numpy.exp(thisdensfit[1])/10.**6.,
+                                         numpy.median(numpy.fabs(data.zc)-_ZSUN)])
                     plotthis.append(thisplot)
     #Set up plot
     #print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
@@ -413,7 +426,10 @@ def plotsz2hz(options,args):
                 xrange= [0,1500]
                 plotx= mz
                 ploty= (sz+(mz/1000.-pivot)*p1+p2*(mz/1000.-pivot)**2.)**2./hz/2./numpy.pi/4.302/10**-3.
-                xlabel=r'$\mathrm{median\ \ height}\ z_{1/2}\ \mathrm{[pc]}$'
+                if options.pivotmean:
+                    xlabel=r'$\mathrm{mean\ \ height}\ z_{1/2}\ \mathrm{[pc]}$'
+                else:
+                    xlabel=r'$\mathrm{median\ \ height}\ z_{1/2}\ \mathrm{[pc]}$'
                 ylabel=r'$\sigma_z^2(z = z_{1/2}) / h_z\ [M_\odot\ \mathrm{pc}^{-2}]$'
             elif options.subtype == 'hz':
                 if velerrors: #Don't plot if errors > 30%
@@ -1218,6 +1234,9 @@ def get_options():
     parser.add_option("--nofatdots",action="store_true", dest="nofatdots",
                       default=False,
                       help="Don't plot the fat dots")
+    parser.add_option("--pivotmean",action="store_true", dest="pivotmean",
+                      default=False,
+                      help="If set, pivot on the mean z rather than on the median")
     return parser
 
 if __name__ == '__main__':
