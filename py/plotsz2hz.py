@@ -123,6 +123,20 @@ def plotsz2hz(options,args):
                             plotthis[ii,jj]= numpy.nan
                         else:
                             plotthis[ii,jj]= thisvelfit[2]
+                elif options.type == 'zmedian':
+                    XYZ= numpy.zeros((len(data),3))
+                    XYZ[:,0]= data.xc
+                    XYZ[:,1]= data.yc
+                    XYZ[:,2]= data.zc+_ZSUN
+                    plotthis[ii,jj]= numpy.median(numpy.fabs(XYZ[:,2]))*1000.
+                    continue
+                elif options.type == 'zmean':
+                    XYZ= numpy.zeros((len(data),3))
+                    XYZ[:,0]= data.xc
+                    XYZ[:,1]= data.yc
+                    XYZ[:,2]= data.zc+_ZSUN
+                    plotthis[ii,jj]= numpy.mean(numpy.fabs(XYZ[:,2]))*1000.
+                    continue
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
@@ -253,6 +267,14 @@ def plotsz2hz(options,args):
         print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
         vmin, vmax= 0.,.02
         zlabel= r'$\rho_{\mathrm{DM}}(z=0)\ [M_\odot\ \mathrm{pc^{-3}}]$'
+    elif options.type == 'zmedian':
+        print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
+        vmin, vmax= 600.,1700.
+        zlabel= r'$z_{1/2}\ [\mathrm{kpc}]$'
+    elif options.type == 'zmean':
+        print numpy.nanmin(plotthis), numpy.nanmax(plotthis)
+        vmin, vmax= 600.,1700.
+        zlabel= r'$\langle z \rangle\ [\mathrm{kpc}]$'
     elif options.type == 'afe':
         vmin, vmax= 0.0,.5
         zlabel=r'$[\alpha/\mathrm{Fe}]$'

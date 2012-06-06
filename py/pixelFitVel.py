@@ -261,6 +261,8 @@ def plotPixelFitVel(options,args):
                     plotthis[ii,jj]= thisfit[2]
                 elif options.type == 'slope':
                     plotthis[ii,jj]= thisfit[2]
+                elif options.type == 'zmedian':
+                    plotthis[ii,jj]= numpy.median(numpy.fabs(XYZ[:,2]))))
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
