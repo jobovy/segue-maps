@@ -340,33 +340,40 @@ def plotsz2hz(options,args):
             zmin.append(plotthis[ii][7])
             zmax.append(plotthis[ii][8])
             pivot.append(plotthis[ii][9])
-        pivot= numpy.array(pivot)
-        p1= numpy.array(p1)
-        p2= numpy.array(p2)
-        zmin= numpy.array(zmin)
-        zmax= numpy.array(zmax)
+        if not options.randsample is None:
+            indxarray= numpy.array([False for ii in range(len(plotthis))],dtype='bool')
+            randindx= numpy.random.permutation(len(plotthis))
+            print indxarray[randindx][0:options.randsample]
+            indxarray[randindx[0:options.randsample]]= True
+        else:
+            indxarray= numpy.array([True for ii in range(len(plotthis))],dtype='bool')
+        pivot= numpy.array(pivot)[indxarray]
+        p1= numpy.array(p1)[indxarray]
+        p2= numpy.array(p2)[indxarray]
+        zmin= numpy.array(zmin)[indxarray]
+        zmax= numpy.array(zmax)[indxarray]
         if velerrors:
-            sz_err= numpy.array(sz_err)
-            hs_err= numpy.array(hs_err)
-            hsm_err= numpy.array(hsm_err)
-            p1_err= numpy.array(p1_err)
-            p2_err= numpy.array(p2_err)
+            sz_err= numpy.array(sz_err)[indxarray]
+            hs_err= numpy.array(hs_err)[indxarray]
+            hsm_err= numpy.array(hsm_err)[indxarray]
+            p1_err= numpy.array(p1_err)[indxarray]
+            p2_err= numpy.array(p2_err)[indxarray]
             if options.subtype.lower() == 'slopehsm' \
                     or options.subtype.lower() == 'slopequad' \
                     or options.subtype.lower() == 'slopequadquantiles' \
                     or options.subtype.lower() == 'slopesz' \
                     or options.subtype.lower() == 'szhsm':
-                p1hsm_corr= numpy.array(p1hsm_corr)
+                p1hsm_corr= numpy.array(p1hsm_corr)[indxarray]
         if denserrors:
             hz_err= numpy.array(hz_err)
-        sz= numpy.array(sz)
-        mz= numpy.array(mz)*1000.
-        hs= numpy.array(hs)
-        hz= numpy.array(hz)
-        hr= numpy.array(hr)
-        afe= numpy.array(afe)
-        feh= numpy.array(feh)
-        ndata= numpy.array(ndata)
+        sz= numpy.array(sz)[indxarray]
+        mz= numpy.array(mz)[indxarray]*1000.
+        hs= numpy.array(hs)[indxarray]
+        hz= numpy.array(hz)[indxarray]
+        hr= numpy.array(hr)[indxarray]
+        afe= numpy.array(afe)[indxarray]
+        feh= numpy.array(feh)[indxarray]
+        ndata= numpy.array(ndata)[indxarray]
         #Process ndata
         ndata= ndata**.5
         ndata= ndata/numpy.median(ndata)*35.
@@ -1237,10 +1244,12 @@ def get_options():
     parser.add_option("--pivotmean",action="store_true", dest="pivotmean",
                       default=False,
                       help="If set, pivot on the mean z rather than on the median")
+    parser.add_option("--randsample",dest='randsample',default=None,type='int',
+                      help="If set, randomly select randsample bins")
     return parser
 
 if __name__ == '__main__':
-    numpy.random.seed(1)
+    numpy.random.seed(19)
     parser= get_options()
     options,args= parser.parse_args()
     plotsz2hz(options,args)
