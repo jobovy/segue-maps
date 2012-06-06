@@ -142,6 +142,14 @@ def pixelFitVel(options,args):
                 params= optimize.fmin_powell(like_func,params,
                                              args=(XYZ,vxvyvz,cov_vxvyvz,R,d,
                                                    options.vr))
+                if options.chi2:
+                    #Calculate chi2 and chi2/dof
+                    chi2, dof= like_func(params,XYZ,vxvyvz,cov_vxvyvz,R,d,options.vr,
+                                    chi2=True)
+                    dof-= len(params)
+                    params.resize(len(params)+2)
+                    params[-2]= chi2
+                    params[-1]= chi2/dof
                 print numpy.exp(params)
                 fits.append(params)
             else:
@@ -264,6 +272,8 @@ def plotPixelFitVel(options,args):
                     plotthis[ii,jj]= thisfit[2]
                 elif options.type == 'slope':
                     plotthis[ii,jj]= thisfit[2]
+                elif options.type == 'chi2dof':
+                    plotthis[ii,jj]= thisfit[6]
                 elif options.type.lower() == 'afe' \
                         or options.type.lower() == 'feh' \
                         or options.type.lower() == 'fehafe' \
@@ -311,6 +321,9 @@ def plotPixelFitVel(options,args):
     elif options.type == 'pbad':
         vmin, vmax= 0.,0.1
         zlabel= r'$P_{\mathrm{bad}}$'
+    elif options.type == 'chi2dof':
+        vmin, vmax= 0.5,1.5
+        zlabel= r'$\chi^2/\mathrm{dof}$'
     elif options.type == 'afe':
         vmin, vmax= 0.05,.4
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
@@ -469,6 +482,9 @@ def get_options():
     parser.add_option("--pivotmean",action="store_true", dest="pivotmean",
                       default=False,
                       help="If set, pivot on the mean z rather than on the median")
+    parser.add_option("--chi2",action="store_true", dest="chi2",
+                      default=False,
+                      help="If set, also calculate chi2 of the best fit")
     return parser
   
 if __name__ == '__main__':

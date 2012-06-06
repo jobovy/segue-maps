@@ -192,7 +192,7 @@ def _HWRLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False):
     """log likelihood for the HWR model"""
     return -_HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=vr)
 
-def _HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False):
+def _HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False,chi2=False):
     """Minus log likelihood for the HWR model"""
     if params[0] < 0. or params[0] > 1.\
             or params[1] < -10. or params[1] > 10. \
@@ -212,12 +212,26 @@ def _HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False):
         ez2= cov_vxvyvz[:,2,2]
     sigz2= sigz**2.+ez2
     sigz= numpy.sqrt(sigz2)
-    out= -numpy.sum(numpy.log(params[0]/numpy.sqrt(100.**2.+
-                                                   ez2)\
-                                  *numpy.exp(-vz**2./2./(100.**2.+
-                                                         ez2))+
-                              (1.-params[0])/sigz*numpy.exp(-vz**2./2./\
-                                                                 sigz2)))
+    if chi2:
+        postout= params[0]/numpy.sqrt(100.**2.+ez2)\
+                                      *numpy.exp(-vz**2./2./(100.**2.+ez2))
+        postin= (1.-params[0])/sigz*numpy.exp(-vz**2./2./\
+                                                   sigz2)
+        norm= numpy.zeros(len(postout))
+        for ii in range(len(postout)):
+            norm[ii]= postout[ii]+postin[ii]
+        postin/= norm
+        postout/= norm
+        indx= (postin > 0.5)
+        out= (numpy.sum(vz[indx]**2./sigz2[indx])+numpy.log(1.-params[0]),
+              numpy.sum(indx))
+    else:
+        out= -numpy.sum(numpy.log(params[0]/numpy.sqrt(100.**2.+
+                                                       ez2)\
+                                      *numpy.exp(-vz**2./2./(100.**2.+
+                                                             ez2))+
+                                  (1.-params[0])/sigz*numpy.exp(-vz**2./2./\
+                                                                     sigz2)))
     if _DEBUG:
         print "Current params, minus likelihood:", params, out
     return out
