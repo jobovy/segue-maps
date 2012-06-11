@@ -643,8 +643,8 @@ class segueSelect:
             print "Plate %i has no spectroscopic data ..." % plate
             print "Returning ..."
             return None           
-        if xrange is None: xrange= [nu.amin([nu.amin(photr),nu.amin(specr)])-0.1,
-                                    nu.amax([nu.amax(photr),nu.amax(specr)])+0.1]
+        if xrange is None: xrange= [numpy.amin([numpy.amin(photr),numpy.amin(specr)])-0.1,
+                                    numpy.amax([numpy.amax(photr),numpy.amax(specr)])+0.1]
         if yrange is None: yrange= [0.,1.1]
         bovy_plot.bovy_plot(photr,fn1,photcolor+'-',overplot=overplot)
         bovy_plot.bovy_plot(specr,fn2,speccolor+'-',overplot=True)
