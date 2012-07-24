@@ -123,7 +123,9 @@ def pixelFitVel(options,args):
                 sinphi= XYZ[:,1]/R
                 vR= -vxvyvz[:,0]*cosphi+vxvyvz[:,1]*sinphi
                 vT= vxvyvz[:,0]*sinphi+vxvyvz[:,1]*cosphi
-                vxvyvz[:,0]= vR
+                #Subtract mean vR
+                vR-= numpy.mean(vR)
+                vxvyvz[:,0]= vR               
                 vxvyvz[:,1]= vT
                 for rr in range(len(XYZ[:,0])):
                     rot= numpy.array([[cosphi[rr],sinphi[rr]],
