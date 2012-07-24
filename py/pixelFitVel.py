@@ -121,8 +121,8 @@ def pixelFitVel(options,args):
                 #Rotate vxvyvz to vRvTvz
                 cosphi= (8.-XYZ[:,0])/R
                 sinphi= XYZ[:,1]/R
-                vR= vxvyvz[:,0]*cosphi+vxvyvz[:,1]*sinphi
-                vT= -vxvyvz[:,0]*sinphi+vxvyvz[:,1]*cosphi
+                vR= -vxvyvz[:,0]*cosphi+vxvyvz[:,1]*sinphi
+                vT= vxvyvz[:,0]*sinphi+vxvyvz[:,1]*cosphi
                 vxvyvz[:,0]= vR
                 vxvyvz[:,1]= vT
                 for rr in range(len(XYZ[:,0])):

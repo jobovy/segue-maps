@@ -1503,7 +1503,7 @@ def _add_velocities(raw):
                                              pmllpmbb[:,1],lb[:,0],lb[:,1],
                                              raw.dist,degree=True)
     #Solar motion from Schoenrich & Binney
-    vxvyvz[:,0]+= -11.1
+    vxvyvz[:,0]+= 11.1
     vxvyvz[:,1]+= 12.24
     vxvyvz[:,2]+= 7.25
     #print numpy.mean(vxvyvz[:,2]), numpy.std(vxvyvz[:,2])

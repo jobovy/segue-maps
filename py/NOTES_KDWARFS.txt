@@ -1,0 +1,33 @@
+#Velocity fits for K dwarfs#
+############################
+
+#sigZ#
+
+python pixelFitVel.py ../fits/pixelFitK_Vel_HWR_BigPix0.1.sav --dfeh=0.1 --dafe=0.05 --model=hwr --sample=K
+
+python pixelFitVel.py ../fits/pixelFitK_Vel_HWR_BigPix0.1.sav --dfeh=0.1 --dafe=0.05 --model=hwr --mcsample --nsamples=10000 ../fits/pixelFitK_Vel_HWR_BigPix0.1_10ksamples.sav --sample=K
+
+python pixelFitVel.py ../fits/pixelFitK_Vel_HWR_BigPix0.1.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../tex-vel/pixelFit_k_sz.ps -t sz --plot --tighten --sample=K
+
+python pixelFitVel.py ../fits/pixelFitK_Vel_HWR_BigPix0.1.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../tex-vel/pixelFit_k_slope.ps -t slope --plot --tighten --sample=K
+
+python plotsz2hz.py ../fits/pixelFitK_Vel_HWR_BigPix0.1.sav ../fits/pixelFitK_DblExp_BigPix0.1.sav ../fits/pixelFitK_Vel_HWR_BigPix0.1_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../tex-vel/pixelFit_k_zfunc_afe.ps -t afe --subtype=zfunc --sample=K
+
+python plotsz2hz.py ../fits/pixelFitK_Vel_HWR_BigPix0.1.sav ../fits/pixelFitK_DblExp_BigPix0.1.sav ../fits/pixelFitK_Vel_HWR_BigPix0.1_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../tex-vel/pixelFit_k_zfunc_feh.ps -t feh --subtype=zfunc --sample=K
+
+
+
+#sigR#
+
+python pixelFitVel.py ../fits/pixelFitK_VelR_HWR_BigPix0.1.sav --dfeh=0.1 --dafe=0.05 --model=hwr --sample=K --vr
+
+python pixelFitVel.py ../fits/pixelFitK_VelR_HWR_BigPix0.1.sav --dfeh=0.1 --dafe=0.05 --model=hwr --mcsample --nsamples=10000 ../fits/pixelFitK_VelR_HWR_BigPix0.1_10ksamples.sav --sample=K --vr
+
+python pixelFitVel.py ../fits/pixelFitK_VelR_HWR_BigPix0.1.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../tex-vel/pixelFit_k_sr.ps -t sz --plot --tighten --sample=K --vr
+
+python pixelFitVel.py ../fits/pixelFitK_VelR_HWR_BigPix0.1.sav --dfeh=0.1 --dafe=0.05 --model=hwr -o ../tex-vel/pixelFit_k_sloper.ps -t slope --plot --tighten --sample=K --vr
+
+python plotsz2hz.py ../fits/pixelFitK_VelR_HWR_BigPix0.1.sav ../fits/pixelFitK_DblExp_BigPix0.1.sav ../fits/pixelFitK_VelR_HWR_BigPix0.1_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../tex-vel/pixelFit_k_sr_zfunc_afe.ps -t afe --subtype=zfunc --sample=K --vr
+
+python plotsz2hz.py ../fits/pixelFitK_VelR_HWR_BigPix0.1.sav ../fits/pixelFitK_DblExp_BigPix0.1.sav ../fits/pixelFitK_VelR_HWR_BigPix0.1_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../tex-vel/pixelFit_k_sr_zfunc_feh.ps -t feh --subtype=zfunc --sample=K --vr
+

@@ -21,27 +21,51 @@ def plotVelocityData(options,args):
                                          sample=options.sample)
     R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
     XYZ[:,2]+= _ZSUN
-    if options.type.lower() == 'datavzz':
-        plotx= numpy.fabs(XYZ[:,2])*1000.
-        xrange=[0.,2700.]
-        xlabel=r'$z\ [\mathrm{pc}]$'
+    #Rotate vxvyvz to vRvTvz
+    cosphi= (8.-XYZ[:,0])/R
+    sinphi= XYZ[:,1]/R
+    vR= -vxvyvz[:,0]*cosphi+vxvyvz[:,1]*sinphi
+    vT= vxvyvz[:,0]*sinphi+vxvyvz[:,1]*cosphi
+    vxvyvz[:,0]= vR
+    vxvyvz[:,1]= vT
+    for rr in range(len(XYZ[:,0])):
+        rot= numpy.array([[cosphi[rr],sinphi[rr]],
+                          [-sinphi[rr],cosphi[rr]]])
+        sxy= cov_vxvyvz[rr,0:2,0:2]
+        sRT= numpy.dot(rot,numpy.dot(sxy,rot.T))
+        cov_vxvyvz[rr,0:2,0:2]= sRT
+    if 'vz' in options.type.lower():
+        ploty= vxvyvz[:,2]
+        ylabel=r'$v_z\ [\mathrm{km\ s}^{-1}]$'
+    elif 'vr' in options.type.lower():
+        ploty= vR
+        ylabel=r'$v_R\ [\mathrm{km\ s}^{-1}]$'
+    elif 'vt' in options.type.lower():
+        ploty= vT
+        ylabel=r'$v_\phi\ [\mathrm{km\ s}^{-1}]$'
     else:
+        print "I give up ..."
+    if 'rr' in options.type.lower() or 'zr' in options.type.lower() or 'tr' in options.type.lower():
         plotx= R
         xrange=[5.,14.]
         xlabel=r'$R\ [\mathrm{kpc}]$'
+    else:
+        plotx= numpy.fabs(XYZ[:,2])*1000.
+        xrange=[0.,2700.]
+        xlabel=r'$z\ [\mathrm{pc}]$'
     #Now plot
     bovy_plot.bovy_print()
-    bovy_plot.bovy_plot(plotx,vxvyvz[:,2],'k,',
+    bovy_plot.bovy_plot(plotx,ploty,'k,',
                         xrange=xrange,
                         yrange=[-150.,150.],
                         xlabel=xlabel,
-                        ylabel=r'$v_z\ [\mathrm{km\ s}^{-1}]$')
+                        ylabel=ylabel)
     #Bin and calculate mean and 1s
     nbins= 21
-    if options.type.lower() == 'datavzz':
-        rs= numpy.linspace(0.,2700.,nbins+1)
-    else:
+    if 'rr' in options.type.lower() or 'zr' in options.type.lower() or 'tr' in options.type.lower():
         rs= numpy.linspace(5.,14.,nbins+1)
+    else:
+        rs= numpy.linspace(0.,2700.,nbins+1)
     medians, smin,splus= numpy.zeros(nbins), numpy.zeros(nbins), \
         numpy.zeros(nbins)
     for ii in range(nbins):
@@ -51,7 +75,7 @@ def plotVelocityData(options,args):
             smin[ii]= numpy.nan
             splus[ii]= numpy.nan
             continue
-        thisvz= sorted(vxvyvz[indx,2])
+        thisvz= sorted(ploty[indx])
         #Calculate quantiles
         indx1= int(numpy.floor(0.5*len(thisvz)))
         indx2= int(numpy.floor(0.16*len(thisvz)))
