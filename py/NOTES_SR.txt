@@ -1,3 +1,9 @@
 #slope PDF
 
 python plotsz2hz.py ../fits/pixelFitG_VelR_HWR_BigPix0.1.sav ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_VelR_HWR_BigPix0.1_10ksamples.sav --dfeh=0.1 --dafe=0.05 -o ../tex-vel/pixelFit_g_sr_slopequadquantiles_afe.ps -t afe --subtype=slopequadquantiles --ploterrors --kde --savekde=kdeR.tst
+
+mean slope = -1.5 +/- 0.62
+mean quadratic = 0.7 +/- 0.2
+
+quadratic zero slope = 0.1 +/- 0.3
+
