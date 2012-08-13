@@ -8,6 +8,8 @@ from optparse import OptionParser
 import multi
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 from galpy import potential
+from galpy.actionAngle_src.actionAngleAdiabaticGrid import  actionAngleAdiabaticGrid
+from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import bovy_mcmc
 import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
@@ -78,14 +80,35 @@ def pixelFitDynamics(options,args):
     #Sample?
     return None
 
-def loglike(params):
+def loglike(params,fehs,afes):
     """log likelihood"""
-    
+    #Transform coordinates
+    #Set up potential and actionAngle
+    pot= setup_potential(params,options,len(fehs))
+    aA= setup_aA(pot,options)
+    #Evaluate individual DFs
+    qdf= quasiisothermaldf(1./3.,0.4,0.2,1.,1.,pot=lp,aA=aA)
+
     return None
 
 def mloglike(*args,**kwargs):
     """minus log likelihood"""
     return -loglike(*args,**kwargs)
+
+def setup_aA(pot,options):
+    """Function for setting up the actionAngle object"""
+    if options.aAmethod.lower() == 'adiabatic':
+        return actionAngleAdiabaticGrid(pot=pot,nR=options.aAnR,
+                                        nEz=options.aAnEz,nEr=options.aAnEr,
+                                        nLz=options.aAnLz,
+                                        zmax=options.aAzmax,
+                                        Rmax=options.aARmax)
+    
+def setup_potential(params,options,npops):
+    """Function for setting up the potential"""
+    potparams= get_potparams(params,options,npops)
+    if options.potential.lower() == 'flatlog':
+        return potential.LogarithmicHaloPotential(normalize=1.,q=potparams[1])
 
 def full_optimize(params,fehs,afes,binned,options):
     """Function for optimizing the full set of parameters"""
@@ -197,6 +220,21 @@ def get_options():
     #DF model
     parser.add_option("--dfmodel",dest='dfmodel',default='qdf',#Quasi-isothermal
                       help="DF model to fit")
+    #Action-angle options
+    parser.add_option("--aAmethod",dest='aAmethod',default='adiabatic',
+                      help="action angle method to use")
+    parser.add_option("--aAnR",dest='aAnR',default=16,type='int',
+                      help="Number of radii for Ez grid in aA")
+    parser.add_option("--aAnEz",dest='aAnEz',default=16,type='int',
+                      help="Number of Ez grid points in aA")
+    parser.add_option("--aAnEr",dest='aAnEr',default=31,type='int',
+                      help="Number of Er grid points in aA")
+    parser.add_option("--aAnLz",dest='aAnLz',default=31,type='int',
+                      help="Number of Lz grid points in aA")
+    parser.add_option("--aAzmax",dest='aAzmax',default=1.,type='float',
+                      help="zmax in aA")
+    parser.add_option("--aARmax",dest='aARmax',default=5.,type='float',
+                      help="Rmax in aA")
     #Fit options
     parser.add_option("--fitro",action="store_true", dest="fitro",
                       default=False,
