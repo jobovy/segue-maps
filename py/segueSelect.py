@@ -1271,7 +1271,7 @@ def juric_dist_gr(g,r,dg=0.,dr=0.,return_error=False,
     return (ds,derrs)
 
 def read_gdwarfs(datafile=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
-                 ebv=True,nocoords=False,distfac=None):
+                 ebv=True,nocoords=False,distfac=None,nosolar=False):
     """
     NAME:
        read_gdwarfs
@@ -1285,6 +1285,7 @@ def read_gdwarfs(datafile=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
        ebv= if True, cut on E(B-V), if number cut on EBV < the number (0.3)
        nocoords= if True, don't calculate distances or transform coordinates
        distfac= if set, apply this distance factor
+       nosolar= if True, don't correct for the Solar motion
     OUTPUT:
        cut data, returns numpy.recarray
     HISTORY:
@@ -1341,11 +1342,11 @@ def read_gdwarfs(datafile=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     #BOVY: distances
     raw= _add_distances(raw,distfac=distfac)
     #velocities
-    raw= _add_velocities(raw)
+    raw= _add_velocities(raw,nosolar=nosolar)
     return raw
 
 def read_kdwarfs(datafile=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
-                 ebv=True,nocoords=False,distfac=None):
+                 ebv=True,nocoords=False,distfac=None,nosolar=False):
     """
     NAME:
        read_kdwarfs
@@ -1359,6 +1360,7 @@ def read_kdwarfs(datafile=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
        ebv= if True, cut on E(B-V)
        nocoords= if True, don't calculate distances or transform coordinates
        distfac= if set, apply this distance factor
+       nosolar= if True, don't correct for the Solar motion
     OUTPUT:
        cut data, returns numpy.recarray
     HISTORY:
@@ -1415,7 +1417,7 @@ def read_kdwarfs(datafile=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     #BOVY: distances
     raw= _add_distances(raw,distfac=distfac)
     #velocities
-    raw= _add_velocities(raw)
+    raw= _add_velocities(raw,nosolar=nosolar)
     return raw
 
 def read_fgstars(datafile=_FGSTARALLFILE,logg=False,ug=False,ri=False,sn=True,
@@ -1486,7 +1488,7 @@ def _add_distances(raw,distfac=None):
     raw= _append_field_recarray(raw,'dist_err',derrs)
     return raw
 
-def _add_velocities(raw):
+def _add_velocities(raw,nosolar=False):
     if not _COORDSLOADED:
         print "galpy.util.bovy_coords failed to load ..."
         print "Install galpy for coordinate transformations ..."
@@ -1503,9 +1505,10 @@ def _add_velocities(raw):
                                              pmllpmbb[:,1],lb[:,0],lb[:,1],
                                              raw.dist,degree=True)
     #Solar motion from Schoenrich & Binney
-    vxvyvz[:,0]+= 11.1
-    vxvyvz[:,1]+= 12.24
-    vxvyvz[:,2]+= 7.25
+    if not nosolar:
+        vxvyvz[:,0]+= 11.1
+        vxvyvz[:,1]+= 12.24
+        vxvyvz[:,2]+= 7.25
     #print numpy.mean(vxvyvz[:,2]), numpy.std(vxvyvz[:,2])
     #Propagate uncertainties
     ndata= len(raw.ra)

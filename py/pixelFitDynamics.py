@@ -1,11 +1,13 @@
 import os, os.path
 import sys
+import copy
 import math
 import numpy
 from scipy import optimize
 import cPickle as pickle
 from optparse import OptionParser
 import multi
+import multiprocessing
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 from galpy import potential
 from galpy.actionAngle_src.actionAngleAdiabaticGrid import  actionAngleAdiabaticGrid
@@ -14,6 +16,7 @@ import bovy_mcmc
 import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
     segueSelect
+from fitDensz import cb
 from fitSigz import _ZSUN
 from pixelFitDens import pixelAfeFeh
 _REFR0= 8. #kpc
@@ -22,14 +25,14 @@ def pixelFitDynamics(options,args):
     #Read the data
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin)
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
         else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin)
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
     elif options.sample.lower() == 'k':
         if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin)
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
         else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin)
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
     if not options.bmin is None:
         #Cut on |b|
         raw= raw[(numpy.fabs(raw.b) > options.bmin)]
@@ -80,20 +83,99 @@ def pixelFitDynamics(options,args):
     #Sample?
     return None
 
-def loglike(params,fehs,afes):
-    """log likelihood"""
-    #Transform coordinates
-    #Set up potential and actionAngle
-    pot= setup_potential(params,options,len(fehs))
-    aA= setup_aA(pot,options)
-    #Evaluate individual DFs
-    qdf= quasiisothermaldf(1./3.,0.4,0.2,1.,1.,pot=lp,aA=aA)
-
-    return None
-
 def mloglike(*args,**kwargs):
     """minus log likelihood"""
     return -loglike(*args,**kwargs)
+
+def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
+                               indx,_bigparams):
+    """Minus log likelihood when optimizing the parameters of a single DF"""
+    #_bigparams is a hack to propagate the parameters to the overall like
+    theseparams= set_dfparams(params,_bigparams,indx,options)
+    return -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned)
+
+def loglike(params,fehs,afes,binned,options):
+    """log likelihood"""
+    #Set up potential and actionAngle
+    pot= setup_potential(params,options,len(fehs))
+    aA= setup_aA(pot,options)
+    return logdf(params,pot,aA,fehs,afes,binned)
+
+def logdf(params,pot,aA,fehs,afes,binned):
+    logl= numpy.zeros(len(fehs))
+    #Evaluate individual DFs
+    args= (pot,aA,fehs,afes,binned)
+    if not options.multi is None:
+        logl= multi.parallel_map((lambda x: indiv_logdf(params,x,
+                                                        *args)),
+                                 range(len(fehs)),
+                                 numcores=numpy.amin([len(fehs),
+                                                      multiprocessing.cpu_count(),
+                                                      options.multi]))
+    else:
+        for ii in range(len(fehs)):
+            print ii
+            logl[ii]= indiv_logdf(params,x,*args)
+    return numpy.sum(logl)
+
+def indiv_logdf(params,indx,pot,aA,fehs,afes,binned):
+    """Individual population log likelihood"""
+    dfparams= get_dfparams(params,indx,options)
+    qdf= quasiisothermaldf(*dfparams,pot=pot,aA=aA)
+    #Get data ready
+    R,vR,vT,z,vz,covv= prepare_coordinates(params,indx,fehs,afes,binned)
+    data_lndf= numpy.zeros(len(R))
+    for ii in range(len(R)):
+        data_lndf[ii]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
+    #Normalize
+    return numpy.sum(data_lndf)
+
+def prepare_coordinates(params,indx,fehs,afes,binned):
+    vc= get_potparams(params,options,len(fehs))[0] #Always zero-th
+    ro= get_ro(params,options)
+    vsun= get_vsun(params,options)
+    #Create XYZ and R, vxvyvz, cov_vxvyvz
+    data= copy.copy(binned(fehs[indx],afes[indx]))
+    R= ((1.-data.xc/_REFR0/ro)**2.+(data.yc/_REFR0/ro)**2.)**0.5
+    #Confine to R-range?
+    if not options.rmin is None and not options.rmax is None:
+        dataindx= (R >= options.rmin/_REFR0/ro)*\
+            (R < options.rmax/_REFR0/ro)
+        data= data[dataindx]
+        R= R[dataindx]
+    #Confine to z-range?
+    if not options.zmin is None and not options.zmax is None:
+        dataindx= ((data.zc+_ZSUN) >= options.zmin)*\
+            ((data.zc+_ZSUN) < options.zmax)
+        data= data[dataindx]
+        R= R[dataindx]
+    XYZ= numpy.zeros((len(data),3))
+    XYZ[:,0]= data.xc/_REFR0/ro
+    XYZ[:,1]= data.yc/_REFR0/ro
+    XYZ[:,2]= (data.zc+_ZSUN)/_REFR0/ro
+    vxvyvz= numpy.zeros((len(data),3))
+    vxvyvz[:,0]= data.vxc/_REFV0/vc-vsun[0]
+    vxvyvz[:,1]= data.vyc/_REFV0/vc+vsun[1]
+    vxvyvz[:,2]= data.vzc/_REFV0/vc+vsun[2]
+    cov_vxvyvz= numpy.zeros((len(data),3,3))
+    cov_vxvyvz[:,0,0]= data.vxc_err**2./_REFV0/_REFV0/vc/vc
+    cov_vxvyvz[:,1,1]= data.vyc_err**2./_REFV0/_REFV0/vc/vc
+    cov_vxvyvz[:,2,2]= data.vzc_err**2./_REFV0/_REFV0/vc/vc
+    cov_vxvyvz[:,0,1]= data.vxvyc_rho*data.vxc_err*data.vyc_err/_REFV0/_REFV0/vc/vc
+    cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err/_REFV0/_REFV0/vc/vc
+    cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err/_REFV0/_REFV0/vc/vc
+    #Rotate to Galactocentric frame
+    cosphi= (1.-XYZ[:,0])/R
+    sinphi= XYZ[:,1]/R
+    vR= -vxvyvz[:,0]*cosphi+vxvyvz[:,1]*sinphi
+    vT= vxvyvz[:,0]*sinphi+vxvyvz[:,1]*cosphi
+    for rr in range(len(XYZ[:,0])):
+        rot= numpy.array([[cosphi[rr],sinphi[rr]],
+                          [-sinphi[rr],cosphi[rr]]])
+        sxy= cov_vxvyvz[rr,0:2,0:2]
+        sRT= numpy.dot(rot,numpy.dot(sxy,rot.T))
+        cov_vxvyvz[rr,0:2,0:2]= sRT
+    return (R,vR,vT,XYZ[:,2],vxvyvz[:,2],cov_vxvyvz)
 
 def setup_aA(pot,options):
     """Function for setting up the actionAngle object"""
@@ -116,6 +198,19 @@ def full_optimize(params,fehs,afes,binned,options):
 
 def indiv_optimize_df(params,fehs,afes,binned,options):
     """Function for optimizing individual DFs with potential fixed"""
+    #Set up potential and actionAngle
+    pot= setup_potential(params,options,len(fehs))
+    aA= setup_aA(pot,options)
+    for ii in range(len(fehs)):
+        print ii
+        init_dfparams= get_dfparams(params,ii,options)
+        new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
+                                           init_dfparams,
+                                           args=(fehs,afes,binned,
+                                                 options,pot,aA,
+                                                 ii,copy.copy(params)),
+                                           callback=cb)
+        params= set_dfparams(new_dfparams,params,ii,options)
     return params
 
 def indiv_optimize_potential(params,fehs,afes,binned,options):
@@ -134,7 +229,7 @@ def initialize(options,fehs,afes):
             p.extend([numpy.log(2.*monoAbundanceMW.sigmaz(fehs[ii],afes[ii])/_REFV0), #sigmaR
                       numpy.log(monoAbundanceMW.sigmaz(fehs[ii],afes[ii])/_REFV0), #sigmaZ
                       numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii])/_REFR0), #hR
-                      1.,1.]) #hsigR, hsigZ
+                      0.,0.]) #hsigR, hsigZ
     if options.potential.lower() == 'flatlog':
         p.extend([1.,.9])
     return p
@@ -146,18 +241,33 @@ def get_potparams(p,options,npops):
     if options.fitvsun: startindx+= 3
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*npops
-    if options.potential.lower == 'flatlog':
+    if options.potential.lower() == 'flatlog':
         return (p[startindx],p[startindx+1]) #vc, q
 
 def get_dfparams(p,indx,options):
-    """Function that returns the set of DF parameters for population indx for these options"""
+    """Function that returns the set of DF parameters for population indx for these options,
+    Returns them such that they can be given to the initialization"""
     startindx= 0
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
     ndfparams= get_ndfparams(options)
     if options.dfmodel.lower() == 'qdf':
-        return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],
-                p[startindx+4])
+        return (numpy.exp(p[startindx]),
+                numpy.exp(p[startindx+1]),
+                numpy.exp(p[startindx+2]),
+                numpy.exp(p[startindx+3]),
+                numpy.exp(p[startindx+4]))
+
+def set_dfparams(p,params,indx,options):
+    """Function that sets the set of DF parameters for population indx for these options"""
+    startindx= 0
+    if options.fitro: startindx+= 1
+    if options.fitvsun: startindx+= 3
+    ndfparams= get_ndfparams(options)
+    if options.dfmodel.lower() == 'qdf':
+        for ii in range(ndfparams):
+            params[startindx+ii]= p[ii]
+    return params
 
 def get_ndfparams(options):
     """Function that returns the number of DF parameters for a single population"""
@@ -250,6 +360,8 @@ def get_options():
                       help="If set, sample around the best fit, save in args[1]")
     parser.add_option("--nsamples",dest='nsamples',default=1000,type='int',
                       help="Number of MCMC samples to obtain")
+    parser.add_option("-m","--multi",dest='multi',default=None,type='int',
+                      help="number of cpus to use")
     return parser
   
 if __name__ == '__main__':
