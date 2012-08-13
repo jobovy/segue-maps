@@ -94,6 +94,13 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
     theseparams= set_dfparams(params,_bigparams,indx,options)
     return -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned)
 
+def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
+                                _bigparams):
+    """Minus log likelihood when optimizing the parameters of a single DF"""
+    #_bigparams is a hack to propagate the parameters to the overall like
+    theseparams= set_potparams(params,_bigparams,options,len(fehs))
+    return mloglike(theseparams,fehs,afes,binned,options)
+
 def loglike(params,fehs,afes,binned,options):
     """log likelihood"""
     #Set up potential and actionAngle
@@ -115,7 +122,7 @@ def logdf(params,pot,aA,fehs,afes,binned):
     else:
         for ii in range(len(fehs)):
             print ii
-            logl[ii]= indiv_logdf(params,x,*args)
+            logl[ii]= indiv_logdf(params,ii,*args)
     return numpy.sum(logl)
 
 def indiv_logdf(params,indx,pot,aA,fehs,afes,binned):
@@ -194,7 +201,8 @@ def setup_potential(params,options,npops):
 
 def full_optimize(params,fehs,afes,binned,options):
     """Function for optimizing the full set of parameters"""
-    return params
+    return optimize.fmin_powell(mloglike,params,
+                                args=(fehs,afes,binned,options))
 
 def indiv_optimize_df(params,fehs,afes,binned,options):
     """Function for optimizing individual DFs with potential fixed"""
@@ -215,7 +223,13 @@ def indiv_optimize_df(params,fehs,afes,binned,options):
 
 def indiv_optimize_potential(params,fehs,afes,binned,options):
     """Function for optimizing the potential w/ individual DFs fixed"""
-    return params
+    init_potparams= get_potparams(params,options,len(fehs))
+    new_potparams= optimize.fmin_powell(indiv_optimize_pot_mloglike,
+                                        init_potparams,
+                                        args=(fehs,afes,binned,options,
+                                              copy.copy(params)),
+                                        callback=cb)
+    params= set_potparams(new_potparams,params,len(fehs))
 
 def initialize(options,fehs,afes):
     """Function to initialize the fit; uses fehs and afes to initialize using MAPS"""
@@ -243,6 +257,18 @@ def get_potparams(p,options,npops):
     startindx+= ndfparams*npops
     if options.potential.lower() == 'flatlog':
         return (p[startindx],p[startindx+1]) #vc, q
+
+def set_potparams(p,params,options,npops):
+    """Function that sets the set of potential parameters for these options"""
+    startindx= 0
+    if options.fitro: startindx+= 1
+    if options.fitvsun: startindx+= 3
+    ndfparams= get_ndfparams(options)
+    startindx+= ndfparams*npops
+    if options.potential.lower() == 'flatlog':
+        params[startindx]= p[0]
+        params[startindx+1]= p[1]
+    return params
 
 def get_dfparams(p,indx,options):
     """Function that returns the set of DF parameters for population indx for these options,
