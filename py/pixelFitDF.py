@@ -74,7 +74,7 @@ def pixelFitDynamics(options,args):
     params= initialize(options,fehs,afes)
     #Optimize DF w/ fixed potential and potential w/ fixed DF
     for cc in range(options.ninit):
-        params= indiv_optimize_df(params,fehs,afes,binned,options)
+        #params= indiv_optimize_df(params,fehs,afes,binned,options)
         params= indiv_optimize_potential(params,fehs,afes,binned,options)
     #Optimize full model
     params= full_optimize(params,fehs,afes,binned,options)
@@ -99,7 +99,9 @@ def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
     theseparams= set_potparams(params,_bigparams,options,len(fehs))
-    return mloglike(theseparams,fehs,afes,binned,options)
+    ml= mloglike(theseparams,fehs,afes,binned,options)
+    print ml                 
+    return ml#oglike(theseparams,fehs,afes,binned,options)
 
 def loglike(params,fehs,afes,binned,options):
     """log likelihood"""
@@ -133,6 +135,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned):
     R,vR,vT,z,vz,covv= prepare_coordinates(params,indx,fehs,afes,binned)
     data_lndf= numpy.zeros(len(R))
     for ii in range(len(R)):
+        #print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
         data_lndf[ii]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
     #Normalize
     return numpy.sum(data_lndf)
@@ -223,7 +226,8 @@ def indiv_optimize_df(params,fehs,afes,binned,options):
 
 def indiv_optimize_potential(params,fehs,afes,binned,options):
     """Function for optimizing the potential w/ individual DFs fixed"""
-    init_potparams= get_potparams(params,options,len(fehs))
+    init_potparams= numpy.array(get_potparams(params,options,len(fehs)))
+    print init_potparams
     new_potparams= optimize.fmin_powell(indiv_optimize_pot_mloglike,
                                         init_potparams,
                                         args=(fehs,afes,binned,options,
