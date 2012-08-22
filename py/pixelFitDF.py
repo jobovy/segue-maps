@@ -1,6 +1,7 @@
 import os, os.path
 import sys
 import copy
+import tempfile
 import math
 import numpy
 from scipy import optimize
@@ -76,7 +77,7 @@ def pixelFitDynamics(options,args):
     params= initialize(options,fehs,afes)
     #Optimize DF w/ fixed potential and potential w/ fixed DF
     for cc in range(options.ninit):
-        #params= indiv_optimize_df(params,fehs,afes,binned,options)
+        params= indiv_optimize_df(params,fehs,afes,binned,options)
         params= indiv_optimize_potential(params,fehs,afes,binned,options)
     #Optimize full model
     params= full_optimize(params,fehs,afes,binned,options)
@@ -94,7 +95,9 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
     theseparams= set_dfparams(params,_bigparams,indx,options)
-    return -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned)
+    ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned)
+    print params, ml
+    return ml
 
 def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
                                 _bigparams):
@@ -217,17 +220,55 @@ def indiv_optimize_df(params,fehs,afes,binned,options):
     #Set up potential and actionAngle
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
-    for ii in range(len(fehs)):
-        print ii
-        init_dfparams= get_dfparams(params,ii,options)
-        new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
-                                           init_dfparams,
+    if not options.multi is None:
+        #Generate list of temporary files
+        tmpfiles= []
+        for ii in range(len(fehs)): tmpfiles.append(tempfile.mkstemp())
+        try:
+            logl= multi.parallel_map((lambda x: indiv_optimize_df_single(params,x,
+                                                                         fehs,afes,binned,options,aA,pot,tmpfiles)),
+                                     range(len(fehs)),
+                                     numcores=numpy.amin([len(fehs),
+                                                          multiprocessing.cpu_count(),
+                                                          options.multi]))
+            #Now read all of the temporary files
+            for ii in range(len(fehs)):
+                tmpfile= open(tmpfiles[ii][1],'rb')
+                new_dfparams= pickle.load(tmpfile)
+                params= set_dfparams(new_dfparams,params,ii,options)
+                tmpfile.close()
+        finally:
+            for ii in range(len(fehs)):
+                os.remove(tmpfiles[ii][1])
+    else:
+        for ii in range(len(fehs)):
+            print ii
+            init_dfparams= get_dfparams(params,ii,options)
+            new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
+                                               init_dfparams,
                                            args=(fehs,afes,binned,
                                                  options,pot,aA,
                                                  ii,copy.copy(params)),
-                                           callback=cb)
-        params= set_dfparams(new_dfparams,params,ii,options)
+                                               callback=cb)
+            params= set_dfparams(new_dfparams,params,ii,options)
     return params
+
+def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,tmpfiles):
+    """Function to optimize the DF params for a single population when holding the potential fixed and using multi-processing"""
+    init_dfparams= get_dfparams(params,ii,options)
+    new_dfparams= copy.copy(init_dfparams)
+    new_dfparams[0]= 10.
+    #new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
+    #                                   init_dfparams,
+    #                                   args=(fehs,afes,binned,
+    #                                         options,pot,aA,
+    #                                         ii,copy.copy(params)),
+    #                                   callback=cb)
+    #Now save to temporary pickle
+    tmpfile= open(tmpfiles[ii][1],'wb')
+    pickle.dump(new_dfparams,tmpfile)
+    tmpfile.close()
+    return None
 
 def indiv_optimize_potential(params,fehs,afes,binned,options):
     """Function for optimizing the potential w/ individual DFs fixed"""
@@ -291,12 +332,13 @@ def get_dfparams(p,indx,options):
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
     ndfparams= get_ndfparams(options)
+    startindx+= ndfparams*indx
     if options.dfmodel.lower() == 'qdf':
-        return (numpy.exp(p[startindx]),
+        return [numpy.exp(p[startindx]),
                 numpy.exp(p[startindx+1]),
                 numpy.exp(p[startindx+2]),
                 numpy.exp(p[startindx+3]),
-                numpy.exp(p[startindx+4]))
+                numpy.exp(p[startindx+4])]
 
 def set_dfparams(p,params,indx,options):
     """Function that sets the set of DF parameters for population indx for these options"""
@@ -304,9 +346,10 @@ def set_dfparams(p,params,indx,options):
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
     ndfparams= get_ndfparams(options)
+    startindx+= ndfparams*indx
     if options.dfmodel.lower() == 'qdf':
         for ii in range(ndfparams):
-            params[startindx+ii]= p[ii]
+            params[startindx+ii]= numpy.log(p[ii])
     return params
 
 def get_ndfparams(options):
