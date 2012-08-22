@@ -81,7 +81,7 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
     theseparams= set_dfparams(params,_bigparams,indx,options,log=False)
-    ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned)
+    ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff)
     print params, ml
     return ml
 
@@ -90,7 +90,7 @@ def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
     theseparams= set_potparams(params,_bigparams,options,len(fehs))
-    ml= mloglike(theseparams,fehs,afes,binned,options)
+    ml= mloglike(theseparams,fehs,afes,binned,options,normintstuff)
     print params, ml
     return ml#oglike(theseparams,fehs,afes,binned,options)
 
