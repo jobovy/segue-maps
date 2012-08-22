@@ -56,18 +56,17 @@ def pixelFitDynamics(options,args):
     afes= numpy.array(afes)
     #Setup everything for the selection function
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
-    return None
     #First initialization
     params= initialize(options,fehs,afes)
     #Optimize DF w/ fixed potential and potential w/ fixed DF
     for cc in range(options.ninit):
         print "Iteration %i  / %i ..." % (cc+1,options.ninit)
         print "Optimizing individual DFs with fixed potential ...."
-        #params= indiv_optimize_df(params,fehs,afes,binned,options)
+        #params= indiv_optimize_df(params,fehs,afes,binned,options,normintstuff)
         print "Optimizing potential with individual DFs fixed ..."
-        params= indiv_optimize_potential(params,fehs,afes,binned,options)
+        params= indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff)
     #Optimize full model
-    params= full_optimize(params,fehs,afes,binned,options)
+    params= full_optimize(params,fehs,afes,binned,options,normintstuff)
     #Save
     print "BOVY: SAVE"
     #Sample?
@@ -78,7 +77,7 @@ def mloglike(*args,**kwargs):
     return -loglike(*args,**kwargs)
 
 def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
-                               indx,_bigparams):
+                               indx,_bigparams,normintstuff):
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
     theseparams= set_dfparams(params,_bigparams,indx,options,log=False)
@@ -87,7 +86,7 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
     return ml
 
 def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
-                                _bigparams):
+                                _bigparams,normintstuff):
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
     theseparams= set_potparams(params,_bigparams,options,len(fehs))
@@ -95,17 +94,17 @@ def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
     print params, ml
     return ml#oglike(theseparams,fehs,afes,binned,options)
 
-def loglike(params,fehs,afes,binned,options):
+def loglike(params,fehs,afes,binned,options,normintstuff):
     """log likelihood"""
     #Set up potential and actionAngle
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
-    return logdf(params,pot,aA,fehs,afes,binned)
+    return logdf(params,pot,aA,fehs,afes,binned,normintstuff)
 
-def logdf(params,pot,aA,fehs,afes,binned):
+def logdf(params,pot,aA,fehs,afes,binned,normintstuff):
     logl= numpy.zeros(len(fehs))
     #Evaluate individual DFs
-    args= (pot,aA,fehs,afes,binned)
+    args= (pot,aA,fehs,afes,binned,normintstuff)
     if not options.multi is None:
         logl= multi.parallel_map((lambda x: indiv_logdf(params,x,
                                                         *args)),
@@ -119,7 +118,7 @@ def logdf(params,pot,aA,fehs,afes,binned):
             logl[ii]= indiv_logdf(params,ii,*args)
     return numpy.sum(logl)
 
-def indiv_logdf(params,indx,pot,aA,fehs,afes,binned):
+def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff):
     """Individual population log likelihood"""
     dfparams= get_dfparams(params,indx,options)
     qdf= quasiisothermaldf(*dfparams,pot=pot,aA=aA)
@@ -177,7 +176,7 @@ def calc_normint(qdf,indx,normintstuff):
             thisout[indx]= 0.
             indx= (R >= options.rmax)
             thisout[indx]= 0.
-        thisout*= ds**2.*densfunc(R,XYZ[:,2],params)
+        thisout*= ds**2.*numpy.exp(-(R-8.)/3.-numpy.fabs(XYZ[:,2])/0.3) #BOVY:EDIT
         out+= numpy.sum(thisout)
     return out
 
@@ -373,12 +372,12 @@ def setup_potential(params,options,npops):
     if options.potential.lower() == 'flatlog':
         return potential.LogarithmicHaloPotential(normalize=1.,q=potparams[1])
 
-def full_optimize(params,fehs,afes,binned,options):
+def full_optimize(params,fehs,afes,binned,options,normintstuff):
     """Function for optimizing the full set of parameters"""
     return optimize.fmin_powell(mloglike,params,
-                                args=(fehs,afes,binned,options))
+                                args=(fehs,afes,binned,options,normintstuff))
 
-def indiv_optimize_df(params,fehs,afes,binned,options):
+def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff):
     """Function for optimizing individual DFs with potential fixed"""
     #Set up potential and actionAngle
     pot= setup_potential(params,options,len(fehs))
@@ -389,7 +388,7 @@ def indiv_optimize_df(params,fehs,afes,binned,options):
         for ii in range(len(fehs)): tmpfiles.append(tempfile.mkstemp())
         try:
             logl= multi.parallel_map((lambda x: indiv_optimize_df_single(params,x,
-                                                                         fehs,afes,binned,options,aA,pot,tmpfiles)),
+                                                                         fehs,afes,binned,options,aA,pot,normintstuff,tmpfiles)),
                                      range(len(fehs)),
                                      numcores=numpy.amin([len(fehs),
                                                           multiprocessing.cpu_count(),
@@ -411,12 +410,13 @@ def indiv_optimize_df(params,fehs,afes,binned,options):
                                                init_dfparams,
                                            args=(fehs,afes,binned,
                                                  options,pot,aA,
-                                                 ii,copy.copy(params)),
+                                                 ii,copy.copy(params),
+                                                 normintstuff),
                                                callback=cb)
             params= set_dfparams(new_dfparams,params,ii,options,log=False)
     return params
 
-def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,tmpfiles):
+def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,normintstuff,tmpfiles):
     """Function to optimize the DF params for a single population when holding the potential fixed and using multi-processing"""
     print ii
     init_dfparams= get_dfparams(params,ii,options,log=False)
@@ -424,7 +424,8 @@ def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,tmpfiles)
                                        init_dfparams,
                                        args=(fehs,afes,binned,
                                              options,pot,aA,
-                                             ii,copy.copy(params)),
+                                             ii,copy.copy(params),
+                                             normintstuff),
                                        callback=cb)
     #Now save to temporary pickle
     tmpfile= open(tmpfiles[ii][1],'wb')
@@ -432,14 +433,15 @@ def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,tmpfiles)
     tmpfile.close()
     return None
 
-def indiv_optimize_potential(params,fehs,afes,binned,options):
+def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff):
     """Function for optimizing the potential w/ individual DFs fixed"""
     init_potparams= numpy.array(get_potparams(params,options,len(fehs)))
     print init_potparams
     new_potparams= optimize.fmin_powell(indiv_optimize_pot_mloglike,
                                         init_potparams,
                                         args=(fehs,afes,binned,options,
-                                              copy.copy(params)),
+                                              copy.copy(params),
+                                              normintstuff),
                                         callback=cb)
     params= set_potparams(new_potparams,params,len(fehs))
 
