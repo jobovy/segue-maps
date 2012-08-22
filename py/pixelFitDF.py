@@ -4,6 +4,7 @@ import copy
 import math
 import numpy
 from scipy import optimize
+#from scipy.maxentropy import logsumexp
 import cPickle as pickle
 from optparse import OptionParser
 import multi
@@ -138,7 +139,9 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned):
     for ii in range(len(R)):
         #print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
         data_lndf[ii]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
-        print data_lndf[ii]
+        if data_lndf[ii] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+            print "Warning; data likelihood is -inf"
+            data_lndf[ii]= 0.
     #Normalize
     return numpy.sum(data_lndf)
 
