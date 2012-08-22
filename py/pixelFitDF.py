@@ -138,7 +138,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff):
 def calc_normint(qdf,indx,normintstuff):
     """Calculate the normalization integratl"""
     thisnormintstuff= normintstuff[indx]
-    sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds= unpack_thisnormintstuff(thisnorminstuff)
+    sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds= unpack_normintstuff(thisnormintstuff)
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
         if sf.platebright[str(plates[ii])] and not sf.type_bright.lower() == 'sharprcut':
@@ -286,25 +286,25 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
 def unpack_normintstuff(normintstuff):
     return (normintstuff.sf,
             normintstuff.plates,
-            thisnormintstuff.platel,
-            thisnormintstuff.plateb,
-            thisnormintstuff.platebright,
-            thisnormintstuff.platefaint,
-            thisnormintstuff.grmin,
-            thisnormintstuff.grmax,
-            thisnormintstuff.rmin,
-            thisnormintstuff.rmax,
-            thisnormintstuff.fehmin,
-            thisnormintstuff.fehmax,
-            thisnormintstuff.feh,
-            thisnormintstuff.colordist,
-            thisnormintstuff.fehdist,
-            thisnormintstuff.grs,
-            thisnormintstuff.rhogr,
-            thisnormintstuff.mr,
-            thisnormintstuff.dmin,
-            thisnormintstuff.dmax,
-            thisnormintstuff.ds)
+            normintstuff.platel,
+            normintstuff.plateb,
+            normintstuff.platebright,
+            normintstuff.platefaint,
+            normintstuff.grmin,
+            normintstuff.grmax,
+            normintstuff.rmin,
+            normintstuff.rmax,
+            normintstuff.fehmin,
+            normintstuff.fehmax,
+            normintstuff.feh,
+            normintstuff.colordist,
+            normintstuff.fehdist,
+            normintstuff.grs,
+            normintstuff.rhogr,
+            normintstuff.mr,
+            normintstuff.dmin,
+            normintstuff.dmax,
+            normintstuff.ds)
 
 class normintstuffClass:
     """Empty class to hold normalization integral necessities"""
