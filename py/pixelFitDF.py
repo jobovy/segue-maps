@@ -23,6 +23,7 @@ _REFR0= 8. #kpc
 _REFV0= 220. #km/s
 def pixelFitDynamics(options,args):
     #Read the data
+    print "Reading the data ..."
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
             raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
@@ -100,7 +101,7 @@ def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
     #_bigparams is a hack to propagate the parameters to the overall like
     theseparams= set_potparams(params,_bigparams,options,len(fehs))
     ml= mloglike(theseparams,fehs,afes,binned,options)
-    print ml                 
+    print params, ml
     return ml#oglike(theseparams,fehs,afes,binned,options)
 
 def loglike(params,fehs,afes,binned,options):
@@ -137,6 +138,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned):
     for ii in range(len(R)):
         #print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
         data_lndf[ii]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
+        print data_lndf[ii]
     #Normalize
     return numpy.sum(data_lndf)
 
@@ -242,11 +244,16 @@ def initialize(options,fehs,afes):
         p.append(1.)
     if options.fitvsun:
         p.extend([0.,1.,0.])
+    mapfehs= monoAbundanceMW.fehs()
+    mapafes= monoAbundanceMW.afes()
     for ii in range(len(fehs)):
         if options.dfmodel.lower() == 'qdf':
-            p.extend([numpy.log(2.*monoAbundanceMW.sigmaz(fehs[ii],afes[ii])/_REFV0), #sigmaR
-                      numpy.log(monoAbundanceMW.sigmaz(fehs[ii],afes[ii])/_REFV0), #sigmaZ
-                      numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii])/_REFR0), #hR
+            #Find nearest mono-abundance bin that has a measurement
+            abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
+                                     +(afes[ii]-mapafes)**2./0.0025)
+            p.extend([numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaR
+                      numpy.log(monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaZ
+                      numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
                       0.,0.]) #hsigR, hsigZ
     if options.potential.lower() == 'flatlog':
         p.extend([1.,.9])
@@ -326,7 +333,7 @@ def get_options():
                       help="Use 'G' or 'K' dwarf sample")
     parser.add_option("--select",dest='select',default='all',
                       help="Select 'all' or 'program' stars")
-    parser.add_option("--dfeh",dest='dfeh',default=0.05,type='float',
+    parser.add_option("--dfeh",dest='dfeh',default=0.1,type='float',
                       help="FeH bin size")   
     parser.add_option("--dafe",dest='dafe',default=0.05,type='float',
                       help="[a/Fe] bin size")   
