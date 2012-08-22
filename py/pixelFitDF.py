@@ -139,6 +139,7 @@ def calc_normint(qdf,indx,normintstuff):
     """Calculate the normalization integratl"""
     thisnormintstuff= normintstuff[indx]
     sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds= unpack_normintstuff(thisnormintstuff)
+    out= 0.
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
         if sf.platebright[str(plates[ii])] and not sf.type_bright.lower() == 'sharprcut':
@@ -276,6 +277,7 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
         thisnormintstuff.fehdist= fehdist
         thisnormintstuff.grs= grs
         thisnormintstuff.rhogr= rhogr
+        thisnormintstuff.rhofeh= rhofeh        
         thisnormintstuff.mr= mr
         thisnormintstuff.dmin= dmin
         thisnormintstuff.dmax= dmax
@@ -301,6 +303,7 @@ def unpack_normintstuff(normintstuff):
             normintstuff.fehdist,
             normintstuff.grs,
             normintstuff.rhogr,
+            normintstuff.rhofeh,
             normintstuff.mr,
             normintstuff.dmin,
             normintstuff.dmax,
