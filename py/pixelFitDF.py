@@ -133,7 +133,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff):
             data_lndf[ii]= 0.
     #Normalize
     normalization= calc_normint(qdf,indx,normintstuff)
-    return numpy.sum(data_lndf)
+    return numpy.sum(data_lndf)-len(R)*numpy.log(normalization)
 
 def calc_normint(qdf,indx,normintstuff):
     """Calculate the normalization integratl"""
