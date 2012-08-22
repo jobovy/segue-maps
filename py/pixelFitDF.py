@@ -77,7 +77,10 @@ def pixelFitDynamics(options,args):
     params= initialize(options,fehs,afes)
     #Optimize DF w/ fixed potential and potential w/ fixed DF
     for cc in range(options.ninit):
+        print "Iteration %i  / %i ..." % (cc+1,options.ninit)
+        print "Optimizing individual DFs with fixed potential ...."
         params= indiv_optimize_df(params,fehs,afes,binned,options)
+        print "Optimizing potential with individual DFs fixed ..."
         params= indiv_optimize_potential(params,fehs,afes,binned,options)
     #Optimize full model
     params= full_optimize(params,fehs,afes,binned,options)
@@ -94,7 +97,7 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
                                indx,_bigparams):
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
-    theseparams= set_dfparams(params,_bigparams,indx,options)
+    theseparams= set_dfparams(params,_bigparams,indx,options,log=False)
     ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned)
     print params, ml
     return ml
@@ -235,7 +238,7 @@ def indiv_optimize_df(params,fehs,afes,binned,options):
             for ii in range(len(fehs)):
                 tmpfile= open(tmpfiles[ii][1],'rb')
                 new_dfparams= pickle.load(tmpfile)
-                params= set_dfparams(new_dfparams,params,ii,options)
+                params= set_dfparams(new_dfparams,params,ii,options,log=False)
                 tmpfile.close()
         finally:
             for ii in range(len(fehs)):
@@ -243,27 +246,26 @@ def indiv_optimize_df(params,fehs,afes,binned,options):
     else:
         for ii in range(len(fehs)):
             print ii
-            init_dfparams= get_dfparams(params,ii,options)
+            init_dfparams= get_dfparams(params,ii,options,log=False)
             new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
                                                init_dfparams,
                                            args=(fehs,afes,binned,
                                                  options,pot,aA,
                                                  ii,copy.copy(params)),
                                                callback=cb)
-            params= set_dfparams(new_dfparams,params,ii,options)
+            params= set_dfparams(new_dfparams,params,ii,options,log=False)
     return params
 
 def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,tmpfiles):
     """Function to optimize the DF params for a single population when holding the potential fixed and using multi-processing"""
-    init_dfparams= get_dfparams(params,ii,options)
-    new_dfparams= copy.copy(init_dfparams)
-    new_dfparams[0]= 10.
-    #new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
-    #                                   init_dfparams,
-    #                                   args=(fehs,afes,binned,
-    #                                         options,pot,aA,
-    #                                         ii,copy.copy(params)),
-    #                                   callback=cb)
+    print ii
+    init_dfparams= get_dfparams(params,ii,options,log=False)
+    new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
+                                       init_dfparams,
+                                       args=(fehs,afes,binned,
+                                             options,pot,aA,
+                                             ii,copy.copy(params)),
+                                       callback=cb)
     #Now save to temporary pickle
     tmpfile= open(tmpfiles[ii][1],'wb')
     pickle.dump(new_dfparams,tmpfile)
@@ -325,7 +327,7 @@ def set_potparams(p,params,options,npops):
         params[startindx+1]= p[1]
     return params
 
-def get_dfparams(p,indx,options):
+def get_dfparams(p,indx,options,log=False):
     """Function that returns the set of DF parameters for population indx for these options,
     Returns them such that they can be given to the initialization"""
     startindx= 0
@@ -334,13 +336,20 @@ def get_dfparams(p,indx,options):
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*indx
     if options.dfmodel.lower() == 'qdf':
-        return [numpy.exp(p[startindx]),
-                numpy.exp(p[startindx+1]),
-                numpy.exp(p[startindx+2]),
-                numpy.exp(p[startindx+3]),
-                numpy.exp(p[startindx+4])]
-
-def set_dfparams(p,params,indx,options):
+        if log:
+            return [p[startindx],
+                    p[startindx+1],
+                    p[startindx+2],
+                    p[startindx+3],
+                    p[startindx+4]]
+        else:
+            return [numpy.exp(p[startindx]),
+                    numpy.exp(p[startindx+1]),
+                    numpy.exp(p[startindx+2]),
+                    numpy.exp(p[startindx+3]),
+                    numpy.exp(p[startindx+4])]
+        
+def set_dfparams(p,params,indx,options,log=True):
     """Function that sets the set of DF parameters for population indx for these options"""
     startindx= 0
     if options.fitro: startindx+= 1
@@ -349,7 +358,10 @@ def set_dfparams(p,params,indx,options):
     startindx+= ndfparams*indx
     if options.dfmodel.lower() == 'qdf':
         for ii in range(ndfparams):
-            params[startindx+ii]= numpy.log(p[ii])
+            if log:
+                params[startindx+ii]= numpy.log(p[ii])
+            else:
+                params[startindx+ii]= p[ii]
     return params
 
 def get_ndfparams(options):
