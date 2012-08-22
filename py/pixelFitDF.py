@@ -17,12 +17,13 @@ from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import bovy_mcmc
 import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
-    segueSelect
-from fitDensz import cb
-from fitSigz import _ZSUN
+    segueSelect, _mr_gi, _gi_gr
+from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from pixelFitDens import pixelAfeFeh
 _REFR0= 8. #kpc
 _REFV0= 220. #km/s
+_NGR= 11
+_NFEH=11
 def pixelFitDynamics(options,args):
     #Read the data
     print "Reading the data ..."
@@ -53,33 +54,16 @@ def pixelFitDynamics(options,args):
     nabundancebins= len(fehs)
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
-    #Load selection function
-    plates= numpy.array(list(set(list(raw.plate))),dtype='int') #Only load plates that we use
-    print "Using %i plates, %i stars ..." %(len(plates),len(raw))
-    sf= segueSelect(plates=plates,type_faint='tanhrcut',
-                    sample=options.sample,type_bright='tanhrcut',
-                    sn=options.snmin,select=options.select,
-                    indiv_brightlims=options.indiv_brightlims)
-    platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
-                                     degree=True)
-    indx= [not 'faint' in name for name in sf.platestr.programname]
-    platebright= numpy.array(indx,dtype='bool')
-    indx= ['faint' in name for name in sf.platestr.programname]
-    platefaint= numpy.array(indx,dtype='bool')
-    if options.sample.lower() == 'g':
-        grmin, grmax= 0.48, 0.55
-        rmin,rmax= 14.5, 20.2
-    if options.sample.lower() == 'k':
-        grmin, grmax= 0.55, 0.75
-        rmin,rmax= 14.5, 19.
-    colorrange=[grmin,grmax]
+    #Setup everything for the selection function
+    normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
+    return None
     #First initialization
     params= initialize(options,fehs,afes)
     #Optimize DF w/ fixed potential and potential w/ fixed DF
     for cc in range(options.ninit):
         print "Iteration %i  / %i ..." % (cc+1,options.ninit)
         print "Optimizing individual DFs with fixed potential ...."
-        params= indiv_optimize_df(params,fehs,afes,binned,options)
+        #params= indiv_optimize_df(params,fehs,afes,binned,options)
         print "Optimizing potential with individual DFs fixed ..."
         params= indiv_optimize_potential(params,fehs,afes,binned,options)
     #Optimize full model
@@ -149,7 +133,183 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned):
             print "Warning; data likelihood is -inf"
             data_lndf[ii]= 0.
     #Normalize
+    normalization= calc_normint(qdf,indx,normintstuff)
     return numpy.sum(data_lndf)
+
+def calc_normint(qdf,indx,normintstuff):
+    """Calculate the normalization integratl"""
+    thisnormintstuff= normintstuff[indx]
+    sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds= unpack_thisnormintstuff(thisnorminstuff)
+    for ii in range(len(plates)):
+        #if _DEBUG: print plates[ii], sf(plates[ii])
+        if sf.platebright[str(plates[ii])] and not sf.type_bright.lower() == 'sharprcut':
+            thisrmin= rmin
+            thisrmax= 17.8
+        elif sf.platebright[str(plates[ii])] and sf.type_bright.lower() == 'sharprcut':
+            thisrmin= rmin
+            thisrmax= numpy.amin([sf.rcuts[str(plates[ii])],17.8])
+        elif not sf.type_faint.lower() == 'sharprcut':
+            thisrmin= 17.8
+            thisrmax= rmax
+        elif sf.type_faint.lower() == 'sharprcut':
+            thisrmin= 17.8
+            thisrmax= numpy.amin([sf.rcuts[str(plates[ii])],rmax])
+        #Compute integral by binning everything in distance
+        thisout= numpy.zeros(_NDS)
+        for kk in range(_NGR):
+            for jj in range(_NFEH):
+                #What rs do these ds correspond to
+                rs= 5.*numpy.log10(ds)+10.+mr[kk,jj]
+                thisout+= sf(plates[ii],r=rs)*rhogr[kk]*rhofeh[jj]
+        #Calculate (R,z)s
+        XYZ= bovy_coords.lbd_to_XYZ(numpy.array([platel[ii] for dd in range(len(ds))]),
+                                    numpy.array([plateb[ii] for dd in range(len(ds))]),
+                                    ds,degree=True)
+        R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+        XYZ[:,2]+= _ZSUN
+        if not options.zmin is None and not options.zmax is None:
+            indx= (numpy.fabs(XYZ[:,2]) < options.zmin)
+            thisout[indx]= 0.
+            indx= (numpy.fabs(XYZ[:,2]) >= options.zmax)
+            thisout[indx]= 0.
+        if not options.rmin is None and not options.rmax is None:
+            indx= (R < options.rmin)
+            thisout[indx]= 0.
+            indx= (R >= options.rmax)
+            thisout[indx]= 0.
+        thisout*= ds**2.*densfunc(R,XYZ[:,2],params)
+        out+= numpy.sum(thisout)
+    return out
+
+def setup_normintstuff(options,raw,binned,fehs,afes):
+    """Gather everything necessary for calculating the normalization integral"""
+    #Load selection function
+    plates= numpy.array(list(set(list(raw.plate))),dtype='int') #Only load plates that we use
+    print "Using %i plates, %i stars ..." %(len(plates),len(raw))
+    sf= segueSelect(plates=plates,type_faint='tanhrcut',
+                    sample=options.sample,type_bright='tanhrcut',
+                    sn=options.snmin,select=options.select,
+                    indiv_brightlims=options.indiv_brightlims)
+    platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
+                                     degree=True)
+    indx= [not 'faint' in name for name in sf.platestr.programname]
+    platebright= numpy.array(indx,dtype='bool')
+    indx= ['faint' in name for name in sf.platestr.programname]
+    platefaint= numpy.array(indx,dtype='bool')
+    if options.sample.lower() == 'g':
+        grmin, grmax= 0.48, 0.55
+        rmin,rmax= 14.5, 20.2
+    if options.sample.lower() == 'k':
+        grmin, grmax= 0.55, 0.75
+        rmin,rmax= 14.5, 19.
+    colorrange=[grmin,grmax]
+    out= []
+    for ii in range(len(fehs)):
+        data= binned(fehs[ii],afes[ii])
+        thisnormintstuff= normintstuffClass() #Empty object to act as container
+        #Fit this data, set up feh and color
+        feh= fehs[ii]
+        fehrange= [feh-options.dfeh/2.,feh+options.dfeh/2.]
+        #FeH
+        fehdist= DistSpline(*numpy.histogram(data.feh,bins=5,
+                                             range=fehrange),
+                             xrange=fehrange,dontcuttorange=False)
+        #Color
+        colordist= DistSpline(*numpy.histogram(data.dered_g\
+                                                   -data.dered_r,
+                                               bins=9,range=colorrange),
+                               xrange=colorrange)
+        #Integration grid when binning
+        grs= numpy.linspace(grmin,grmax,_NGR)
+        fehsgrid= numpy.linspace(fehrange[0],fehrange[1],_NFEH)
+        rhogr= numpy.array([colordist(gr) for gr in grs])
+        rhofeh= numpy.array([fehdist(feh) for feh in fehsgrid])
+        mr= numpy.zeros((_NGR,_NFEH))
+        for kk in range(_NGR):
+            for ll in range(_NFEH):
+                mr[kk,ll]= _mr_gi(_gi_gr(grs[kk]),fehsgrid[ll])
+        #determine dmin and dmax
+        allbright, allfaint= True, True
+        #dmin and dmax for this rmin, rmax
+        for p in sf.plates:
+            #l and b?
+            pindx= (sf.plates == p)
+            plateb= platelb[pindx,1][0]
+            if 'faint' in sf.platestr[pindx].programname[0]:
+                allbright= False
+            else:
+                allfaint= False
+        if not (options.sample.lower() == 'k' \
+                    and options.indiv_brightlims):
+            if allbright:
+                thisrmin, thisrmax= rmin, 17.8
+            elif allfaint:
+                thisrmin, thisrmax= 17.8, rmax
+            else:
+                thisrmin, thisrmax= rmin, rmax
+        else:
+            thisrmin, thisrmax= rmin, rmax
+        _THISNGR, _THISNFEH= 51, 51
+        thisgrs= numpy.zeros((_THISNGR,_THISNFEH))
+        thisfehs= numpy.zeros((_THISNGR,_THISNFEH))
+        for kk in range(_THISNGR):
+            thisfehs[kk,:]= numpy.linspace(fehrange[0],fehrange[1],_THISNFEH)
+        for kk in range(_THISNFEH):
+            thisgrs[:,kk]= numpy.linspace(grmin,grmax,_THISNGR)
+        dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))
+        dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))
+        ds= numpy.linspace(dmin,dmax,_NDS)
+        #Load into thisnormintstuff
+        thisnormintstuff.sf= sf
+        thisnormintstuff.plates= plates
+        thisnormintstuff.platel= platelb[:,0]
+        thisnormintstuff.plateb= platelb[:,1]
+        thisnormintstuff.platebright= platebright
+        thisnormintstuff.platefaint= platefaint
+        thisnormintstuff.grmin= grmin
+        thisnormintstuff.grmax= grmax
+        thisnormintstuff.rmin= rmin
+        thisnormintstuff.rmax= rmax
+        thisnormintstuff.fehmin= fehrange[0]
+        thisnormintstuff.fehmax= fehrange[1]
+        thisnormintstuff.feh= feh
+        thisnormintstuff.colordist= colordist
+        thisnormintstuff.fehdist= fehdist
+        thisnormintstuff.grs= grs
+        thisnormintstuff.rhogr= rhogr
+        thisnormintstuff.mr= mr
+        thisnormintstuff.dmin= dmin
+        thisnormintstuff.dmax= dmax
+        thisnormintstuff.ds= ds
+        out.append(thisnormintstuff)
+    return out
+
+def unpack_normintstuff(normintstuff):
+    return (normintstuff.sf,
+            normintstuff.plates,
+            thisnormintstuff.platel,
+            thisnormintstuff.plateb,
+            thisnormintstuff.platebright,
+            thisnormintstuff.platefaint,
+            thisnormintstuff.grmin,
+            thisnormintstuff.grmax,
+            thisnormintstuff.rmin,
+            thisnormintstuff.rmax,
+            thisnormintstuff.fehmin,
+            thisnormintstuff.fehmax,
+            thisnormintstuff.feh,
+            thisnormintstuff.colordist,
+            thisnormintstuff.fehdist,
+            thisnormintstuff.grs,
+            thisnormintstuff.rhogr,
+            thisnormintstuff.mr,
+            thisnormintstuff.dmin,
+            thisnormintstuff.dmax,
+            thisnormintstuff.ds)
+
+class normintstuffClass:
+    """Empty class to hold normalization integral necessities"""
+    pass
 
 def prepare_coordinates(params,indx,fehs,afes,binned):
     vc= get_potparams(params,options,len(fehs))[0] #Always zero-th
