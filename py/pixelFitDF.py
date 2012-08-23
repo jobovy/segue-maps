@@ -61,7 +61,7 @@ def pixelFitDynamics(options,args):
     #Optimize DF w/ fixed potential and potential w/ fixed DF
     for cc in range(options.ninit):
         print "Iteration %i  / %i ..." % (cc+1,options.ninit)
-        print "Optimizing individual DFs with fixed potential ...."
+        print "Optimizing individual DFs with fixed potential ..."
         #params= indiv_optimize_df(params,fehs,afes,binned,options,normintstuff)
         print "Optimizing potential with individual DFs fixed ..."
         params= indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff)
@@ -121,7 +121,8 @@ def logdf(params,pot,aA,fehs,afes,binned,normintstuff):
 def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff):
     """Individual population log likelihood"""
     dfparams= get_dfparams(params,indx,options)
-    qdf= quasiisothermaldf(*dfparams,pot=pot,aA=aA)
+    if options.dfmodel.lower() == 'qdf':
+        qdf= quasiisothermaldf(*dfparams,pot=pot,aA=aA)
     #Get data ready
     R,vR,vT,z,vz,covv= prepare_coordinates(params,indx,fehs,afes,binned)
     data_lndf= numpy.zeros(len(R))
@@ -132,14 +133,15 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff):
             print "Warning; data likelihood is -inf"
             data_lndf[ii]= 0.
     #Normalize
-    normalization= calc_normint(qdf,indx,normintstuff)
+    normalization= calc_normint(qdf,indx,normintstuff,params)
     return numpy.sum(data_lndf)-len(R)*numpy.log(normalization)
 
-def calc_normint(qdf,indx,normintstuff):
+def calc_normint(qdf,indx,normintstuff,params):
     """Calculate the normalization integratl"""
     thisnormintstuff= normintstuff[indx]
     sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds= unpack_normintstuff(thisnormintstuff)
     out= 0.
+    ro= get_ro(params,options)
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
         if sf.platebright[str(plates[ii])] and not sf.type_bright.lower() == 'sharprcut':
@@ -165,8 +167,9 @@ def calc_normint(qdf,indx,normintstuff):
         XYZ= bovy_coords.lbd_to_XYZ(numpy.array([platel[ii] for dd in range(len(ds))]),
                                     numpy.array([plateb[ii] for dd in range(len(ds))]),
                                     ds,degree=True)
-        R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+        R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
         XYZ[:,2]+= _ZSUN
+        z= XYZ[:,2]/ro/_REFR0
         if not options.zmin is None and not options.zmax is None:
             indx= (numpy.fabs(XYZ[:,2]) < options.zmin)
             thisout[indx]= 0.
@@ -177,7 +180,10 @@ def calc_normint(qdf,indx,normintstuff):
             thisout[indx]= 0.
             indx= (R >= options.rmax)
             thisout[indx]= 0.
-        thisout*= ds**2.*numpy.exp(-(R-8.)/3.-numpy.fabs(XYZ[:,2])/0.3) #BOVY:EDIT
+        for kk in range(_NDS):
+            print kk, _NDS, R[kk], z[kk], qdf.surfacemass(R[kk],z[kk])
+            thisout[kk]*= ds[kk]**2.*qdf.surfacemass(R[kk],z[kk])
+        print ii, len(plates)
         out+= numpy.sum(thisout)
     return out
 
