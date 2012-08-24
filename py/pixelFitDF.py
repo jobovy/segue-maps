@@ -4,7 +4,7 @@ import copy
 import tempfile
 import math
 import numpy
-from scipy import optimize
+from scipy import optimize, interpolate
 #from scipy.maxentropy import logsumexp
 import cPickle as pickle
 from optparse import OptionParser
@@ -56,7 +56,7 @@ def pixelFitDynamics(options,args):
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
     #Setup everything for the selection function
-    print "setting up stuff for the normalization integral ..."
+    print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
     #First initialization
     params= initialize(options,fehs,afes)
@@ -182,9 +182,25 @@ def calc_normint(qdf,indx,normintstuff,params):
             thisout[indx]= 0.
             indx= (R >= options.rmax)
             thisout[indx]= 0.
-        for kk in range(_NDS):
-            print kk, _NDS, R[kk], z[kk], qdf.surfacemass(R[kk],z[kk])
-            thisout[kk]*= ds[kk]**2.*qdf.surfacemass(R[kk],z[kk])
+        #Calculate the surfacemass on a rough grid, interpolate, and integrate
+        ndsgrid= numpy.amax([int(round((dmax-dmin)/surfscale[ii]/10.)),7]) #at least 7
+        print surfscale[ii], ndsgrid, "BOVY: MAKE SURE THAT BRIGHT AND FAINT DO NOT GET DOUBLED"
+        dsgrid= numpy.linspace(dmin,dmax,ndsgrid)
+        XYZgrid= bovy_coords.lbd_to_XYZ(numpy.array([platel[ii] for dd in range(ndsgrid)]),
+                                        numpy.array([plateb[ii] for dd in range(ndsgrid)]),
+                                        dsgrid,degree=True)
+        Rgrid= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
+        XYZgrid[:,2]+= _ZSUN
+        zgrid= XYZgrid[:,2]/ro/_REFR0       
+        surfgrid= numpy.zeros(ndsgrid)
+        for kk in range(ndsgrid):
+            surfgrid[kk]= qdf.surfacemass(Rgrid[kk],zgrid[kk])
+            print kk, dsgrid[kk], Rgrid[kk], zgrid[kk], surfgrid[kk]
+        #Interpolate
+        surfinterpolate= interpolate.InterpolatedUnivariateSpline(dsgrid/ro/_REFR0,
+                                                                  numpy.log(surfgrid),
+                                                                  k=3)
+        thisout*= ds**2.*surfinterpolate(ds/ro/_REFR0)
         print ii, len(plates)
         out+= numpy.sum(thisout)
     return out
