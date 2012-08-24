@@ -26,6 +26,7 @@ _NGR= 11
 _NFEH=11
 _DEGTORAD= math.pi/180.
 def pixelFitDynamics(options,args):
+    print "BOVY: SET UP FOR A SINGLE PLATE"
     #Read the data
     print "Reading the data ..."
     if options.sample.lower() == 'g':
