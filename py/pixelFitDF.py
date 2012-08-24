@@ -24,6 +24,7 @@ _REFR0= 8. #kpc
 _REFV0= 220. #km/s
 _NGR= 11
 _NFEH=11
+_DEGTORAD= math.pi/180.
 def pixelFitDynamics(options,args):
     #Read the data
     print "Reading the data ..."
@@ -55,6 +56,7 @@ def pixelFitDynamics(options,args):
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
     #Setup everything for the selection function
+    print "setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
     #First initialization
     params= initialize(options,fehs,afes)
@@ -139,7 +141,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff):
 def calc_normint(qdf,indx,normintstuff,params):
     """Calculate the normalization integratl"""
     thisnormintstuff= normintstuff[indx]
-    sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds= unpack_normintstuff(thisnormintstuff)
+    sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale= unpack_normintstuff(thisnormintstuff)
     out= 0.
     ro= get_ro(params,options)
     for ii in range(len(plates)):
@@ -210,6 +212,8 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
         rmin,rmax= 14.5, 19.
     colorrange=[grmin,grmax]
     out= []
+    mapfehs= monoAbundanceMW.fehs()
+    mapafes= monoAbundanceMW.afes()
     for ii in range(len(fehs)):
         data= binned(fehs[ii],afes[ii])
         thisnormintstuff= normintstuffClass() #Empty object to act as container
@@ -265,6 +269,28 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
         dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))
         dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))
         ds= numpy.linspace(dmin,dmax,_NDS)
+        #Determine scale over which the surface-mass density changes for this plate
+        #Find nearest mono-abundance bin that has a measurement
+        abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
+                                 +(afes[ii]-mapafes)**2./0.0025)
+        thishr= monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])
+        thishz= monoAbundanceMW.hz(mapfehs[abindx],mapafes[abindx])/1000.
+        surfscale= []
+        surfds= numpy.linspace(dmin,dmax,11)
+        for kk in range(len(plates)):
+            if options.dfmodel.lower() == 'qdf':
+                XYZ= bovy_coords.lbd_to_XYZ(numpy.array([platelb[kk,0] for dd in range(len(surfds))]),
+                                            numpy.array([platelb[kk,1] for dd in range(len(surfds))]),
+                                            surfds,degree=True)
+            R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+            XYZ[:,2]+= _ZSUN
+            z= XYZ[:,2]
+            drdd= -(8.-XYZ[:,0])/R*numpy.cos(platelb[kk,0]*_DEGTORAD)*numpy.cos(platelb[kk,1]*_DEGTORAD)\
+                +XYZ[:,1]/R*numpy.cos(platelb[kk,1]*_DEGTORAD)*numpy.sin(platelb[kk,0]*_DEGTORAD)
+            dzdd= numpy.fabs(numpy.sin(platelb[kk,1]*_DEGTORAD))
+            dlnnudd= -1./thishr*drdd-1./thishz*dzdd
+            surfscale.append(numpy.amin(numpy.fabs(1./dlnnudd)))
+            #print thishr, thishz, platelb[kk,0], platelb[kk,1], surfscale[-1]
         #Load into thisnormintstuff
         thisnormintstuff.sf= sf
         thisnormintstuff.plates= plates
@@ -288,6 +314,7 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
         thisnormintstuff.dmin= dmin
         thisnormintstuff.dmax= dmax
         thisnormintstuff.ds= ds
+        thisnormintstuff.surfscale= surfscale
         out.append(thisnormintstuff)
     return out
 
@@ -313,7 +340,8 @@ def unpack_normintstuff(normintstuff):
             normintstuff.mr,
             normintstuff.dmin,
             normintstuff.dmax,
-            normintstuff.ds)
+            normintstuff.ds,
+            normintstuff.surfscale)
 
 class normintstuffClass:
     """Empty class to hold normalization integral necessities"""
