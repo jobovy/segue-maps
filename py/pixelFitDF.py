@@ -140,9 +140,9 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff):
     return numpy.sum(data_lndf)-len(R)*numpy.log(normalization)
 
 def calc_normint(qdf,indx,normintstuff,params):
-    """Calculate the normalization integratl"""
+    """Calculate the normalization integral"""
     thisnormintstuff= normintstuff[indx]
-    sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale= unpack_normintstuff(thisnormintstuff)
+    sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff)
     out= 0.
     ro= get_ro(params,options)
     for ii in range(len(plates)):
@@ -184,7 +184,7 @@ def calc_normint(qdf,indx,normintstuff,params):
             indx= (R >= options.rmax)
             thisout[indx]= 0.
         #Calculate the surfacemass on a rough grid, interpolate, and integrate
-        ndsgrid= numpy.amax([int(round((dmax-dmin)/surfscale[ii]/10.)),7]) #at least 7
+        ndsgrid= numpy.amax([int(round((dmax-dmin)/surfscale[ii]*3.)),7]) #at least 7
         print surfscale[ii], ndsgrid, "BOVY: MAKE SURE THAT BRIGHT AND FAINT DO NOT GET DOUBLED"
         dsgrid= numpy.linspace(dmin,dmax,ndsgrid)
         XYZgrid= bovy_coords.lbd_to_XYZ(numpy.array([platel[ii] for dd in range(ndsgrid)]),
@@ -195,7 +195,7 @@ def calc_normint(qdf,indx,normintstuff,params):
         zgrid= XYZgrid[:,2]/ro/_REFR0       
         surfgrid= numpy.zeros(ndsgrid)
         for kk in range(ndsgrid):
-            surfgrid[kk]= qdf.surfacemass(Rgrid[kk],zgrid[kk])
+            surfgrid[kk]= qdf.surfacemass(Rgrid[kk],zgrid[kk],nmc=options.nmcv)
             print kk, dsgrid[kk], Rgrid[kk], zgrid[kk], surfgrid[kk]
         #Interpolate
         surfinterpolate= interpolate.InterpolatedUnivariateSpline(dsgrid/ro/_REFR0,
@@ -332,6 +332,8 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
         thisnormintstuff.dmax= dmax
         thisnormintstuff.ds= ds
         thisnormintstuff.surfscale= surfscale
+        thisnormintstuff.hr= thishr
+        thisnormintstuff.hz= thishz
         out.append(thisnormintstuff)
     return out
 
@@ -358,7 +360,9 @@ def unpack_normintstuff(normintstuff):
             normintstuff.dmin,
             normintstuff.dmax,
             normintstuff.ds,
-            normintstuff.surfscale)
+            normintstuff.surfscale,
+            normintstuff.hr,
+            normintstuff.hz)
 
 class normintstuffClass:
     """Empty class to hold normalization integral necessities"""
@@ -665,6 +669,12 @@ def get_options():
                       help="If set, fit for v_sun")
     parser.add_option("--ninit",dest='ninit',default=1,type='int',
                       help="Number of initial optimizations to perform (indiv DF + potential w/ fixed DF")
+    #Normalization integral
+    parser.add_option("--nmcv",dest='nmcv',default=1000,type='int',
+                      help="Number of MC samples to use for velocity integration")
+    parser.add_option("--mcall",action="store_true", dest="mcall",
+                      default=False,
+                      help="If set, calculate the normalization integral by first calculating the normalization of the exponential density given the best-fit and then calculating the difference with Monte Carlo integration")
     #Sample?
     parser.add_option("--mcsample",action="store_true", dest="mcsample",
                       default=False,
