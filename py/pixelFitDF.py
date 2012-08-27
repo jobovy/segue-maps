@@ -57,6 +57,28 @@ def pixelFitDynamics(options,args):
     nabundancebins= len(fehs)
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
+    if not options.singlefeh is None:
+        if options.loo:
+            pass
+        else:
+            #Set up single feh
+            indx= binned.callIndx(options.singlefeh,options.singleafe)
+            if numpy.sum(indx) == 0:
+                raise IOError("Bin corresponding to singlefeh and singleafe is empty ...")
+            data= binned.data[indx]
+            #Bin again
+            binned= pixelAfeFeh(data,dfeh=options.dfeh,dafe=options.dafe)
+            fehs, afes= [], []
+            for ii in range(len(binned.fehedges)-1):
+                for jj in range(len(binned.afeedges)-1):
+                    data= binned(binned.feh(ii),binned.afe(jj))
+                    if len(data) < options.minndata:
+                        continue
+                    fehs.append(binned.feh(ii))
+                    afes.append(binned.afe(jj))
+            nabundancebins= len(fehs)
+            fehs= numpy.array(fehs)
+            afes= numpy.array(afes)
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
@@ -694,8 +716,15 @@ def get_options():
                       help="FeH bin size")   
     parser.add_option("--dafe",dest='dafe',default=0.05,type='float',
                       help="[a/Fe] bin size")   
+    parser.add_option("--singlefeh",dest='singlefeh',default=None,type='float',
+                      help="FeH when considering a single FeH (can be for loo)")   
+    parser.add_option("--singleafe",dest='singleafe',default=None,type='float',
+                      help="[a/Fe] when considering a single afe (can be for loo)")   
     parser.add_option("--minndata",dest='minndata',default=100,type='int',
                       help="Minimum number of objects in a bin to perform a fit")   
+    parser.add_option("--loo",action="store_true", dest="loo",
+                      default=False,
+                      help="If set, leave out the bin corresponding to singlefeh and singleafe, in leave-one-out fashion")
     parser.add_option("--bmin",dest='bmin',type='float',
                       default=None,
                       help="Minimum Galactic latitude")
