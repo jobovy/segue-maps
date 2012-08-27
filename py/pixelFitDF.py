@@ -17,8 +17,9 @@ from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import bovy_mcmc
 import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
-    segueSelect, _mr_gi, _gi_gr
+    segueSelect, _mr_gi, _gi_gr, _ERASESTR
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
+from compareDataModel import _predict_rdist_plate
 from pixelFitDens import pixelAfeFeh
 _REFR0= 8. #kpc
 _REFV0= 220. #km/s
@@ -142,7 +143,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff):
 def calc_normint(qdf,indx,normintstuff,params):
     """Calculate the normalization integral"""
     thisnormintstuff= normintstuff[indx]
-    sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff)
+    sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
     out= 0.
     ro= get_ro(params,options)
     for ii in range(len(plates)):
@@ -231,6 +232,7 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
     out= []
     mapfehs= monoAbundanceMW.fehs()
     mapafes= monoAbundanceMW.afes()
+    print "BOVY: MULTI SETTING UP THE NORMALIZATION INTEGRAL?"
     for ii in range(len(fehs)):
         data= binned(fehs[ii],afes[ii])
         thisnormintstuff= normintstuffClass() #Empty object to act as container
@@ -246,123 +248,196 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
                                                    -data.dered_r,
                                                bins=9,range=colorrange),
                                xrange=colorrange)
-        #Integration grid when binning
-        grs= numpy.linspace(grmin,grmax,_NGR)
-        fehsgrid= numpy.linspace(fehrange[0],fehrange[1],_NFEH)
-        rhogr= numpy.array([colordist(gr) for gr in grs])
-        rhofeh= numpy.array([fehdist(feh) for feh in fehsgrid])
-        mr= numpy.zeros((_NGR,_NFEH))
-        for kk in range(_NGR):
-            for ll in range(_NFEH):
-                mr[kk,ll]= _mr_gi(_gi_gr(grs[kk]),fehsgrid[ll])
-        #determine dmin and dmax
-        allbright, allfaint= True, True
-        #dmin and dmax for this rmin, rmax
-        for p in sf.plates:
-            #l and b?
-            pindx= (sf.plates == p)
-            plateb= platelb[pindx,1][0]
-            if 'faint' in sf.platestr[pindx].programname[0]:
-                allbright= False
-            else:
-                allfaint= False
-        if not (options.sample.lower() == 'k' \
-                    and options.indiv_brightlims):
-            if allbright:
-                thisrmin, thisrmax= rmin, 17.8
-            elif allfaint:
-                thisrmin, thisrmax= 17.8, rmax
+        if options.mcall:
+            #Find nearest mono-abundance bin that has a measurement
+            abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
+                                     +(afes[ii]-mapafes)**2./0.0025)
+            thishr= monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])
+            thishz= monoAbundanceMW.hz(mapfehs[abindx],mapafes[abindx])/1000.
+            #Calculate the r-distribution for each plate
+            nrs= 1001
+            ngr, nfeh= 11, 11
+            grs= numpy.linspace(grmin,grmax,ngr)
+            fehs= numpy.linspace(fehrange[0],fehrange[1],nfeh)
+            #Calcuate FeH and gr distriutions
+            fehdists= numpy.zeros(nfeh)
+            for jj in range(nfeh): fehdists[jj]= fehdist(fehs[jj])
+            fehdists= numpy.cumsum(fehdists)
+            fehdists/= fehdists[-1]
+            colordists= numpy.zeros(ngr)
+            for jj in range(ngr): colordists[jj]= colordist(grs[jj])
+            colordists= numpy.cumsum(colordists)
+            colordists/= colordists[-1]
+            rs= numpy.linspace(rmin,rmax,nrs)
+            rdists= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
+            for jj in range(len(sf.plates)):
+                p= sf.plates[jj]
+                sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,jj+1,len(sf.plates)))
+                sys.stdout.flush()
+                rdists[jj,:,:,:]= _predict_rdist_plate(rs,
+                                                       lambda x,y,z: fidDens(x,y,thishr,thishz,z),
+                                                       None,rmin,rmax,
+                                                       platelb[jj,0],platelb[jj,1],
+                                                       grmin,grmax,
+                                                       fehrange[0],fehrange[1],feh,
+                                                       colordist,
+                                                       fehdist,sf,sf.plates[jj],
+                                                       dontmarginalizecolorfeh=True,
+                                                       ngr=ngr,nfeh=nfeh)
+            sys.stdout.write('\r'+_ERASESTR+'\r')
+            sys.stdout.flush()
+            numbers= numpy.sum(rdists,axis=3)
+            numbers= numpy.sum(numbers,axis=2)
+            numbers= numpy.sum(numbers,axis=1)
+            numbers= numpy.cumsum(numbers)
+            numbers/= numbers[-1]
+            rdists= numpy.cumsum(rdists,axis=1)
+            for ll in range(len(sf.plates)):
+                for jj in range(ngr):
+                    for kk in range(nfeh):
+                        rdists[ll,:,jj,kk]/= rdists[ll,-1,jj,kk]
+            #Now sample until we're done
+            out= []
+            while len(out) < options.nmc:
+                #First sample a plate
+                ran= numpy.random.uniform()
+                kk= 0
+                while numbers[kk] < ran: kk+= 1
+                #Also sample a Feh and a color
+                ran= numpy.random.uniform()
+                ff= 0
+                while fehdists[ff] < ran: ff+= 1
+                ran= numpy.random.uniform()
+                cc= 0
+                while colordists[cc] < ran: cc+= 1
+                #plate==kk, feh=ff,color=cc; now sample from the rdist of this plate
+                ran= numpy.random.uniform()
+                jj= 0
+                while rdists[kk,jj,cc,ff] < ran: jj+= 1
+                #r=jj
+                out.append([rs[jj],grs[cc],fehs[ff],platelb[kk,0],platelb[kk,1],
+                            sf.plates[kk]])
+        else:
+            #Integration grid when binning
+            grs= numpy.linspace(grmin,grmax,_NGR)
+            fehsgrid= numpy.linspace(fehrange[0],fehrange[1],_NFEH)
+            rhogr= numpy.array([colordist(gr) for gr in grs])
+            rhofeh= numpy.array([fehdist(feh) for feh in fehsgrid])
+            mr= numpy.zeros((_NGR,_NFEH))
+            for kk in range(_NGR):
+                for ll in range(_NFEH):
+                    mr[kk,ll]= _mr_gi(_gi_gr(grs[kk]),fehsgrid[ll])
+            #determine dmin and dmax
+            allbright, allfaint= True, True
+            #dmin and dmax for this rmin, rmax
+            for p in sf.plates:
+                #l and b?
+                pindx= (sf.plates == p)
+                plateb= platelb[pindx,1][0]
+                if 'faint' in sf.platestr[pindx].programname[0]:
+                    allbright= False
+                else:
+                    allfaint= False
+            if not (options.sample.lower() == 'k' \
+                        and options.indiv_brightlims):
+                if allbright:
+                    thisrmin, thisrmax= rmin, 17.8
+                elif allfaint:
+                    thisrmin, thisrmax= 17.8, rmax
+                else:
+                    thisrmin, thisrmax= rmin, rmax
             else:
                 thisrmin, thisrmax= rmin, rmax
-        else:
-            thisrmin, thisrmax= rmin, rmax
-        _THISNGR, _THISNFEH= 51, 51
-        thisgrs= numpy.zeros((_THISNGR,_THISNFEH))
-        thisfehs= numpy.zeros((_THISNGR,_THISNFEH))
-        for kk in range(_THISNGR):
-            thisfehs[kk,:]= numpy.linspace(fehrange[0],fehrange[1],_THISNFEH)
-        for kk in range(_THISNFEH):
-            thisgrs[:,kk]= numpy.linspace(grmin,grmax,_THISNGR)
-        dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))
-        dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))
-        ds= numpy.linspace(dmin,dmax,_NDS)
-        #Determine scale over which the surface-mass density changes for this plate
-        #Find nearest mono-abundance bin that has a measurement
-        abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
-                                 +(afes[ii]-mapafes)**2./0.0025)
-        thishr= monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])
-        thishz= monoAbundanceMW.hz(mapfehs[abindx],mapafes[abindx])/1000.
-        surfscale= []
-        surfds= numpy.linspace(dmin,dmax,11)
-        for kk in range(len(plates)):
-            if options.dfmodel.lower() == 'qdf':
-                XYZ= bovy_coords.lbd_to_XYZ(numpy.array([platelb[kk,0] for dd in range(len(surfds))]),
-                                            numpy.array([platelb[kk,1] for dd in range(len(surfds))]),
-                                            surfds,degree=True)
-            R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
-            XYZ[:,2]+= _ZSUN
-            z= XYZ[:,2]
-            drdd= -(8.-XYZ[:,0])/R*numpy.cos(platelb[kk,0]*_DEGTORAD)*numpy.cos(platelb[kk,1]*_DEGTORAD)\
-                +XYZ[:,1]/R*numpy.cos(platelb[kk,1]*_DEGTORAD)*numpy.sin(platelb[kk,0]*_DEGTORAD)
-            dzdd= numpy.fabs(numpy.sin(platelb[kk,1]*_DEGTORAD))
-            dlnnudd= -1./thishr*drdd-1./thishz*dzdd
-            surfscale.append(numpy.amin(numpy.fabs(1./dlnnudd)))
-            #print thishr, thishz, platelb[kk,0], platelb[kk,1], surfscale[-1]
-        #Load into thisnormintstuff
-        thisnormintstuff.sf= sf
-        thisnormintstuff.plates= plates
-        thisnormintstuff.platel= platelb[:,0]
-        thisnormintstuff.plateb= platelb[:,1]
-        thisnormintstuff.platebright= platebright
-        thisnormintstuff.platefaint= platefaint
-        thisnormintstuff.grmin= grmin
-        thisnormintstuff.grmax= grmax
-        thisnormintstuff.rmin= rmin
-        thisnormintstuff.rmax= rmax
-        thisnormintstuff.fehmin= fehrange[0]
-        thisnormintstuff.fehmax= fehrange[1]
-        thisnormintstuff.feh= feh
-        thisnormintstuff.colordist= colordist
-        thisnormintstuff.fehdist= fehdist
-        thisnormintstuff.grs= grs
-        thisnormintstuff.rhogr= rhogr
-        thisnormintstuff.rhofeh= rhofeh        
-        thisnormintstuff.mr= mr
-        thisnormintstuff.dmin= dmin
-        thisnormintstuff.dmax= dmax
-        thisnormintstuff.ds= ds
-        thisnormintstuff.surfscale= surfscale
-        thisnormintstuff.hr= thishr
-        thisnormintstuff.hz= thishz
-        out.append(thisnormintstuff)
+            _THISNGR, _THISNFEH= 51, 51
+            thisgrs= numpy.zeros((_THISNGR,_THISNFEH))
+            thisfehs= numpy.zeros((_THISNGR,_THISNFEH))
+            for kk in range(_THISNGR):
+                thisfehs[kk,:]= numpy.linspace(fehrange[0],fehrange[1],_THISNFEH)
+            for kk in range(_THISNFEH):
+                thisgrs[:,kk]= numpy.linspace(grmin,grmax,_THISNGR)
+            dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))
+            dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))
+            ds= numpy.linspace(dmin,dmax,_NDS)
+            #Determine scale over which the surface-mass density changes for this plate
+            #Find nearest mono-abundance bin that has a measurement
+            abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
+                                     +(afes[ii]-mapafes)**2./0.0025)
+            thishr= monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])
+            thishz= monoAbundanceMW.hz(mapfehs[abindx],mapafes[abindx])/1000.
+            surfscale= []
+            surfds= numpy.linspace(dmin,dmax,11)
+            for kk in range(len(plates)):
+                if options.dfmodel.lower() == 'qdf':
+                    XYZ= bovy_coords.lbd_to_XYZ(numpy.array([platelb[kk,0] for dd in range(len(surfds))]),
+                                                numpy.array([platelb[kk,1] for dd in range(len(surfds))]),
+                                                surfds,degree=True)
+                    R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+                    XYZ[:,2]+= _ZSUN
+                    z= XYZ[:,2]
+                    drdd= -(8.-XYZ[:,0])/R*numpy.cos(platelb[kk,0]*_DEGTORAD)*numpy.cos(platelb[kk,1]*_DEGTORAD)\
+                        +XYZ[:,1]/R*numpy.cos(platelb[kk,1]*_DEGTORAD)*numpy.sin(platelb[kk,0]*_DEGTORAD)
+                    dzdd= numpy.fabs(numpy.sin(platelb[kk,1]*_DEGTORAD))
+                    dlnnudd= -1./thishr*drdd-1./thishz*dzdd
+                    surfscale.append(numpy.amin(numpy.fabs(1./dlnnudd)))
+                #print thishr, thishz, platelb[kk,0], platelb[kk,1], surfscale[-1]
+            #Load into thisnormintstuff
+            thisnormintstuff.sf= sf
+            thisnormintstuff.plates= plates
+            thisnormintstuff.platel= platelb[:,0]
+            thisnormintstuff.plateb= platelb[:,1]
+            thisnormintstuff.platebright= platebright
+            thisnormintstuff.platefaint= platefaint
+            thisnormintstuff.grmin= grmin
+            thisnormintstuff.grmax= grmax
+            thisnormintstuff.rmin= rmin
+            thisnormintstuff.rmax= rmax
+            thisnormintstuff.fehmin= fehrange[0]
+            thisnormintstuff.fehmax= fehrange[1]
+            thisnormintstuff.feh= feh
+            thisnormintstuff.colordist= colordist
+            thisnormintstuff.fehdist= fehdist
+            thisnormintstuff.grs= grs
+            thisnormintstuff.rhogr= rhogr
+            thisnormintstuff.rhofeh= rhofeh        
+            thisnormintstuff.mr= mr
+            thisnormintstuff.dmin= dmin
+            thisnormintstuff.dmax= dmax
+            thisnormintstuff.ds= ds
+            thisnormintstuff.surfscale= surfscale
+            thisnormintstuff.hr= thishr
+            thisnormintstuff.hz= thishz
+            out.append(thisnormintstuff)
     return out
 
-def unpack_normintstuff(normintstuff):
-    return (normintstuff.sf,
-            normintstuff.plates,
-            normintstuff.platel,
-            normintstuff.plateb,
-            normintstuff.platebright,
-            normintstuff.platefaint,
-            normintstuff.grmin,
-            normintstuff.grmax,
-            normintstuff.rmin,
-            normintstuff.rmax,
-            normintstuff.fehmin,
-            normintstuff.fehmax,
-            normintstuff.feh,
-            normintstuff.colordist,
-            normintstuff.fehdist,
-            normintstuff.grs,
-            normintstuff.rhogr,
-            normintstuff.rhofeh,
-            normintstuff.mr,
-            normintstuff.dmin,
-            normintstuff.dmax,
-            normintstuff.ds,
-            normintstuff.surfscale,
-            normintstuff.hr,
-            normintstuff.hz)
+def unpack_normintstuff(normintstuff,options):
+    if options.mcall:
+        pass
+    else:
+        return (normintstuff.sf,
+                normintstuff.plates,
+                normintstuff.platel,
+                normintstuff.plateb,
+                normintstuff.platebright,
+                normintstuff.platefaint,
+                normintstuff.grmin,
+                normintstuff.grmax,
+                normintstuff.rmin,
+                normintstuff.rmax,
+                normintstuff.fehmin,
+                normintstuff.fehmax,
+                normintstuff.feh,
+                normintstuff.colordist,
+                normintstuff.fehdist,
+                normintstuff.grs,
+                normintstuff.rhogr,
+                normintstuff.rhofeh,
+                normintstuff.mr,
+                normintstuff.dmin,
+                normintstuff.dmax,
+                normintstuff.ds,
+                normintstuff.surfscale,
+                normintstuff.hr,
+                normintstuff.hz)
 
 class normintstuffClass:
     """Empty class to hold normalization integral necessities"""
@@ -603,6 +678,10 @@ def get_vsun(p,options):
     else:
         return (-11.1/_REFV0,245./_REFV0,7.25/_REFV0) #BOVY:ADJUST?
 
+def fidDens(R,z,hr,hz,dummy):
+    """Fiducial exponential density for normalization integral"""
+    return 1./hz*numpy.exp(-(R-8.)/hr-numpy.fabs(z)/hz)
+
 def get_options():
     usage = "usage: %prog [options] <savefile>\n\nsavefile= name of the file that the fits will be saved to"
     parser = OptionParser(usage=usage)
@@ -672,6 +751,8 @@ def get_options():
     #Normalization integral
     parser.add_option("--nmcv",dest='nmcv',default=1000,type='int',
                       help="Number of MC samples to use for velocity integration")
+    parser.add_option("--nmc",dest='nmc',default=1000,type='int',
+                      help="Number of MC samples to use for Monte Carlog normalization integration")
     parser.add_option("--mcall",action="store_true", dest="mcall",
                       default=False,
                       help="If set, calculate the normalization integral by first calculating the normalization of the exponential density given the best-fit and then calculating the difference with Monte Carlo integration")
