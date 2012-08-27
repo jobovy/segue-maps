@@ -164,6 +164,37 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff):
 
 def calc_normint(qdf,indx,normintstuff,params):
     """Calculate the normalization integral"""
+    if options.mcall:
+        return calc_normint_mcall(qdf,indx,normintstuff,params)
+    else:
+        return calc_normint_mcv(qdf,indx,normintstuff,params)
+
+def calc_normint_mcall(qdf,indx,normintstuff,params):
+    """calculate the normalization integral by monte carlo integrating over everything"""
+    thisnormintstuff= normintstuff[indx]
+    mock= unpack_normintstuff(thisnormintstuff,options)
+    out= 0.
+    ro= get_ro(params,options)
+    vo= get_vo(params,options)
+    #Calculate (R,z)s
+    XYZ= bovy_coords.lbd_to_XYZ(numpy.array([m[3] for m in mock]),
+                                numpy.array([m[4] for m in mock]),
+                                numpy.array([m[6] for m in mock]),
+                                degree=True)
+    R= ((ro*_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
+    XYZ[:,2]+= _ZSUN
+    z= XYZ[:,2]/ro/_REFR0
+    for jj in range(options.nmc):
+        out+= numpy.exp(mock[jj][10]-qdf(R[jj],
+                                         mock[jj][7]/vo,
+                                         mock[jj][8]/vo,
+                                         z[jj],
+                                         mock[jj][9]/vo,
+                                         log=True))
+    return numpy.mean(out)
+
+def calc_normint_mcv(qdf,indx,normintstuff,params):
+    """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
     thisnormintstuff= normintstuff[indx]
     sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
     out= 0.
@@ -193,7 +224,7 @@ def calc_normint(qdf,indx,normintstuff,params):
         XYZ= bovy_coords.lbd_to_XYZ(numpy.array([platel[ii] for dd in range(len(ds))]),
                                     numpy.array([plateb[ii] for dd in range(len(ds))]),
                                     ds,degree=True)
-        R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
+        R= ((ro*_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
         XYZ[:,2]+= _ZSUN
         z= XYZ[:,2]/ro/_REFR0
         if not options.zmin is None and not options.zmax is None:
@@ -213,7 +244,7 @@ def calc_normint(qdf,indx,normintstuff,params):
         XYZgrid= bovy_coords.lbd_to_XYZ(numpy.array([platel[ii] for dd in range(ndsgrid)]),
                                         numpy.array([plateb[ii] for dd in range(ndsgrid)]),
                                         dsgrid,degree=True)
-        Rgrid= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
+        Rgrid= ((ro*_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
         XYZgrid[:,2]+= _ZSUN
         zgrid= XYZgrid[:,2]/ro/_REFR0       
         surfgrid= numpy.zeros(ndsgrid)
@@ -338,7 +369,36 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
                 while rdists[kk,jj,cc,ff] < ran: jj+= 1
                 #r=jj
                 out.append([rs[jj],grs[cc],fehs[ff],platelb[kk,0],platelb[kk,1],
-                            sf.plates[kk]])
+                            sf.plates[kk],
+                            _ivezic_dist(grs[cc],rs[jj],fehs[ff])])
+            #Add mock velocities
+            #First calculate all R
+            d= numpy.array([o[6] for o in out])
+            l= numpy.array([o[3] for o in out])
+            b= numpy.array([o[4] for o in out])
+            XYZ= bovy_coords.lbd_to_XYZ(l,b,d,degree=True)
+            R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+            XYZ[:,2]+= _ZSUN
+            z= XYZ[:,2]
+            for jj in range(options.nmc):
+                thissigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
+                                                 mapafes[abindx],
+                                                 r=R[jj])
+                thissigr= 2.*thissigz #BOVY: FOR NOW
+                thissigphi= thissigr/numpy.sqrt(2.) #BOVY: FOR NOW
+                #Estimate asymmetric drift
+                va= thissigr**2./2./_REFV0\
+                    *(-.5+R[jj]*(1./thishr+2./7.))
+                #Sample from this gaussian
+                vz= numpy.random.normal()*sigz
+                vr= numpy.random.normal()*sigr
+                vphi= numpy.random.normal()*sigphi+_REFV0-va
+                #Append to out
+                out[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
+                                numpy.log(fidDens(R[jj],z[jj],thishr,thishz,None))\
+                                    -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(vr**2./sigr**2.+vz**2./sigz**2.+(vt-_REFV0+va)**2./sigphi**2.)])
+            #Load into thisnormintstuff
+            thisnormintstuff.mock= out
         else:
             #Integration grid when binning
             grs= numpy.linspace(grmin,grmax,_NGR)
@@ -433,7 +493,7 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
 
 def unpack_normintstuff(normintstuff,options):
     if options.mcall:
-        pass
+        return normintstuff.mock
     else:
         return (normintstuff.sf,
                 normintstuff.plates,
@@ -631,6 +691,16 @@ def get_potparams(p,options,npops):
     startindx+= ndfparams*npops
     if options.potential.lower() == 'flatlog':
         return (p[startindx],p[startindx+1]) #vc, q
+
+def get_vo(p,options,npops):
+    """Function that returns the vo parameter for these options"""
+    startindx= 0
+    if options.fitro: startindx+= 1
+    if options.fitvsun: startindx+= 3
+    ndfparams= get_ndfparams(options)
+    startindx+= ndfparams*npops
+    if options.potential.lower() == 'flatlog':
+        return p[startindx]
 
 def set_potparams(p,params,options,npops):
     """Function that sets the set of potential parameters for these options"""
