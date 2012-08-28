@@ -110,7 +110,7 @@ def pixelFitDF(options,args):
     for cc in range(options.ninit):
         print "Iteration %i  / %i ..." % (cc+1,options.ninit)
         print "Optimizing individual DFs with fixed potential ..."
-        #params= indiv_optimize_df(params,fehs,afes,binned,options,normintstuff)
+        params= indiv_optimize_df(params,fehs,afes,binned,options,normintstuff)
         print "Optimizing potential with individual DFs fixed ..."
         params= indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff)
     #Optimize full model
@@ -567,24 +567,21 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         XYZ[:,2]+= _ZSUN
         z= XYZ[:,2]
         for jj in range(options.nmc):
+            sigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
+                                         mapafes[abindx],
+                                         r=R[jj])
+            sigr= 2.*sigz #BOVY: FOR NOW
+            sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
+            #Estimate asymmetric drift
+            va= sigr**2./2./_REFV0\
+                *(-.5+R[jj]*(1./thishr+2./7.))
             if options.mcout and thisout[jj][7]:
                 #Sample from halo gaussian
-                sigr= _SRHALO
-                sigz= _SZHALO
-                sigphi= _SPHIHALO
                 vz= numpy.random.normal()*_SZHALO
                 vr= numpy.random.normal()*_SRHALO
                 vphi= numpy.random.normal()*_SPHIHALO
             else:
-                sigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
-                                             mapafes[abindx],
-                                             r=R[jj])
-                sigr= 2.*sigz #BOVY: FOR NOW
-                sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
-                #Estimate asymmetric drift
-                va= sigr**2./2./_REFV0\
-                    *(-.5+R[jj]*(1./thishr+2./7.))
-                #Sample from this gaussian
+                #Sample from disk gaussian
                 vz= numpy.random.normal()*sigz
                 vr= numpy.random.normal()*sigr
                 vphi= numpy.random.normal()*sigphi+_REFV0-va
@@ -598,9 +595,9 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
                                               -0.5*(vr**2./sigr**2.+vz**2./sigz**2.+(vphi-_REFV0+va)**2./sigphi**2.)
                 outlogeval= numpy.log(fidoutfrac)\
                     +numpy.log(outDens(R[jj],z[jj],None))\
-                    -numpy.log(sigr)\
-                    -numpy.log(sigphi)\
-                    -numpy.log(sigz)\
+                    -numpy.log(_SRHALO)\
+                    -numpy.log(_SPHIHALO)\
+                    -numpy.log(_SZHALO)\
                     -0.5*(vr**2./_SRHALO**2.+vz**2./_SZHALO**2.+vphi**2./_SPHIHALO**2.)
                 thisout[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
                                     logsumexp([fidlogeval,outlogeval])])
