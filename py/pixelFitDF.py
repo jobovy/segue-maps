@@ -237,7 +237,7 @@ def logprior_pot(params,options,npops):
     potparams= get_potparams(params,options,npops)
     if options.potential.lower() == 'flatlog':
         q= potparams[1]
-        if q <= 1./numpy.sqrt(2.): #minimal flattening for positive density
+        if q <= 0.53: #minimal flattening for positive density at R > 5 kpc, |Z| < 4 kpc
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     return out
 
@@ -275,12 +275,15 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     thislogdf= numpy.zeros((len(R),2))
     thislogfiddf= numpy.array([m[11] for m in mock])
     for jj in range(options.nmc):
-        thislogdf[jj,0]= qdf(R[jj],
-                             vR[jj],
-                             vT[jj],
-                             z[jj],
-                             vz[jj],
-                             log=True)
+        try:
+            thislogdf[jj,0]= qdf(R[jj],
+                                 vR[jj],
+                                 vT[jj],
+                                 z[jj],
+                                 vz[jj],
+                                 log=True)
+        except RuntimeError:
+            print vo, mock[jj][7, R[jj], vR[jj], vT[jj],z[jj],vz[jj]]
         thislogdf[jj,1]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
             -0.5*(vR[jj]**2./srhalo**2.+vz[jj]**2./szhalo**2.+vT[jj]**2./sphihalo**2.)
