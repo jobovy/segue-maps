@@ -1,6 +1,7 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
+#   - add sigmar to monoAbundanceMW
 #   - save normintstuff after setup
 #   - outlier model sigma (sr=150,sphi=100,sz=100)? MAKE SURE QDF IS NORMALIZED-ish
 #   - speed up setting up normintstuff
