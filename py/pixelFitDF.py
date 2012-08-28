@@ -124,10 +124,6 @@ def mloglike(*args,**kwargs):
 
 def loglike(params,fehs,afes,binned,options,normintstuff):
     """log likelihood"""
-    #Set up potential and actionAngle
-    pot= setup_potential(params,options,len(fehs))
-    aA= setup_aA(pot,options)
-    out= logdf(params,pot,aA,fehs,afes,binned,normintstuff)
     #Priors
     logroprior= logprior_ro(get_ro(params,options),options)
     if logroprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
@@ -135,6 +131,10 @@ def loglike(params,fehs,afes,binned,options,normintstuff):
     logpotprior= logprior_pot(params,options,len(fehs))
     if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         return logpotprior
+    #Set up potential and actionAngle
+    pot= setup_potential(params,options,len(fehs))
+    aA= setup_aA(pot,options)
+    out= logdf(params,pot,aA,fehs,afes,binned,normintstuff)
     return out+logroprior+logpotprior
 
 def logdf(params,pot,aA,fehs,afes,binned,normintstuff):
@@ -213,10 +213,11 @@ def logprior_ro(ro,options):
 
 def logprior_pot(params,options,npops):
     """Prior on the potential"""
+    vo= get_vo(params,options,npops)
+    if vo < 0.: return -numpy.finfo(numpy.dtype(numpy.float64)).max #don't allow counter-rotation
     out= 0.
     if options.novoprior: pass
     else:
-        vo= get_vo(params,options,npops)
         if options.bovy09voprior:
             out-= 0.5*(vo-236./_REFV0)**2./(11./_REFV0)**2.
         else:
@@ -243,6 +244,11 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     out= 0.
     ro= get_ro(params,options)
     vo= get_vo(params,options,npops)
+    logoutfrac= numpy.log(get_outfrac(params,options,npops))
+    loghalodens= numpy.log(ro/12.)
+    srhalo= _SRHALO/vo/_REFV0
+    sphihalo= _SPHIHALO/vo/_REFV0
+    szhalo= _SZHALO/vo/_REFV0
     #Calculate (R,z)s
     XYZ= bovy_coords.lbd_to_XYZ(numpy.array([m[3] for m in mock]),
                                 numpy.array([m[4] for m in mock]),
@@ -251,21 +257,31 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     R= ((ro*_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
     XYZ[:,2]+= _ZSUN
     z= XYZ[:,2]/ro/_REFR0
+    vR= numpy.array([m[8] for m in mock])/vo/_REFV0
+    vT= numpy.array([m[9] for m in mock])/vo/_REFV0
+    vz= numpy.array([m[10] for m in mock])/vo/_REFV0
+    thislogdf= numpy.zeros((len(R),2))
+    thislogfiddf= numpy.array([m[11] for m in mock])
     for jj in range(options.nmc):
-        thislogdf= qdf(R[jj],
-                       mock[jj][8]/vo/_REFV0,
-                       mock[jj][9]/vo/_REFV0,
-                       z[jj],
-                       mock[jj][10]/vo/_REFV0,
-                       log=True)
-        if thislogdf == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+        thislogdf[jj,0]= qdf(R[jj],
+                             vR[jj],
+                             vT[jj],
+                             z[jj],
+                             vz[jj],
+                             log=True)
+        thislogdf[jj,1]= logoutfrac+loghalodens\
+            -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
+            -0.5*(vR[jj]**2./srhalo**2.+vz[jj]**2./szhalo**2.+vT[jj]**2./sphihalo**2.)
+        if thislogdf[jj,0] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
             print "Warning; data likelihood is -inf"
-            thislogdf= 0.
-        out+= numpy.exp(-mock[jj][11]+thislogdf)
+    #Sum data and outlier df
+    thislogdf= mylogsumexp(thislogdf,axis=1)
+    out= numpy.exp(-thislogfiddf+thislogdf)
     return numpy.mean(out)
 
 def calc_normint_mcv(qdf,indx,normintstuff,params):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
+    print "BOVY: WARNING MCV NOT EDITED FOR OUTLIER MODEL YET"
     thisnormintstuff= normintstuff[indx]
     sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
     out= 0.
@@ -576,7 +592,6 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         thisnormintstuff.mock= thisout
         if savetopickle:
             #Save to temporary pickle
-            print tmpfiles[ii][1]
             tmpfile= open(tmpfiles[ii][1],'wb')
             pickle.dump(thisnormintstuff,tmpfile)
             tmpfile.close()
