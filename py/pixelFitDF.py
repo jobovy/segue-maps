@@ -226,7 +226,7 @@ def logprior_outfrac(outfrac,options):
 def logprior_pot(params,options,npops):
     """Prior on the potential"""
     vo= get_vo(params,options,npops)
-    if vo < 0.: return -numpy.finfo(numpy.dtype(numpy.float64)).max #don't allow counter-rotation
+    if vo < 100./_REFV0 or vo > 350./_REFV0: return -numpy.finfo(numpy.dtype(numpy.float64)).max #don't allow crazy vo
     out= 0.
     if options.novoprior: pass
     else:
@@ -362,6 +362,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params):
 def setup_normintstuff(options,raw,binned,fehs,afes):
     """Gather everything necessary for calculating the normalization integral"""
     if not options.savenorm is None and os.path.exists(options.savenorm):
+        print "Reading normintstuff from file ..."
         savefile= open(options.savenorm,'rb')
         out= pickle.load(savefile)
         savefile.close()
