@@ -185,7 +185,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     data_lndf= mylogsumexp(data_lndf,axis=1)
     #Normalize
     normalization= calc_normint(qdf,indx,normintstuff,params,npops)
-    print numpy.sum(data_lndf),len(R)*numpy.log(normalization)
+    print params, numpy.sum(data_lndf),len(R)*numpy.log(normalization), numpy.sum(data_lndf)-len(R)*numpy.log(normalization)
     return numpy.sum(data_lndf)-len(R)*numpy.log(normalization)
 
 def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
@@ -375,7 +375,6 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
     out= []
     mapfehs= monoAbundanceMW.fehs()
     mapafes= monoAbundanceMW.afes()
-    print "BOVY: MULTI SETTING UP THE NORMALIZATION INTEGRAL?"
     if not options.multi is None:
         #Generate list of temporary files
         tmpfiles= []
