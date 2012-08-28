@@ -366,7 +366,8 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
                                                                           options,raw,binned,fehs,afes,
                                                                           plates,sf,platelb,
                                                                           platebright,platefaint,grmin,grmax,rmin,rmax,colorrange,mapfehs,mapafes,
-                                                                          True)),
+                                                                          True,
+                                                                          tmpfiles)),
                                       
                                       range(len(fehs)),
                                       numcores=numpy.amin([len(fehs),
@@ -375,9 +376,9 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
             #Now read all of the temporary files
             for ii in range(len(fehs)):
                 tmpfile= open(tmpfiles[ii][1],'rb')
-                new_dfparams= pickle.load(tmpfile)
-                params= set_dfparams(new_dfparams,params,ii,options,log=False)
+                thisnormintstuff= pickle.load(tmpfile)
                 tmpfile.close()
+                out.append(thisnormintstuff)
         finally:
             for ii in range(len(fehs)):
                 os.remove(tmpfiles[ii][1])
@@ -391,13 +392,13 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
                                                        grmin,grmax,rmin,rmax,
                                                        colorrange,
                                                        mapfehs,mapafes,
-                                                       False)
+                                                       False,None)
             out.append(thisnormintstuff)
     return out
 
 def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
                              platebright,platefaint,grmin,grmax,rmin,rmax,
-                             colorrange,mapfehs,mapafes,savetopickle):
+                             colorrange,mapfehs,mapafes,savetopickle,tmpfiles):
     data= binned(fehs[ii],afes[ii])
     thisnormintstuff= normintstuffClass() #Empty object to act as container
     #Fit this data, set up feh and color
@@ -574,7 +575,11 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         #Load into thisnormintstuff
         thisnormintstuff.mock= thisout
         if savetopickle:
-            pass
+            #Save to temporary pickle
+            print tmpfiles[ii][1]
+            tmpfile= open(tmpfiles[ii][1],'wb')
+            pickle.dump(thisnormintstuff,tmpfile)
+            tmpfile.close()
         else:
             return thisnormintstuff
     else:
@@ -667,7 +672,10 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         thisnormintstuff.hr= thishr
         thisnormintstuff.hz= thishz
         if savetopickle:
-            pass
+            #Save to temporary pickle
+            tmpfile= open(tmpfiles[ii][1],'wb')
+            pickle.dump(thisnormintstuff,tmpfile)
+            tmpfile.close()
         else:
             return thisnormintstuff
 
@@ -1105,11 +1113,14 @@ def get_options():
                       help="Number of MCMC samples to obtain")
     parser.add_option("-m","--multi",dest='multi',default=None,type='int',
                       help="number of cpus to use")
+    #seed
+    parser.add_option("--seed",dest='seed',default=1,type='int',
+                      help="seed for random number generator")
     return parser
   
 if __name__ == '__main__':
-    numpy.random.seed(1)
     parser= get_options()
     options,args= parser.parse_args()
+    numpy.random.seed(options.seed)
     pixelFitDynamics(options,args)
 
