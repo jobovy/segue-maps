@@ -5,6 +5,11 @@
 #   - speed up setting up normintstuff
 #   - include errors
 #
+# ADDING NEW POTENTIAL MODEL:
+#    Make sure first parameter is vc(ro)
+#    edit: - get_potparams
+#          - get_npotparams
+#
 import os, os.path
 import sys
 import copy
@@ -719,6 +724,16 @@ def get_vo(p,options,npops):
     if options.potential.lower() == 'flatlog':
         return p[startindx]
 
+def get_outfrac(p,options,npops):
+    """Function that returns the outlier fraction for these options"""
+    startindx= 0
+    if options.fitro: startindx+= 1
+    if options.fitvsun: startindx+= 3
+    ndfparams= get_ndfparams(options)
+    npotparams= get_npotparams(options)
+    startindx+= ndfparams*npops+npotparams
+    return p[startindx]
+
 def set_potparams(p,params,options,npops):
     """Function that sets the set of potential parameters for these options"""
     startindx= 0
@@ -772,6 +787,11 @@ def get_ndfparams(options):
     """Function that returns the number of DF parameters for a single population"""
     if options.dfmodel.lower() == 'qdf':
         return 5
+
+def get_npotparams(options):
+    """Function that returns the number of potential parameters"""
+    if options.potential.lower() == 'flatlog':
+        return 2
 
 def get_ro(p,options):
     """Function that returns R0 for these options"""
