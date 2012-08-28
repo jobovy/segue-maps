@@ -1,4 +1,10 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
+#
+# TO DO:
+#   - outlier model sigma (sr120,sphi100,sz=100)?
+#   - speed up setting up normintstuff
+#   - include errors
+#
 import os, os.path
 import sys
 import copy
