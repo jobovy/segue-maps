@@ -1,3 +1,4 @@
+#for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 import os, os.path
 import sys
 import copy
@@ -27,7 +28,6 @@ _NGR= 11
 _NFEH=11
 _DEGTORAD= math.pi/180.
 def pixelFitDynamics(options,args):
-    print "BOVY: SET UP FOR A SINGLE PLATE"
     #Read the data
     print "Reading the data ..."
     if options.sample.lower() == 'g':
@@ -43,6 +43,10 @@ def pixelFitDynamics(options,args):
     if not options.bmin is None:
         #Cut on |b|
         raw= raw[(numpy.fabs(raw.b) > options.bmin)]
+    if not options.plate is None and not options.loo:
+        raw= raw[(raw.plate == options.plate)]
+    elif not options.plate:
+        raw= raw[(raw.plate != options.plate)]
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     #Map the bins with ndata > minndata in 1D
@@ -65,7 +69,7 @@ def pixelFitDynamics(options,args):
             indx= binned.callIndx(options.singlefeh,options.singleafe)
             if numpy.sum(indx) == 0:
                 raise IOError("Bin corresponding to singlefeh and singleafe is empty ...")
-            data= binned.data[indx]
+            data= copy.copy(binned.data[indx])
             #Bin again
             binned= pixelAfeFeh(data,dfeh=options.dfeh,dafe=options.dafe)
             fehs, afes= [], []
@@ -107,7 +111,8 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
     theseparams= set_dfparams(params,_bigparams,indx,options,log=False)
-    ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff)
+    ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff,
+                     len(fehs))
     print params, ml
     return ml
 
@@ -130,7 +135,7 @@ def loglike(params,fehs,afes,binned,options,normintstuff):
 def logdf(params,pot,aA,fehs,afes,binned,normintstuff):
     logl= numpy.zeros(len(fehs))
     #Evaluate individual DFs
-    args= (pot,aA,fehs,afes,binned,normintstuff)
+    args= (pot,aA,fehs,afes,binned,normintstuff,len(fehs))
     if not options.multi is None:
         logl= multi.parallel_map((lambda x: indiv_logdf(params,x,
                                                         *args)),
@@ -139,12 +144,13 @@ def logdf(params,pot,aA,fehs,afes,binned,normintstuff):
                                                       multiprocessing.cpu_count(),
                                                       options.multi]))
     else:
+        print "Here", len(fehs)
         for ii in range(len(fehs)):
             print ii
             logl[ii]= indiv_logdf(params,ii,*args)
     return numpy.sum(logl)
 
-def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff):
+def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     """Individual population log likelihood"""
     dfparams= get_dfparams(params,indx,options)
     if options.dfmodel.lower() == 'qdf':
@@ -159,23 +165,24 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff):
             print "Warning; data likelihood is -inf"
             data_lndf[ii]= 0.
     #Normalize
-    normalization= calc_normint(qdf,indx,normintstuff,params)
+    normalization= calc_normint(qdf,indx,normintstuff,params,npops)
+    print numpy.sum(data_lndf),len(R)*numpy.log(normalization)
     return numpy.sum(data_lndf)-len(R)*numpy.log(normalization)
 
-def calc_normint(qdf,indx,normintstuff,params):
+def calc_normint(qdf,indx,normintstuff,params,npops):
     """Calculate the normalization integral"""
     if options.mcall:
-        return calc_normint_mcall(qdf,indx,normintstuff,params)
+        return calc_normint_mcall(qdf,indx,normintstuff,params,npops)
     else:
         return calc_normint_mcv(qdf,indx,normintstuff,params)
 
-def calc_normint_mcall(qdf,indx,normintstuff,params):
+def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     """calculate the normalization integral by monte carlo integrating over everything"""
     thisnormintstuff= normintstuff[indx]
     mock= unpack_normintstuff(thisnormintstuff,options)
     out= 0.
     ro= get_ro(params,options)
-    vo= get_vo(params,options)
+    vo= get_vo(params,options,npops)
     #Calculate (R,z)s
     XYZ= bovy_coords.lbd_to_XYZ(numpy.array([m[3] for m in mock]),
                                 numpy.array([m[4] for m in mock]),
@@ -186,10 +193,10 @@ def calc_normint_mcall(qdf,indx,normintstuff,params):
     z= XYZ[:,2]/ro/_REFR0
     for jj in range(options.nmc):
         out+= numpy.exp(mock[jj][10]-qdf(R[jj],
-                                         mock[jj][7]/vo,
-                                         mock[jj][8]/vo,
+                                         mock[jj][7]/vo/_REFV0,
+                                         mock[jj][8]/vo/_REFV0,
                                          z[jj],
-                                         mock[jj][9]/vo,
+                                         mock[jj][9]/vo/_REFV0,
                                          log=True))
     return numpy.mean(out)
 
@@ -310,15 +317,15 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
             #Calculate the r-distribution for each plate
             nrs= 1001
             ngr, nfeh= 11, 11
-            grs= numpy.linspace(grmin,grmax,ngr)
-            fehs= numpy.linspace(fehrange[0],fehrange[1],nfeh)
+            tgrs= numpy.linspace(grmin,grmax,ngr)
+            tfehs= numpy.linspace(fehrange[0],fehrange[1],nfeh)
             #Calcuate FeH and gr distriutions
             fehdists= numpy.zeros(nfeh)
-            for jj in range(nfeh): fehdists[jj]= fehdist(fehs[jj])
+            for jj in range(nfeh): fehdists[jj]= fehdist(tfehs[jj])
             fehdists= numpy.cumsum(fehdists)
             fehdists/= fehdists[-1]
             colordists= numpy.zeros(ngr)
-            for jj in range(ngr): colordists[jj]= colordist(grs[jj])
+            for jj in range(ngr): colordists[jj]= colordist(tgrs[jj])
             colordists= numpy.cumsum(colordists)
             colordists/= colordists[-1]
             rs= numpy.linspace(rmin,rmax,nrs)
@@ -350,8 +357,8 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
                     for kk in range(nfeh):
                         rdists[ll,:,jj,kk]/= rdists[ll,-1,jj,kk]
             #Now sample until we're done
-            out= []
-            while len(out) < options.nmc:
+            thisout= []
+            while len(thisout) < options.nmc:
                 #First sample a plate
                 ran= numpy.random.uniform()
                 kk= 0
@@ -368,37 +375,38 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
                 jj= 0
                 while rdists[kk,jj,cc,ff] < ran: jj+= 1
                 #r=jj
-                out.append([rs[jj],grs[cc],fehs[ff],platelb[kk,0],platelb[kk,1],
+                thisout.append([rs[jj],tgrs[cc],tfehs[ff],platelb[kk,0],platelb[kk,1],
                             sf.plates[kk],
-                            _ivezic_dist(grs[cc],rs[jj],fehs[ff])])
+                            _ivezic_dist(tgrs[cc],rs[jj],tfehs[ff])])
             #Add mock velocities
             #First calculate all R
-            d= numpy.array([o[6] for o in out])
-            l= numpy.array([o[3] for o in out])
-            b= numpy.array([o[4] for o in out])
+            d= numpy.array([o[6] for o in thisout])
+            l= numpy.array([o[3] for o in thisout])
+            b= numpy.array([o[4] for o in thisout])
             XYZ= bovy_coords.lbd_to_XYZ(l,b,d,degree=True)
             R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
             XYZ[:,2]+= _ZSUN
             z= XYZ[:,2]
             for jj in range(options.nmc):
-                thissigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
-                                                 mapafes[abindx],
-                                                 r=R[jj])
-                thissigr= 2.*thissigz #BOVY: FOR NOW
-                thissigphi= thissigr/numpy.sqrt(2.) #BOVY: FOR NOW
+                sigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
+                                             mapafes[abindx],
+                                             r=R[jj])
+                sigr= 2.*sigz #BOVY: FOR NOW
+                sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
                 #Estimate asymmetric drift
-                va= thissigr**2./2./_REFV0\
+                va= sigr**2./2./_REFV0\
                     *(-.5+R[jj]*(1./thishr+2./7.))
                 #Sample from this gaussian
                 vz= numpy.random.normal()*sigz
                 vr= numpy.random.normal()*sigr
                 vphi= numpy.random.normal()*sigphi+_REFV0-va
                 #Append to out
-                out[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
+                thisout[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
                                 numpy.log(fidDens(R[jj],z[jj],thishr,thishz,None))\
-                                    -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(vr**2./sigr**2.+vz**2./sigz**2.+(vt-_REFV0+va)**2./sigphi**2.)])
+                                    -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(vr**2./sigr**2.+vz**2./sigz**2.+(vphi-_REFV0+va)**2./sigphi**2.)])
             #Load into thisnormintstuff
-            thisnormintstuff.mock= out
+            thisnormintstuff.mock= thisout
+            out.append(thisnormintstuff)
         else:
             #Integration grid when binning
             grs= numpy.linspace(grmin,grmax,_NGR)
@@ -795,6 +803,8 @@ def get_options():
     parser.add_option("--loo",action="store_true", dest="loo",
                       default=False,
                       help="If set, leave out the bin corresponding to singlefeh and singleafe, in leave-one-out fashion")
+    parser.add_option("-p","--plate",dest='plate',default=None,type='int',
+                      help="Single plate to use")
     parser.add_option("--bmin",dest='bmin',type='float',
                       default=None,
                       help="Minimum Galactic latitude")
