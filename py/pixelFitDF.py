@@ -817,7 +817,7 @@ def initialize(options,fehs,afes):
             p.extend([numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaR
                       numpy.log(monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaZ
                       numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
-                      0.,0.]) #hsigR, hsigZ
+                      numpy.log(7./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
     if options.potential.lower() == 'flatlog':
         p.extend([1.,.9])
     #Outlier fraction
