@@ -179,7 +179,11 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     print "BOVY: MAKE SURE THAT qdf IS SOMEWHAT PROPERLY NORMALIZED"
     for ii in range(len(R)):
         #print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
-        data_lndf[ii,0]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
+        try:
+            data_lndf[ii,0]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
+        except RuntimeError:
+            jj= ii
+            print vo, R[jj], vR[jj], vT[jj],z[jj],vz[jj]
         data_lndf[ii,1]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
             -0.5*(vR[ii]**2./srhalo**2.+vz[ii]**2./szhalo**2.+vT[ii]**2./sphihalo**2.)
@@ -263,7 +267,7 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     szhalo= _SZHALO/vo/_REFV0
     #Calculate (R,z)s
     XYZ= bovy_coords.lbd_to_XYZ(numpy.array([m[3] for m in mock]),
-                                numpy.array([m[4] for m in mock]),
+    numpy.array([m[4] for m in mock]),
                                 numpy.array([m[6] for m in mock]),
                                 degree=True)
     R= ((ro*_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
@@ -275,15 +279,11 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     thislogdf= numpy.zeros((len(R),2))
     thislogfiddf= numpy.array([m[11] for m in mock])
     for jj in range(options.nmc):
-        try:
-            thislogdf[jj,0]= qdf(R[jj],
-                                 vR[jj],
-                                 vT[jj],
-                                 z[jj],
-                                 vz[jj],
-                                 log=True)
-        except RuntimeError:
-            print vo, mock[jj][7, R[jj], vR[jj], vT[jj],z[jj],vz[jj]]
+        thislogdf[jj,0]= qdf(R[jj],vR[jj],
+                             vT[jj],
+                             z[jj],
+                             vz[jj],
+                             log=True)
         thislogdf[jj,1]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
             -0.5*(vR[jj]**2./srhalo**2.+vz[jj]**2./szhalo**2.+vT[jj]**2./sphihalo**2.)
