@@ -179,8 +179,8 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
         data_lndf[ii,1]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
             -0.5*(vR[ii]**2./srhalo**2.+vz[ii]**2./szhalo**2.+vT[ii]**2./sphihalo**2.)
-        if data_lndf[ii,0] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-            print "Warning; data likelihood is -inf"
+        #if data_lndf[ii,0] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+        #    print "Warning; data likelihood is -inf"
     #Sum data and outlier df
     data_lndf= mylogsumexp(data_lndf,axis=1)
     #Normalize
@@ -275,8 +275,8 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
         thislogdf[jj,1]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
             -0.5*(vR[jj]**2./srhalo**2.+vz[jj]**2./szhalo**2.+vT[jj]**2./sphihalo**2.)
-        if thislogdf[jj,0] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-            print "Warning; data likelihood is -inf"
+        #if thislogdf[jj,0] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+        #    print "Warning; data likelihood is -inf"
     #Sum data and outlier df
     thislogdf= mylogsumexp(thislogdf,axis=1)
     out= numpy.exp(-thislogfiddf+thislogdf)
@@ -868,7 +868,7 @@ def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff):
                                               copy.copy(params),
                                               normintstuff),
                                         callback=cb)
-    params= set_potparams(new_potparams,params,len(fehs))
+    params= set_potparams(new_potparams,params,options,len(fehs))
 
 ##INITIALIZATION
 def initialize(options,fehs,afes):
