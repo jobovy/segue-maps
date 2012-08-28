@@ -38,6 +38,9 @@ _REFV0= 220. #km/s
 _NGR= 11
 _NFEH=11
 _DEGTORAD= math.pi/180.
+_SRHALO= 150. #km/s
+_SPHIHALO= 100. #km/s
+_SZHALO= 100. #km/s
 def pixelFitDynamics(options,args):
     #Read the data
     print "Reading the data ..."
@@ -702,6 +705,8 @@ def initialize(options,fehs,afes):
                       0.,0.]) #hsigR, hsigZ
     if options.potential.lower() == 'flatlog':
         p.extend([1.,.9])
+    #Outlier fraction
+    p.append(0.025) #BOVY: UPDATE FIRST GUESS
     return p
 
 def get_potparams(p,options,npops):
