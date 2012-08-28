@@ -2,6 +2,7 @@
 #
 # TO DO:
 #   - outlier model sigma (sr=150,sphi=100,sz=100)?
+#   - priors
 #   - speed up setting up normintstuff
 #   - include errors
 #
@@ -116,28 +117,10 @@ def pixelFitDynamics(options,args):
     #Sample?
     return None
 
+##LOG LIKELIHOODS
 def mloglike(*args,**kwargs):
     """minus log likelihood"""
     return -loglike(*args,**kwargs)
-
-def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
-                               indx,_bigparams,normintstuff):
-    """Minus log likelihood when optimizing the parameters of a single DF"""
-    #_bigparams is a hack to propagate the parameters to the overall like
-    theseparams= set_dfparams(params,_bigparams,indx,options,log=False)
-    ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff,
-                     len(fehs))
-    print params, ml
-    return ml
-
-def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
-                                _bigparams,normintstuff):
-    """Minus log likelihood when optimizing the parameters of a single DF"""
-    #_bigparams is a hack to propagate the parameters to the overall like
-    theseparams= set_potparams(params,_bigparams,options,len(fehs))
-    ml= mloglike(theseparams,fehs,afes,binned,options,normintstuff)
-    print params, ml
-    return ml#oglike(theseparams,fehs,afes,binned,options)
 
 def loglike(params,fehs,afes,binned,options,normintstuff):
     """log likelihood"""
@@ -178,6 +161,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
+    print "BOVY: MAKE SURE THAT qdf IS SOMEWHAT PROPERLY NORMALIZED"
     for ii in range(len(R)):
         print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
         data_lndf[ii,0]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
@@ -193,23 +177,28 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     print numpy.sum(data_lndf),len(R)*numpy.log(normalization)
     return numpy.sum(data_lndf)-len(R)*numpy.log(normalization)
 
-def mylogsumexp(arr,axis=0):
-    """Faster logsumexp?"""
-    minarr= numpy.amax(arr,axis=axis)
-    if axis == 1:
-        minarr= numpy.reshape(minarr,(arr.shape[0],1))
-    if axis == 0:
-        minminarr= numpy.tile(minarr,(arr.shape[0],1))
-    elif axis == 1:
-        minminarr= numpy.tile(minarr,(1,arr.shape[1]))
-    elif axis == None:
-        minminarr= numpy.tile(minarr,arr.shape)
-    else:
-        raise NotImplementedError("'mylogsumexp' not implemented for axis > 2")
-    if axis == 1:
-        minarr= numpy.reshape(minarr,(arr.shape[0]))
-    return minarr+numpy.log(numpy.sum(numpy.exp(arr-minminarr),axis=axis))
+def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
+                               indx,_bigparams,normintstuff):
+    """Minus log likelihood when optimizing the parameters of a single DF"""
+    #_bigparams is a hack to propagate the parameters to the overall like
+    theseparams= set_dfparams(params,_bigparams,indx,options,log=False)
+    ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff,
+                     len(fehs))
+    print params, ml
+    return ml
 
+def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
+                                _bigparams,normintstuff):
+    """Minus log likelihood when optimizing the parameters of a single DF"""
+    #_bigparams is a hack to propagate the parameters to the overall like
+    theseparams= set_potparams(params,_bigparams,options,len(fehs))
+    ml= mloglike(theseparams,fehs,afes,binned,options,normintstuff)
+    print params, ml
+    return ml#oglike(theseparams,fehs,afes,binned,options)
+
+##PRIORS
+
+##SETUP AND CALCULATE THE NORMALIZATION INTEGRAL
 def calc_normint(qdf,indx,normintstuff,params,npops):
     """Calculate the normalization integral"""
     if options.mcall:
@@ -641,6 +630,7 @@ class normintstuffClass:
     """Empty class to hold normalization integral necessities"""
     pass
 
+##COORDINATE TRANSFORMATIONS AND RO/VO NORMALIZATION
 def prepare_coordinates(params,indx,fehs,afes,binned):
     vo= get_vo(params,options,len(fehs))
     ro= get_ro(params,options)
@@ -688,6 +678,7 @@ def prepare_coordinates(params,indx,fehs,afes,binned):
         cov_vxvyvz[rr,0:2,0:2]= sRT
     return (R,vR,vT,XYZ[:,2],vxvyvz[:,2],cov_vxvyvz)
 
+##SETUP THE POTENTIAL IN EACH STEP
 def setup_aA(pot,options):
     """Function for setting up the actionAngle object"""
     if options.aAmethod.lower() == 'adiabatic':
@@ -703,11 +694,13 @@ def setup_potential(params,options,npops):
     if options.potential.lower() == 'flatlog':
         return potential.LogarithmicHaloPotential(normalize=1.,q=potparams[1])
 
+##FULL OPTIMIZER
 def full_optimize(params,fehs,afes,binned,options,normintstuff):
     """Function for optimizing the full set of parameters"""
     return optimize.fmin_powell(mloglike,params,
                                 args=(fehs,afes,binned,options,normintstuff))
 
+##INDIVIDUAL OPTIMIZATIONS
 def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff):
     """Function for optimizing individual DFs with potential fixed"""
     #Set up potential and actionAngle
@@ -776,6 +769,7 @@ def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff):
                                         callback=cb)
     params= set_potparams(new_potparams,params,len(fehs))
 
+##INITIALIZATION
 def initialize(options,fehs,afes):
     """Function to initialize the fit; uses fehs and afes to initialize using MAPS"""
     p= []
@@ -800,6 +794,7 @@ def initialize(options,fehs,afes):
     p.append(0.025) #BOVY: UPDATE FIRST GUESS
     return p
 
+##GET AND SET THE PARAMETERS
 def get_potparams(p,options,npops):
     """Function that returns the set of potential parameters for these options"""
     startindx= 0
@@ -903,6 +898,7 @@ def get_vsun(p,options):
     else:
         return (-11.1/_REFV0,245./_REFV0,7.25/_REFV0) #BOVY:ADJUST?
 
+##FIDUCIAL DENSITIES FOR MC NORMALIZATION INTEGRATION
 def fidDens(R,z,hr,hz,dummy):
     """Fiducial exponential density for normalization integral"""
     return 1./hz*numpy.exp(-(R-8.)/hr-numpy.fabs(z)/hz)
@@ -910,6 +906,24 @@ def fidDens(R,z,hr,hz,dummy):
 def outDens(R,z,dummy):
     """Fiducial outlier density for normalization integral (constant)"""
     return 1./12.
+
+##UTILITY
+def mylogsumexp(arr,axis=0):
+    """Faster logsumexp?"""
+    minarr= numpy.amax(arr,axis=axis)
+    if axis == 1:
+        minarr= numpy.reshape(minarr,(arr.shape[0],1))
+    if axis == 0:
+        minminarr= numpy.tile(minarr,(arr.shape[0],1))
+    elif axis == 1:
+        minminarr= numpy.tile(minarr,(1,arr.shape[1]))
+    elif axis == None:
+        minminarr= numpy.tile(minarr,arr.shape)
+    else:
+        raise NotImplementedError("'mylogsumexp' not implemented for axis > 2")
+    if axis == 1:
+        minarr= numpy.reshape(minarr,(arr.shape[0]))
+    return minarr+numpy.log(numpy.sum(numpy.exp(arr-minminarr),axis=axis))
 
 def get_options():
     usage = "usage: %prog [options] <savefile>\n\nsavefile= name of the file that the fits will be saved to"
