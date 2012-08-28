@@ -171,7 +171,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     szhalo= _SZHALO/vo/_REFV0
     print "BOVY: MAKE SURE THAT qdf IS SOMEWHAT PROPERLY NORMALIZED"
     for ii in range(len(R)):
-        print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
+        #print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
         data_lndf[ii,0]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
         data_lndf[ii,1]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
