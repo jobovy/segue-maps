@@ -1,4 +1,4 @@
-#for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
+#for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
 #   - outlier model sigma (sr=150,sphi=100,sz=100)?
@@ -6,7 +6,7 @@
 #   - include errors
 #
 # ADDING NEW POTENTIAL MODEL:
-#    Make sure first parameter is vc(ro)
+#    Make sure first parameter is vo==vc(ro)
 #    edit: - get_potparams
 #          - get_npotparams
 #
@@ -17,7 +17,7 @@ import tempfile
 import math
 import numpy
 from scipy import optimize, interpolate
-#from scipy.maxentropy import logsumexp
+from scipy.maxentropy import logsumexp
 import cPickle as pickle
 from optparse import OptionParser
 import multi
@@ -166,21 +166,49 @@ def logdf(params,pot,aA,fehs,afes,binned,normintstuff):
 def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     """Individual population log likelihood"""
     dfparams= get_dfparams(params,indx,options)
+    vo= get_vo(params,options,npops)
+    ro= get_ro(params,options)
+    logoutfrac= numpy.log(get_outfrac(params,options,npops))
+    loghalodens= numpy.log(ro/12.)
     if options.dfmodel.lower() == 'qdf':
         qdf= quasiisothermaldf(*dfparams,pot=pot,aA=aA)
     #Get data ready
     R,vR,vT,z,vz,covv= prepare_coordinates(params,indx,fehs,afes,binned)
-    data_lndf= numpy.zeros(len(R))
+    data_lndf= numpy.zeros((len(R),2))
+    srhalo= _SRHALO/vo/_REFV0
+    sphihalo= _SPHIHALO/vo/_REFV0
+    szhalo= _SZHALO/vo/_REFV0
     for ii in range(len(R)):
         print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
-        data_lndf[ii]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
-        if data_lndf[ii] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+        data_lndf[ii,0]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
+        data_lndf[ii,1]= logoutfrac+loghalodens\
+            -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
+            -0.5*(vR[ii]**2./srhalo**2.+vz[ii]**2./szhalo**2.+vT[ii]**2./sphihalo**2.)
+        if data_lndf[ii,0] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
             print "Warning; data likelihood is -inf"
-            data_lndf[ii]= 0.
+    #Sum data and outlier df
+    data_lndf= mylogsumexp(data_lndf,axis=1)
     #Normalize
     normalization= calc_normint(qdf,indx,normintstuff,params,npops)
     print numpy.sum(data_lndf),len(R)*numpy.log(normalization)
     return numpy.sum(data_lndf)-len(R)*numpy.log(normalization)
+
+def mylogsumexp(arr,axis=0):
+    """Faster logsumexp?"""
+    minarr= numpy.amax(arr,axis=axis)
+    if axis == 1:
+        minarr= numpy.reshape(minarr,(arr.shape[0],1))
+    if axis == 0:
+        minminarr= numpy.tile(minarr,(arr.shape[0],1))
+    elif axis == 1:
+        minminarr= numpy.tile(minarr,(1,arr.shape[1]))
+    elif axis == None:
+        minminarr= numpy.tile(minarr,arr.shape)
+    else:
+        raise NotImplementedError("'mylogsumexp' not implemented for axis > 2")
+    if axis == 1:
+        minarr= numpy.reshape(minarr,(arr.shape[0]))
+    return minarr+numpy.log(numpy.sum(numpy.exp(arr-minminarr),axis=axis))
 
 def calc_normint(qdf,indx,normintstuff,params,npops):
     """Calculate the normalization integral"""
@@ -206,15 +234,15 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     z= XYZ[:,2]/ro/_REFR0
     for jj in range(options.nmc):
         thislogdf= qdf(R[jj],
-                       mock[jj][7]/vo/_REFV0,
                        mock[jj][8]/vo/_REFV0,
-                       z[jj],
                        mock[jj][9]/vo/_REFV0,
+                       z[jj],
+                       mock[jj][10]/vo/_REFV0,
                        log=True)
         if thislogdf == -numpy.finfo(numpy.dtype(numpy.float64)).max:
             print "Warning; data likelihood is -inf"
             thislogdf= 0.
-        out+= numpy.exp(-mock[jj][10]+thislogdf)
+        out+= numpy.exp(-mock[jj][11]+thislogdf)
     return numpy.mean(out)
 
 def calc_normint_mcv(qdf,indx,normintstuff,params):
@@ -347,6 +375,9 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
             colordists/= colordists[-1]
             rs= numpy.linspace(rmin,rmax,nrs)
             rdists= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
+            if options.mcout:
+                fidoutfrac= 0.025
+                rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
             for jj in range(len(sf.plates)):
                 p= sf.plates[jj]
                 sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,jj+1,len(sf.plates)))
@@ -361,18 +392,47 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
                                                        fehdist,sf,sf.plates[jj],
                                                        dontmarginalizecolorfeh=True,
                                                        ngr=ngr,nfeh=nfeh)
+                if options.mcout:
+                    rdistsout[jj,:,:,:]= _predict_rdist_plate(rs,
+                                                              lambda x,y,z: outDens(x,y,z),
+                                                              None,rmin,rmax,
+                                                              platelb[jj,0],platelb[jj,1],
+                                                              grmin,grmax,
+                                                              fehrange[0],fehrange[1],feh,
+                                                              colordist,
+                                                              fehdist,sf,sf.plates[jj],
+                                                              dontmarginalizecolorfeh=True,
+                                                              ngr=ngr,nfeh=nfeh)
             sys.stdout.write('\r'+_ERASESTR+'\r')
             sys.stdout.flush()
             numbers= numpy.sum(rdists,axis=3)
             numbers= numpy.sum(numbers,axis=2)
             numbers= numpy.sum(numbers,axis=1)
             numbers= numpy.cumsum(numbers)
+            if options.mcout:
+                totfid= numbers[-1]
             numbers/= numbers[-1]
             rdists= numpy.cumsum(rdists,axis=1)
             for ll in range(len(sf.plates)):
                 for jj in range(ngr):
                     for kk in range(nfeh):
                         rdists[ll,:,jj,kk]/= rdists[ll,-1,jj,kk]
+            if options.mcout:
+                numbersout= numpy.sum(rdistsout,axis=3)
+                numbersout= numpy.sum(numbersout,axis=2)
+                numbersout= numpy.sum(numbersout,axis=1)
+                numbersout= numpy.cumsum(numbersout)
+                totout= fidoutfrac*numbersout[-1]
+                totnumbers= totfid+totout
+                totfid/= totnumbers
+                totout/= totnumbers
+                print totfid, totout
+                numbersout/= numbersout[-1]
+                rdistsout= numpy.cumsum(rdistsout,axis=1)
+                for ll in range(len(sf.plates)):
+                    for jj in range(ngr):
+                        for kk in range(nfeh):
+                            rdistsout[ll,:,jj,kk]/= rdistsout[ll,-1,jj,kk]
             #Now sample until we're done
             thisout= []
             while len(thisout) < options.nmc:
@@ -390,11 +450,17 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
                 #plate==kk, feh=ff,color=cc; now sample from the rdist of this plate
                 ran= numpy.random.uniform()
                 jj= 0
-                while rdists[kk,jj,cc,ff] < ran: jj+= 1
+                if options.mcout and numpy.random.uniform() < totout: #outlier
+                    while rdistsout[kk,jj,cc,ff] < ran: jj+= 1
+                    thisoutlier= True
+                else:
+                    while rdists[kk,jj,cc,ff] < ran: jj+= 1
+                    thisoutlier= False
                 #r=jj
                 thisout.append([rs[jj],tgrs[cc],tfehs[ff],platelb[kk,0],platelb[kk,1],
-                            sf.plates[kk],
-                            _ivezic_dist(tgrs[cc],rs[jj],tfehs[ff])])
+                                sf.plates[kk],
+                                _ivezic_dist(tgrs[cc],rs[jj],tfehs[ff]),
+                                thisoutlier])
             #Add mock velocities
             #First calculate all R
             d= numpy.array([o[6] for o in thisout])
@@ -405,22 +471,47 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
             XYZ[:,2]+= _ZSUN
             z= XYZ[:,2]
             for jj in range(options.nmc):
-                sigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
-                                             mapafes[abindx],
-                                             r=R[jj])
-                sigr= 2.*sigz #BOVY: FOR NOW
-                sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
-                #Estimate asymmetric drift
-                va= sigr**2./2./_REFV0\
-                    *(-.5+R[jj]*(1./thishr+2./7.))
-                #Sample from this gaussian
-                vz= numpy.random.normal()*sigz
-                vr= numpy.random.normal()*sigr
-                vphi= numpy.random.normal()*sigphi+_REFV0-va
+                if options.mcout and thisout[jj][7]:
+                    #Sample from halo gaussian
+                    sigr= _SRHALO
+                    sigz= _SZHALO
+                    sigphi= _SPHIHALO
+                    vz= numpy.random.normal()*_SZHALO
+                    vr= numpy.random.normal()*_SRHALO
+                    vphi= numpy.random.normal()*_SPHIHALO
+                else:
+                    sigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
+                                                 mapafes[abindx],
+                                                 r=R[jj])
+                    sigr= 2.*sigz #BOVY: FOR NOW
+                    sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
+                    #Estimate asymmetric drift
+                    va= sigr**2./2./_REFV0\
+                        *(-.5+R[jj]*(1./thishr+2./7.))
+                    #Sample from this gaussian
+                    vz= numpy.random.normal()*sigz
+                    vr= numpy.random.normal()*sigr
+                    vphi= numpy.random.normal()*sigphi+_REFV0-va
                 #Append to out
-                thisout[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
-                                numpy.log(fidDens(R[jj],z[jj],thishr,thishz,None))\
-                                    -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(vr**2./sigr**2.+vz**2./sigz**2.+(vphi-_REFV0+va)**2./sigphi**2.)])
+                if options.mcout:
+                    fidlogeval= numpy.log(fidDens(R[jj],z[jj],thishr,thishz,
+                                                  None))\
+                                                  -numpy.log(sigr)\
+                                                  -numpy.log(sigphi)\
+                                                  -numpy.log(sigz)\
+                                                  -0.5*(vr**2./sigr**2.+vz**2./sigz**2.+(vphi-_REFV0+va)**2./sigphi**2.)
+                    outlogeval= numpy.log(fidoutfrac)\
+                        +numpy.log(outDens(R[jj],z[jj],None))\
+                        -numpy.log(sigr)\
+                        -numpy.log(sigphi)\
+                        -numpy.log(sigz)\
+                        -0.5*(vr**2./_SRHALO**2.+vz**2./_SZHALO**2.+vphi**2./_SPHIHALO**2.)
+                    thisout[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
+                                        logsumexp([fidlogeval,outlogeval])])
+                else:
+                    thisout[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
+                                        numpy.log(fidDens(R[jj],z[jj],thishr,thishz,None))\
+                                            -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(vr**2./sigr**2.+vz**2./sigz**2.+(vphi-_REFV0+va)**2./sigphi**2.)])
             #Load into thisnormintstuff
             thisnormintstuff.mock= thisout
             out.append(thisnormintstuff)
@@ -551,7 +642,7 @@ class normintstuffClass:
     pass
 
 def prepare_coordinates(params,indx,fehs,afes,binned):
-    vc= get_vo(params,options,len(fehs))
+    vo= get_vo(params,options,len(fehs))
     ro= get_ro(params,options)
     vsun= get_vsun(params,options)
     #Create XYZ and R, vxvyvz, cov_vxvyvz
@@ -574,16 +665,16 @@ def prepare_coordinates(params,indx,fehs,afes,binned):
     XYZ[:,1]= data.yc/_REFR0/ro
     XYZ[:,2]= (data.zc+_ZSUN)/_REFR0/ro
     vxvyvz= numpy.zeros((len(data),3))
-    vxvyvz[:,0]= (data.vxc/_REFV0-vsun[0])/vc
-    vxvyvz[:,1]= (data.vyc/_REFV0+vsun[1])/vc
-    vxvyvz[:,2]= (data.vzc/_REFV0+vsun[2])/vc
+    vxvyvz[:,0]= (data.vxc/_REFV0-vsun[0])/vo
+    vxvyvz[:,1]= (data.vyc/_REFV0+vsun[1])/vo
+    vxvyvz[:,2]= (data.vzc/_REFV0+vsun[2])/vo
     cov_vxvyvz= numpy.zeros((len(data),3,3))
-    cov_vxvyvz[:,0,0]= data.vxc_err**2./_REFV0/_REFV0/vc/vc
-    cov_vxvyvz[:,1,1]= data.vyc_err**2./_REFV0/_REFV0/vc/vc
-    cov_vxvyvz[:,2,2]= data.vzc_err**2./_REFV0/_REFV0/vc/vc
-    cov_vxvyvz[:,0,1]= data.vxvyc_rho*data.vxc_err*data.vyc_err/_REFV0/_REFV0/vc/vc
-    cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err/_REFV0/_REFV0/vc/vc
-    cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err/_REFV0/_REFV0/vc/vc
+    cov_vxvyvz[:,0,0]= data.vxc_err**2./_REFV0/_REFV0/vo/vo
+    cov_vxvyvz[:,1,1]= data.vyc_err**2./_REFV0/_REFV0/vo/vo
+    cov_vxvyvz[:,2,2]= data.vzc_err**2./_REFV0/_REFV0/vo/vo
+    cov_vxvyvz[:,0,1]= data.vxvyc_rho*data.vxc_err*data.vyc_err/_REFV0/_REFV0/vo/vo
+    cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err/_REFV0/_REFV0/vo/vo
+    cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err/_REFV0/_REFV0/vo/vo
     #Rotate to Galactocentric frame
     cosphi= (1.-XYZ[:,0])/R
     sinphi= XYZ[:,1]/R
@@ -717,7 +808,7 @@ def get_potparams(p,options,npops):
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*npops
     if options.potential.lower() == 'flatlog':
-        return (p[startindx],p[startindx+1]) #vc, q
+        return (p[startindx],p[startindx+1]) #vo, q
 
 def get_vo(p,options,npops):
     """Function that returns the vo parameter for these options"""
@@ -816,6 +907,10 @@ def fidDens(R,z,hr,hz,dummy):
     """Fiducial exponential density for normalization integral"""
     return 1./hz*numpy.exp(-(R-8.)/hr-numpy.fabs(z)/hz)
 
+def outDens(R,z,dummy):
+    """Fiducial outlier density for normalization integral (constant)"""
+    return 1./12.
+
 def get_options():
     usage = "usage: %prog [options] <savefile>\n\nsavefile= name of the file that the fits will be saved to"
     parser = OptionParser(usage=usage)
@@ -899,6 +994,9 @@ def get_options():
     parser.add_option("--mcall",action="store_true", dest="mcall",
                       default=False,
                       help="If set, calculate the normalization integral by first calculating the normalization of the exponential density given the best-fit and then calculating the difference with Monte Carlo integration")
+    parser.add_option("--mcout",action="store_true", dest="mcout",
+                      default=False,
+                      help="If set, add an outlier model to the mock data used for the normalization integral")
     #Sample?
     parser.add_option("--mcsample",action="store_true", dest="mcsample",
                       default=False,
