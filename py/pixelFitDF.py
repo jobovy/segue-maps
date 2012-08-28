@@ -44,7 +44,7 @@ _DEGTORAD= math.pi/180.
 _SRHALO= 150. #km/s
 _SPHIHALO= 100. #km/s
 _SZHALO= 100. #km/s
-def pixelFitDynamics(options,args):
+def pixelFitDF(options,args):
     #Read the data
     print "Reading the data ..."
     if options.sample.lower() == 'g':
@@ -1139,5 +1139,5 @@ if __name__ == '__main__':
     parser= get_options()
     options,args= parser.parse_args()
     numpy.random.seed(options.seed)
-    pixelFitDynamics(options,args)
+    pixelFitDF(options,args)
 
