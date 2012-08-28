@@ -62,7 +62,7 @@ def pixelFitDF(options,args):
         raw= raw[(numpy.fabs(raw.b) > options.bmin)]
     if not options.plate is None and not options.loo:
         raw= raw[(raw.plate == options.plate)]
-    elif not options.plate:
+    elif not options.plate is None:
         raw= raw[(raw.plate != options.plate)]
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
