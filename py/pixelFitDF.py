@@ -2,13 +2,13 @@
 #
 # TO DO:
 #   - outlier model sigma (sr=150,sphi=100,sz=100)?
-#   - priors
 #   - speed up setting up normintstuff
 #   - include errors
 #
 # ADDING NEW POTENTIAL MODEL:
 #    Make sure first parameter is vo==vc(ro)
-#    edit: - get_potparams
+#    edit: - logprior_pot
+#          - get_potparams
 #          - get_npotparams
 #
 import os, os.path
@@ -127,7 +127,15 @@ def loglike(params,fehs,afes,binned,options,normintstuff):
     #Set up potential and actionAngle
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
-    return logdf(params,pot,aA,fehs,afes,binned,normintstuff)
+    out= logdf(params,pot,aA,fehs,afes,binned,normintstuff)
+    #Priors
+    logroprior= logprior_ro(get_ro(params,options),options)
+    if logroprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+        return logroprior
+    logpotprior= logprior_pot(params,options,len(fehs))
+    if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+        return logpotprior
+    return out+logroprior+logpotprior
 
 def logdf(params,pot,aA,fehs,afes,binned,normintstuff):
     logl= numpy.zeros(len(fehs))
@@ -197,6 +205,28 @@ def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
     return ml#oglike(theseparams,fehs,afes,binned,options)
 
 ##PRIORS
+def logprior_ro(ro,options):
+    """Prior on ro"""
+    if not options.fitro: return 0.
+    if options.noroprior: return 0.
+    return -(ro-8./_REFR0)**2./(0.5/_REFR0)**2. #assume sig ro = 0.5 kpc
+
+def logprior_pot(params,options,npops):
+    """Prior on the potential"""
+    out= 0.
+    if options.novoprior: pass
+    else:
+        vo= get_vo(params,options,npops)
+        if options.bovy09voprior:
+            out-= 0.5*(vo-236./_REFV0)**2./(11./_REFV0)**2.
+        else:
+            out-= 0.5*(vo-218./_REFV0)**2./(6./_REFV0)**2.
+    potparams= get_potparams(params,options,npops)
+    if options.potential.lower() == 'flatlog':
+        q= potparams[1]
+        if q <= 1./numpy.sqrt(2.): #minimal flattening for positive density
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+    return out
 
 ##SETUP AND CALCULATE THE NORMALIZATION INTEGRAL
 def calc_normint(qdf,indx,normintstuff,params,npops):
@@ -415,7 +445,7 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
                 totnumbers= totfid+totout
                 totfid/= totnumbers
                 totout/= totnumbers
-                print totfid, totout
+                #print totfid, totout
                 numbersout/= numbersout[-1]
                 rdistsout= numpy.cumsum(rdistsout,axis=1)
                 for ll in range(len(sf.plates)):
@@ -1011,6 +1041,17 @@ def get_options():
     parser.add_option("--mcout",action="store_true", dest="mcout",
                       default=False,
                       help="If set, add an outlier model to the mock data used for the normalization integral")
+    #priors
+    parser.add_option("--noroprior",action="store_true", dest="noroprior",
+                      default=False,
+                      help="If set, do not apply an Ro prior")
+    parser.add_option("--novoprior",action="store_true", dest="novoprior",
+                      default=False,
+                      help="If set, do not apply a vo prior (default: Bovy et al. 2012)")
+    parser.add_option("--bovy09voprior",action="store_true", 
+                      dest="bovy09voprior",
+                      default=False,
+                      help="If set, apply the Bovy, Rix, & Hogg vo prior (default: Bovy et al. 2012)")
     #Sample?
     parser.add_option("--mcsample",action="store_true", dest="mcsample",
                       default=False,
