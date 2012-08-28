@@ -128,6 +128,10 @@ def mloglike(*args,**kwargs):
 def loglike(params,fehs,afes,binned,options,normintstuff):
     """log likelihood"""
     #Priors
+    logoutfracprior= logprior_outfrac(get_outfrac(params,options,len(fehs)),
+                                      options)
+    if logoutfracprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+        return logoutfracprior
     logroprior= logprior_ro(get_ro(params,options),options)
     if logroprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         return logroprior
@@ -213,6 +217,11 @@ def logprior_ro(ro,options):
     if not options.fitro: return 0.
     if options.noroprior: return 0.
     return -(ro-8./_REFR0)**2./(0.5/_REFR0)**2. #assume sig ro = 0.5 kpc
+
+def logprior_outfrac(outfrac,options):
+    """Prior on the outlier fraction"""
+    if outfrac <= 0. or outfrac >= 1.:
+        return -numpy.finfo(numpy.dtype(numpy.float64)).max
 
 def logprior_pot(params,options,npops):
     """Prior on the potential"""
@@ -352,6 +361,11 @@ def calc_normint_mcv(qdf,indx,normintstuff,params):
 
 def setup_normintstuff(options,raw,binned,fehs,afes):
     """Gather everything necessary for calculating the normalization integral"""
+    if not options.savenorm is None and os.path.exists(options.savenorm):
+        savefile= open(options.savenorm,'rb')
+        out= pickle.load(savefile)
+        savefile.close()
+        return out
     #Load selection function
     plates= numpy.array(list(set(list(raw.plate))),dtype='int') #Only load plates that we use
     print "Using %i plates, %i stars ..." %(len(plates),len(raw))
@@ -412,6 +426,10 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
                                                        mapfehs,mapafes,
                                                        False,None)
             out.append(thisnormintstuff)
+    if not options.savenorm is None:
+        savefile= open(options.savenorm,'wb')
+        pickle.dump(out,savefile)
+        savefile.close()
     return out
 
 def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
@@ -1111,6 +1129,8 @@ def get_options():
     parser.add_option("--mcout",action="store_true", dest="mcout",
                       default=False,
                       help="If set, add an outlier model to the mock data used for the normalization integral")
+    parser.add_option("--savenorm",dest='savenorm',default=None,
+                      help="If set, save normintstuff to this file")
     #priors
     parser.add_option("--noroprior",action="store_true", dest="noroprior",
                       default=False,
