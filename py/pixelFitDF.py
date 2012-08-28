@@ -144,7 +144,6 @@ def logdf(params,pot,aA,fehs,afes,binned,normintstuff):
                                                       multiprocessing.cpu_count(),
                                                       options.multi]))
     else:
-        print "Here", len(fehs)
         for ii in range(len(fehs)):
             print ii
             logl[ii]= indiv_logdf(params,ii,*args)
@@ -159,7 +158,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     R,vR,vT,z,vz,covv= prepare_coordinates(params,indx,fehs,afes,binned)
     data_lndf= numpy.zeros(len(R))
     for ii in range(len(R)):
-        #print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
+        print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
         data_lndf[ii]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
         if data_lndf[ii] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
             print "Warning; data likelihood is -inf"
@@ -192,12 +191,16 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     XYZ[:,2]+= _ZSUN
     z= XYZ[:,2]/ro/_REFR0
     for jj in range(options.nmc):
-        out+= numpy.exp(mock[jj][10]-qdf(R[jj],
-                                         mock[jj][7]/vo/_REFV0,
-                                         mock[jj][8]/vo/_REFV0,
-                                         z[jj],
-                                         mock[jj][9]/vo/_REFV0,
-                                         log=True))
+        thislogdf= qdf(R[jj],
+                       mock[jj][7]/vo/_REFV0,
+                       mock[jj][8]/vo/_REFV0,
+                       z[jj],
+                       mock[jj][9]/vo/_REFV0,
+                       log=True)
+        if thislogdf == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+            print "Warning; data likelihood is -inf"
+            thislogdf= 0.
+        out+= numpy.exp(-mock[jj][10]+thislogdf)
     return numpy.mean(out)
 
 def calc_normint_mcv(qdf,indx,normintstuff,params):
@@ -534,7 +537,7 @@ class normintstuffClass:
     pass
 
 def prepare_coordinates(params,indx,fehs,afes,binned):
-    vc= get_potparams(params,options,len(fehs))[0] #Always zero-th
+    vc= get_vo(params,options,len(fehs))
     ro= get_ro(params,options)
     vsun= get_vsun(params,options)
     #Create XYZ and R, vxvyvz, cov_vxvyvz
@@ -557,9 +560,9 @@ def prepare_coordinates(params,indx,fehs,afes,binned):
     XYZ[:,1]= data.yc/_REFR0/ro
     XYZ[:,2]= (data.zc+_ZSUN)/_REFR0/ro
     vxvyvz= numpy.zeros((len(data),3))
-    vxvyvz[:,0]= data.vxc/_REFV0/vc-vsun[0]
-    vxvyvz[:,1]= data.vyc/_REFV0/vc+vsun[1]
-    vxvyvz[:,2]= data.vzc/_REFV0/vc+vsun[2]
+    vxvyvz[:,0]= (data.vxc/_REFV0-vsun[0])/vc
+    vxvyvz[:,1]= (data.vyc/_REFV0+vsun[1])/vc
+    vxvyvz[:,2]= (data.vzc/_REFV0+vsun[2])/vc
     cov_vxvyvz= numpy.zeros((len(data),3,3))
     cov_vxvyvz[:,0,0]= data.vxc_err**2./_REFV0/_REFV0/vc/vc
     cov_vxvyvz[:,1,1]= data.vyc_err**2./_REFV0/_REFV0/vc/vc
@@ -628,7 +631,7 @@ def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff):
     else:
         for ii in range(len(fehs)):
             print ii
-            init_dfparams= get_dfparams(params,ii,options,log=False)
+            init_dfparams= list(get_dfparams(params,ii,options,log=False))
             new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
                                                init_dfparams,
                                            args=(fehs,afes,binned,
@@ -642,7 +645,7 @@ def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff):
 def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,normintstuff,tmpfiles):
     """Function to optimize the DF params for a single population when holding the potential fixed and using multi-processing"""
     print ii
-    init_dfparams= get_dfparams(params,ii,options,log=False)
+    init_dfparams= list(get_dfparams(params,ii,options,log=False))
     new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
                                        init_dfparams,
                                        args=(fehs,afes,binned,
@@ -724,7 +727,7 @@ def set_potparams(p,params,options,npops):
 
 def get_dfparams(p,indx,options,log=False):
     """Function that returns the set of DF parameters for population indx for these options,
-    Returns them such that they can be given to the initialization"""
+    Returns them as a set such that they can be given to the initialization"""
     startindx= 0
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
@@ -732,17 +735,17 @@ def get_dfparams(p,indx,options,log=False):
     startindx+= ndfparams*indx
     if options.dfmodel.lower() == 'qdf':
         if log:
-            return [p[startindx],
+            return (p[startindx],
                     p[startindx+1],
                     p[startindx+2],
                     p[startindx+3],
-                    p[startindx+4]]
+                    p[startindx+4])
         else:
-            return [numpy.exp(p[startindx]),
+            return (numpy.exp(p[startindx]),
                     numpy.exp(p[startindx+1]),
                     numpy.exp(p[startindx+2]),
                     numpy.exp(p[startindx+3]),
-                    numpy.exp(p[startindx+4])]
+                    numpy.exp(p[startindx+4]))
         
 def set_dfparams(p,params,indx,options,log=True):
     """Function that sets the set of DF parameters for population indx for these options"""
@@ -876,6 +879,7 @@ def get_options():
     return parser
   
 if __name__ == '__main__':
+    numpy.random.seed(1)
     parser= get_options()
     options,args= parser.parse_args()
     pixelFitDynamics(options,args)
