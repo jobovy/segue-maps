@@ -31,6 +31,7 @@ from galpy import potential
 from galpy.actionAngle_src.actionAngleAdiabaticGrid import  actionAngleAdiabaticGrid
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import bovy_mcmc
+import acor
 from galpy.util import save_pickles
 import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
