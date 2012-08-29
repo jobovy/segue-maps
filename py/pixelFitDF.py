@@ -51,7 +51,8 @@ def pixelFitDF(options,args):
     if os.path.exists(args[0]):
         savefile= open(args[0],'rb')
         params= pickle.load(savefile)
-        npops= pickle.load(savefile)
+        if options.mcsample:
+            npops= pickle.load(savefile)
         savefile.close()
         if options.mcsample:
             print_samples_qa(params,options,npops)
@@ -142,7 +143,7 @@ def pixelFitDF(options,args):
     else:
         #Sample
         #Setup everything necessary for sampling
-        isDomainFinite, domain= setup_domain(options,npops)
+        isDomainFinite, domain= setup_domain(options,len(fehs))
         samples= bovy_mcmc.markovpy(params,
                                     0.01,
                                     loglike,
