@@ -149,9 +149,9 @@ def pixelFitDF(options,args):
                                     loglike,
                                     (fehs,afes,binned,options,normintstuff),
                                     nwalkers=4*len(params))
-        print_samples_qa(samples)
         #Save
         save_pickles(args[0],samples,len(fehs))
+        print_samples_qa(samples,options,len(fehs))
     return None
 
 ##LOG LIKELIHOODS
@@ -1097,7 +1097,7 @@ def print_samples_qa(samples,options,npops):
     print "Mean, standard devs, acor tau, acor mean, acor s ..."
     #potparams
     for kk in range(len(get_potparams(samples[0],options,npops))):
-        xs= numpy.array([get_potparams(s,options.npops)[kk] for s in samples])
+        xs= numpy.array([get_potparams(s,options,npops)[kk] for s in samples])
         #Auto-correlation time
         tau, m, s= acor.acor(xs)
         print numpy.mean(xs), numpy.std(xs), tau, m, s
