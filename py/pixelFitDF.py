@@ -10,7 +10,6 @@
 #   - add sigmar to monoAbundanceMW
 #   - save normintstuff after setup
 #   - outlier model sigma (sr=150,sphi=100,sz=100)? MAKE SURE QDF IS NORMALIZED-ish
-#   - speed up setting up normintstuff
 #   - include errors
 #   - multi setting up the aA
 #
