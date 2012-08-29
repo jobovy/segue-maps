@@ -1060,8 +1060,9 @@ def outDens(R,z,dummy):
 ##SAMPLES QA
 def print_samples_qa(samples,options,npops):
     print "Mean, standard devs, acor tau, acor mean, acor s ..."
-    for kk in range(len(samples[0])):
-        xs= numpy.array([s[kk] for s in samples])
+    #potparams
+    for kk in range(len(get_potparams(samples[0],options,npops))):
+        xs= numpy.array([get_potparams(s,options.npops)[kk] for s in samples])
         #Auto-correlation time
         tau, m, s= acor.acor(xs)
         print numpy.mean(xs), numpy.std(xs), tau, m, s
