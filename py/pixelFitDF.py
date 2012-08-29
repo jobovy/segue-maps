@@ -148,6 +148,7 @@ def pixelFitDF(options,args):
                                     0.01,
                                     loglike,
                                     (fehs,afes,binned,options,normintstuff),
+                                    nsamples=options.nsamples,
                                     nwalkers=4*len(params))
         #Save
         save_pickles(args[0],samples,len(fehs))
