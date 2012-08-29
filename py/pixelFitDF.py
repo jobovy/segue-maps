@@ -46,6 +46,18 @@ _SRHALO= 150. #km/s
 _SPHIHALO= 100. #km/s
 _SZHALO= 100. #km/s
 def pixelFitDF(options,args):
+    #Check whether the savefile already exists
+    if os.path.exists(args[0]):
+        savefile= open(args[0],'rb')
+        params= pickle.load(savefile)
+        npops= pickle.load(savefile)
+        savefile.close()
+        if options.mcsample:
+            print_samples_qa(params,options,npops)
+        else:
+            print params
+        print "Savefile already exists, not re-fitting and overwriting ..."
+        return None
     #Read the data
     print "Reading the data ..."
     if options.sample.lower() == 'g':
@@ -104,20 +116,38 @@ def pixelFitDF(options,args):
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
-    #First initialization
-    params= initialize(options,fehs,afes)
-    #Optimize DF w/ fixed potential and potential w/ fixed DF
-    for cc in range(options.ninit):
-        print "Iteration %i  / %i ..." % (cc+1,options.ninit)
-        print "Optimizing individual DFs with fixed potential ..."
-        params= indiv_optimize_df(params,fehs,afes,binned,options,normintstuff)
-        print "Optimizing potential with individual DFs fixed ..."
-        params= indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff)
-    #Optimize full model
-    params= full_optimize(params,fehs,afes,binned,options,normintstuff)
-    #Save
-    print "BOVY: SAVE"
-    #Sample?
+    if not options.init is None:
+        #Load initial parameters from file
+        savefile= open(options.init,'rb')
+        params= pickle.load(savefile)
+        savefile.close()
+    if not options.mcsample:
+        if options.init is None:
+            #First initialization
+            params= initialize(options,fehs,afes)
+        #Optimize DF w/ fixed potential and potential w/ fixed DF
+        for cc in range(options.ninit):
+            print "Iteration %i  / %i ..." % (cc+1,options.ninit)
+            print "Optimizing individual DFs with fixed potential ..."
+            params= indiv_optimize_df(params,fehs,afes,binned,options,
+                                      normintstuff)
+            print "Optimizing potential with individual DFs fixed ..."
+            params= indiv_optimize_potential(params,fehs,afes,binned,options,
+                                             normintstuff)
+        #Optimize full model
+        params= full_optimize(params,fehs,afes,binned,options,normintstuff)
+        #Save
+        savefile= open(args[0],'wb')
+        pickle.dump(params,savefile)
+        savefile.close()
+    else:
+        #Sample
+        pass
+        #Save
+        savefile= open(args[0],'wb')
+        pickle.dump(samples,savefile)
+        pickle.dump(len(fehs),savefile)
+        savefile.close()
     return None
 
 ##LOG LIKELIHOODS
@@ -887,6 +917,7 @@ def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff):
                                               normintstuff),
                                         callback=cb)
     params= set_potparams(new_potparams,params,options,len(fehs))
+    return params
 
 ##INITIALIZATION
 def initialize(options,fehs,afes):
@@ -1026,6 +1057,15 @@ def outDens(R,z,dummy):
     """Fiducial outlier density for normalization integral (constant)"""
     return 1./12.
 
+##SAMPLES QA
+def print_samples_qa(samples,options,npops):
+    print "Mean, standard devs, acor tau, acor mean, acor s ..."
+    for kk in range(len(samples[0])):
+        xs= numpy.array([s[kk] for s in samples])
+        #Auto-correlation time
+        tau, m, s= acor.acor(xs)
+        print numpy.mean(xs), numpy.std(xs), tau, m, s
+
 ##UTILITY
 def mylogsumexp(arr,axis=0):
     """Faster logsumexp?"""
@@ -1147,8 +1187,10 @@ def get_options():
     parser.add_option("--mcsample",action="store_true", dest="mcsample",
                       default=False,
                       help="If set, sample around the best fit, save in args[1]")
-    parser.add_option("--nsamples",dest='nsamples',default=1000,type='int',
+    parser.add_option("--nsamples",dest='nsamples',default=10000,type='int',
                       help="Number of MCMC samples to obtain")
+    parser.add_option("--init",dest='init',default=None,
+                      help="Initial parameters file")
     parser.add_option("-m","--multi",dest='multi',default=None,type='int',
                       help="number of cpus to use")
     #seed
