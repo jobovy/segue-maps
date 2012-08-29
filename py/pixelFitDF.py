@@ -31,6 +31,7 @@ from galpy import potential
 from galpy.actionAngle_src.actionAngleAdiabaticGrid import  actionAngleAdiabaticGrid
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import bovy_mcmc
+from galpy.util import save_pickles
 import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
     segueSelect, _mr_gi, _gi_gr, _ERASESTR
@@ -137,17 +138,19 @@ def pixelFitDF(options,args):
         #Optimize full model
         params= full_optimize(params,fehs,afes,binned,options,normintstuff)
         #Save
-        savefile= open(args[0],'wb')
-        pickle.dump(params,savefile)
-        savefile.close()
+        save_pickles(args[0],params)
     else:
         #Sample
-        pass
+        #Setup everything necessary for sampling
+        isDomainFinite, domain= setup_domain(options,npops)
+        samples= bovy_mcmc.markovpy(params,
+                                    0.01,
+                                    loglike,
+                                    (fehs,afes,binned,options,normintstuff),
+                                    nwalkers=4*len(params))
+        print_samples_qa(samples)
         #Save
-        savefile= open(args[0],'wb')
-        pickle.dump(samples,savefile)
-        pickle.dump(len(fehs),savefile)
-        savefile.close()
+        save_pickles(args[0],samples,len(fehs))
     return None
 
 ##LOG LIKELIHOODS
@@ -271,7 +274,7 @@ def logprior_pot(params,options,npops):
     potparams= get_potparams(params,options,npops)
     if options.potential.lower() == 'flatlog':
         q= potparams[1]
-        if q <= 0.53: #minimal flattening for positive density at R > 5 kpc, |Z| < 4 kpc
+        if q <= 0.53: #minimal flattening for positive density at R > 5 kpc, |Z| < 4 kpc, ALSO CHANGE IN SETUP_DOMAIN
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     return out
 
@@ -943,6 +946,37 @@ def initialize(options,fehs,afes):
     #Outlier fraction
     p.append(0.025) #BOVY: UPDATE FIRST GUESS
     return p
+
+##SETUP DOMAIN FOR MARKOVPY
+def setup_domain(options,npops):
+    """Setup isDomainFinite, domain for markovpy"""
+    isDomainFinite= []
+    domain= []
+    if options.fitro:
+        isDomainFinite.append([True,True])
+        domain.append([5./_REFR0,11./_REFR0])
+    if options.fitvsun:
+        isDomainFinite.append([False,False])
+        domain.append([0.,0.])
+        isDomainFinite.append([False,False])
+        domain.append([0.,0.])
+        isDomainFinite.append([False,False])
+        domain.append([0.,0.])
+    for ii in range(npops):
+        if options.dfmodel.lower() == 'qdf':
+            ndfparams= get_ndfparams(options)
+            for jj in range(ndfparams):
+                isDomainFinite.append([False,False])
+                domain.append([0.,0.])
+    if options.potential.lower() == 'flatlog':
+        isDomainFinite.append([True,True])
+        domain.append([100./_REFV0,350./_REFV0])
+        isDomainFinite.append([True,False])
+        domain.append([0.53,0.])
+    #Outlier fraction
+    isDomainFinite.append([True,True])
+    domain.append([0.,1.])
+    return (isDomainFinite,domain)
 
 ##GET AND SET THE PARAMETERS
 def get_potparams(p,options,npops):
