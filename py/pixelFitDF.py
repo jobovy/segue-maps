@@ -5,13 +5,10 @@
 #   - normalization of hr, sr, etc.
 #   - loo FeH aFe
 #   - los + loo los
-#   - min/max abundance
 #   - Generate fake data
 #   - Investigate how precise we get normint
 #   - add sigmar to monoAbundanceMW
-#   - save normintstuff after setup
 #   - outlier model sigma (sr=150,sphi=100,sz=100)? MAKE SURE QDF IS NORMALIZED-ish
-#   - include errors
 #   - multi setting up the aA
 #
 # ADDING NEW POTENTIAL MODEL:
@@ -219,13 +216,20 @@ def logdf(params,pot,aA,fehs,afes,binned,normintstuff):
 
 def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     """Individual population log likelihood"""
-    dfparams= get_dfparams(params,indx,options)
+    dfparams= get_dfparams(params,indx,options,log=False)
     vo= get_vo(params,options,npops)
     ro= get_ro(params,options)
     logoutfrac= numpy.log(get_outfrac(params,indx,options,npops))
     loghalodens= numpy.log(ro/12.)
     if options.dfmodel.lower() == 'qdf':
-        qdf= quasiisothermaldf(*dfparams,pot=pot,aA=aA)
+        #Normalize
+        hr= dfparams[0]/ro
+        sr= dfparams[1]/vo
+        sz= dfparams[2]/vo
+        hsr= dfparams[3]/ro
+        hsz= dfparams[4]/ro
+        #Setup
+        qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA)
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned)
     data_lndf= numpy.zeros((len(R),2*options.nmcerr))
@@ -905,7 +909,7 @@ def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff):
     else:
         for ii in range(len(fehs)):
             print ii
-            init_dfparams= list(get_dfparams(params,ii,options,log=False))
+            init_dfparams= list(get_dfparams(params,ii,options,log=True))
             new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
                                                init_dfparams,
                                            args=(fehs,afes,binned,
@@ -919,7 +923,7 @@ def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff):
 def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,normintstuff,tmpfiles):
     """Function to optimize the DF params for a single population when holding the potential fixed and using multi-processing"""
     print ii
-    init_dfparams= list(get_dfparams(params,ii,options,log=False))
+    init_dfparams= list(get_dfparams(params,ii,options,log=True))
     new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
                                        init_dfparams,
                                        args=(fehs,afes,binned,
@@ -989,9 +993,10 @@ def initialize(options,fehs,afes):
             #Find nearest mono-abundance bin that has a measurement
             abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                                      +(afes[ii]-mapafes)**2./0.0025)
-            p.extend([numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaR
+            print fehs[ii], afes[ii], mapfehs[abindx],mapafes[abindx], monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0
+            p.extend([numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
+numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaR
                       numpy.log(monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaZ
-                      numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
                       numpy.log(7./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
     if options.potential.lower() == 'flatlog':
         p.extend([1.,.9])
@@ -1096,7 +1101,7 @@ def get_dfparams(p,indx,options,log=False):
                     numpy.exp(p[startindx+3]),
                     numpy.exp(p[startindx+4]))
         
-def set_dfparams(p,params,indx,options,log=True):
+def set_dfparams(p,params,indx,options,log=False):
     """Function that sets the set of DF parameters for population indx for these options"""
     startindx= 0
     if options.fitro: startindx+= 1
