@@ -2,7 +2,6 @@
 #
 # TO DO:
 #   - speed up qdf by vector operations?
-#   - normalization of hr, sr, etc.
 #   - loo FeH aFe
 #   - los + loo los
 #   - Generate fake data
@@ -993,7 +992,6 @@ def initialize(options,fehs,afes):
             #Find nearest mono-abundance bin that has a measurement
             abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                                      +(afes[ii]-mapafes)**2./0.0025)
-            print fehs[ii], afes[ii], mapfehs[abindx],mapafes[abindx], monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0
             p.extend([numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
 numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaR
                       numpy.log(monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaZ
