@@ -284,7 +284,7 @@ def logprior_ro(ro,options):
     """Prior on ro"""
     if not options.fitro: return 0.
     if options.noroprior: return 0.
-    return -(ro-8./_REFR0)**2./(0.5/_REFR0)**2. #assume sig ro = 0.5 kpc
+    return -(ro-_REFR0/_REFR0)**2./(0.5/_REFR0)**2. #assume sig ro = 0.5 kpc
 
 def logprior_outfrac(outfrac,options):
     """Prior on the outlier fraction"""
@@ -631,7 +631,7 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         l= numpy.array([o[3] for o in thisout])
         b= numpy.array([o[4] for o in thisout])
         XYZ= bovy_coords.lbd_to_XYZ(l,b,d,degree=True)
-        R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+        R= ((_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
         XYZ[:,2]+= _ZSUN
         z= XYZ[:,2]
         for jj in range(options.nmc):
@@ -736,10 +736,10 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
                 XYZ= bovy_coords.lbd_to_XYZ(numpy.array([platelb[kk,0] for dd in range(len(surfds))]),
                                             numpy.array([platelb[kk,1] for dd in range(len(surfds))]),
                                             surfds,degree=True)
-                R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+                R= ((_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
                 XYZ[:,2]+= _ZSUN
                 z= XYZ[:,2]
-                drdd= -(8.-XYZ[:,0])/R*numpy.cos(platelb[kk,0]*_DEGTORAD)*numpy.cos(platelb[kk,1]*_DEGTORAD)\
+                drdd= -(_REFR0-XYZ[:,0])/R*numpy.cos(platelb[kk,0]*_DEGTORAD)*numpy.cos(platelb[kk,1]*_DEGTORAD)\
                         +XYZ[:,1]/R*numpy.cos(platelb[kk,1]*_DEGTORAD)*numpy.sin(platelb[kk,0]*_DEGTORAD)
                 dzdd= numpy.fabs(numpy.sin(platelb[kk,1]*_DEGTORAD))
                 dlnnudd= -1./thishr*drdd-1./thishz*dzdd
@@ -1142,7 +1142,7 @@ def get_vsun(p,options):
 ##FIDUCIAL DENSITIES FOR MC NORMALIZATION INTEGRATION
 def fidDens(R,z,hr,hz,dummy):
     """Fiducial exponential density for normalization integral"""
-    return 1./hz*numpy.exp(-(R-8.)/hr-numpy.fabs(z)/hz)
+    return 1./hz*numpy.exp(-(R-_REFR0)/hr-numpy.fabs(z)/hz)
 
 def outDens(R,z,dummy):
     """Fiducial outlier density for normalization integral (constant)"""
