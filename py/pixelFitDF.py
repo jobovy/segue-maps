@@ -232,6 +232,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
             except RuntimeError:
                 jj= ii
                 print vo, R[jj,kk], vR[jj,kk], vT[jj,kk],z[jj,kk],vz[jj,kk]
+                data_lndf[ii,2*kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
             data_lndf[ii,2*kk+1]= logoutfrac+loghalodens\
                 -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
                 -0.5*(vR[ii,kk]**2./srhalo**2.+vz[ii,kk]**2./szhalo**2.+vT[ii,kk]**2./sphihalo**2.)
