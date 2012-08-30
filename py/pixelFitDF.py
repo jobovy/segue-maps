@@ -25,7 +25,7 @@ import copy
 import tempfile
 import math
 import numpy
-from scipy import optimize, interpolate
+from scipy import optimize, interpolate, linalg
 from scipy.maxentropy import logsumexp
 import cPickle as pickle
 from optparse import OptionParser
@@ -40,7 +40,7 @@ import acor
 from galpy.util import save_pickles
 import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
-    segueSelect, _mr_gi, _gi_gr, _ERASESTR
+    segueSelect, _mr_gi, _gi_gr, _ERASESTR, _append_field_recarray
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from compareDataModel import _predict_rdist_plate
 from pixelFitDens import pixelAfeFeh
@@ -85,6 +85,8 @@ def pixelFitDF(options,args):
         raw= raw[(raw.plate == options.plate)]
     elif not options.plate is None:
         raw= raw[(raw.plate != options.plate)]
+    #Setup error mc integration
+    raw= setup_err_mc(raw,options)
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     #Map the bins with ndata > minndata in 1D
@@ -212,7 +214,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     if options.dfmodel.lower() == 'qdf':
         qdf= quasiisothermaldf(*dfparams,pot=pot,aA=aA)
     #Get data ready
-    R,vR,vT,z,vz,covv= prepare_coordinates(params,indx,fehs,afes,binned)
+    R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned)
     data_lndf= numpy.zeros((len(R),2))
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
@@ -818,13 +820,6 @@ def prepare_coordinates(params,indx,fehs,afes,binned):
     vxvyvz[:,0]= (data.vxc/_REFV0-vsun[0])/vo
     vxvyvz[:,1]= (data.vyc/_REFV0+vsun[1])/vo
     vxvyvz[:,2]= (data.vzc/_REFV0+vsun[2])/vo
-    cov_vxvyvz= numpy.zeros((len(data),3,3))
-    cov_vxvyvz[:,0,0]= data.vxc_err**2./_REFV0/_REFV0/vo/vo
-    cov_vxvyvz[:,1,1]= data.vyc_err**2./_REFV0/_REFV0/vo/vo
-    cov_vxvyvz[:,2,2]= data.vzc_err**2./_REFV0/_REFV0/vo/vo
-    cov_vxvyvz[:,0,1]= data.vxvyc_rho*data.vxc_err*data.vyc_err/_REFV0/_REFV0/vo/vo
-    cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err/_REFV0/_REFV0/vo/vo
-    cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err/_REFV0/_REFV0/vo/vo
     #Rotate to Galactocentric frame
     cosphi= (1.-XYZ[:,0])/R
     sinphi= XYZ[:,1]/R
@@ -835,8 +830,7 @@ def prepare_coordinates(params,indx,fehs,afes,binned):
                           [-sinphi[rr],cosphi[rr]]])
         sxy= cov_vxvyvz[rr,0:2,0:2]
         sRT= numpy.dot(rot,numpy.dot(sxy,rot.T))
-        cov_vxvyvz[rr,0:2,0:2]= sRT
-    return (R,vR,vT,XYZ[:,2],vxvyvz[:,2],cov_vxvyvz)
+    return (R,vR,vT,XYZ[:,2],vxvyvz[:,2])
 
 ##SETUP THE POTENTIAL IN EACH STEP
 def setup_aA(pot,options):
@@ -929,6 +923,31 @@ def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff):
                                         callback=cb)
     params= set_potparams(new_potparams,params,options,len(fehs))
     return params
+
+##SETUP ERROR INTEGRATION
+def setup_err_mc(data,options):
+    vxvyvz= numpy.zeros((len(data),3))
+    vxvyvz[:,0]= data.vxc
+    vxvyvz[:,1]= data.vyc
+    vxvyvz[:,2]= data.vzc
+    cov_vxvyvz= numpy.zeros((len(data),3,3))
+    cov_vxvyvz[:,0,0]= data.vxc_err**2.
+    cov_vxvyvz[:,1,1]= data.vyc_err**2.
+    cov_vxvyvz[:,2,2]= data.vzc_err**2.
+    cov_vxvyvz[:,0,1]= data.vxvyc_rho*data.vxc_err*data.vyc_err
+    cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err
+    cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err
+    #For each one, draw
+    vdraws= numpy.zeros(len(data),dtype=list)
+    for ii in range(len(data)):
+        vdraws[ii]= []
+        #First cholesky the covariance
+        L= linalg.cholesky(cov_vxvyvz[ii,:,:],lower=True)
+        for jj in range(options.nmcerr):
+            vn= numpy.random.normal(size=(3))
+            vdraws[ii].append(numpy.dot(L,vn)+vxvyvz[ii,:])
+    data= _append_field_recarray(data,'vdraws',vdraws)
+    return data
 
 ##INITIALIZATION
 def initialize(options,fehs,afes):
@@ -1202,11 +1221,14 @@ def get_options():
                       help="If set, fit for v_sun")
     parser.add_option("--ninit",dest='ninit',default=1,type='int',
                       help="Number of initial optimizations to perform (indiv DF + potential w/ fixed DF")
+    #Errors
+    parser.add_option("--nmcerr",dest='nmcerr',default=10,type='int',
+                      help="Number of MC samples to use for Monte Carlo integration over error distribution")
     #Normalization integral
     parser.add_option("--nmcv",dest='nmcv',default=1000,type='int',
                       help="Number of MC samples to use for velocity integration")
     parser.add_option("--nmc",dest='nmc',default=1000,type='int',
-                      help="Number of MC samples to use for Monte Carlog normalization integration")
+                      help="Number of MC samples to use for Monte Carlo normalization integration")
     parser.add_option("--mcall",action="store_true", dest="mcall",
                       default=False,
                       help="If set, calculate the normalization integral by first calculating the normalization of the exponential density given the best-fit and then calculating the difference with Monte Carlo integration")
