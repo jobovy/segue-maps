@@ -180,8 +180,7 @@ def loglike(params,fehs,afes,binned,options,normintstuff):
     """log likelihood"""
     #Priors
     for ii in range(len(fehs)):
-        logoutfracprior= logprior_outfrac(get_outfrac(params,ii,options,
-                                                      len(fehs)),
+        logoutfracprior= logprior_outfrac(get_outfrac(params,ii,options),
                                           options)
         if logoutfracprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
             return logoutfracprior
@@ -219,7 +218,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     dfparams= get_dfparams(params,indx,options,log=False)
     vo= get_vo(params,options,npops)
     ro= get_ro(params,options)
-    logoutfrac= numpy.log(get_outfrac(params,indx,options,npops))
+    logoutfrac= numpy.log(get_outfrac(params,indx,options))
     loghalodens= numpy.log(ro/12.)
     if options.dfmodel.lower() == 'qdf':
         #Normalize
@@ -265,6 +264,10 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
     theseparams= set_dfparams(params,_bigparams,indx,options)
+    logoutfracprior= logprior_outfrac(get_outfrac(theseparams,indx,options),
+                                      options)
+    if logoutfracprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+        return -logoutfracprior
     ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff,
                      len(fehs))
     print params, ml
@@ -324,7 +327,7 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     out= 0.
     ro= get_ro(params,options)
     vo= get_vo(params,options,npops)
-    logoutfrac= numpy.log(get_outfrac(params,indx,options,npops))
+    logoutfrac= numpy.log(get_outfrac(params,indx,options))
     loghalodens= numpy.log(ro/12.)
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
@@ -1055,7 +1058,7 @@ def get_vo(p,options,npops):
     if options.potential.lower() == 'flatlog':
         return p[startindx]
 
-def get_outfrac(p,indx,options,npops):
+def get_outfrac(p,indx,options):
     """Function that returns the outlier fraction for these options"""
     startindx= 0
     if options.fitro: startindx+= 1
