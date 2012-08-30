@@ -116,6 +116,7 @@ def pixelFitDF(options,args):
             if numpy.sum(indx) == 0:
                 raise IOError("Bin corresponding to singlefeh and singleafe is empty ...")
             data= copy.copy(binned.data[indx])
+            print "Using %i data points ..." % (len(data))
             #Bin again
             binned= pixelAfeFeh(data,dfeh=options.dfeh,dafe=options.dafe)
             fehs, afes= [], []
@@ -1131,8 +1132,10 @@ def get_ro(p,options):
 
 def get_vsun(p,options):
     """Function to return motion of the Sun in the Galactocentric reference frame"""
+    startindx= 0
+    if options.fitro: startindx+= 1
     if options.fitvsun:
-        return (p[1],p[2],p[3])
+        return (p[startindx],p[startindx+1],p[startindx+2])
     else:
         return (-11.1/_REFV0,245./_REFV0,7.25/_REFV0) #BOVY:ADJUST?
 
