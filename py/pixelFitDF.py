@@ -146,6 +146,7 @@ def pixelFitDF(options,args):
             print "Optimizing potential with individual DFs fixed ..."
             params= indiv_optimize_potential(params,fehs,afes,binned,options,
                                              normintstuff)
+            save_pickles(args[0],params)
         #Optimize full model
         params= full_optimize(params,fehs,afes,binned,options,normintstuff)
         #Save
