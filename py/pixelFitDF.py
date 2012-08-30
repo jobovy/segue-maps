@@ -1,6 +1,7 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
+#   - normalization of hr, sr, etc.
 #   - loo FeH aFe
 #   - los + loo los
 #   - min/max abundance
@@ -1233,7 +1234,7 @@ def get_options():
     parser.add_option("--ninit",dest='ninit',default=1,type='int',
                       help="Number of initial optimizations to perform (indiv DF + potential w/ fixed DF")
     #Errors
-    parser.add_option("--nmcerr",dest='nmcerr',default=10,type='int',
+    parser.add_option("--nmcerr",dest='nmcerr',default=30,type='int',
                       help="Number of MC samples to use for Monte Carlo integration over error distribution")
     #Normalization integral
     parser.add_option("--nmcv",dest='nmcv',default=1000,type='int',
