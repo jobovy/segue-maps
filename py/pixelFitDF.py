@@ -239,8 +239,9 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     data_lndf= mylogsumexp(data_lndf,axis=1)
     #Normalize
     normalization= calc_normint(qdf,indx,normintstuff,params,npops)
-    print params, numpy.sum(data_lndf),len(R)*numpy.log(normalization), numpy.sum(data_lndf)-len(R)*numpy.log(normalization)
-    return numpy.sum(data_lndf)-len(R)*numpy.log(normalization)
+    print params, numpy.sum(data_lndf)-len(R)*numpy.log(options.nmcerr),len(R)*numpy.log(normalization), numpy.sum(data_lndf)-len(R)*(numpy.log(normalization)+numpy.log(options.nmcerr))
+    return numpy.sum(data_lndf)\
+        -len(R)*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
 
 def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
                                indx,_bigparams,normintstuff):
