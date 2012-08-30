@@ -86,6 +86,7 @@ def pixelFitDF(options,args):
     elif not options.plate is None:
         raw= raw[(raw.plate != options.plate)]
     #Setup error mc integration
+    print "Setting up error integration ..."
     raw= setup_err_mc(raw,options)
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
@@ -215,24 +216,26 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
         qdf= quasiisothermaldf(*dfparams,pot=pot,aA=aA)
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned)
-    data_lndf= numpy.zeros((len(R),2))
+    data_lndf= numpy.zeros((len(R),2*options.nmcerr))
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
     print "BOVY: MAKE SURE THAT qdf IS SOMEWHAT PROPERLY NORMALIZED"
     for ii in range(len(R)):
-        #print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
-        try:
-            data_lndf[ii,0]= qdf(R[ii],vR[ii],vT[ii],z[ii],vz[ii],log=True)
-        except RuntimeError:
-            jj= ii
-            print vo, R[jj], vR[jj], vT[jj],z[jj],vz[jj]
-        data_lndf[ii,1]= logoutfrac+loghalodens\
-            -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
-            -0.5*(vR[ii]**2./srhalo**2.+vz[ii]**2./szhalo**2.+vT[ii]**2./sphihalo**2.)
+        for kk in range(options.nmcerr):
+            #print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
+            try:
+                data_lndf[ii,2*kk]= qdf(R[ii,kk],vR[ii,kk],vT[ii,kk],
+                                        z[ii,kk],vz[ii,kk],log=True)
+            except RuntimeError:
+                jj= ii
+                print vo, R[jj,kk], vR[jj,kk], vT[jj,kk],z[jj,kk],vz[jj,kk]
+            data_lndf[ii,2*kk+1]= logoutfrac+loghalodens\
+                -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
+                -0.5*(vR[ii,kk]**2./srhalo**2.+vz[ii,kk]**2./szhalo**2.+vT[ii,kk]**2./sphihalo**2.)
         #if data_lndf[ii,0] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         #    print "Warning; data likelihood is -inf"
-    #Sum data and outlier df
+    #Sum data and outlier df, for all MC samples
     data_lndf= mylogsumexp(data_lndf,axis=1)
     #Normalize
     normalization= calc_normint(qdf,indx,normintstuff,params,npops)
@@ -816,21 +819,25 @@ def prepare_coordinates(params,indx,fehs,afes,binned):
     XYZ[:,0]= data.xc/_REFR0/ro
     XYZ[:,1]= data.yc/_REFR0/ro
     XYZ[:,2]= (data.zc+_ZSUN)/_REFR0/ro
-    vxvyvz= numpy.zeros((len(data),3))
-    vxvyvz[:,0]= (data.vxc/_REFV0-vsun[0])/vo
-    vxvyvz[:,1]= (data.vyc/_REFV0+vsun[1])/vo
-    vxvyvz[:,2]= (data.vzc/_REFV0+vsun[2])/vo
+    z= XYZ[:,2]
+    vxvyvz= numpy.zeros((len(data),3,options.nmcerr))
+    for ii in range(len(data)):
+        for jj in range(options.nmcerr):
+            for kk in range(3):
+                vxvyvz[:,kk,jj]= (data[ii].vdraws[jj][kk]/_REFV0-vsun[0])/vo
+        #vxvyvz[:,0]= (data.vxc/_REFV0-vsun[0])/vo
+        #vxvyvz[:,1]= (data.vyc/_REFV0+vsun[1])/vo
+        #vxvyvz[:,2]= (data.vzc/_REFV0+vsun[2])/vo
     #Rotate to Galactocentric frame
     cosphi= (1.-XYZ[:,0])/R
     sinphi= XYZ[:,1]/R
-    vR= -vxvyvz[:,0]*cosphi+vxvyvz[:,1]*sinphi
-    vT= vxvyvz[:,0]*sinphi+vxvyvz[:,1]*cosphi
-    for rr in range(len(XYZ[:,0])):
-        rot= numpy.array([[cosphi[rr],sinphi[rr]],
-                          [-sinphi[rr],cosphi[rr]]])
-        sxy= cov_vxvyvz[rr,0:2,0:2]
-        sRT= numpy.dot(rot,numpy.dot(sxy,rot.T))
-    return (R,vR,vT,XYZ[:,2],vxvyvz[:,2])
+    cosphi= numpy.tile(cosphi,(options.nmcerr,1)).T
+    sinphi= numpy.tile(sinphi,(options.nmcerr,1)).T
+    vR= -vxvyvz[:,0,:]*cosphi+vxvyvz[:,1,:]*sinphi
+    vT= vxvyvz[:,0,:]*sinphi+vxvyvz[:,1,:]*cosphi
+    R= numpy.tile(R,(options.nmcerr,1)).T
+    z= numpy.tile(z,(options.nmcerr,1)).T
+    return (R,vR,vT,z,vxvyvz[:,2,:])
 
 ##SETUP THE POTENTIAL IN EACH STEP
 def setup_aA(pot,options):
