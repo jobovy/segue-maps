@@ -6,7 +6,6 @@
 #   - loo FeH aFe
 #   - los + loo los
 #   - min/max abundance
-#   - outlier fraction should be a per/pop parameter
 #   - Generate fake data
 #   - Investigate how precise we get normint
 #   - add sigmar to monoAbundanceMW
@@ -174,10 +173,12 @@ def mloglike(*args,**kwargs):
 def loglike(params,fehs,afes,binned,options,normintstuff):
     """log likelihood"""
     #Priors
-    logoutfracprior= logprior_outfrac(get_outfrac(params,options,len(fehs)),
-                                      options)
-    if logoutfracprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-        return logoutfracprior
+    for ii in range(len(fehs)):
+        logoutfracprior= logprior_outfrac(get_outfrac(params,ii,options,
+                                                      len(fehs)),
+                                          options)
+        if logoutfracprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+            return logoutfracprior
     logroprior= logprior_ro(get_ro(params,options),options)
     if logroprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         return logroprior
@@ -212,7 +213,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     dfparams= get_dfparams(params,indx,options)
     vo= get_vo(params,options,npops)
     ro= get_ro(params,options)
-    logoutfrac= numpy.log(get_outfrac(params,options,npops))
+    logoutfrac= numpy.log(get_outfrac(params,indx,options,npops))
     loghalodens= numpy.log(ro/12.)
     if options.dfmodel.lower() == 'qdf':
         qdf= quasiisothermaldf(*dfparams,pot=pot,aA=aA)
@@ -310,7 +311,7 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     out= 0.
     ro= get_ro(params,options)
     vo= get_vo(params,options,npops)
-    logoutfrac= numpy.log(get_outfrac(params,options,npops))
+    logoutfrac= numpy.log(get_outfrac(params,indx,options,npops))
     loghalodens= numpy.log(ro/12.)
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
@@ -827,10 +828,10 @@ def prepare_coordinates(params,indx,fehs,afes,binned):
     vxvyvz= numpy.zeros((len(data),3,options.nmcerr))
     for ii in range(len(data)):
         for jj in range(options.nmcerr):
-            vxvyvz[ii,0,jj]= (data[ii].vdraws[jj][0]/_REFV0-vsun[0])/vo
+            vxvyvz[ii,0,jj]= (data[ii].vdraws[jj][0]/_REFV0-vsun[0])/vo #minus OK
             vxvyvz[ii,1,jj]= (data[ii].vdraws[jj][1]/_REFV0+vsun[1])/vo
             vxvyvz[ii,2,jj]= (data[ii].vdraws[jj][2]/_REFV0+vsun[2])/vo
-        #vxvyvz[:,0]= (data.vxc/_REFV0-vsun[0])/vo
+        #vxvyvz[:,0]= (data.vxc/_REFV0-vsun[0])/vo #minus OK
         #vxvyvz[:,1]= (data.vyc/_REFV0+vsun[1])/vo
         #vxvyvz[:,2]= (data.vzc/_REFV0+vsun[2])/vo
     #Rotate to Galactocentric frame
@@ -986,7 +987,8 @@ def initialize(options,fehs,afes):
     if options.potential.lower() == 'flatlog':
         p.extend([1.,.9])
     #Outlier fraction
-    p.append(0.025) #BOVY: UPDATE FIRST GUESS
+    for ii in range(len(fehs)):
+        p.append(0.025) #BOVY: UPDATE FIRST GUESS
     return p
 
 ##SETUP DOMAIN FOR MARKOVPY
@@ -1041,7 +1043,7 @@ def get_vo(p,options,npops):
     if options.potential.lower() == 'flatlog':
         return p[startindx]
 
-def get_outfrac(p,options,npops):
+def get_outfrac(p,indx,options,npops):
     """Function that returns the outlier fraction for these options"""
     startindx= 0
     if options.fitro: startindx+= 1
@@ -1049,7 +1051,7 @@ def get_outfrac(p,options,npops):
     ndfparams= get_ndfparams(options)
     npotparams= get_npotparams(options)
     startindx+= ndfparams*npops+npotparams
-    return p[startindx]
+    return p[startindx+indx]
 
 def set_potparams(p,params,options,npops):
     """Function that sets the set of potential parameters for these options"""
