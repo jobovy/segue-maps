@@ -82,6 +82,14 @@ def pixelFitDF(options,args):
     if not options.bmin is None:
         #Cut on |b|
         raw= raw[(numpy.fabs(raw.b) > options.bmin)]
+    if not options.fehmin is None:
+        raw= raw[(raw.feh >= options.fehmin)]
+    if not options.fehmax is None:
+        raw= raw[(raw.feh < options.fehmax)]
+    if not options.afemin is None:
+        raw= raw[(raw.afe >= options.afemin)]
+    if not options.afemax is None:
+        raw= raw[(raw.afe < options.afemax)]
     if not options.plate is None and not options.loo:
         raw= raw[(raw.plate == options.plate)]
     elif not options.plate is None:
@@ -1205,6 +1213,18 @@ def get_options():
     parser.add_option("--snmin",dest='snmin',type='float',
                       default=15.,
                       help="Minimum S/N")
+    parser.add_option("--fehmin",dest='fehmin',type='float',
+                      default=None,
+                      help="Minimum [Fe/H]")
+    parser.add_option("--fehmax",dest='fehmax',type='float',
+                      default=None,
+                      help="Maximum [Fe/H]")
+    parser.add_option("--afemin",dest='afemin',type='float',
+                      default=None,
+                      help="Minimum [a/Fe]")
+    parser.add_option("--afemax",dest='afemax',type='float',
+                      default=None,
+                      help="Maximum [a/Fe]")
     parser.add_option("--indiv_brightlims",action="store_true", 
                       dest="indiv_brightlims",
                       default=False,
