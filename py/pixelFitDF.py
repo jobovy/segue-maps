@@ -952,7 +952,10 @@ def setup_err_mc(data,options):
         L= linalg.cholesky(cov_vxvyvz[ii,:,:],lower=True)
         for jj in range(options.nmcerr):
             vn= numpy.random.normal(size=(3))
-            vdraws[ii].append(numpy.dot(L,vn)+vxvyvz[ii,:])
+            if options.nmcerr == 1:
+                vdraws[ii].append(vxvyvz[ii,:]) #if 1, just use observation
+            else:
+                vdraws[ii].append(numpy.dot(L,vn)+vxvyvz[ii,:])
     data= _append_field_recarray(data,'vdraws',vdraws)
     return data
 
