@@ -828,7 +828,7 @@ def prepare_coordinates(params,indx,fehs,afes,binned):
     for ii in range(len(data)):
         for jj in range(options.nmcerr):
             for kk in range(3):
-                vxvyvz[ii,kk,jj]= (data[ii].vdraws[jj][kk]/_REFV0-vsun[0])/vo
+                vxvyvz[ii,kk,jj]= (data[ii].vdraws[jj][kk]/_REFV0-vsun[kk])/vo
         #vxvyvz[:,0]= (data.vxc/_REFV0-vsun[0])/vo
         #vxvyvz[:,1]= (data.vyc/_REFV0+vsun[1])/vo
         #vxvyvz[:,2]= (data.vzc/_REFV0+vsun[2])/vo
