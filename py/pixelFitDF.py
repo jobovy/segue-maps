@@ -264,7 +264,7 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
                                indx,_bigparams,normintstuff):
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
-    theseparams= set_dfparams(params,_bigparams,indx,options,log=False)
+    theseparams= set_dfparams(params,_bigparams,indx,options)
     ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff,
                      len(fehs))
     print params, ml
@@ -901,7 +901,7 @@ def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff):
             for ii in range(len(fehs)):
                 tmpfile= open(tmpfiles[ii][1],'rb')
                 new_dfparams= pickle.load(tmpfile)
-                params= set_dfparams(new_dfparams,params,ii,options,log=False)
+                params= set_dfparams(new_dfparams,params,ii,options)
                 tmpfile.close()
         finally:
             for ii in range(len(fehs)):
@@ -917,7 +917,7 @@ def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff):
                                                  ii,copy.copy(params),
                                                  normintstuff),
                                                callback=cb)
-            params= set_dfparams(new_dfparams,params,ii,options,log=False)
+            params= set_dfparams(new_dfparams,params,ii,options)
     return params
 
 def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,normintstuff,tmpfiles):
@@ -997,11 +997,10 @@ def initialize(options,fehs,afes):
 numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaR
                       numpy.log(monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaZ
                       numpy.log(7./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
+            #Outlier fraction
+            p.append(0.025) #BOVY: UPDATE FIRST GUESS
     if options.potential.lower() == 'flatlog':
-        p.extend([1.,.9])
-    #Outlier fraction
-    for ii in range(len(fehs)):
-        p.append(0.025) #BOVY: UPDATE FIRST GUESS
+        p.extend([1.,.7])
     return p
 
 ##SETUP DOMAIN FOR MARKOVPY
@@ -1062,9 +1061,9 @@ def get_outfrac(p,indx,options,npops):
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
     ndfparams= get_ndfparams(options)
-    npotparams= get_npotparams(options)
-    startindx+= ndfparams*npops+npotparams
-    return p[startindx+indx]
+    startindx+= ndfparams*indx
+    if options.dfmodel.lower() == 'qdf':
+        return p[startindx+5]
 
 def set_potparams(p,params,options,npops):
     """Function that sets the set of potential parameters for these options"""
@@ -1092,15 +1091,17 @@ def get_dfparams(p,indx,options,log=False):
                     p[startindx+1],
                     p[startindx+2],
                     p[startindx+3],
-                    p[startindx+4])
+                    p[startindx+4],
+                    p[startindx+5])
         else:
             return (numpy.exp(p[startindx]),
                     numpy.exp(p[startindx+1]),
                     numpy.exp(p[startindx+2]),
                     numpy.exp(p[startindx+3]),
-                    numpy.exp(p[startindx+4]))
+                    numpy.exp(p[startindx+4]),
+                    p[startindx+5]) #outlier fraction neveer gets exponentiated
         
-def set_dfparams(p,params,indx,options,log=False):
+def set_dfparams(p,params,indx,options):
     """Function that sets the set of DF parameters for population indx for these options"""
     startindx= 0
     if options.fitro: startindx+= 1
@@ -1109,16 +1110,13 @@ def set_dfparams(p,params,indx,options,log=False):
     startindx+= ndfparams*indx
     if options.dfmodel.lower() == 'qdf':
         for ii in range(ndfparams):
-            if log:
-                params[startindx+ii]= numpy.log(p[ii])
-            else:
-                params[startindx+ii]= p[ii]
+            params[startindx+ii]= p[ii]
     return params
 
 def get_ndfparams(options):
     """Function that returns the number of DF parameters for a single population"""
     if options.dfmodel.lower() == 'qdf':
-        return 5
+        return 6 #5 + outlier fraction
 
 def get_npotparams(options):
     """Function that returns the number of potential parameters"""
