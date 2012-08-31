@@ -4,6 +4,7 @@ import sys
 import os, os.path
 import copy
 import numpy
+from scipy.maxentropy import logsumexp
 import fitsio
 from galpy.util import bovy_coords
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
@@ -11,7 +12,8 @@ import monoAbundanceMW
 from segueSelect import _ERASESTR, read_gdwarfs, read_kdwarfs, segueSelect
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import get_options,fidDens, get_dfparams, get_ro, get_vo, \
-    _REFR0, _REFV0, setup_potential, setup_aA, initialize
+    _REFR0, _REFV0, setup_potential, setup_aA, initialize, \
+    outDens, _SRHALO, _SPHIHALO, _SZHALO
 from fitDensz import _ZSUN, DistSpline, _ivezic_dist
 from compareDataModel import _predict_rdist_plate
 _NMIN= 1000
@@ -176,13 +178,14 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     thissz= qdf._sz*_REFV0*vo
     thishsr= qdf._hsr*_REFR0*ro
     thishsz= qdf._hsz*_REFR0*ro
-    #Make everything 20% larger
-    thishr*= 1.2
-    thishz*= 1.2
-    thishsr*= 1.2
-    thishsz*= 1.2
-    thissr*= 1.2
-    thissz*= 1.2
+    if False:
+        #Make everything 20% larger
+        thishr*= 1.2
+        thishz*= 1.2
+        thishsr*= 1.2
+        thishsz*= 1.2
+        thissr*= 1.2
+        thissz*= 1.2
     #Find nearest mono-abundance bin that has a measurement
     abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                              +(afes[ii]-mapafes)**2./0.0025)
@@ -202,6 +205,9 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     colordists/= colordists[-1]
     rs= numpy.linspace(rmin,rmax,nrs)
     rdists= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
+    if True:
+        fidoutfrac= .5 #seems good
+        rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
     for jj in range(len(sf.plates)):
         p= sf.plates[jj]
         sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,jj+1,len(sf.plates)))
@@ -216,18 +222,47 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                                fehdist,sf,sf.plates[jj],
                                                dontmarginalizecolorfeh=True,
                                                ngr=ngr,nfeh=nfeh)
+        if True:
+            rdistsout[jj,:,:,:]= _predict_rdist_plate(rs,
+                                                      lambda x,y,z: outDens(x,y,z),
+                                                      None,rmin,rmax,
+                                                      platelb[jj,0],platelb[jj,1],
+                                                      grmin,grmax,
+                                                      fehrange[0],fehrange[1],feh,
+                                                      colordist,
+                                                      fehdist,sf,sf.plates[jj],
+                                                      dontmarginalizecolorfeh=True,
+                                                      ngr=ngr,nfeh=nfeh)
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     numbers= numpy.sum(rdists,axis=3)
     numbers= numpy.sum(numbers,axis=2)
     numbers= numpy.sum(numbers,axis=1)
     numbers= numpy.cumsum(numbers)
+    if True:
+        totfid= numbers[-1]
     numbers/= numbers[-1]
     rdists= numpy.cumsum(rdists,axis=1)
     for ll in range(len(sf.plates)):
         for jj in range(ngr):
             for kk in range(nfeh):
                 rdists[ll,:,jj,kk]/= rdists[ll,-1,jj,kk]
+    if True:
+        numbersout= numpy.sum(rdistsout,axis=3)
+        numbersout= numpy.sum(numbersout,axis=2)
+        numbersout= numpy.sum(numbersout,axis=1)
+        numbersout= numpy.cumsum(numbersout)
+        totout= fidoutfrac*numbersout[-1]
+        totnumbers= totfid+totout
+        totfid/= totnumbers
+        totout/= totnumbers
+        print totfid, totout
+        numbersout/= numbersout[-1]
+        rdistsout= numpy.cumsum(rdistsout,axis=1)
+        for ll in range(len(sf.plates)):
+            for jj in range(ngr):
+                for kk in range(nfeh):
+                    rdistsout[ll,:,jj,kk]/= rdistsout[ll,-1,jj,kk]
     #Now sample
     thisout= []
     newrs= []
@@ -273,7 +308,12 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             #plate==kk, feh=ff,color=cc; now sample from the rdist of this plate
             ran= numpy.random.uniform()
             jj= 0
-            while rdists[kk,jj,cc,ff] < ran: jj+= 1
+            if True and numpy.random.uniform() < totout: #outlier
+                while rdistsout[kk,jj,cc,ff] < ran: jj+= 1
+                thisoutlier= True
+            else:
+                while rdists[kk,jj,cc,ff] < ran: jj+= 1
+                thisoutlier= False
             #r=jj
             newrs.append(rs[jj])
             newls.append(platelb[kk,0])
@@ -292,20 +332,35 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             if XYZ[0] < 0.:
                 phi= numpy.pi-phi
             newphi.append(phi)
-            z= XYZ[2]+ _ZSUN
+            z= XYZ[2]+_ZSUN
             sigz= thissz*numpy.exp(-(R-_REFR0)/thishsz)
             sigr= thissr*numpy.exp(-(R-_REFR0)/thishsr)
             sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
             #Estimate asymmetric drift
             va= sigr**2./2./_REFV0/vo\
                 *(-.5+R*(1./thishr+2./thishsr))
-            #Sample from disk gaussian
-            newvz.append(numpy.random.normal()*sigz)
-            newvr.append(numpy.random.normal()*sigr)
-            newvt.append(numpy.random.normal()*sigphi+_REFV0*vo-va)
+            if True and thisoutlier:
+                #Sample from halo gaussian
+                newvz.append(numpy.random.normal()*_SZHALO)
+                newvr.append(numpy.random.normal()*_SRHALO)
+                newvt.append(numpy.random.normal()*_SPHIHALO+_REFV0*vo-va)
+            else:
+                #Sample from disk gaussian
+                newvz.append(numpy.random.normal()*sigz)
+                newvr.append(numpy.random.normal()*sigr)
+                newvt.append(numpy.random.normal()*sigphi+_REFV0*vo-va)
             newlogratio= list(newlogratio)
-            newlogratio.append(-(numpy.log(fidDens(R,z,thishr,thishz,None))\
-                                   -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0+va)**2./sigphi**2.-qdf(R/ro/_REFR0,newvr[-1]/vo/_REFV0,newvt[-1]/vo/_REFV0,z/ro/_REFR0,newvz[-1]/vo/_REFV0,log=True))))
+            if True:
+                fidlogeval= numpy.log(fidDens(R,z,thishr,thishz,None))\
+                    -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0*vo+va)**2./sigphi**2.)
+                outlogeval= numpy.log(fidoutfrac)\
+                    +numpy.log(outDens(R,z,None))\
+                    -numpy.log(_SRHALO)\
+                    -numpy.log(_SPHIHALO)\
+                    -numpy.log(_SZHALO)\
+                    -0.5*(newvr[-1]**2./_SRHALO**2.+newvz[-1]**2./_SZHALO**2.+newvt[-1]**2./_SPHIHALO**2.)
+                newlogratio.append(qdf(R/ro/_REFR0,newvr[-1]/vo/_REFV0,newvt[-1]/vo/_REFV0,z/ro/_REFR0,newvz[-1]/vo/_REFV0,log=True)
+                                   -logsumexp([fidlogeval,outlogeval]))
         newlogratio= numpy.array(newlogratio)
         thisnewlogratio= copy.copy(newlogratio)
         thisnewlogratio-= numpy.amax(thisnewlogratio)
@@ -315,31 +370,18 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         accept= (accept < thisnewratio)
         fraccomplete= float(numpy.sum(accept))/ndata
         fracsuccess= float(numpy.sum(accept))/len(thisnewratio)
-        print numpy.mean(thisnewratio), numpy.std(thisnewratio), \
-            numpy.amax(thisnewratio), \
-            fraccomplete, fracsuccess
-        indx= (thisnewratio == 1.)
-        print numpy.histogram(thisnewratio,bins=31)
-        print numpy.array(newvr)[indx], \
-            numpy.array(newvt)[indx], \
-            numpy.array(newvz)[indx], \
-            numpy.array(newds)[indx], \
-            numpy.array(newrs)[indx], \
-            numpy.array(newls)[indx], \
-            numpy.array(newbs)[indx]
     #Now collect the samples
     newrs= numpy.array(newrs)[accept][0:ndata]
-    print len(newrs)
-    newls= numpy.array(newls)
-    newbs= numpy.array(newbs)
-    newplate= numpy.array(newplate)
-    newgr= numpy.array(newgr)
-    newfeh= numpy.array(newfeh)
-    newvr= numpy.array(newvr)
-    newvt= numpy.array(newvt)
-    newvz= numpy.array(newvz)
-    newphi= numpy.array(newphi)
-    newds= numpy.array(newds)
+    newls= numpy.array(newls)[accept][0:ndata]
+    newbs= numpy.array(newbs)[accept][0:ndata]
+    newplate= numpy.array(newplate)[accept][0:ndata]
+    newgr= numpy.array(newgr)[accept][0:ndata]
+    newfeh= numpy.array(newfeh)[accept][0:ndata]
+    newvr= numpy.array(newvr)[accept][0:ndata]
+    newvt= numpy.array(newvt)[accept][0:ndata]
+    newvz= numpy.array(newvz)[accept][0:ndata]
+    newphi= numpy.array(newphi)[accept][0:ndata]
+    newds= numpy.array(newds)[accept][0:ndata]
     #Load into data
     oldgr= thisdata.dered_g-thisdata.dered_r
     oldr= thisdata.dered_r
@@ -347,14 +389,14 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     binned.data[thisdataIndx].dered_g= oldgr+binned.data[thisdataIndx].dered_r
     #Also change plate and l and b
     binned.data[thisdataIndx].plate= newplate
-    radec= bovy_coords.lb_to_radec(lnewls,newbs,degree=True)
+    radec= bovy_coords.lb_to_radec(newls,newbs,degree=True)
     binned.data[thisdataIndx].ra= radec[:,0]
     binned.data[thisdataIndx].dec= radec[:,1]
     binned.data[thisdataIndx].l= newls
     binned.data[thisdataIndx].b= newbs
     vx, vy, vz= bovy_coords.galcencyl_to_vxvyvz(newvr,newvt,newvz,newphi,
                                                 vsun=[-11.1,245.,7.25])
-    vrpmllpmbb= bovy_coords.vxvyvz_to_vrpmllpmbb(vx,vy,vz,newls,newbbs,newds,
+    vrpmllpmbb= bovy_coords.vxvyvz_to_vrpmllpmbb(vx,vy,vz,newls,newbs,newds,
                                                  XYZ=False,degree=True)
     pmrapmdec= bovy_coords.pmllpmbb_to_pmrapmdec(vrpmllpmbb[:,1],
                                                  vrpmllpmbb[:,2],
