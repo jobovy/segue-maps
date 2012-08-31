@@ -47,36 +47,49 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                                fehdist,sf,sf.plates[jj],
                                                dontmarginalizecolorfeh=True,
                                                ngr=ngr,nfeh=nfeh)
-        sys.stdout.write('\r'+_ERASESTR+'\r')
-        sys.stdout.flush()
-        numbers= numpy.sum(rdists,axis=3)
-        numbers= numpy.sum(numbers,axis=2)
-        numbers= numpy.sum(numbers,axis=1)
-        numbers= numpy.cumsum(numbers)
-        numbers/= numbers[-1]
-        rdists= numpy.cumsum(rdists,axis=1)
-        for ll in range(len(sf.plates)):
-            for jj in range(ngr):
-                for kk in range(nfeh):
-                    rdists[ll,:,jj,kk]/= rdists[ll,-1,jj,kk]
-        #Now sample
-        thisout= []
-        newrs= []
-        newls= []
-        newbs= []
-        newplate= []
-        newgr= []
-        newfeh= []
-        newvr= []
-        newvt= []
-        newvz= []
-        thisdata= binned(fehs[ii],afes[ii])
-        ndata= len(data)
-        ntot= 0
-        nsamples= 0
-        while nsamples < ndata:
-            nneeded= numpy.amin([ndata-len(newrs),_NMIN-
-            while len(thisout) < options.nmc:
+    sys.stdout.write('\r'+_ERASESTR+'\r')
+    sys.stdout.flush()
+    numbers= numpy.sum(rdists,axis=3)
+    numbers= numpy.sum(numbers,axis=2)
+    numbers= numpy.sum(numbers,axis=1)
+    numbers= numpy.cumsum(numbers)
+    numbers/= numbers[-1]
+    rdists= numpy.cumsum(rdists,axis=1)
+    for ll in range(len(sf.plates)):
+        for jj in range(ngr):
+            for kk in range(nfeh):
+                rdists[ll,:,jj,kk]/= rdists[ll,-1,jj,kk]
+    #Now sample
+    thisout= []
+    newrs= []
+    newls= []
+    newbs= []
+    newplate= []
+    newgr= []
+    newfeh= []
+    newds= []
+    newphi= []
+    newvr= []
+    newvt= []
+    newvz= []
+    newlogratio= []
+    thisdata= binned(fehs[ii],afes[ii])
+    thisdataIndx= binned.callIndx(fehs[ii],afes[ii])
+    ndata= len(data)
+    ntot= 0
+    nsamples= 0
+    itt= 0
+    fracsuccess= 0.
+    fraccomplete= 0.
+    while fraccomplete < 1.:
+        if itt == 0:
+            nthis= numpy.amin([ndata,_NMIN])
+        else:
+            nthis= int(numpy.ceil(1-fraccomplete)/fracsuccess*ndata)
+        itt+= 1
+        count= 0
+        while count < nthis:
+            count+= 1
             #First sample a plate
             ran= numpy.random.uniform()
             kk= 0
@@ -93,57 +106,83 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             jj= 0
             while rdists[kk,jj,cc,ff] < ran: jj+= 1
             #r=jj
-            thisout.append([rs[jj],tgrs[cc],tfehs[ff],platelb[kk,0],platelb[kk,1],
-                            sf.plates[kk],
-                            _ivezic_dist(tgrs[cc],rs[jj],tfehs[ff]),
-                            thisoutlier])
-        #Add mock velocities
-        #First calculate all R
-        d= numpy.array([o[6] for o in thisout])
-        l= numpy.array([o[3] for o in thisout])
-        b= numpy.array([o[4] for o in thisout])
-        XYZ= bovy_coords.lbd_to_XYZ(l,b,d,degree=True)
-        R= ((_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
-        XYZ[:,2]+= _ZSUN
-        z= XYZ[:,2]
-        for jj in range(options.nmc):
+            newrs.append(rs[jj])
+            newls.append(platelb[kk,0])
+            newbs.append(platelb[kk,1])
+            newplate.append(sf.plates[kk])
+            newgr.append(tgrs[cc])
+            newfeh.append(tfehs[ff])
+            dist= _ivezic_dist(tgrs[cc],rs[jj],tfehs[ff])
+            newds.append(dist)
+            #Add mock velocities
+            #First calculate all R
+            XYZ= bovy_coords.lbd_to_XYZ(platelb[kk,0],platelb[kk,1],
+                                        dist,degree=True)
+            R= ((_REFR0-XYZ[0])**2.+XYZ[1]**2.)**(0.5)
+            phi= numpy.arcsin(XYZ[1]/R)
+            if XYZ[0] < 0.:
+                phi= numpy.pi-phi
+            newphi.append(phi)
+            XYZ[2]+= _ZSUN
+            z= XYZ[2]
             sigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
                                          mapafes[abindx],
-                                         r=R[jj])
+                                         r=R)
             sigr= 2.*sigz #BOVY: FOR NOW
             sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
             #Estimate asymmetric drift
             va= sigr**2./2./_REFV0\
-                *(-.5+R[jj]*(1./thishr+2./7.))
-            if options.mcout and thisout[jj][7]:
-                #Sample from halo gaussian
-                vz= numpy.random.normal()*_SZHALO
-                vr= numpy.random.normal()*_SRHALO
-                vphi= numpy.random.normal()*_SPHIHALO
-            else:
-                #Sample from disk gaussian
-                vz= numpy.random.normal()*sigz
-                vr= numpy.random.normal()*sigr
-                vphi= numpy.random.normal()*sigphi+_REFV0-va
-            #Append to out
-            if options.mcout:
-                fidlogeval= numpy.log(fidDens(R[jj],z[jj],thishr,thishz,
-                                              None))\
-                                              -numpy.log(sigr)\
-                                              -numpy.log(sigphi)\
-                                              -numpy.log(sigz)\
-                                              -0.5*(vr**2./sigr**2.+vz**2./sigz**2.+(vphi-_REFV0+va)**2./sigphi**2.)
-                outlogeval= numpy.log(fidoutfrac)\
-                    +numpy.log(outDens(R[jj],z[jj],None))\
-                    -numpy.log(_SRHALO)\
-                    -numpy.log(_SPHIHALO)\
-                    -numpy.log(_SZHALO)\
-                    -0.5*(vr**2./_SRHALO**2.+vz**2./_SZHALO**2.+vphi**2./_SPHIHALO**2.)
-                thisout[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
-                                    logsumexp([fidlogeval,outlogeval])])
-            else:
-                thisout[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
-                                    numpy.log(fidDens(R[jj],z[jj],thishr,thishz,None))\
-                                        -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(vr**2./sigr**2.+vz**2./sigz**2.+(vphi-_REFV0+va)**2./sigphi**2.)])
-
+                *(-.5+R*(1./thishr+2./7.))
+            #Sample from disk gaussian
+            newvz.append(numpy.random.normal()*sigz)
+            newvr.append(numpy.random.normal()*sigr)
+            newvt.append(numpy.random.normal()*sigphi+_REFV0-va)
+            newlogratio.append(numpy.log(fidDens(R,z,thishr,thishz,None))\
+                                   -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0+va)**2./sigphi**2.-qdf(R,newvr[-1],newvt[-1],z,newvz[-1],log=True)))
+        newlogratio= numpy.array(newlogratio)
+        thisnewlogratio= copy.copy(newlogratio)
+        thisnewlogratio-= numpy.amax(thisnewlogratio)
+        thisnewratio= numpy.exp(thisnewlogratio)
+        print numpy.mean(thisnewratio), numpy.std(thisnewratio)
+        #Rejection sample
+        accept= numpy.random.uniform(size=len(thisnewratio))
+        accept= (accept < thisnewratio)
+        fraccomplete= float(numpy.sum(accept))/ndata
+        fracsuccess= float(numpy.sum(accept))/len(thisnewratio)
+    #Now collect the samples
+    newrs= numpy.array(newrs)
+    newls= numpy.array(newls)
+    newbs= numpy.array(newbs)
+    newplate= numpy.array(newplate)
+    newgr= numpy.array(newgr)
+    newfeh= numpy.array(newfeh)
+    newvr= numpy.array(newvr)
+    newvt= numpy.array(newvt)
+    newvz= numpy.array(newvz)
+    newphi= numpy.array(newphi)
+    newds= numpy.array(newds)
+    #Load into data
+    oldgr= thisdata.dered_g-thisdata.dered_r
+    oldr= thisdata.dered_r
+    binned.data[thisdataIndx].dered_r= newrs
+    binned.data[thisdataIndx].dered_g= oldgr+binned.data[thisdataIndx].dered_r
+    #Also change plate and l and b
+    binned.data[thisdataIndx].plate= newplate
+    radec= bovy_coords.lb_to_radec(lnewls,newbs,degree=True)
+    binned.data[thisdataIndx].ra= radec[:,0]
+    binned.data[thisdataIndx].dec= radec[:,1]
+    binned.data[thisdataIndx].l= newls
+    binned.data[thisdataIndx].b= newbs
+    vx, vy, vz= bovy_coords.galcencyl_to_vxvyvz(newvr,newvt,newvz,newphi,
+                                                vsun=[-11.1,245.,7.25])
+    vrpmllpmbb= bovy_coords.vxvyvz_to_vrpmllpmbb(vx,vy,vz,newls,newbbs,newds,
+                                                 XYZ=False,degree=True)
+    pmrapmdec= bovy_coords.pmllpmbb_to_pmrapmdec(vrpmllpmbb[:,1],
+                                                 vrpmllpmbb[:,2],
+                                                 newls,newbs,
+                                                 degree=True)
+    binned.data[thisdataIndx].vr= vrpmllpmbb[:,0]
+    binned.data[thisdataIndx].pmra= pmrapmdec[:,0]
+    binned.data[thisdataIndx].pmdec= pmrapmdec[:,1]
+    return binned
 
