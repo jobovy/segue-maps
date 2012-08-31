@@ -1,15 +1,170 @@
+#for testing: python fakeDFData.py --dfeh=0.5 --dafe=0.25 --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1 testFakeDFData.sav
+#
 import sys
-from segueSelect import _ERASESTR
-from pixelFitDF import get_options,fidDensz, get_dfparams, get_ro, get_vo, \
-    _REFR0, _REFV0
+import os, os.path
+import copy
+import numpy
+import fitsio
+from galpy.util import bovy_coords
+from galpy.df_src.quasiisothermaldf import quasiisothermaldf
+import monoAbundanceMW
+from segueSelect import _ERASESTR, read_gdwarfs, read_kdwarfs, segueSelect
+from pixelFitDens import pixelAfeFeh
+from pixelFitDF import get_options,fidDens, get_dfparams, get_ro, get_vo, \
+    _REFR0, _REFV0, setup_potential, setup_aA, initialize
+from fitDensz import _ZSUN, DistSpline, _ivezic_dist
+from compareDataModel import _predict_rdist_plate
 _NMIN= 1000
+def generate_fakeDFData(options,args):
+    #Check whether the savefile already exists
+    if os.path.exists(args[0]):
+        savefile= open(args[0],'rb')
+        print "Savefile already exists, not re-sampling and overwriting ..."
+        return None
+    #Read the data
+    print "Reading the data ..."
+    if options.sample.lower() == 'g':
+        if options.select.lower() == 'program':
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
+        else:
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
+    elif options.sample.lower() == 'k':
+        if options.select.lower() == 'program':
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
+        else:
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
+    if not options.bmin is None:
+        #Cut on |b|
+        raw= raw[(numpy.fabs(raw.b) > options.bmin)]
+    if not options.fehmin is None:
+        raw= raw[(raw.feh >= options.fehmin)]
+    if not options.fehmax is None:
+        raw= raw[(raw.feh < options.fehmax)]
+    if not options.afemin is None:
+        raw= raw[(raw.afe >= options.afemin)]
+    if not options.afemax is None:
+        raw= raw[(raw.afe < options.afemax)]
+    if not options.plate is None and not options.loo:
+        raw= raw[(raw.plate == options.plate)]
+    elif not options.plate is None:
+        raw= raw[(raw.plate != options.plate)]
+    #Bin the data
+    binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
+    #Map the bins with ndata > minndata in 1D
+    fehs, afes= [], []
+    for ii in range(len(binned.fehedges)-1):
+        for jj in range(len(binned.afeedges)-1):
+            data= binned(binned.feh(ii),binned.afe(jj))
+            if len(data) < options.minndata:
+                continue
+            fehs.append(binned.feh(ii))
+            afes.append(binned.afe(jj))
+    nabundancebins= len(fehs)
+    fehs= numpy.array(fehs)
+    afes= numpy.array(afes)
+    if not options.singlefeh is None:
+        if options.loo:
+            pass
+        else:
+            #Set up single feh
+            indx= binned.callIndx(options.singlefeh,options.singleafe)
+            if numpy.sum(indx) == 0:
+                raise IOError("Bin corresponding to singlefeh and singleafe is empty ...")
+            data= copy.copy(binned.data[indx])
+            print "Using %i data points ..." % (len(data))
+            #Bin again
+            binned= pixelAfeFeh(data,dfeh=options.dfeh,dafe=options.dafe)
+            fehs, afes= [], []
+            for ii in range(len(binned.fehedges)-1):
+                for jj in range(len(binned.afeedges)-1):
+                    data= binned(binned.feh(ii),binned.afe(jj))
+                    if len(data) < options.minndata:
+                        continue
+                    fehs.append(binned.feh(ii))
+                    afes.append(binned.afe(jj))
+            nabundancebins= len(fehs)
+            fehs= numpy.array(fehs)
+            afes= numpy.array(afes)
+    #Setup the selection function
+    #Load selection function
+    plates= numpy.array(list(set(list(raw.plate))),dtype='int') #Only load plates that we use
+    print "Using %i plates, %i stars ..." %(len(plates),len(raw))
+    sf= segueSelect(plates=plates,type_faint='tanhrcut',
+                    sample=options.sample,type_bright='tanhrcut',
+                    sn=options.snmin,select=options.select,
+                    indiv_brightlims=options.indiv_brightlims)
+    platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
+                                     degree=True)
+    if options.sample.lower() == 'g':
+        grmin, grmax= 0.48, 0.55
+        rmin,rmax= 14.5, 20.2
+    if options.sample.lower() == 'k':
+        grmin, grmax= 0.55, 0.75
+        rmin,rmax= 14.5, 19.
+    colorrange=[grmin,grmax]
+    mapfehs= monoAbundanceMW.fehs()
+    mapafes= monoAbundanceMW.afes()
+    #Setup params
+    if not options.init is None:
+        #Load initial parameters from file
+        savefile= open(options.init,'rb')
+        params= pickle.load(savefile)
+        savefile.close()
+    else:
+        params= initialize(options,fehs,afes)
+    #Setup potential
+    pot= setup_potential(params,options,len(fehs))
+    aA= setup_aA(pot,options)
+    for ii in range(len(fehs)):
+        print "Working on population %i / %i ..." % (ii+1,len(fehs))
+        #Setup qdf
+        dfparams= get_dfparams(params,ii,options,log=False)
+        vo= get_vo(params,options,len(fehs))
+        ro= get_ro(params,options)
+        if options.dfmodel.lower() == 'qdf':
+            #Normalize
+            hr= dfparams[0]/ro
+            sr= dfparams[1]/vo
+            sz= dfparams[2]/vo
+            hsr= dfparams[3]/ro
+            hsz= dfparams[4]/ro
+        qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA)
+        #Some more selection stuff
+        data= binned(fehs[ii],afes[ii])
+        #feh and color
+        feh= fehs[ii]
+        fehrange= [feh-options.dfeh/2.,feh+options.dfeh/2.]
+        #FeH
+        fehdist= DistSpline(*numpy.histogram(data.feh,bins=5,
+                                             range=fehrange),
+                             xrange=fehrange,dontcuttorange=False)
+        #Color
+        colordist= DistSpline(*numpy.histogram(data.dered_g\
+                                                   -data.dered_r,
+                                               bins=9,range=colorrange),
+                               xrange=colorrange)
+        #Re-sample
+        binned= fakeDFData(binned,qdf,ii,params,fehs,afes,options,
+                           rmin,rmax,
+                           platelb,
+                           grmin,grmax,
+                           fehrange,
+                           colordist,
+                           fehdist,feh,sf,
+                           mapfehs,mapafes,
+                           ro=None,vo=None)
+    #Save to new file
+    fitsio.write(args[0],binned.data)
+    return None
+
 def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                rmin,rmax,
                platelb,
                grmin,grmax,
                fehrange,
                colordist,
-               fehdist,sf,
+               fehdist,feh,sf,
+               mapfehs,mapafes,
                ro=None,vo=None):
     if ro is None:
         ro= get_ro(params,options)
@@ -17,6 +172,20 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         vo= get_vo(params,options,len(fehs))
     thishr= qdf._hr*_REFR0*ro
     thishz= qdf.estimate_hz(1.,zmin=0.1,zmax=0.3,nz=11)*_REFR0*ro
+    thissr= qdf._sr*_REFV0*vo
+    thissz= qdf._sz*_REFV0*vo
+    thishsr= qdf._hsr*_REFR0*ro
+    thishsz= qdf._hsz*_REFR0*ro
+    #Make everything 20% larger
+    thishr*= 1.2
+    thishz*= 1.2
+    thishsr*= 1.2
+    thishsz*= 1.2
+    thissr*= 1.2
+    thissz*= 1.2
+    #Find nearest mono-abundance bin that has a measurement
+    abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
+                             +(afes[ii]-mapafes)**2./0.0025)
     #Calculate the r-distribution for each plate
     nrs= 1001
     ngr, nfeh= 11, 11 #BOVY: INCREASE?
@@ -38,7 +207,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,jj+1,len(sf.plates)))
         sys.stdout.flush()
         rdists[jj,:,:,:]= _predict_rdist_plate(rs,
-                                               lambda x,y,z: ExpDens(x,y,thishr,thishz,z),
+                                               lambda x,y,z: fidDens(x,y,thishr,thishz,z),
                                                None,rmin,rmax,
                                                platelb[jj,0],platelb[jj,1],
                                                grmin,grmax,
@@ -75,7 +244,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     newlogratio= []
     thisdata= binned(fehs[ii],afes[ii])
     thisdataIndx= binned.callIndx(fehs[ii],afes[ii])
-    ndata= len(data)
+    ndata= len(thisdata)
     ntot= 0
     nsamples= 0
     itt= 0
@@ -83,9 +252,9 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     fraccomplete= 0.
     while fraccomplete < 1.:
         if itt == 0:
-            nthis= numpy.amin([ndata,_NMIN])
+            nthis= numpy.amax([ndata,_NMIN])
         else:
-            nthis= int(numpy.ceil(1-fraccomplete)/fracsuccess*ndata)
+            nthis= int(numpy.ceil((1-fraccomplete)/fracsuccess*ndata))
         itt+= 1
         count= 0
         while count < nthis:
@@ -123,34 +292,44 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             if XYZ[0] < 0.:
                 phi= numpy.pi-phi
             newphi.append(phi)
-            XYZ[2]+= _ZSUN
-            z= XYZ[2]
-            sigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
-                                         mapafes[abindx],
-                                         r=R)
-            sigr= 2.*sigz #BOVY: FOR NOW
+            z= XYZ[2]+ _ZSUN
+            sigz= thissz*numpy.exp(-(R-_REFR0)/thishsz)
+            sigr= thissr*numpy.exp(-(R-_REFR0)/thishsr)
             sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
             #Estimate asymmetric drift
-            va= sigr**2./2./_REFV0\
-                *(-.5+R*(1./thishr+2./7.))
+            va= sigr**2./2./_REFV0/vo\
+                *(-.5+R*(1./thishr+2./thishsr))
             #Sample from disk gaussian
             newvz.append(numpy.random.normal()*sigz)
             newvr.append(numpy.random.normal()*sigr)
-            newvt.append(numpy.random.normal()*sigphi+_REFV0-va)
-            newlogratio.append(numpy.log(fidDens(R,z,thishr,thishz,None))\
-                                   -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0+va)**2./sigphi**2.-qdf(R,newvr[-1],newvt[-1],z,newvz[-1],log=True)))
+            newvt.append(numpy.random.normal()*sigphi+_REFV0*vo-va)
+            newlogratio= list(newlogratio)
+            newlogratio.append(-(numpy.log(fidDens(R,z,thishr,thishz,None))\
+                                   -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0+va)**2./sigphi**2.-qdf(R/ro/_REFR0,newvr[-1]/vo/_REFV0,newvt[-1]/vo/_REFV0,z/ro/_REFR0,newvz[-1]/vo/_REFV0,log=True))))
         newlogratio= numpy.array(newlogratio)
         thisnewlogratio= copy.copy(newlogratio)
         thisnewlogratio-= numpy.amax(thisnewlogratio)
         thisnewratio= numpy.exp(thisnewlogratio)
-        print numpy.mean(thisnewratio), numpy.std(thisnewratio)
         #Rejection sample
         accept= numpy.random.uniform(size=len(thisnewratio))
         accept= (accept < thisnewratio)
         fraccomplete= float(numpy.sum(accept))/ndata
         fracsuccess= float(numpy.sum(accept))/len(thisnewratio)
+        print numpy.mean(thisnewratio), numpy.std(thisnewratio), \
+            numpy.amax(thisnewratio), \
+            fraccomplete, fracsuccess
+        indx= (thisnewratio == 1.)
+        print numpy.histogram(thisnewratio,bins=31)
+        print numpy.array(newvr)[indx], \
+            numpy.array(newvt)[indx], \
+            numpy.array(newvz)[indx], \
+            numpy.array(newds)[indx], \
+            numpy.array(newrs)[indx], \
+            numpy.array(newls)[indx], \
+            numpy.array(newbs)[indx]
     #Now collect the samples
-    newrs= numpy.array(newrs)
+    newrs= numpy.array(newrs)[accept][0:ndata]
+    print len(newrs)
     newls= numpy.array(newls)
     newbs= numpy.array(newbs)
     newplate= numpy.array(newplate)
@@ -185,4 +364,10 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     binned.data[thisdataIndx].pmra= pmrapmdec[:,0]
     binned.data[thisdataIndx].pmdec= pmrapmdec[:,1]
     return binned
+
+if __name__ == '__main__':
+    parser= get_options()
+    options,args= parser.parse_args()
+    numpy.random.seed(options.seed)
+    generate_fakeDFData(options,args)
 
