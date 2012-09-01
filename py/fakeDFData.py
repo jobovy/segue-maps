@@ -206,7 +206,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     rs= numpy.linspace(rmin,rmax,nrs)
     rdists= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
     if True:
-        fidoutfrac= .5 #seems good
+        fidoutfrac= 2. #seems good
         rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
     for jj in range(len(sf.plates)):
         p= sf.plates[jj]
@@ -370,6 +370,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         accept= (accept < thisnewratio)
         fraccomplete= float(numpy.sum(accept))/ndata
         fracsuccess= float(numpy.sum(accept))/len(thisnewratio)
+        print fraccomplete, fracsuccess
     #Now collect the samples
     newrs= numpy.array(newrs)[accept][0:ndata]
     newls= numpy.array(newls)[accept][0:ndata]
