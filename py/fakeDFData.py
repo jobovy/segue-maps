@@ -27,14 +27,15 @@ def generate_fakeDFData(options,args):
     print "Reading the data ..."
     if options.sample.lower() == 'g':
         if options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True,nocoords=True)
         else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True,nocoords=True)
     elif options.sample.lower() == 'k':
         if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True,nocoords=True)
         else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True,
+                              nocoords=True)
     if not options.bmin is None:
         #Cut on |b|
         raw= raw[(numpy.fabs(raw.b) > options.bmin)]

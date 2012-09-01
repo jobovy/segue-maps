@@ -66,7 +66,9 @@ def pixelFitDF(options,args):
     #Read the data
     print "Reading the data ..."
     if options.sample.lower() == 'g':
-        if options.select.lower() == 'program':
+        if not options.fakedata is None:
+            raw= read_gdwarfs(options.fakedata,logg=True,ebv=True,sn=options.snmin,nosolar=True)
+        elif options.select.lower() == 'program':
             raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
         else:
             raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
@@ -1197,6 +1199,8 @@ def get_options():
                       help="[a/Fe] when considering a single afe (can be for loo)")   
     parser.add_option("--minndata",dest='minndata',default=100,type='int',
                       help="Minimum number of objects in a bin to perform a fit")   
+    parser.add_option("-f",dest='fakedata',default=None,
+                      help="Name of the fake data filename")
     parser.add_option("--loo",action="store_true", dest="loo",
                       default=False,
                       help="If set, leave out the bin corresponding to singlefeh and singleafe, in leave-one-out fashion")
