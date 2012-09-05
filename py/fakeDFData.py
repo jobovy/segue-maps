@@ -6,16 +6,19 @@ import copy
 import numpy
 from scipy.maxentropy import logsumexp
 import fitsio
-from galpy.util import bovy_coords
+from galpy.util import bovy_coords, bovy_plot
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import monoAbundanceMW
 from segueSelect import _ERASESTR, read_gdwarfs, read_kdwarfs, segueSelect
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import get_options,fidDens, get_dfparams, get_ro, get_vo, \
     _REFR0, _REFV0, setup_potential, setup_aA, initialize, \
-    outDens, _SRHALO, _SPHIHALO, _SZHALO
+    outDens
 from fitDensz import _ZSUN, DistSpline, _ivezic_dist
 from compareDataModel import _predict_rdist_plate
+_SRHALO=100. #not the same as in pixelFitDF
+_SPHIHALO=100.
+_SZHALO=100.
 _NMIN= 1000
 def generate_fakeDFData(options,args):
     #Check whether the savefile already exists
@@ -174,18 +177,19 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     if vo is None:
         vo= get_vo(params,options,len(fehs))
     thishr= qdf._hr*_REFR0*ro
-    thishz= qdf.estimate_hz(1.,zmin=0.1,zmax=0.3,nz=11)*_REFR0*ro
+    #thishz= qdf.estimate_hz(1.,zmin=0.1,zmax=0.3,nz=11)*_REFR0*ro
+    thishz= 0.260657766654
     thissr= qdf._sr*_REFV0*vo
     thissz= qdf._sz*_REFV0*vo
     thishsr= qdf._hsr*_REFR0*ro
     thishsz= qdf._hsz*_REFR0*ro
-    if False:
+    if True:
         #Make everything 20% larger
         thishr*= 1.2
         thishz*= 1.2
         thishsr*= 1.2
         thishsz*= 1.2
-        thissr*= 1.2
+        thissr*= 1.3
         thissz*= 1.2
     #Find nearest mono-abundance bin that has a measurement
     abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
@@ -207,7 +211,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     rs= numpy.linspace(rmin,rmax,nrs)
     rdists= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
     if True:
-        fidoutfrac= 2. #seems good
+        fidoutfrac= .0000000000000000000000001 #seems good
         rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
     for jj in range(len(sf.plates)):
         p= sf.plates[jj]
@@ -225,7 +229,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                                ngr=ngr,nfeh=nfeh)
         if True:
             rdistsout[jj,:,:,:]= _predict_rdist_plate(rs,
-                                                      lambda x,y,z: outDens(x,y,z),
+                                                      lambda x,y,z: fidDens(x,y,thishr,thishz,z),
                                                       None,rmin,rmax,
                                                       platelb[jj,0],platelb[jj,1],
                                                       grmin,grmax,
@@ -278,6 +282,10 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     newvt= []
     newvz= []
     newlogratio= []
+    newouteval= []
+    newfideval= []
+    newqdfeval= []
+    newpropeval= []
     thisdata= binned(fehs[ii],afes[ii])
     thisdataIndx= binned.callIndx(fehs[ii],afes[ii])
     ndata= len(thisdata)
@@ -341,10 +349,10 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             va= sigr**2./2./_REFV0/vo\
                 *(-.5+R*(1./thishr+2./thishsr))
             if True and thisoutlier:
-                #Sample from halo gaussian
+                #Sample from outlier gaussian
                 newvz.append(numpy.random.normal()*_SZHALO)
                 newvr.append(numpy.random.normal()*_SRHALO)
-                newvt.append(numpy.random.normal()*_SPHIHALO+_REFV0*vo-va)
+                newvt.append(numpy.random.normal()*_SPHIHALO+_REFV0*vo/2.)
             else:
                 #Sample from disk gaussian
                 newvz.append(numpy.random.normal()*sigz)
@@ -359,11 +367,19 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                     -numpy.log(_SRHALO)\
                     -numpy.log(_SPHIHALO)\
                     -numpy.log(_SZHALO)\
-                    -0.5*(newvr[-1]**2./_SRHALO**2.+newvz[-1]**2./_SZHALO**2.+(newvt[-1]-_REFV0*vo+va)**2./_SPHIHALO**2.)
-                newlogratio.append(qdf(R/ro/_REFR0,newvr[-1]/vo/_REFV0,newvt[-1]/vo/_REFV0,z/ro/_REFR0,newvz[-1]/vo/_REFV0,log=True)
+                    -0.5*(newvr[-1]**2./_SRHALO**2.+newvz[-1]**2./_SZHALO**2.+(newvt[-1]-_REFV0*vo/2)**2./_SPHIHALO**2.)
+                newouteval.append(outlogeval)
+                newfideval.append(fidlogeval)
+                newpropeval.append(logsumexp([outlogeval,fidlogeval]))
+                if newvt[-1] < 0.: qdflogeval= -numpy.finfo(numpy.dtype(numpy.float64)).max
+                else:
+                    qdflogeval= qdf(R/ro/_REFR0,newvr[-1]/vo/_REFV0,newvt[-1]/vo/_REFV0,z/ro/_REFR0,newvz[-1]/vo/_REFV0,log=True)
+                newqdfeval.append(qdflogeval)
+                newlogratio.append(qdflogeval
                                    -logsumexp([fidlogeval,outlogeval]))
         newlogratio= numpy.array(newlogratio)
         thisnewlogratio= copy.copy(newlogratio)
+        maxnewlogratio= numpy.amax(thisnewlogratio)
         thisnewlogratio-= numpy.amax(thisnewlogratio)
         thisnewratio= numpy.exp(thisnewlogratio)
         #Rejection sample
@@ -372,6 +388,32 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         fraccomplete= float(numpy.sum(accept))/ndata
         fracsuccess= float(numpy.sum(accept))/len(thisnewratio)
         print fraccomplete, fracsuccess
+        print numpy.histogram(thisnewratio,bins=16)
+        indx= numpy.argmax(thisnewratio)
+        print numpy.array(newvr)[indx], \
+            numpy.array(newvt)[indx], \
+            numpy.array(newvz)[indx], \
+            numpy.array(newrs)[indx], \
+            numpy.array(newds)[indx], \
+            numpy.array(newls)[indx], \
+            numpy.array(newbs)[indx], \
+            numpy.array(newouteval)[indx], \
+            numpy.array(newfideval)[indx]
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_plot(numpy.array(newvt),
+                            numpy.exp(numpy.array(newqdfeval)),'b,',
+                            xrange=[-300.,500.],yrange=[0.,1.])
+        bovy_plot.bovy_plot(newvt,
+                            numpy.exp(numpy.array(newpropeval+maxnewlogratio)),
+                            'g,',
+                            overplot=True)
+        bovy_plot.bovy_plot(numpy.array(newvt),
+                            numpy.exp(numpy.array(newlogratio-maxnewlogratio)),
+                            'b,',
+                            xrange=[-300.,500.],
+#                            xrange=[0.,3.],
+                            yrange=[0.,1.])
+        bovy_plot.bovy_end_print('/home/bovy/public_html/segue-local/test.png')
     #Now collect the samples
     newrs= numpy.array(newrs)[accept][0:ndata]
     newls= numpy.array(newls)[accept][0:ndata]
