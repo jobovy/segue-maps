@@ -189,7 +189,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         thishz*= 1.2
         thishsr*= 1.2
         thishsz*= 1.2
-        thissr*= 1.3
+        thissr*= 1.4
         thissz*= 1.2
     #Find nearest mono-abundance bin that has a measurement
     abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
