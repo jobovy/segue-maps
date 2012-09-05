@@ -454,9 +454,9 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                                  vrpmllpmbb[:,2],
                                                  newls,newbs,
                                                  degree=True)
-    binned.data[thisdataIndx].vr= vrpmllpmbb[:,0]
-    binned.data[thisdataIndx].pmra= pmrapmdec[:,0]
-    binned.data[thisdataIndx].pmdec= pmrapmdec[:,1]
+    binned.data[thisdataIndx].vr= vrpmllpmbb[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data[thisdataIndx].vr_err
+    binned.data[thisdataIndx].pmra= pmrapmdec[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data[thisdataIndx].pmra_err
+    binned.data[thisdataIndx].pmdec= pmrapmdec[:,1]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data[thisdataIndx].pmdec_err
     return binned
 
 if __name__ == '__main__':
