@@ -359,7 +359,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                     -numpy.log(_SRHALO)\
                     -numpy.log(_SPHIHALO)\
                     -numpy.log(_SZHALO)\
-                    -0.5*(newvr[-1]**2./_SRHALO**2.+newvz[-1]**2./_SZHALO**2.+newvt[-1]**2./_SPHIHALO**2.)
+                    -0.5*(newvr[-1]**2./_SRHALO**2.+newvz[-1]**2./_SZHALO**2.+(newvt[-1]-_REFV0*vo+va)**2./_SPHIHALO**2.)
                 newlogratio.append(qdf(R/ro/_REFR0,newvr[-1]/vo/_REFV0,newvt[-1]/vo/_REFV0,z/ro/_REFR0,newvz[-1]/vo/_REFV0,log=True)
                                    -logsumexp([fidlogeval,outlogeval]))
         newlogratio= numpy.array(newlogratio)

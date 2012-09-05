@@ -244,7 +244,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
             try:
                 data_lndf[ii,2*kk]= qdf(R[ii,kk],vR[ii,kk],vT[ii,kk],
                                         z[ii,kk],vz[ii,kk],log=True)
-            except RuntimeError:
+            except (RuntimeError,OverflowError):
                 jj= ii
                 print vo, R[jj,kk], vR[jj,kk], vT[jj,kk],z[jj,kk],vz[jj,kk]
                 data_lndf[ii,2*kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
