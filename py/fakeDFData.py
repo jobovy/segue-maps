@@ -363,7 +363,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                 fidlogeval= numpy.log(fidDens(R,z,thishr,thishz,None))\
                     -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0*vo+va)**2./sigphi**2.)
                 outlogeval= numpy.log(fidoutfrac)\
-                    +numpy.log(outDens(R,z,None))\
+                    +numpy.log(fidDens(R,z,thishr,thishz,None))\
                     -numpy.log(_SRHALO)\
                     -numpy.log(_SPHIHALO)\
                     -numpy.log(_SZHALO)\
