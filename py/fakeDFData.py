@@ -211,7 +211,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     rs= numpy.linspace(rmin,rmax,nrs)
     rdists= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
     if True:
-        fidoutfrac= .0000000000000000000000001 #seems good
+        fidoutfrac= 0.25 #.0000000000000000000000001 #seems good
         rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
     for jj in range(len(sf.plates)):
         p= sf.plates[jj]
@@ -277,6 +277,9 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     newgr= []
     newfeh= []
     newds= []
+    newzs= []
+    newvas= []
+    newRs= []
     newphi= []
     newvr= []
     newvt= []
@@ -337,17 +340,20 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             XYZ= bovy_coords.lbd_to_XYZ(platelb[kk,0],platelb[kk,1],
                                         dist,degree=True)
             R= ((_REFR0-XYZ[0])**2.+XYZ[1]**2.)**(0.5)
+            newRs.append(R)
             phi= numpy.arcsin(XYZ[1]/R)
             if XYZ[0] < 0.:
                 phi= numpy.pi-phi
             newphi.append(phi)
             z= XYZ[2]+_ZSUN
+            newzs.append(z)
             sigz= thissz*numpy.exp(-(R-_REFR0)/thishsz)
             sigr= thissr*numpy.exp(-(R-_REFR0)/thishsr)
             sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
             #Estimate asymmetric drift
             va= sigr**2./2./_REFV0/vo\
                 *(-.5+R*(1./thishr+2./thishsr))
+            newvas.append(va)
             if True and thisoutlier:
                 #Sample from outlier gaussian
                 newvz.append(numpy.random.normal()*_SZHALO)
@@ -410,8 +416,10 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         bovy_plot.bovy_plot(numpy.array(newvt),
                             numpy.exp(numpy.array(newlogratio-maxnewlogratio)),
                             'b,',
-                            xrange=[-300.,500.],
+                           xrange=[-300.,500.],
+#                            xrange=[0.,20.],
 #                            xrange=[0.,3.],
+#                            xrange=[6.,9.],
                             yrange=[0.,1.])
         bovy_plot.bovy_end_print('/home/bovy/public_html/segue-local/test.png')
     #Now collect the samples
