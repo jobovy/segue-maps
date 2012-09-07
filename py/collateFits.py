@@ -119,7 +119,7 @@ def collateFits(options,args):
                 theseerrors= []
                 xs= numpy.array([s[0] for s in thisdenssamples])
                 theseerrors.append(0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
-                out[nout]['hz_err']= theseerrors[0]
+                out[nout]['hz_err']= theseerrors[0]*1000.
                 if options.densmodel.lower() == 'dblexp':
                     xs= numpy.array([-s[1] for s in thisdenssamples])
                 else:
