@@ -437,15 +437,15 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     #Load into data
     oldgr= thisdata.dered_g-thisdata.dered_r
     oldr= thisdata.dered_r
-    binned.data[thisdataIndx].dered_r= newrs
-    binned.data[thisdataIndx].dered_g= oldgr+binned.data[thisdataIndx].dered_r
+    binned.data.dered_r[thisdataIndx]= newrs
+    binned.data.dered_g[thisdataIndx]= oldgr+binned.data[thisdataIndx].dered_r
     #Also change plate and l and b
     binned.data[thisdataIndx].plate= newplate
     radec= bovy_coords.lb_to_radec(newls,newbs,degree=True)
-    binned.data[thisdataIndx].ra= radec[:,0]
-    binned.data[thisdataIndx].dec= radec[:,1]
-    binned.data[thisdataIndx].l= newls
-    binned.data[thisdataIndx].b= newbs
+    binned.data.ra[thisdataIndx]= radec[:,0]
+    binned.data.dec[thisdataIndx]= radec[:,1]
+    binned.data.l[thisdataIndx]= newls
+    binned.data.b[thisdataIndx]= newbs
     vx, vy, vz= bovy_coords.galcencyl_to_vxvyvz(newvr,newvt,newvz,newphi,
                                                 vsun=[-11.1,245.,7.25])
     vrpmllpmbb= bovy_coords.vxvyvz_to_vrpmllpmbb(vx,vy,vz,newls,newbs,newds,
@@ -454,9 +454,9 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                                  vrpmllpmbb[:,2],
                                                  newls,newbs,
                                                  degree=True)
-    binned.data[thisdataIndx].vr= vrpmllpmbb[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data[thisdataIndx].vr_err
-    binned.data[thisdataIndx].pmra= pmrapmdec[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data[thisdataIndx].pmra_err
-    binned.data[thisdataIndx].pmdec= pmrapmdec[:,1]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data[thisdataIndx].pmdec_err
+    binned.data.vr[thisdataIndx]= vrpmllpmbb[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.vr_err[thisdataIndx]
+    binned.data.pmra[thisdataIndx]= pmrapmdec[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.pmra_err[thisdataIndx]
+    binned.data.pmdec[thisdataIndx]= pmrapmdec[:,1]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.pmdec_err[thisdataIndx]
     return binned
 
 if __name__ == '__main__':
