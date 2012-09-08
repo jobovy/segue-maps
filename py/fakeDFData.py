@@ -103,10 +103,10 @@ def generate_fakeDFData(options,args):
                                      degree=True)
     if options.sample.lower() == 'g':
         grmin, grmax= 0.48, 0.55
-        rmin,rmax= 14.5, 20.2
+        rmin,rmax= 14.50001, 20.199999 #so we don't go out of the range
     if options.sample.lower() == 'k':
         grmin, grmax= 0.55, 0.75
-        rmin,rmax= 14.5, 19.
+        rmin,rmax= 14.50001, 18.999999
     colorrange=[grmin,grmax]
     mapfehs= monoAbundanceMW.fehs()
     mapafes= monoAbundanceMW.afes()
