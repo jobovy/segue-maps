@@ -1,6 +1,7 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
+#   - calculate the normalization integral using fakeDFData?
 #   - speed up qdf by vector operations?
 #   - loo FeH aFe
 #   - los + loo los
@@ -43,6 +44,9 @@ from compareDataModel import _predict_rdist_plate
 from pixelFitDens import pixelAfeFeh
 _REFR0= 8. #kpc
 _REFV0= 220. #km/s
+_VRSUN=-11.1 #km/s
+_VTSUN= 245. #km/s
+_VZSUN= 7.25 #km/s
 _NGR= 11
 _NFEH=11
 _DEGTORAD= math.pi/180.
@@ -148,8 +152,8 @@ def pixelFitDF(options,args):
         for cc in range(options.ninit):
             print "Iteration %i  / %i ..." % (cc+1,options.ninit)
             print "Optimizing individual DFs with fixed potential ..."
-            params= indiv_optimize_df(params,fehs,afes,binned,options,
-                                      normintstuff)
+            #params= indiv_optimize_df(params,fehs,afes,binned,options,
+            #                          normintstuff)
             print "Optimizing potential with individual DFs fixed ..."
             params= indiv_optimize_potential(params,fehs,afes,binned,options,
                                              normintstuff)
@@ -335,16 +339,33 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
     #Calculate (R,z)s
-    XYZ= bovy_coords.lbd_to_XYZ(numpy.array([m[3] for m in mock]),
-    numpy.array([m[4] for m in mock]),
-                                numpy.array([m[6] for m in mock]),
+    l= numpy.array([m[3] for m in mock])
+    b= numpy .array([m[4] for m in mock])
+    d= numpy.array([m[6] for m in mock])
+    XYZ= bovy_coords.lbd_to_XYZ(l,b,d,
                                 degree=True)
     R= ((ro*_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
     XYZ[:,2]+= _ZSUN
     z= XYZ[:,2]/ro/_REFR0
+    vlos= numpy.array([m[8] for m in mock])
+    pmll= numpy.array([m[9] for m in mock])
+    pmbb= numpy.array([m[10] for m in mock])
+    vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(vlos,pmll,pmbb,l,b,d,degree=False)
+    vsun = numpy.array(list(get_vsun(params,options)))*_REFV0
+    vR,vT,vz= bovy_coords.vxvyvz_to_galcencyl(vxvyvz[:,0],
+                                              vxvyvz[:,1],
+                                              vxvyvz[:,2],
+                                              XYZ[:,0],XYZ[:,1],XYZ[:,2],
+                                              vsun=vsun,
+                                              galcen=False)
+    vR/= _REFV0*vo
+    vT/= _REFV0*vo
+    vz/= _REFV0*vo
+    """
     vR= numpy.array([m[8] for m in mock])/vo/_REFV0
     vT= numpy.array([m[9] for m in mock])/vo/_REFV0
     vz= numpy.array([m[10] for m in mock])/vo/_REFV0
+    """
     thislogdf= numpy.zeros((len(R),2))
     thislogfiddf= numpy.array([m[11] for m in mock])
     for jj in range(options.nmc):
@@ -361,7 +382,7 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     #Sum data and outlier df
     thislogdf= mylogsumexp(thislogdf,axis=1)
     out= numpy.exp(-thislogfiddf+thislogdf)
-    return numpy.mean(out)
+    return numpy.mean(out)#*3.*vo*+3.*ro
 
 def calc_normint_mcv(qdf,indx,normintstuff,params):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
@@ -639,6 +660,8 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         R= ((_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
         XYZ[:,2]+= _ZSUN
         z= XYZ[:,2]
+        phi= numpy.arcsin(XYZ[:,1]/R)
+        phi[(XYZ[:,0] < 0.)]= numpy.pi-phi[(XYZ[:,0] < 0.)]
         for jj in range(options.nmc):
             sigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
                                          mapafes[abindx],
@@ -658,6 +681,13 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
                 vz= numpy.random.normal()*sigz
                 vr= numpy.random.normal()*sigr
                 vphi= numpy.random.normal()*sigphi+_REFV0-va
+            #Calculate observables
+            vx,vy,vz= bovy_coords.galcencyl_to_vxvyvz(vr,vphi,vz,phi[jj],
+                                                      vsun=[_VRSUN,_VTSUN,
+                                                            _VZSUN])
+            vrpmllpmbb= bovy_coords.vxvyvz_to_vrpmllpmbb(vx,vy,vz,l[jj],b[jj],
+                                                         d[jj],
+                                                         XYZ=False,degree=True)
             #Append to out
             if options.mcout:
                 fidlogeval= numpy.log(fidDens(R[jj],z[jj],thishr,thishz,
@@ -672,10 +702,12 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
                     -numpy.log(_SPHIHALO)\
                     -numpy.log(_SZHALO)\
                     -0.5*(vr**2./_SRHALO**2.+vz**2./_SZHALO**2.+vphi**2./_SPHIHALO**2.)
-                thisout[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
+#                thisout[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
+                thisout[jj].extend([vrpmllpmbb[0],vrpmllpmbb[1],vrpmllpmbb[2],#next is evaluation of f at mock
                                     logsumexp([fidlogeval,outlogeval])])
             else:
-                thisout[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
+#                thisout[jj].extend([vr,vphi,vz,#next is evaluation of f at mock
+                thisout[jj].extend([vrpmllpmbb[0],vrpmllpmbb[1],vrpmllpmbb[2],#next is evaluation of f at mock
                                     numpy.log(fidDens(R[jj],z[jj],thishr,thishz,None))\
                                         -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(vr**2./sigr**2.+vz**2./sigz**2.+(vphi-_REFV0+va)**2./sigphi**2.)])
         #Load into thisnormintstuff
@@ -1142,7 +1174,7 @@ def get_vsun(p,options):
     if options.fitvsun:
         return (p[startindx],p[startindx+1],p[startindx+2])
     else:
-        return (-11.1/_REFV0,245./_REFV0,7.25/_REFV0) #BOVY:ADJUST?
+        return (_VRSUN/_REFV0,_VTSUN/_REFV0,_VZSUN/_REFV0) #BOVY:ADJUST?
 
 ##FIDUCIAL DENSITIES FOR MC NORMALIZATION INTEGRATION
 def fidDens(R,z,hr,hz,dummy):
