@@ -260,7 +260,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     #Sum data and outlier df, for all MC samples
     data_lndf= mylogsumexp(data_lndf,axis=1)
     #Normalize
-    normalization= calc_normint(qdf,indx,normintstuff,params,npops)
+    normalization= calc_normint(qdf,indx,normintstuff,params,npops,options)
     print params, numpy.sum(data_lndf)-len(R)*numpy.log(options.nmcerr),len(R)*numpy.log(normalization), numpy.sum(data_lndf)-len(R)*(numpy.log(normalization)+numpy.log(options.nmcerr))
     return numpy.sum(data_lndf)\
         -len(R)*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
@@ -319,14 +319,14 @@ def logprior_pot(params,options,npops):
     return out
 
 ##SETUP AND CALCULATE THE NORMALIZATION INTEGRAL
-def calc_normint(qdf,indx,normintstuff,params,npops):
+def calc_normint(qdf,indx,normintstuff,params,npops,options):
     """Calculate the normalization integral"""
     if options.mcall:
-        return calc_normint_mcall(qdf,indx,normintstuff,params,npops)
+        return calc_normint_mcall(qdf,indx,normintstuff,params,npops,options)
     else:
-        return calc_normint_mcv(qdf,indx,normintstuff,params)
+        return calc_normint_mcv(qdf,indx,normintstuff,params,options)
 
-def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
+def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options):
     """calculate the normalization integral by monte carlo integrating over everything"""
     thisnormintstuff= normintstuff[indx]
     mock= unpack_normintstuff(thisnormintstuff,options)
@@ -385,7 +385,7 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     #print numpy.log(numpy.mean(out)), numpy.std(out)/numpy.mean(out)/numpy.sqrt(options.nmc)
     return numpy.mean(out)
 
-def calc_normint_mcv(qdf,indx,normintstuff,params):
+def calc_normint_mcv(qdf,indx,normintstuff,params,options):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
     print "BOVY: WARNING MCV NOT EDITED FOR OUTLIER MODEL YET"
     thisnormintstuff= normintstuff[indx]
@@ -1343,6 +1343,11 @@ def get_options():
     #seed
     parser.add_option("--seed",dest='seed',default=1,type='int',
                       help="seed for random number generator")
+    #Other options (not necessarily used in this file
+    parser.add_option("-t","--type",dest='type',default=None,
+                      help="Type of thing to do")
+    parser.add_option("-o",dest='outfilename',default=None,
+                      help="Name for an output file")
     return parser
   
 if __name__ == '__main__':
