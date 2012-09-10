@@ -25,7 +25,8 @@ def predictBellHalo():
 
 def predictDiskMass(modelfunc,params,sf,cdist,fehdist,fehmin,fehmax,feh,
                     data,grmin,grmax,agemin,agemax,normalize='Z',
-                    imfmodel='lognormalChabrier2001'):
+                    imfmodel='lognormalChabrier2001',
+                    justnumber=False):
     n,d,x= compareDataModel.comparernumberPlate(modelfunc,params,sf,
                                                 cdist,fehdist,data,
                                                 'all',
@@ -44,6 +45,8 @@ def predictDiskMass(modelfunc,params,sf,cdist,fehdist,fehmin,fehmax,feh,
         norm= 1.
     pred= numpy.sum(n)*7.*(numpy.pi/180.)**2.*(20.2-14.5)/1000#\
 #          *0.2*numpy.log(10.) #these are some factors left out of compareDataModel
+    if justnumber:
+        return len(data)*norm/pred
     #print pred, len(data), 1.-params[2]
     frac= fracMassGRRange(grmin,grmax,agemin,agemax,feh,imfmodel)
     avgmass= averageMassGRRange(grmin,grmax,agemin,agemax,feh)
