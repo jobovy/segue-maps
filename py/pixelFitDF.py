@@ -232,7 +232,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
         hsr= dfparams[3]/ro
         hsz= dfparams[4]/ro
         #Setup
-        qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA)
+        qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned)
     data_lndf= numpy.zeros((len(R),2*options.nmcerr))
