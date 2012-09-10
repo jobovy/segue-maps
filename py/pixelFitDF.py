@@ -382,7 +382,8 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops):
     #Sum data and outlier df
     thislogdf= mylogsumexp(thislogdf,axis=1)
     out= numpy.exp(-thislogfiddf+thislogdf)
-    return numpy.mean(out)#*3.*vo*+3.*ro
+    #print numpy.log(numpy.mean(out)), numpy.std(out)/numpy.mean(out)/numpy.sqrt(options.nmc)
+    return numpy.mean(out)
 
 def calc_normint_mcv(qdf,indx,normintstuff,params):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
