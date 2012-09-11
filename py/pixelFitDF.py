@@ -237,12 +237,13 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned)
-    data_lndf= numpy.zeros((len(R),2*options.nmcerr))
+    ndata= R.shape[0]
+    data_lndf= numpy.zeros((ndata,2*options.nmcerr))
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
     print "BOVY: MAKE SURE THAT qdf IS SOMEWHAT PROPERLY NORMALIZED"
-    for ii in range(len(R)):
+    for ii in range(ndata):
         for kk in range(options.nmcerr):
             #print R[ii], vR[ii], vT[ii], z[ii], vz[ii]
             try:
@@ -261,9 +262,9 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     data_lndf= mylogsumexp(data_lndf,axis=1)
     #Normalize
     normalization= calc_normint(qdf,indx,normintstuff,params,npops,options)
-    print params, numpy.sum(data_lndf)-len(R)*numpy.log(options.nmcerr),len(R)*numpy.log(normalization), numpy.sum(data_lndf)-len(R)*(numpy.log(normalization)+numpy.log(options.nmcerr))
+    print params, numpy.sum(data_lndf)-ndata*numpy.log(options.nmcerr),ndata*numpy.log(normalization), numpy.log(normalization), numpy.sum(data_lndf)-ndata*(numpy.log(normalization)+numpy.log(options.nmcerr))
     return numpy.sum(data_lndf)\
-        -len(R)*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
+        -ndata*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
 
 def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
                                indx,_bigparams,normintstuff):
