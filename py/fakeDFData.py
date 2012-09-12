@@ -171,7 +171,9 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                colordist,
                fehdist,feh,sf,
                mapfehs,mapafes,
-               ro=None,vo=None):
+               ro=None,vo=None,
+               ndata=None,#If set, supersedes binned, only to be used w/ returnlist=True
+               returnlist=False): #last one useful for pixelFitDF normintstuff
     if ro is None:
         ro= get_ro(params,options)
     if vo is None:
@@ -289,9 +291,10 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     newfideval= []
     newqdfeval= []
     newpropeval= []
-    thisdata= binned(fehs[ii],afes[ii])
-    thisdataIndx= binned.callIndx(fehs[ii],afes[ii])
-    ndata= len(thisdata)
+    if ndata is None:
+        thisdata= binned(fehs[ii],afes[ii])
+        thisdataIndx= binned.callIndx(fehs[ii],afes[ii])
+        ndata= len(thisdata)
     ntot= 0
     nsamples= 0
     itt= 0
@@ -434,6 +437,31 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     newvz= numpy.array(newvz)[accept][0:ndata]
     newphi= numpy.array(newphi)[accept][0:ndata]
     newds= numpy.array(newds)[accept][0:ndata]
+    newqdfeval= numpy.array(newqdfeval)[accept][0:ndata]
+    vx, vy, vz= bovy_coords.galcencyl_to_vxvyvz(newvr,newvt,newvz,newphi,
+                                                vsun=[-11.1,245.,7.25])
+    vrpmllpmbb= bovy_coords.vxvyvz_to_vrpmllpmbb(vx,vy,vz,newls,newbs,newds,
+                                                 XYZ=False,degree=True)
+    pmrapmdec= bovy_coords.pmllpmbb_to_pmrapmdec(vrpmllpmbb[:,1],
+                                                 vrpmllpmbb[:,2],
+                                                 newls,newbs,
+                                                 degree=True)
+    if returnlist:
+        out= []
+        for ii in range(ndata):
+            out.append([newrs[ii],
+                        newgr[ii],
+                        newfeh[ii],
+                        newls[ii],
+                        newbs[ii],
+                        newplate[ii],
+                        newds[ii],
+                        False, #outlier?
+                        vrpmllpmbb[ii,0],
+                        vrpmllpmbb[ii,1],
+                        vrpmllpmbb[ii,2],
+                        newqdfeval[ii]])
+        return out
     #Load into data
     oldgr= thisdata.dered_g-thisdata.dered_r
     oldr= thisdata.dered_r
@@ -446,14 +474,6 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     binned.data.dec[thisdataIndx]= radec[:,1]
     binned.data.l[thisdataIndx]= newls
     binned.data.b[thisdataIndx]= newbs
-    vx, vy, vz= bovy_coords.galcencyl_to_vxvyvz(newvr,newvt,newvz,newphi,
-                                                vsun=[-11.1,245.,7.25])
-    vrpmllpmbb= bovy_coords.vxvyvz_to_vrpmllpmbb(vx,vy,vz,newls,newbs,newds,
-                                                 XYZ=False,degree=True)
-    pmrapmdec= bovy_coords.pmllpmbb_to_pmrapmdec(vrpmllpmbb[:,1],
-                                                 vrpmllpmbb[:,2],
-                                                 newls,newbs,
-                                                 degree=True)
     binned.data.vr[thisdataIndx]= vrpmllpmbb[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.vr_err[thisdataIndx]
     binned.data.pmra[thisdataIndx]= pmrapmdec[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.pmra_err[thisdataIndx]
     binned.data.pmdec[thisdataIndx]= pmrapmdec[:,1]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.pmdec_err[thisdataIndx]

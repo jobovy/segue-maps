@@ -322,7 +322,7 @@ def logprior_pot(params,options,npops):
 ##SETUP AND CALCULATE THE NORMALIZATION INTEGRAL
 def calc_normint(qdf,indx,normintstuff,params,npops,options):
     """Calculate the normalization integral"""
-    if options.mcall:
+    if options.mcall or options.mcwdf: #evaluation is the same for these
         return calc_normint_mcall(qdf,indx,normintstuff,params,npops,options)
     else:
         return calc_normint_mcv(qdf,indx,normintstuff,params,options)
@@ -721,6 +721,44 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
             tmpfile.close()
         else:
             return thisnormintstuff
+    elif options.mcwdf:
+        from fakeDFData import fakeDFData #Needs to be here to avoid recursion
+        #Setup default qdf, pot, and aA
+        normintparams= initialize(options,fehs,afes)
+        normintpot= setup_potential(normintparams,options,len(fehs))
+        normintaA= setup_aA(normintpot,options)
+        normintdfparams= get_dfparams(normintparams,ii,options,log=False)
+        normintvo= get_vo(normintparams,options,len(fehs))
+        normintro= get_ro(normintparams,options)
+        if options.dfmodel.lower() == 'qdf':
+            #Normalize
+            norminthr= normintdfparams[0]/normintro
+            normintsr= normintdfparams[1]/normintvo
+            normintsz= normintdfparams[2]/normintvo
+            norminthsr= normintdfparams[3]/normintro
+            norminthsz= normintdfparams[4]/normintro
+            #Setup
+            normintqdf= quasiisothermaldf(norminthr,normintsr,
+                                          normintsz,norminthsr,
+                                          norminthsz,
+                                          pot=normintpot,aA=normintaA,
+                                          cutcounter=True)
+        
+        thisnormintstuff.mock= fakeDFData(None,normintqdf,
+                                          ii,normintparams,fehs,afes,
+                                          options,rmin,rmax,platelb,
+                                          grmin,grmax,
+                                          fehrange,colordist,
+                                          fehdist,feh,sf,
+                                          mapfehs,mapafes,
+                                          ndata=options.nmc,returnlist=True)
+        if savetopickle:
+            #Save to temporary pickle
+            tmpfile= open(tmpfiles[ii][1],'wb')
+            pickle.dump(thisnormintstuff,tmpfile)
+            tmpfile.close()
+        else:
+            return thisnormintstuff
     else:
         #Integration grid when binning
         grs= numpy.linspace(grmin,grmax,_NGR)
@@ -819,7 +857,7 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
             return thisnormintstuff
 
 def unpack_normintstuff(normintstuff,options):
-    if options.mcall:
+    if options.mcall or options.mcwdf:
         return normintstuff.mock
     else:
         return (normintstuff.sf,
@@ -1315,6 +1353,9 @@ def get_options():
     parser.add_option("--mcall",action="store_true", dest="mcall",
                       default=False,
                       help="If set, calculate the normalization integral by first calculating the normalization of the exponential density given the best-fit and then calculating the difference with Monte Carlo integration")
+    parser.add_option("--mcwdf",action="store_true", dest="mcwdf",
+                      default=False,
+                      help="If set, calculate the normalization integral by first calculating the normalization of a fiducial DF given the best-fit MAP and then calculating the difference with Monte Carlo integration (based on an actual qdf)")
     parser.add_option("--mcout",action="store_true", dest="mcout",
                       default=False,
                       help="If set, add an outlier model to the mock data used for the normalization integral")
