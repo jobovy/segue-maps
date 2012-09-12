@@ -663,7 +663,7 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         XYZ[:,2]+= _ZSUN
         z= XYZ[:,2]
         phi= numpy.arcsin(XYZ[:,1]/R)
-        phi[(XYZ[:,0] < 0.)]= numpy.pi-phi[(XYZ[:,0] < 0.)]
+        phi[(_REFR0-XYZ[:,0] < 0.)]= numpy.pi-phi[(_REFR0-XYZ[:,0] < 0.)]
         for jj in range(options.nmc):
             sigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
                                          mapafes[abindx],

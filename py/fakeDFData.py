@@ -345,7 +345,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             R= ((_REFR0-XYZ[0])**2.+XYZ[1]**2.)**(0.5)
             newRs.append(R)
             phi= numpy.arcsin(XYZ[1]/R)
-            if XYZ[0] < 0.:
+            if (_REFR0-XYZ[0]) < 0.:
                 phi= numpy.pi-phi
             newphi.append(phi)
             z= XYZ[2]+_ZSUN
@@ -446,6 +446,14 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                                  vrpmllpmbb[:,2],
                                                  newls,newbs,
                                                  degree=True)
+    #Dump everything for debugging the coordinate transformation
+    from galpy.util import save_pickles
+    save_pickles('dump.sav',
+                 newds,newls,newbs,newphi,
+                 newvr,newvt,newvz,
+                 vx, vy, vz,
+                 vrpmllpmbb,
+                 pmrapmdec)
     if returnlist:
         out= []
         for ii in range(ndata):
