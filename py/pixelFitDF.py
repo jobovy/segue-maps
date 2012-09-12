@@ -356,7 +356,9 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options):
     vR,vT,vz= bovy_coords.vxvyvz_to_galcencyl(vxvyvz[:,0],
                                               vxvyvz[:,1],
                                               vxvyvz[:,2],
-                                              XYZ[:,0],XYZ[:,1],XYZ[:,2],
+                                              ro*_REFR0-XYZ[:,0],
+                                              XYZ[:,1],
+                                              XYZ[:,2]+_ZSUN,
                                               vsun=vsun,
                                               galcen=False)
     vR/= _REFV0*vo
