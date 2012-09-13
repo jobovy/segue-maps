@@ -275,7 +275,7 @@ def testDFNormvo(params,fehs,afes,binned,options,normintstuff):
     dfparams= get_dfparams(params,indx,options,log=False)
     nalt= 6
     vos= numpy.linspace(0.5,1.5,nalt)
-    ns= [1000,10000,100000]#,1000000]
+    ns= [1000,10000,30000,60000,100000]#,1000000]
     #First calculate default
     if options.dfmodel.lower() == 'qdf':
         #Normalize
