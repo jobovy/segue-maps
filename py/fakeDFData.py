@@ -180,6 +180,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         vo= get_vo(params,options,len(fehs))
     thishr= qdf._hr*_REFR0*ro
     #thishz= qdf.estimate_hz(1.,zmin=0.1,zmax=0.3,nz=11)*_REFR0*ro
+    print "BOVY: replace thishz with actual calculation ..."
     thishz= 0.260657766654
     thissr= qdf._sr*_REFV0*vo
     thissz= qdf._sz*_REFV0*vo
@@ -221,9 +222,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     if options.mcout:
         fidoutfrac= get_outfrac(params,ii,options)
         rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
-    elif True:
-        fidoutfrac= 0.25 #.0000000000000000000000001 #seems good
-        rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
+    lagoutfrac= 0.2 #.0000000000000000000000001 #seems good
     for jj in range(len(sf.plates)):
         p= sf.plates[jj]
         sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,jj+1,len(sf.plates)))
@@ -238,20 +237,17 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                                fehdist,sf,sf.plates[jj],
                                                dontmarginalizecolorfeh=True,
                                                ngr=ngr,nfeh=nfeh)
-        if True:
-            if options.mcout:
-                rdistsout[jj,:,:,:]= _predict_rdist_plate(rs,
-                                                          lambda x,y,z: outDens(x,y,z),
-                                                          None,rmin,rmax,
-                                                          platelb[jj,0],platelb[jj,1],
-                                                          grmin,grmax,
-                                                          fehrange[0],fehrange[1],feh,
-                                                          colordist,
-                                                          fehdist,sf,sf.plates[jj],
-                                                          dontmarginalizecolorfeh=True,
-                                                          ngr=ngr,nfeh=nfeh)
-            else:
-                rdistsout[jj,:,:,:]= rdists[jj,:,:,:]
+        if options.mcout:
+            rdistsout[jj,:,:,:]= _predict_rdist_plate(rs,
+                                                      lambda x,y,z: outDens(x,y,z),
+                                                      None,rmin,rmax,
+                                                      platelb[jj,0],platelb[jj,1],
+                                                      grmin,grmax,
+                                                      fehrange[0],fehrange[1],feh,
+                                                      colordist,
+                                                      fehdist,sf,sf.plates[jj],
+                                                      dontmarginalizecolorfeh=True,
+                                                      ngr=ngr,nfeh=nfeh)
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     numbers= numpy.sum(rdists,axis=3)
@@ -266,7 +262,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         for jj in range(ngr):
             for kk in range(nfeh):
                 rdists[ll,:,jj,kk]/= rdists[ll,-1,jj,kk]
-    if True:
+    if options.mcout:
         numbersout= numpy.sum(rdistsout,axis=3)
         numbersout= numpy.sum(numbersout,axis=2)
         numbersout= numpy.sum(numbersout,axis=1)
@@ -299,7 +295,6 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     newvt= []
     newvz= []
     newlogratio= []
-    newouteval= []
     newfideval= []
     newqdfeval= []
     newpropeval= []
@@ -374,8 +369,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                 newvz.append(numpy.random.normal()*_SZHALOFAKE*2.)
                 newvr.append(numpy.random.normal()*_SRHALOFAKE*2.)
                 newvt.append(numpy.random.normal()*_SPHIHALOFAKE*2.)
-            elif True and thisoutlier:
-                #Sample from outlier gaussian
+            elif numpy.random.uniform() < lagoutfrac:
+                #Sample from lagging gaussian
                 newvz.append(numpy.random.normal()*_SZHALOFAKE)
                 newvr.append(numpy.random.normal()*_SRHALOFAKE)
                 newvt.append(numpy.random.normal()*_SPHIHALOFAKE+_REFV0*vo/2.)
@@ -385,8 +380,16 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                 newvr.append(numpy.random.normal()*sigr)
                 newvt.append(numpy.random.normal()*sigphi+_REFV0*vo-va)
             newlogratio= list(newlogratio)
-            fidlogeval= numpy.log(fidDens(R,z,thishr,thishz,None))\
+            fidlogeval= numpy.log(1.-lagoutfrac)\
+                +numpy.log(fidDens(R,z,thishr,thishz,None))\
                 -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0*vo+va)**2./sigphi**2.)
+            lagoutlogeval= numpy.log(lagoutfrac)\
+                +numpy.log(fidDens(R,z,thishr,thishz,None))\
+                -numpy.log(_SRHALOFAKE)\
+                -numpy.log(_SPHIHALOFAKE)\
+                -numpy.log(_SZHALOFAKE)\
+                -0.5*(newvr[-1]**2./_SRHALOFAKE**2.+newvz[-1]**2./_SZHALOFAKE**2.+(newvt[-1]-_REFV0*vo/2)**2./_SPHIHALOFAKE**2.)
+            newfideval.append(fidlogeval)
             if options.mcout:
                 fidoutlogeval= numpy.log(fidoutfrac)\
                     +numpy.log(outDens(R,z,None))\
@@ -394,16 +397,10 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                     -numpy.log(_SPHIHALOFAKE*2.)\
                     -numpy.log(_SZHALOFAKE*2.)\
                     -0.5*(newvr[-1]**2./_SRHALOFAKE**2./4.+newvz[-1]**2./_SZHALOFAKE**2./4.+newvt[-1]**2./_SPHIHALOFAKE**2./4.)
-            if True:
-                fidoutlogeval= numpy.log(fidoutfrac)\
-                    +numpy.log(fidDens(R,z,thishr,thishz,None))\
-                    -numpy.log(_SRHALOFAKE)\
-                    -numpy.log(_SPHIHALOFAKE)\
-                    -numpy.log(_SZHALOFAKE)\
-                    -0.5*(newvr[-1]**2./_SRHALOFAKE**2.+newvz[-1]**2./_SZHALOFAKE**2.+(newvt[-1]-_REFV0*vo/2)**2./_SPHIHALOFAKE**2.)
-            newouteval.append(fidoutlogeval)
-            newfideval.append(fidlogeval)
-            newpropeval.append(logsumexp([fidoutlogeval,fidlogeval]))
+                newpropeval.append(logsumexp([fidoutlogeval,fidlogeval,
+                                              lagoutlogeval]))
+            else:
+                newpropeval.append(logsumexp([lagoutlogeval,fidlogeval]))
             qdflogeval= qdf(R/ro/_REFR0,newvr[-1]/vo/_REFV0,newvt[-1]/vo/_REFV0,z/ro/_REFR0,newvz[-1]/vo/_REFV0,log=True)
             if options.mcout:
                 outlogeval= logoutfrac+loghalodens\
@@ -413,7 +410,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             else:
                 newqdfeval.append(qdflogeval)
             newlogratio.append(qdflogeval
-                               -logsumexp([fidlogeval,fidoutlogeval]))
+                               -newpropeval[-1])#logsumexp([fidlogeval,fidoutlogeval]))
         newlogratio= numpy.array(newlogratio)
         thisnewlogratio= copy.copy(newlogratio)
         maxnewlogratio= numpy.amax(thisnewlogratio)
@@ -434,7 +431,6 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             numpy.array(newds)[indx], \
             numpy.array(newls)[indx], \
             numpy.array(newbs)[indx], \
-            numpy.array(newouteval)[indx], \
             numpy.array(newfideval)[indx]
         bovy_plot.bovy_print()
         bovy_plot.bovy_plot(numpy.array(newvt),
