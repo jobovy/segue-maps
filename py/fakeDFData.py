@@ -9,7 +9,8 @@ import fitsio
 from galpy.util import bovy_coords, bovy_plot
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import monoAbundanceMW
-from segueSelect import _ERASESTR, read_gdwarfs, read_kdwarfs, segueSelect
+from segueSelect import _ERASESTR, read_gdwarfs, read_kdwarfs, segueSelect, \
+    ivezic_dist_gr
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import get_options,fidDens, get_dfparams, get_ro, get_vo, \
     _REFR0, _REFV0, setup_potential, setup_aA, initialize, \
@@ -254,7 +255,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     numbers= numpy.sum(numbers,axis=2)
     numbers= numpy.sum(numbers,axis=1)
     numbers= numpy.cumsum(numbers)
-    if True:
+    if options.mcout:
         totfid= numbers[-1]
     numbers/= numbers[-1]
     rdists= numpy.cumsum(rdists,axis=1)
@@ -330,7 +331,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             #plate==kk, feh=ff,color=cc; now sample from the rdist of this plate
             ran= numpy.random.uniform()
             jj= 0
-            if True and numpy.random.uniform() < totout: #outlier
+            if options.mcout and numpy.random.uniform() < totout: #outlier
                 while rdistsout[kk,jj,cc,ff] < ran: jj+= 1
                 thisoutlier= True
             else:
@@ -497,7 +498,15 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     #Load into data
     oldgr= thisdata.dered_g-thisdata.dered_r
     oldr= thisdata.dered_r
-    binned.data.dered_r[thisdataIndx]= newrs
+    binned.data.dered_r[thisdataIndx]= newrs\
+        +numpy.random.normal(size=numpy.sum(thisdataIndx))\
+        *ivezic_dist_gr(oldgr,0., #g-r is all that counts
+                        binned.data.feh[thisdataIndx],
+                        dg=binned.data[thisdataIndx].g_err,
+                        dr=binned.data[thisdataIndx].r_err,
+                        dfeh=binned.data[thisdataIndx].feh_err,
+                        return_error=True,
+                        _returndmr=True)
     binned.data.dered_g[thisdataIndx]= oldgr+binned.data[thisdataIndx].dered_r
     #Also change plate and l and b
     binned.data[thisdataIndx].plate= newplate

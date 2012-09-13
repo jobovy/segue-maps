@@ -1203,7 +1203,7 @@ def _linear_func(x,deriv,xo,yo):
     return deriv*(x-xo)+yo
 
 def ivezic_dist_gr(g,r,feh,dg=0.,dr=0.,dfeh=0.,return_error=False,
-                   dmr=0.1):
+                   dmr=0.1,_returndmr=False):
     """
     NAME:
        ivezic_dist_gr
@@ -1214,8 +1214,10 @@ def ivezic_dist_gr(g,r,feh,dg=0.,dr=0.,dfeh=0.,return_error=False,
        return_error= if True, return errors
        dg, dr, dfeh= uncertainties
        dmr= intrinsic cmd scatter
+       _returndmr= if True, return total mr scatter
     OUTPUT:
        (dist,disterr) arrays in kpc
+       or dmr if _returndmr
     HISTORY:
        2011-07-11 - Written - Bovy@MPIA (NYU)
     """
@@ -1230,6 +1232,7 @@ def ivezic_dist_gr(g,r,feh,dg=0.,dr=0.,dfeh=0.,return_error=False,
     dmr= numpy.sqrt(_mr_gi(gi,feh,dgi=True)**2.*dgi**2.
                     +_mr_gi(gi,feh,dfeh=True)**2.*dfeh**2.+dmr**2.)
     derrs= 0.2*numpy.log(10.)*numpy.sqrt(dmr**2.+dr**2.)*ds
+    if _returndmr: return numpy.sqrt(dmr**2.+dr**2.)
     return (ds,derrs)
 
 def juric_dist_gr(g,r,dg=0.,dr=0.,return_error=False,
