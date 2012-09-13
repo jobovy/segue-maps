@@ -1,11 +1,11 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
+#   - make 20% V0/2 sampling default in fakeDFData, w/ optional halo outliers
 #   - calculate the normalization integral using fakeDFData?
 #   - speed up qdf by vector operations?
 #   - loo FeH aFe
 #   - los + loo los
-#   - Generate fake data
 #   - Investigate how precise we get normint
 #   - add sigmar to monoAbundanceMW
 #   - outlier model sigma (sr=150,sphi=100,sz=100)? MAKE SURE QDF IS NORMALIZED-ish
@@ -225,7 +225,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
     vo= get_vo(params,options,npops)
     ro= get_ro(params,options)
     logoutfrac= numpy.log(get_outfrac(params,indx,options))
-    loghalodens= numpy.log(ro/12.)
+    loghalodens= numpy.log(ro*outDens(1.,0.,None))
     if options.dfmodel.lower() == 'qdf':
         #Normalize
         hr= dfparams[0]/ro

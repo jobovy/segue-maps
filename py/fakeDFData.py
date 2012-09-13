@@ -13,12 +13,12 @@ from segueSelect import _ERASESTR, read_gdwarfs, read_kdwarfs, segueSelect
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import get_options,fidDens, get_dfparams, get_ro, get_vo, \
     _REFR0, _REFV0, setup_potential, setup_aA, initialize, \
-    outDens
+    outDens, _SRHALO, _SZHALO, _SPHIHALO, get_outfrac
 from fitDensz import _ZSUN, DistSpline, _ivezic_dist
 from compareDataModel import _predict_rdist_plate
-_SRHALO=100. #not the same as in pixelFitDF
-_SPHIHALO=100.
-_SZHALO=100.
+_SRHALOFAKE=100. #not the same as in pixelFitDF
+_SPHIHALOFAKE=100.
+_SZHALOFAKE=100.
 _NMIN= 1000
 def generate_fakeDFData(options,args):
     #Check whether the savefile already exists
@@ -134,7 +134,7 @@ def generate_fakeDFData(options,args):
             sz= dfparams[2]/vo
             hsr= dfparams[3]/ro
             hsz= dfparams[4]/ro
-        qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA)
+        qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
         #Some more selection stuff
         data= binned(fehs[ii],afes[ii])
         #feh and color
@@ -212,7 +212,16 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     colordists/= colordists[-1]
     rs= numpy.linspace(rmin,rmax,nrs)
     rdists= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
-    if True:
+    #outlier model that we want to sample (not the one to aid in the sampling)
+    srhalo= _SRHALO/vo/_REFV0
+    sphihalo= _SPHIHALO/vo/_REFV0
+    szhalo= _SZHALO/vo/_REFV0
+    logoutfrac= numpy.log(get_outfrac(params,ii,options))
+    loghalodens= numpy.log(ro*outDens(1.,0.,None))
+    if options.mcout:
+        fidoutfrac= get_outfrac(params,ii,options)
+        rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
+    elif True:
         fidoutfrac= 0.25 #.0000000000000000000000001 #seems good
         rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
     for jj in range(len(sf.plates)):
@@ -230,16 +239,19 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                                dontmarginalizecolorfeh=True,
                                                ngr=ngr,nfeh=nfeh)
         if True:
-            rdistsout[jj,:,:,:]= _predict_rdist_plate(rs,
-                                                      lambda x,y,z: fidDens(x,y,thishr,thishz,z),
-                                                      None,rmin,rmax,
-                                                      platelb[jj,0],platelb[jj,1],
-                                                      grmin,grmax,
-                                                      fehrange[0],fehrange[1],feh,
-                                                      colordist,
-                                                      fehdist,sf,sf.plates[jj],
-                                                      dontmarginalizecolorfeh=True,
-                                                      ngr=ngr,nfeh=nfeh)
+            if options.mcout:
+                rdistsout[jj,:,:,:]= _predict_rdist_plate(rs,
+                                                          lambda x,y,z: outDens(x,y,z),
+                                                          None,rmin,rmax,
+                                                          platelb[jj,0],platelb[jj,1],
+                                                          grmin,grmax,
+                                                          fehrange[0],fehrange[1],feh,
+                                                          colordist,
+                                                          fehdist,sf,sf.plates[jj],
+                                                          dontmarginalizecolorfeh=True,
+                                                          ngr=ngr,nfeh=nfeh)
+            else:
+                rdistsout[jj,:,:,:]= rdists[jj,:,:,:]
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     numbers= numpy.sum(rdists,axis=3)
@@ -357,35 +369,51 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             va= sigr**2./2./_REFV0/vo\
                 *(-.5+R*(1./thishr+2./thishsr))
             newvas.append(va)
-            if True and thisoutlier:
+            if options.mcout and thisoutlier:
                 #Sample from outlier gaussian
-                newvz.append(numpy.random.normal()*_SZHALO)
-                newvr.append(numpy.random.normal()*_SRHALO)
-                newvt.append(numpy.random.normal()*_SPHIHALO+_REFV0*vo/2.)
+                newvz.append(numpy.random.normal()*_SZHALOFAKE*2.)
+                newvr.append(numpy.random.normal()*_SRHALOFAKE*2.)
+                newvt.append(numpy.random.normal()*_SPHIHALOFAKE*2.)
+            elif True and thisoutlier:
+                #Sample from outlier gaussian
+                newvz.append(numpy.random.normal()*_SZHALOFAKE)
+                newvr.append(numpy.random.normal()*_SRHALOFAKE)
+                newvt.append(numpy.random.normal()*_SPHIHALOFAKE+_REFV0*vo/2.)
             else:
                 #Sample from disk gaussian
                 newvz.append(numpy.random.normal()*sigz)
                 newvr.append(numpy.random.normal()*sigr)
                 newvt.append(numpy.random.normal()*sigphi+_REFV0*vo-va)
             newlogratio= list(newlogratio)
+            fidlogeval= numpy.log(fidDens(R,z,thishr,thishz,None))\
+                -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0*vo+va)**2./sigphi**2.)
+            if options.mcout:
+                fidoutlogeval= numpy.log(fidoutfrac)\
+                    +numpy.log(outDens(R,z,None))\
+                    -numpy.log(_SRHALOFAKE*2.)\
+                    -numpy.log(_SPHIHALOFAKE*2.)\
+                    -numpy.log(_SZHALOFAKE*2.)\
+                    -0.5*(newvr[-1]**2./_SRHALOFAKE**2./4.+newvz[-1]**2./_SZHALOFAKE**2./4.+newvt[-1]**2./_SPHIHALOFAKE**2./4.)
             if True:
-                fidlogeval= numpy.log(fidDens(R,z,thishr,thishz,None))\
-                    -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0*vo+va)**2./sigphi**2.)
-                outlogeval= numpy.log(fidoutfrac)\
+                fidoutlogeval= numpy.log(fidoutfrac)\
                     +numpy.log(fidDens(R,z,thishr,thishz,None))\
-                    -numpy.log(_SRHALO)\
-                    -numpy.log(_SPHIHALO)\
-                    -numpy.log(_SZHALO)\
-                    -0.5*(newvr[-1]**2./_SRHALO**2.+newvz[-1]**2./_SZHALO**2.+(newvt[-1]-_REFV0*vo/2)**2./_SPHIHALO**2.)
-                newouteval.append(outlogeval)
-                newfideval.append(fidlogeval)
-                newpropeval.append(logsumexp([outlogeval,fidlogeval]))
-                if newvt[-1] < 0.: qdflogeval= -numpy.finfo(numpy.dtype(numpy.float64)).max
-                else:
-                    qdflogeval= qdf(R/ro/_REFR0,newvr[-1]/vo/_REFV0,newvt[-1]/vo/_REFV0,z/ro/_REFR0,newvz[-1]/vo/_REFV0,log=True)
+                    -numpy.log(_SRHALOFAKE)\
+                    -numpy.log(_SPHIHALOFAKE)\
+                    -numpy.log(_SZHALOFAKE)\
+                    -0.5*(newvr[-1]**2./_SRHALOFAKE**2.+newvz[-1]**2./_SZHALOFAKE**2.+(newvt[-1]-_REFV0*vo/2)**2./_SPHIHALOFAKE**2.)
+            newouteval.append(fidoutlogeval)
+            newfideval.append(fidlogeval)
+            newpropeval.append(logsumexp([fidoutlogeval,fidlogeval]))
+            qdflogeval= qdf(R/ro/_REFR0,newvr[-1]/vo/_REFV0,newvt[-1]/vo/_REFV0,z/ro/_REFR0,newvz[-1]/vo/_REFV0,log=True)
+            if options.mcout:
+                outlogeval= logoutfrac+loghalodens\
+                    -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
+                    -0.5*((newvr[-1]/vo/_REFV0)**2./srhalo**2.+(newvz[-1]/vo/_REFV0)**2./szhalo**2.+(newvt[-1]/vo/_REFV0)**2./sphihalo**2.)
+                newqdfeval.append(logsumexp([qdflogeval,outlogeval]))
+            else:
                 newqdfeval.append(qdflogeval)
-                newlogratio.append(qdflogeval
-                                   -logsumexp([fidlogeval,outlogeval]))
+            newlogratio.append(qdflogeval
+                               -logsumexp([fidlogeval,fidoutlogeval]))
         newlogratio= numpy.array(newlogratio)
         thisnewlogratio= copy.copy(newlogratio)
         maxnewlogratio= numpy.amax(thisnewlogratio)
