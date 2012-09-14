@@ -148,18 +148,23 @@ def pixelFitDF(options,args):
         if options.init is None:
             #First initialization
             params= initialize(options,fehs,afes)
-        #Optimize DF w/ fixed potential and potential w/ fixed DF
-        for cc in range(options.ninit):
-            print "Iteration %i  / %i ..." % (cc+1,options.ninit)
-            print "Optimizing individual DFs with fixed potential ..."
-            #params= indiv_optimize_df(params,fehs,afes,binned,options,
-            #                          normintstuff)
-            print "Optimizing potential with individual DFs fixed ..."
-            params= indiv_optimize_potential(params,fehs,afes,binned,options,
-                                             normintstuff)
-            save_pickles(args[0],params)
-        #Optimize full model
-        params= full_optimize(params,fehs,afes,binned,options,normintstuff)
+        if options.justdf:
+            params= indiv_optimize_df(params,fehs,afes,binned,options,
+                                      normintstuff)
+        else:
+            #Optimize DF w/ fixed potential and potential w/ fixed DF
+            for cc in range(options.ninit):
+                print "Iteration %i  / %i ..." % (cc+1,options.ninit)
+                print "Optimizing individual DFs with fixed potential ..."
+                #params= indiv_optimize_df(params,fehs,afes,binned,options,
+                #                          normintstuff)
+                print "Optimizing potential with individual DFs fixed ..."
+                params= indiv_optimize_potential(params,fehs,afes,binned,
+                                                 options,
+                                                 normintstuff)
+                save_pickles(args[0],params)
+            #Optimize full model
+            params= full_optimize(params,fehs,afes,binned,options,normintstuff)
         #Save
         save_pickles(args[0],params)
     else:
@@ -1384,6 +1389,10 @@ def get_options():
                       help="Initial parameters file")
     parser.add_option("-m","--multi",dest='multi',default=None,type='int',
                       help="number of cpus to use")
+    #Type of fit
+    parser.add_option("--justdf",action="store_true", dest="justdf",
+                      default=False,
+                      help="If set, just fit the DF assuming fixed potential (CURRENTLY ONLY FOR FIT, NOT FOR SAMPLE")
     #seed
     parser.add_option("--seed",dest='seed',default=1,type='int',
                       help="seed for random number generator")
