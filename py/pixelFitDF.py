@@ -38,7 +38,8 @@ import acor
 from galpy.util import save_pickles
 import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
-    segueSelect, _mr_gi, _gi_gr, _ERASESTR, _append_field_recarray
+    segueSelect, _mr_gi, _gi_gr, _ERASESTR, _append_field_recarray, \
+    ivezic_dist_gr
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from compareDataModel import _predict_rdist_plate
 from pixelFitDens import pixelAfeFeh
@@ -98,7 +99,7 @@ def pixelFitDF(options,args):
         raw= raw[(raw.plate != options.plate)]
     #Setup error mc integration
     print "Setting up error integration ..."
-    raw= setup_err_mc(raw,options)
+    raw, errstuff= setup_err_mc(raw,options)
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     #Map the bins with ndata > minndata in 1D
@@ -122,6 +123,10 @@ def pixelFitDF(options,args):
             if numpy.sum(indx) == 0:
                 raise IOError("Bin corresponding to singlefeh and singleafe is empty ...")
             data= copy.copy(binned.data[indx])
+            newerrstuff= []
+            for ii in range(len(binned.data)):
+                if indx[ii]: newerrstuff.append(errstuff[ii])
+            errstuff= newerrstuff
             print "Using %i data points ..." % (len(data))
             #Bin again
             binned= pixelAfeFeh(data,dfeh=options.dfeh,dafe=options.dafe)
@@ -150,7 +155,7 @@ def pixelFitDF(options,args):
             params= initialize(options,fehs,afes)
         if options.justdf:
             params= indiv_optimize_df(params,fehs,afes,binned,options,
-                                      normintstuff)
+                                      normintstuff,errstuff)
         else:
             #Optimize DF w/ fixed potential and potential w/ fixed DF
             for cc in range(options.ninit):
@@ -224,7 +229,8 @@ def logdf(params,pot,aA,fehs,afes,binned,normintstuff):
             logl[ii]= indiv_logdf(params,ii,*args)
     return numpy.sum(logl)
 
-def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
+def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
+                errstuff):
     """Individual population log likelihood"""
     dfparams= get_dfparams(params,indx,options,log=False)
     vo= get_vo(params,options,npops)
@@ -241,7 +247,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
         #Setup
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
     #Get data ready
-    R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned)
+    R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned,errstuff)
     ndata= R.shape[0]
     data_lndf= numpy.zeros((ndata,2*options.nmcerr))
     srhalo= _SRHALO/vo/_REFV0
@@ -272,7 +278,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops):
         -ndata*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
 
 def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
-                               indx,_bigparams,normintstuff):
+                               indx,_bigparams,normintstuff,errstuff):
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
     theseparams= set_dfparams(params,_bigparams,indx,options)
@@ -281,7 +287,7 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
     if logoutfracprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         return -logoutfracprior
     ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff,
-                     len(fehs))
+                     len(fehs),errstuff)
     print params, ml
     return ml
 
@@ -898,12 +904,13 @@ class normintstuffClass:
     pass
 
 ##COORDINATE TRANSFORMATIONS AND RO/VO NORMALIZATION
-def prepare_coordinates(params,indx,fehs,afes,binned):
+def prepare_coordinates(params,indx,fehs,afes,binned,errstuff):
     vo= get_vo(params,options,len(fehs))
     ro= get_ro(params,options)
     vsun= get_vsun(params,options)
-    #Create XYZ and R, vxvyvz, cov_vxvyvz
     data= copy.copy(binned(fehs[indx],afes[indx]))
+    """
+    #Create XYZ and R, vxvyvz, cov_vxvyvz
     R= ((1.-data.xc/_REFR0/ro)**2.+(data.yc/_REFR0/ro)**2.)**0.5
     #Confine to R-range?
     if not options.rmin is None and not options.rmax is None:
@@ -922,24 +929,36 @@ def prepare_coordinates(params,indx,fehs,afes,binned):
     XYZ[:,1]= data.yc/_REFR0/ro
     XYZ[:,2]= (data.zc+_ZSUN)/_REFR0/ro
     z= XYZ[:,2]
+    """
+    if not options.fitro and not options.fitvsun:
+        callindx= binned.callIndx(fehs[indx],afes[indx])
+        R= numpy.array([e.R for e in errstuff])[callindx]/ro/_REFR0
+        z= numpy.array([e.z for e in errstuff])[callindx]/ro/_REFR0
+        vR= numpy.array([e.vR for e in errstuff])[callindx]/vo/_REFV0
+        vT= numpy.array([e.vT for e in errstuff])[callindx]/vo/_REFV0
+        vz= numpy.array([e.vz for e in errstuff])[callindx]/vo/_REFV0
+        return (R,vR,vT,z,vz)
+    XYZ= numpy.zeros((len(data),3,options.nmcerr))
     vxvyvz= numpy.zeros((len(data),3,options.nmcerr))
     for ii in range(len(data)):
         for jj in range(options.nmcerr):
+            XYZ[ii,0,jj]= data[ii].xdraws[jj][0]/_REFR0/ro
+            XYZ[ii,1,jj]= data[ii].xdraws[jj][1]/_REFR0/ro
+            XYZ[ii,2,jj]= (data[ii].xdraws[jj][2]+_ZSUN)/_REFR0/ro
             vxvyvz[ii,0,jj]= (data[ii].vdraws[jj][0]/_REFV0-vsun[0])/vo #minus OK
             vxvyvz[ii,1,jj]= (data[ii].vdraws[jj][1]/_REFV0+vsun[1])/vo
             vxvyvz[ii,2,jj]= (data[ii].vdraws[jj][2]/_REFV0+vsun[2])/vo
-        #vxvyvz[:,0]= (data.vxc/_REFV0-vsun[0])/vo #minus OK
-        #vxvyvz[:,1]= (data.vyc/_REFV0+vsun[1])/vo
-        #vxvyvz[:,2]= (data.vzc/_REFV0+vsun[2])/vo
+    R= ((1.-XYZ[:,0,:])**2.+(XYZ[:,1,:])**2.)**0.5
+    z= XYZ[:,2]
     #Rotate to Galactocentric frame
-    cosphi= (1.-XYZ[:,0])/R
-    sinphi= XYZ[:,1]/R
-    cosphi= numpy.tile(cosphi,(options.nmcerr,1)).T
-    sinphi= numpy.tile(sinphi,(options.nmcerr,1)).T
+    cosphi= (1.-XYZ[:,0,:])/R
+    sinphi= XYZ[:,1,:]/R
+    #cosphi= numpy.tile(cosphi,(options.nmcerr,1)).T
+    #sinphi= numpy.tile(sinphi,(options.nmcerr,1)).T
     vR= -vxvyvz[:,0,:]*cosphi+vxvyvz[:,1,:]*sinphi
     vT= vxvyvz[:,0,:]*sinphi+vxvyvz[:,1,:]*cosphi
-    R= numpy.tile(R,(options.nmcerr,1)).T
-    z= numpy.tile(z,(options.nmcerr,1)).T
+    #R= numpy.tile(R,(options.nmcerr,1)).T
+    #z= numpy.tile(z,(options.nmcerr,1)).T
     return (R,vR,vT,z,vxvyvz[:,2,:])
 
 ##SETUP THE POTENTIAL IN EACH STEP
@@ -965,7 +984,7 @@ def full_optimize(params,fehs,afes,binned,options,normintstuff):
                                 args=(fehs,afes,binned,options,normintstuff))
 
 ##INDIVIDUAL OPTIMIZATIONS
-def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff):
+def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff,errstuff):
     """Function for optimizing individual DFs with potential fixed"""
     #Set up potential and actionAngle
     pot= setup_potential(params,options,len(fehs))
@@ -976,7 +995,7 @@ def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff):
         for ii in range(len(fehs)): tmpfiles.append(tempfile.mkstemp())
         try:
             logl= multi.parallel_map((lambda x: indiv_optimize_df_single(params,x,
-                                                                         fehs,afes,binned,options,aA,pot,normintstuff,tmpfiles)),
+                                                                         fehs,afes,binned,options,aA,pot,normintstuff,errstuff,tmpfiles)),
                                      range(len(fehs)),
                                      numcores=numpy.amin([len(fehs),
                                                           multiprocessing.cpu_count(),
@@ -999,12 +1018,12 @@ def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff):
                                            args=(fehs,afes,binned,
                                                  options,pot,aA,
                                                  ii,copy.copy(params),
-                                                 normintstuff),
+                                                 normintstuff,errstuff),
                                                callback=cb)
             params= set_dfparams(new_dfparams,params,ii,options)
     return params
 
-def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,normintstuff,tmpfiles):
+def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,normintstuff,errstuff,tmpfiles):
     """Function to optimize the DF params for a single population when holding the potential fixed and using multi-processing"""
     print ii
     init_dfparams= list(get_dfparams(params,ii,options,log=True))
@@ -1013,7 +1032,7 @@ def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,normintst
                                        args=(fehs,afes,binned,
                                              options,pot,aA,
                                              ii,copy.copy(params),
-                                             normintstuff),
+                                             normintstuff,errstuff),
                                        callback=cb)
     #Now save to temporary pickle
     tmpfile= open(tmpfiles[ii][1],'wb')
@@ -1036,6 +1055,37 @@ def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff):
 
 ##SETUP ERROR INTEGRATION
 def setup_err_mc(data,options):
+    #First sample distances, then sample velocities 
+    #Calculate r error
+    if options.nmcerr > 1:
+        rerr= ivezic_dist_gr(data.dered_g,
+                             data.dered_r,
+                             data.feh,
+                             dg=data.g_err,
+                             dr=data.r_err,
+                             dfeh=data.feh_err,
+                             return_error=True,
+                             _returndmr=True)        
+        rsamples= numpy.tile(data.dered_r,(options.nmcerr,1)).T\
+            +numpy.random.normal(size=(len(data),options.nmcerr))\
+            *numpy.tile(rerr,(options.nmcerr,1)).T
+        dsamples= ivezic_dist_gr(numpy.tile(data.dered_g-data.dered_r,(options.nmcerr,1)).T+rsamples,
+                                 rsamples,
+                                 numpy.tile(data.feh,(options.nmcerr,1)).T)[0]
+        #Transform to XYZ
+        lb= bovy_coords.radec_to_lb(data.ra,data.dec,degree=True)
+        XYZ= bovy_coords.lbd_to_XYZ(numpy.tile(lb[:,0],(options.nmcerr,1)).T,
+                                    numpy.tile(lb[:,1],(options.nmcerr,1)).T,
+                                    dsamples,degree=True)
+    else: #if nmcerr=1, just use data point
+        dsamples= ivezic_dist_gr(data.dered_g,data.dered_r,
+                                 data.feh)[0]
+        #Transform to XYZ
+        lb= bovy_coords.radec_to_lb(data.ra,data.dec,degree=True)
+        XYZ= bovy_coords.lbd_to_XYZ(lb[:,0],
+                                    lb[:,1],
+                                    dsamples,degree=True)
+    """
     vxvyvz= numpy.zeros((len(data),3))
     vxvyvz[:,0]= data.vxc
     vxvyvz[:,1]= data.vyc
@@ -1047,20 +1097,102 @@ def setup_err_mc(data,options):
     cov_vxvyvz[:,0,1]= data.vxvyc_rho*data.vxc_err*data.vyc_err
     cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err
     cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err
-    #For each one, draw
+    """
+    #draw velocity
     vdraws= numpy.zeros(len(data),dtype=list)
+    xdraws= numpy.zeros(len(data),dtype=list)
+    outvxvyvz= numpy.zeros((len(data),3,options.nmcerr))
     for ii in range(len(data)):
+        xdraws[ii]= []
         vdraws[ii]= []
         #First cholesky the covariance
-        L= linalg.cholesky(cov_vxvyvz[ii,:,:],lower=True)
+        #L= linalg.cholesky(cov_vxvyvz[ii,:,:],lower=True)
+        #Draw vr and proper motions
+        if options.nmcerr > 1:
+            vrsamples= data[ii].vr\
+                +numpy.random.normal(size=(options.nmcerr))*data[ii].vr_err
+            pmrasamples= data[ii].pmra\
+                +numpy.random.normal(size=(options.nmcerr))*data[ii].pmra_err
+            pmdecsamples= data[ii].pmdec\
+                +numpy.random.normal(size=(options.nmcerr))*data[ii].pmdec_err
+            pmllpmbb= bovy_coords.pmrapmdec_to_pmllpmbb(pmrasamples,
+                                                        pmdecsamples,
+                                                        numpy.ones(options.nmcerr)*data[ii].ra,
+                                                        numpy.ones(options.nmcerr)*data[ii].dec,degree=True)
+            l,b= bovy_coords.radec_to_lb(data[ii].ra,data[ii].dec,degree=True)
+            vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(vrsamples,
+                                                     pmllpmbb[:,0],
+                                                     pmllpmbb[:,1],
+                                                     numpy.ones(options.nmcerr)*l,
+                                                     numpy.ones(options.nmcerr)*b,
+                                                     dsamples[ii,:],
+                                                     degree=True)
+        else:
+            vrsamples= data[ii].vr
+            pmrasamples= data[ii].pmra
+            pmdecsamples= data[ii].pmdec
+            pmll,pmbb= bovy_coords.pmrapmdec_to_pmllpmbb(pmrasamples,
+                                                        pmdecsamples,
+                                                        data[ii].ra,
+                                                        data[ii].dec,degree=True)
+            l,b= bovy_coords.radec_to_lb(data[ii].ra,data[ii].dec,degree=True)
+            vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(vrsamples,
+                                                     pmll,
+                                                     pmbb,
+                                                     l,
+                                                     b,
+                                                     dsamples[ii],
+                                                     degree=True)
+        outvxvyvz[ii,:,:]= vxvyvz.T
+        #Load into vdraws
         for jj in range(options.nmcerr):
-            vn= numpy.random.normal(size=(3))
+            #vn= numpy.random.normal(size=(3))
+            #if options.nmcerr == 1:
+            #    vdraws[ii].append(vxvyvz[ii,:]) #if 1, just use observation
+            #else:
+            #    vdraws[ii].append(numpy.dot(L,vn)+vxvyvz[ii,:])
             if options.nmcerr == 1:
-                vdraws[ii].append(vxvyvz[ii,:]) #if 1, just use observation
+                xdraws[ii].append(XYZ[ii,:])
+                vdraws[ii].append(vxvyvz)
             else:
-                vdraws[ii].append(numpy.dot(L,vn)+vxvyvz[ii,:])
+                vdraws[ii].append(vxvyvz[jj,:])
+                xdraws[ii].append(XYZ[jj,ii,:])
     data= _append_field_recarray(data,'vdraws',vdraws)
-    return data
+    data= _append_field_recarray(data,'xdraws',xdraws)
+    if not options.fitro and not options.fitvsun:
+        vsun = [_VRSUN,_VTSUN,_VZSUN]
+        #Do coordinate transformations
+        outvxvyvz[:,0,:]-= vsun[0]
+        outvxvyvz[:,1,:]+= vsun[1]
+        outvxvyvz[:,2,:]+= vsun[2]
+        R= ((_REFR0-XYZ[:,:,0])**2.+(XYZ[:,:,1])**2.)**0.5 
+        z= XYZ[:,:,2]+_ZSUN
+        #Rotate to Galactocentric frame
+        cosphi= (_REFR0-XYZ[:,:,0])/R
+        sinphi= XYZ[:,:,1]/R
+        vR= -outvxvyvz[:,0,:]*cosphi.T+outvxvyvz[:,1,:]*sinphi.T
+        vT= outvxvyvz[:,0,:]*sinphi.T+outvxvyvz[:,1,:]*cosphi.T
+        #Load into structure
+        errstuff= []
+        for ii in range(len(data)):
+            thiserrstuff= errstuffClass()
+            thiserrstuff.R= R[:,ii]
+            thiserrstuff.vR= vR[ii,:]
+            thiserrstuff.vT= vT[ii,:]
+            thiserrstuff.z= z[:,ii]
+            thiserrstuff.vz= outvxvyvz[ii,2,:]
+            errstuff.append(thiserrstuff)
+    else:
+        #Load into structure
+        errstuff= []
+        for ii in range(len(data)):
+            thiserrstuff= errstuffClass()
+            thiserrstuff.R= 0.
+    return (data,errstuff)
+
+class errstuffClass:
+    """empty class for error stuff"""
+    pass
 
 ##INITIALIZATION
 def initialize(options,fehs,afes):
