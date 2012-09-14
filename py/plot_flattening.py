@@ -25,24 +25,24 @@ def plot_flattening(parser):
     bovy_plot.bovy_text(5.5,0.96,r'$\mathrm{disk+halo+bulge}$',fontsize=14.)
     bovy_plot.bovy_text(6.5,0.74,r'$\mathrm{disk\ only}$',fontsize=14.)
     #Plot Koposov errorbar
-    pyplot.errorbar(numpy.array([8.]),
+    pyplot.errorbar(numpy.array([6.]),
                     numpy.array([0.87]),
                     yerr=numpy.array([0.04,0.07]).reshape((2,1)),
                     color='k',fmt='o',ms=8)
-    bovy_plot.bovy_text(8.2,0.85,r'$\mathrm{K10}$',fontsize=12.)
+    bovy_plot.bovy_text(6.2,0.83,r'$\mathrm{K10}$',fontsize=12.)
     #Plot Zhang/others errorbar
     zhangz= 0.85
     zhangq= numpy.sqrt(0.85/8.*220.**2./8000./1.75)
     zhangqerr= zhangq*0.15
     btz= 2.8
-    btq= numpy.sqrt(2.8/8.*220.**2./8000./2.7)
+    btq= numpy.sqrt(2.8/8.*220.**2./8000./2.7)*0.92 #latter is correction to kz
     btqerr= btq*0.15
     pyplot.errorbar(numpy.array([zhangz,btz]),
                     numpy.array([zhangq,btq]),
                     yerr=numpy.array(zhangqerr,btqerr),
                     color='k',fmt='o',ms=8)
     bovy_plot.bovy_text(0.1,0.62,r'$\mathrm{Z12}$',fontsize=12.)
-    bovy_plot.bovy_text(1.6,0.87,r'$\mathrm{BT12}$',fontsize=12.)
+    bovy_plot.bovy_text(1.6,0.82,r'$\mathrm{BT12}$',fontsize=12.)
     bovy_plot.bovy_end_print(options.outfilename)       
         
 def get_options():
