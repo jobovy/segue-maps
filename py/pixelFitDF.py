@@ -160,14 +160,15 @@ def pixelFitDF(options,args):
                 print "Iteration %i  / %i ..." % (cc+1,options.ninit)
                 print "Optimizing individual DFs with fixed potential ..."
                 #params= indiv_optimize_df(params,fehs,afes,binned,options,
-                #                          normintstuff)
+                #                          normintstuff,errstuff)
                 print "Optimizing potential with individual DFs fixed ..."
                 params= indiv_optimize_potential(params,fehs,afes,binned,
                                                  options,
-                                                 normintstuff)
+                                                 normintstuff,errstuff)
                 save_pickles(args[0],params)
             #Optimize full model
-            params= full_optimize(params,fehs,afes,binned,options,normintstuff)
+            params= full_optimize(params,fehs,afes,binned,options,normintstuff,
+                                  errstuff)
         #Save
         save_pickles(args[0],params)
     else:
@@ -177,7 +178,8 @@ def pixelFitDF(options,args):
         samples= bovy_mcmc.markovpy(params,
                                     0.01,
                                     loglike,
-                                    (fehs,afes,binned,options,normintstuff),
+                                    (fehs,afes,binned,options,normintstuff,
+                                     errstuff),
                                     nsamples=options.nsamples,
                                     nwalkers=4*len(params))
         #Save
@@ -190,7 +192,7 @@ def mloglike(*args,**kwargs):
     """minus log likelihood"""
     return -loglike(*args,**kwargs)
 
-def loglike(params,fehs,afes,binned,options,normintstuff):
+def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
     """log likelihood"""
     #Priors
     for ii in range(len(fehs)):
@@ -207,13 +209,13 @@ def loglike(params,fehs,afes,binned,options,normintstuff):
     #Set up potential and actionAngle
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
-    out= logdf(params,pot,aA,fehs,afes,binned,normintstuff)
+    out= logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff)
     return out+logroprior+logpotprior
 
-def logdf(params,pot,aA,fehs,afes,binned,normintstuff):
+def logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff):
     logl= numpy.zeros(len(fehs))
     #Evaluate individual DFs
-    args= (pot,aA,fehs,afes,binned,normintstuff,len(fehs))
+    args= (pot,aA,fehs,afes,binned,normintstuff,len(fehs),errstuff)
     if not options.multi is None:
         logl= multi.parallel_map((lambda x: indiv_logdf(params,x,
                                                         *args)),
@@ -290,11 +292,11 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
     return ml
 
 def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
-                                _bigparams,normintstuff):
+                                _bigparams,normintstuff,errstuff):
     """Minus log likelihood when optimizing the parameters of a single DF"""
     #_bigparams is a hack to propagate the parameters to the overall like
     theseparams= set_potparams(params,_bigparams,options,len(fehs))
-    ml= mloglike(theseparams,fehs,afes,binned,options,normintstuff)
+    ml= mloglike(theseparams,fehs,afes,binned,options,normintstuff,errstuff)
     print params, ml
     return ml#oglike(theseparams,fehs,afes,binned,options)
 
@@ -380,15 +382,15 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options):
     """
     thislogdf= numpy.zeros((len(R),2))
     thislogfiddf= numpy.array([m[11] for m in mock])
-    for jj in range(options.nmc):
-        thislogdf[jj,0]= qdf(R[jj],vR[jj],
-                             vT[jj],
-                             z[jj],
-                             vz[jj],
+#    for jj in range(options.nmc):
+    thislogdf[:,0]= qdf(R,vR,
+                             vT,
+                             z,
+                             vz,
                              log=True)
-        thislogdf[jj,1]= logoutfrac+loghalodens\
+    thislogdf[:,1]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
-            -0.5*(vR[jj]**2./srhalo**2.+vz[jj]**2./szhalo**2.+vT[jj]**2./sphihalo**2.)
+            -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)
         #if thislogdf[jj,0] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         #    print "Warning; data likelihood is -inf"
     #Sum data and outlier df
@@ -976,10 +978,11 @@ def setup_potential(params,options,npops):
         return potential.LogarithmicHaloPotential(normalize=1.,q=potparams[1])
 
 ##FULL OPTIMIZER
-def full_optimize(params,fehs,afes,binned,options,normintstuff):
+def full_optimize(params,fehs,afes,binned,options,normintstuff,errstuff):
     """Function for optimizing the full set of parameters"""
     return optimize.fmin_powell(mloglike,params,
-                                args=(fehs,afes,binned,options,normintstuff))
+                                args=(fehs,afes,binned,options,normintstuff,
+                                      errstuff))
 
 ##INDIVIDUAL OPTIMIZATIONS
 def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff,errstuff):
@@ -1038,7 +1041,8 @@ def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,normintst
     tmpfile.close()
     return None
 
-def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff):
+def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff,
+                             errstuff):
     """Function for optimizing the potential w/ individual DFs fixed"""
     init_potparams= numpy.array(get_potparams(params,options,len(fehs)))
     print init_potparams
@@ -1046,7 +1050,7 @@ def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff):
                                         init_potparams,
                                         args=(fehs,afes,binned,options,
                                               copy.copy(params),
-                                              normintstuff),
+                                              normintstuff,errstuff),
                                         callback=cb)
     params= set_potparams(new_potparams,params,options,len(fehs))
     return params
