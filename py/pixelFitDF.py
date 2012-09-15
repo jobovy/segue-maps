@@ -161,13 +161,13 @@ def pixelFitDF(options,args):
             #Optimize DF w/ fixed potential and potential w/ fixed DF
             for cc in range(options.ninit):
                 print "Iteration %i  / %i ..." % (cc+1,options.ninit)
-                print "Optimizing individual DFs with fixed potential ..."
-                #params= indiv_optimize_df(params,fehs,afes,binned,options,
-                #                          normintstuff,errstuff)
                 print "Optimizing potential with individual DFs fixed ..."
                 params= indiv_optimize_potential(params,fehs,afes,binned,
                                                  options,
                                                  normintstuff,errstuff)
+                print "Optimizing individual DFs with fixed potential ..."
+                #params= indiv_optimize_df(params,fehs,afes,binned,options,
+                #                          normintstuff,errstuff)
                 save_pickles(args[0],params)
             #Optimize full model
             params= full_optimize(params,fehs,afes,binned,options,normintstuff,
@@ -411,6 +411,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,options):
             thisrmax= numpy.amin([sf.rcuts[str(plates[ii])],rmax])
         #Compute integral by binning everything in distance
         thisout= numpy.zeros(_NDS)
+        #BOVY: THIS CAN BE PUT IN SETUP?
         for kk in range(_NGR):
             for jj in range(_NFEH):
                 #What rs do these ds correspond to
@@ -1096,8 +1097,8 @@ def setup_err_mc(data,options):
     xdraws= numpy.zeros(len(data),dtype=list)
     outvxvyvz= numpy.zeros((len(data),3,options.nmcerr))
     for ii in range(len(data)):
-        xdraws[ii]= []
-        vdraws[ii]= []
+#        xdraws[ii]= []
+#        vdraws[ii]= []
         #First cholesky the covariance
         #L= linalg.cholesky(cov_vxvyvz[ii,:,:],lower=True)
         #Draw vr and proper motions
@@ -1138,6 +1139,13 @@ def setup_err_mc(data,options):
                                                      degree=True)
         outvxvyvz[ii,:,:]= vxvyvz.T
         #Load into vdraws
+        if options.nmcerr == 1:
+            xdraws[ii]= [XYZ[ii,:]]
+            vdraws[ii]= [vxvyvz]
+        else:
+            vdraws[ii]= [vxvyvz[jj,:] for jj in range(options.nmcerr)]
+            xdraws[ii]= [XYZ[jj,ii,:] for jj in range(options.nmcerr)]
+        """
         for jj in range(options.nmcerr):
             #vn= numpy.random.normal(size=(3))
             #if options.nmcerr == 1:
@@ -1149,7 +1157,8 @@ def setup_err_mc(data,options):
                 vdraws[ii].append(vxvyvz)
             else:
                 vdraws[ii].append(vxvyvz[jj,:])
-                xdraws[ii].append(XYZ[jj,ii,:])
+                         xdraws[ii].append(XYZ[jj,ii,:])
+         """
     data= _append_field_recarray(data,'vdraws',vdraws)
     data= _append_field_recarray(data,'xdraws',xdraws)
     if not options.fitro and not options.fitvsun:
