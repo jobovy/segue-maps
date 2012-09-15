@@ -154,6 +154,9 @@ def pixelFitDF(options,args):
         if options.justdf:
             params= indiv_optimize_df(params,fehs,afes,binned,options,
                                       normintstuff,errstuff)
+        elif options.justpot:
+            params= indiv_optimize_potential(params,fehs,afes,binned,options,
+                                             normintstuff,errstuff)
         else:
             #Optimize DF w/ fixed potential and potential w/ fixed DF
             for cc in range(options.ninit):
@@ -1517,6 +1520,9 @@ def get_options():
     parser.add_option("--justdf",action="store_true", dest="justdf",
                       default=False,
                       help="If set, just fit the DF assuming fixed potential (CURRENTLY ONLY FOR FIT, NOT FOR SAMPLE")
+    parser.add_option("--justpot",action="store_true", dest="justpot",
+                      default=False,
+                      help="If set, just fit the potential assuming fixed DF (CURRENTLY ONLY FOR FIT, NOT FOR SAMPLE")
     #seed
     parser.add_option("--seed",dest='seed',default=1,type='int',
                       help="seed for random number generator")
