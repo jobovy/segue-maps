@@ -254,26 +254,12 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
     print "BOVY: MAKE SURE THAT qdf IS SOMEWHAT PROPERLY NORMALIZED"
-#    for ii in range(ndata):
-#        for kk in range(options.nmcerr):
-#            try:
     data_lndf= numpy.empty((ndata,2*options.nmcerr))
     data_lndf[:,0:options.nmcerr]= qdf(R.flatten(),vR.flatten(),vT.flatten(),
                                        z.flatten(),vz.flatten(),log=True).reshape((ndata,options.nmcerr))
-#             data_lndf= qdf(R[ii,kk],vR[ii,kk],vT[ii,kk],
-#                                        z[ii,kk],vz[ii,kk],log=True)
-#            except (RuntimeError,OverflowError):
-#                jj= ii
-#                print vo, R[jj,kk], vR[jj,kk], vT[jj,kk],z[jj,kk],vz[jj,kk]
-#                data_lndf[ii,2*kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
-#            data_lndf[ii,2*kk+1]= logoutfrac+loghalodens\
-#                -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
-#                -0.5*(vR[ii,kk]**2./srhalo**2.+vz[ii,kk]**2./szhalo**2.+vT[ii,kk]**2./sphihalo**2.)
     data_lndf[:,options.nmcerr:2*options.nmcerr]= logoutfrac+loghalodens\
         -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
         -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)
-        #if data_lndf[ii,0] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-        #    print "Warning; data likelihood is -inf"
     #Sum data and outlier df, for all MC samples
     data_lndf= mylogsumexp(data_lndf,axis=1)
     #Normalize
@@ -387,17 +373,10 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options):
     """
     thislogdf= numpy.zeros((len(R),2))
     thislogfiddf= numpy.array([m[11] for m in mock])
-#    for jj in range(options.nmc):
-    thislogdf[:,0]= qdf(R,vR,
-                             vT,
-                             z,
-                             vz,
-                             log=True)
+    thislogdf[:,0]= qdf(R,vR,vT,z,vz,log=True)
     thislogdf[:,1]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
             -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)
-        #if thislogdf[jj,0] == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-        #    print "Warning; data likelihood is -inf"
     #Sum data and outlier df
     thislogdf= mylogsumexp(thislogdf,axis=1)
     out= numpy.exp(-thislogfiddf+thislogdf)
