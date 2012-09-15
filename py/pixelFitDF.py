@@ -1,9 +1,7 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
-#   - make 20% V0/2 sampling default in fakeDFData, w/ optional halo outliers
-#   - calculate the normalization integral using fakeDFData?
-#   - speed up qdf by vector operations?
+#   - vectorize evaluation of qdf
 #   - loo FeH aFe
 #   - los + loo los
 #   - Investigate how precise we get normint
