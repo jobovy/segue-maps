@@ -385,11 +385,13 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options):
 
 def calc_normint_mcv(qdf,indx,normintstuff,params,options):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
-    print "BOVY: WARNING MCV NOT EDITED FOR OUTLIER MODEL YET"
     thisnormintstuff= normintstuff[indx]
     sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
     out= 0.
     ro= get_ro(params,options)
+    outfrac= get_outfrac(params,indx,options)
+    halodens= ro*outDens(1.,0.,None)
+    print "BOVY: MAKE SURE THAT BRIGHT AND FAINT DO NOT GET DOUBLED"
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
         if sf.platebright[str(plates[ii])] and not sf.type_bright.lower() == 'sharprcut':
@@ -429,8 +431,8 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,options):
             indx= (R >= options.rmax)
             thisout[indx]= 0.
         #Calculate the surfacemass on a rough grid, interpolate, and integrate
-        ndsgrid= numpy.amax([int(round((dmax-dmin)/surfscale[ii]*3.)),7]) #at least 7
-        print surfscale[ii], ndsgrid, "BOVY: MAKE SURE THAT BRIGHT AND FAINT DO NOT GET DOUBLED"
+        ndsgrid= numpy.amax([int(round((dmax-dmin)/surfscale[ii]*options.nscale)),7]) #at least 7
+#        print surfscale[ii], ndsgrid
         dsgrid= numpy.linspace(dmin,dmax,ndsgrid)
         XYZgrid= bovy_coords.lbd_to_XYZ(numpy.array([platel[ii] for dd in range(ndsgrid)]),
                                         numpy.array([plateb[ii] for dd in range(ndsgrid)]),
@@ -441,14 +443,16 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,options):
         surfgrid= numpy.zeros(ndsgrid)
         for kk in range(ndsgrid):
             surfgrid[kk]= qdf.surfacemass(Rgrid[kk],zgrid[kk],nmc=options.nmcv)
-            print kk, dsgrid[kk], Rgrid[kk], zgrid[kk], surfgrid[kk]
+#            print kk, dsgrid[kk], Rgrid[kk], zgrid[kk], surfgrid[kk]
         #Interpolate
         surfinterpolate= interpolate.InterpolatedUnivariateSpline(dsgrid/ro/_REFR0,
                                                                   numpy.log(surfgrid),
                                                                   k=3)
-        thisout*= ds**2.*surfinterpolate(ds/ro/_REFR0)
-        print ii, len(plates)
+        thisout*= ds**2.*(numpy.exp(surfinterpolate(ds/ro/_REFR0))\
+                              +outfrac*halodens*(2.*math.pi)**-1.5)
+#        print ii, len(plates)
         out+= numpy.sum(thisout)
+    print out
     return out
 
 def setup_normintstuff(options,raw,binned,fehs,afes):
@@ -1473,6 +1477,8 @@ def get_options():
     #Normalization integral
     parser.add_option("--nmcv",dest='nmcv',default=1000,type='int',
                       help="Number of MC samples to use for velocity integration")
+    parser.add_option("--nscale",dest='nscale',default=1.,type='float',
+                      help="Number of 'scales' to calculate the surface scale over when integrating the density (can be float)")
     parser.add_option("--nmc",dest='nmc',default=1000,type='int',
                       help="Number of MC samples to use for Monte Carlo normalization integration")
     parser.add_option("--mcall",action="store_true", dest="mcall",
