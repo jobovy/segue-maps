@@ -330,7 +330,7 @@ def calc_normint(qdf,indx,normintstuff,params,npops,options):
     if options.mcall or options.mcwdf: #evaluation is the same for these
         return calc_normint_mcall(qdf,indx,normintstuff,params,npops,options)
     else:
-        return calc_normint_mcv(qdf,indx,normintstuff,params,options)
+        return calc_normint_mcv(qdf,indx,normintstuff,params,npops,options)
 
 def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options):
     """calculate the normalization integral by monte carlo integrating over everything"""
@@ -386,7 +386,7 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options):
     #print numpy.log(numpy.mean(out)), numpy.std(out)/numpy.mean(out)/numpy.sqrt(options.nmc)
     return numpy.mean(out)
 
-def calc_normint_mcv(qdf,indx,normintstuff,params,options):
+def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
     thisnormintstuff= normintstuff[indx]
     sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
@@ -456,8 +456,8 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,options):
                               +outfrac*halodens*(2.*math.pi)**-1.5)
 #        print ii, len(plates)
         out+= numpy.sum(thisout)
-    print out
-    return out
+    vo= get_vo(params,options,npops)
+    return out*vo**3.
 
 def setup_normintstuff(options,raw,binned,fehs,afes):
     """Gather everything necessary for calculating the normalization integral"""
