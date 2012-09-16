@@ -1,6 +1,8 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
+#   - interpolate surface(R,Z) rather than / los
+#   - use same vr etc. sampling
 #   - justpot and justdf sampling
 #   - loo FeH aFe
 #   - los + loo los
