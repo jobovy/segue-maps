@@ -1,7 +1,7 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
-#   - vectorize evaluation of qdf
+#   - justpot and justdf sampling
 #   - loo FeH aFe
 #   - los + loo los
 #   - Investigate how precise we get normint
@@ -249,6 +249,8 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
         hsz= dfparams[4]/ro
         #Setup
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
+    #Calculate surface(R=1.) for relative outlier normalization
+    logoutfrac+= numpy.log(qdf.surfacemass_z(1.))
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned,errstuff)
     ndata= R.shape[0]
@@ -266,7 +268,8 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     #Sum data and outlier df, for all MC samples
     data_lndf= mylogsumexp(data_lndf,axis=1)
     #Normalize
-    normalization= calc_normint(qdf,indx,normintstuff,params,npops,options)
+    normalization= calc_normint(qdf,indx,normintstuff,params,npops,options,
+                                logoutfrac)
     print params, numpy.sum(data_lndf)-ndata*numpy.log(options.nmcerr),ndata*numpy.log(normalization), numpy.log(normalization), numpy.sum(data_lndf)-ndata*(numpy.log(normalization)+numpy.log(options.nmcerr))
     return numpy.sum(data_lndf)\
         -ndata*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
@@ -325,21 +328,23 @@ def logprior_pot(params,options,npops):
     return out
 
 ##SETUP AND CALCULATE THE NORMALIZATION INTEGRAL
-def calc_normint(qdf,indx,normintstuff,params,npops,options):
+def calc_normint(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     """Calculate the normalization integral"""
     if options.mcall or options.mcwdf: #evaluation is the same for these
-        return calc_normint_mcall(qdf,indx,normintstuff,params,npops,options)
+        return calc_normint_mcall(qdf,indx,normintstuff,params,npops,options,
+                                  logoutfrac)
     else:
-        return calc_normint_mcv(qdf,indx,normintstuff,params,npops,options)
+        return calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,
+                                logoutfrac)
 
-def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options):
+def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     """calculate the normalization integral by monte carlo integrating over everything"""
     thisnormintstuff= normintstuff[indx]
     mock= unpack_normintstuff(thisnormintstuff,options)
     out= 0.
     ro= get_ro(params,options)
     vo= get_vo(params,options,npops)
-    logoutfrac= numpy.log(get_outfrac(params,indx,options))
+    #logoutfrac= numpy.log(get_outfrac(params,indx,options))
     loghalodens= numpy.log(ro/12.)
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
@@ -386,13 +391,14 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options):
     #print numpy.log(numpy.mean(out)), numpy.std(out)/numpy.mean(out)/numpy.sqrt(options.nmc)
     return numpy.mean(out)
 
-def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options):
+def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
     thisnormintstuff= normintstuff[indx]
     sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
     out= 0.
     ro= get_ro(params,options)
-    outfrac= get_outfrac(params,indx,options)
+#    outfrac= get_outfrac(params,indx,options)
+    outfrac= numpy.exp(logoutfrac)
     halodens= ro*outDens(1.,0.,None)
     print "BOVY: MAKE SURE THAT BRIGHT AND FAINT DO NOT GET DOUBLED"
     for ii in range(len(plates)):
@@ -449,9 +455,10 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options):
             surfgrid[kk]= qdf.surfacemass(Rgrid[kk],zgrid[kk],nmc=options.nmcv)
 #            print kk, dsgrid[kk], Rgrid[kk], zgrid[kk], surfgrid[kk]
         #Interpolate
-        surfinterpolate= interpolate.InterpolatedUnivariateSpline(dsgrid/ro/_REFR0,
-                                                                  numpy.log(surfgrid),
-                                                                  k=3)
+#        surfinterpolate= interpolate.InterpolatedUnivariateSpline(dsgrid/ro/_REFR0,
+        surfinterpolate= interpolate.UnivariateSpline(dsgrid/ro/_REFR0,
+                                                      numpy.log(surfgrid),
+                                                      k=3)
         thisout*= ds**2.*(numpy.exp(surfinterpolate(ds/ro/_REFR0))\
                               +outfrac*halodens*(2.*math.pi)**-1.5)
 #        print ii, len(plates)

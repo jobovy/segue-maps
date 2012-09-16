@@ -220,6 +220,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     szhalo= _SZHALO/vo/_REFV0
     logoutfrac= numpy.log(get_outfrac(params,ii,options))
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
+    #Calculate surface(R=1.) for relative outlier normalization
+    logoutfrac+= numpy.log(qdf.surfacemass_z(1.))
     if options.mcout:
         fidoutfrac= get_outfrac(params,ii,options)
         rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
