@@ -178,15 +178,22 @@ def pixelFitDF(options,args):
         save_pickles(args[0],params)
     else:
         #Sample
-        #Setup everything necessary for sampling
-        isDomainFinite, domain= setup_domain(options,len(fehs))
-        samples= bovy_mcmc.markovpy(params,
-                                    0.01,
-                                    loglike,
-                                    (fehs,afes,binned,options,normintstuff,
-                                     errstuff),
-                                    nsamples=options.nsamples,
-                                    nwalkers=4*len(params))
+        if options.justdf:
+            samples= indiv_sample_df(params,fehs,afes,binned,options,
+                                       normintstuff,errstuff)
+        elif options.justpot:
+            samples= indiv_sample_potential(params,fehs,afes,binned,options,
+                                            normintstuff,errstuff)
+        else:
+            #Setup everything necessary for sampling
+            isDomainFinite, domain= setup_domain(options,len(fehs))
+            samples= bovy_mcmc.markovpy(params,
+                                        0.01,
+                                        loglike,
+                                        (fehs,afes,binned,options,normintstuff,
+                                         errstuff),
+                                        nsamples=options.nsamples,
+                                        nwalkers=4*len(params))
         #Save
         save_pickles(args[0],samples,len(fehs))
         print_samples_qa(samples,options,len(fehs))
@@ -276,6 +283,8 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     return numpy.sum(data_lndf)\
         -ndata*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
 
+def indiv_optimize_df_loglike(*args,**kwargs):
+    return -indiv_optimize_df_mloglike(*args,**kwargs)
 def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
                                indx,_bigparams,normintstuff,errstuff):
     """Minus log likelihood when optimizing the parameters of a single DF"""
@@ -290,6 +299,8 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
     print params, ml
     return ml
 
+def indiv_optimize_pot_loglike(*args,**kwargs):
+    return -indiv_optimize_pot_mloglike(*args,**kwargs)
 def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
                                 _bigparams,normintstuff,errstuff):
     """Minus log likelihood when optimizing the parameters of a single DF"""
@@ -1056,6 +1067,23 @@ def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff,
     params= set_potparams(new_potparams,params,options,len(fehs))
     return params
 
+def indiv_sample_potential(params,fehs,afes,binned,options,normintstuff,
+                           errstuff):
+    """Function for sampling the potential w/ individual DFs fixed"""
+    init_potparams= numpy.array(get_potparams(params,options,len(fehs)))
+    #Setup everything necessary for sampling
+    isDomainFinite, domain= setup_domain_indiv_potential(options,len(fehs))
+    samples= bovy_mcmc.markovpy(init_potparams,
+                                0.01,
+                                indiv_optimize_pot_loglike,
+                                (fehs,afes,binned,options,
+                                 copy.copy(params),
+                                 normintstuff,errstuff),
+                                nsamples=options.nsamples,
+                                nwalkers=4*len(init_potparams))
+    #For now, don't merge pot samples with fixed DF
+    return samples
+
 ##SETUP ERROR INTEGRATION
 def setup_err_mc(data,options):
     #First sample distances, then sample velocities 
@@ -1248,17 +1276,42 @@ def setup_domain(options,npops):
     for ii in range(npops):
         if options.dfmodel.lower() == 'qdf':
             ndfparams= get_ndfparams(options)
-            for jj in range(ndfparams):
+            for jj in range(ndfparams-1):
                 isDomainFinite.append([False,False])
                 domain.append([0.,0.])
+            #Outlier fraction
+            isDomainFinite.append([True,True])
+            domain.append([0.,1.])
     if options.potential.lower() == 'flatlog':
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
         isDomainFinite.append([True,False])
         domain.append([0.53,0.])
-    #Outlier fraction
-    isDomainFinite.append([True,True])
-    domain.append([0.,1.])
+    return (isDomainFinite,domain)
+
+def setup_domain_indiv_df(options,npops):
+    """Setup isDomainFinite, domain for markovpy"""
+    isDomainFinite= []
+    domain= []
+    if options.dfmodel.lower() == 'qdf':
+        ndfparams= get_ndfparams(options)
+        for jj in range(ndfparams-1):
+            isDomainFinite.append([False,False])
+            domain.append([0.,0.])
+        #Outlier fraction
+        isDomainFinite.append([True,True])
+        domain.append([0.,1.])
+    return (isDomainFinite,domain)
+
+def setup_domain_indiv_pot(options,npops):
+    """Setup isDomainFinite, domain for markovpy for sampling the potential"""
+    isDomainFinite= []
+    domain= []
+    if options.potential.lower() == 'flatlog':
+        isDomainFinite.append([True,True])
+        domain.append([100./_REFV0,350./_REFV0])
+        isDomainFinite.append([True,False])
+        domain.append([0.53,0.])
     return (isDomainFinite,domain)
 
 ##GET AND SET THE PARAMETERS
