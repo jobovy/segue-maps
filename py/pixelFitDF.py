@@ -149,10 +149,11 @@ def pixelFitDF(options,args):
         savefile= open(options.init,'rb')
         params= pickle.load(savefile)
         savefile.close()
+    else:
+        if options.mcsample:
+            print "WARNNG: *not* initializing from file ..."
+        params= initialize(options,fehs,afes)
     if not options.mcsample:
-        if options.init is None:
-            #First initialization
-            params= initialize(options,fehs,afes)
         if options.justdf:
             params= indiv_optimize_df(params,fehs,afes,binned,options,
                                       normintstuff,errstuff)
@@ -1303,7 +1304,7 @@ def setup_domain_indiv_df(options,npops):
         domain.append([0.,1.])
     return (isDomainFinite,domain)
 
-def setup_domain_indiv_pot(options,npops):
+def setup_domain_indiv_potential(options,npops):
     """Setup isDomainFinite, domain for markovpy for sampling the potential"""
     isDomainFinite= []
     domain= []
