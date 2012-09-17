@@ -417,8 +417,10 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     globalInterp= True
     if globalInterp:
         nrs, nzs= 51, 51
-        Rgrid= numpy.linspace(4.,15.,nrs)/_REFR0/ro
-        zgrid= numpy.linspace(0.,1.,nzs)
+        thisrmin, thisrmax= 4./_REFR0/ro, 15./_REFR0/ro
+        thiszmin, thiszmax= 0., .8
+        Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
+        zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
         surfgrid= numpy.empty((nrs,nzs))
         for ii in range(nrs):
             for jj in range(nzs):
@@ -493,6 +495,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
         else:
             thisout*= ds**2.*(numpy.exp(surfInterp.ev(R,numpy.fabs(z)))\
                                   +outfrac*halodens*(2.*math.pi)**-1.5)
+            thisout[(R < thisrmin)*(R > thisrmax)*(numpy.fabs(z) > thiszmax)]= 0.
 #        print ii, len(plates)
         out+= numpy.sum(thisout)
     vo= get_vo(params,options,npops)
@@ -995,12 +998,17 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff):
 ##SETUP THE POTENTIAL IN EACH STEP
 def setup_aA(pot,options):
     """Function for setting up the actionAngle object"""
+    if options.multi is None:
+        numcores= 1
+    else:
+        numcores= options.multi
     if options.aAmethod.lower() == 'adiabatic':
         return actionAngleAdiabaticGrid(pot=pot,nR=options.aAnR,
                                         nEz=options.aAnEz,nEr=options.aAnEr,
                                         nLz=options.aAnLz,
                                         zmax=options.aAzmax,
-                                        Rmax=options.aARmax)
+                                        Rmax=options.aARmax,
+                                        numcores=numcores)
     
 def setup_potential(params,options,npops):
     """Function for setting up the potential"""
