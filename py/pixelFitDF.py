@@ -414,6 +414,20 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
 #    outfrac= get_outfrac(params,indx,options)
     outfrac= numpy.exp(logoutfrac)
     halodens= ro*outDens(1.,0.,None)
+    globalInterp= True
+    if globalInterp:
+        nrs, nzs= 51, 51
+        Rgrid= numpy.linspace(4.,15.,nrs)/_REFR0/ro
+        zgrid= numpy.linspace(0.,1.,nzs)
+        surfgrid= numpy.empty((nrs,nzs))
+        for ii in range(nrs):
+            for jj in range(nzs):
+                surfgrid[ii,jj]= qdf.surfacemass(Rgrid[ii],zgrid[jj],
+                                                 nmc=options.nmcv)
+        surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
+                                                    numpy.log(surfgrid),
+                                                    kx=3,ky=3,
+                                                    s=10.*float(nzs*nrs))
     print "BOVY: MAKE SURE THAT BRIGHT AND FAINT DO NOT GET DOUBLED"
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
@@ -454,27 +468,31 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
             thisout[indx]= 0.
             indx= (R >= options.rmax)
             thisout[indx]= 0.
-        #Calculate the surfacemass on a rough grid, interpolate, and integrate
-        ndsgrid= numpy.amax([int(round((dmax-dmin)/surfscale[ii]*options.nscale)),7]) #at least 7
+        if not globalInterp:
+            #Calculate the surfacemass on a rough grid, interpolate, and integrate
+            ndsgrid= numpy.amax([int(round((dmax-dmin)/surfscale[ii]*options.nscale)),7]) #at least 7
 #        print surfscale[ii], ndsgrid
-        dsgrid= numpy.linspace(dmin,dmax,ndsgrid)
-        XYZgrid= bovy_coords.lbd_to_XYZ(numpy.array([platel[ii] for dd in range(ndsgrid)]),
-                                        numpy.array([plateb[ii] for dd in range(ndsgrid)]),
-                                        dsgrid,degree=True)
-        Rgrid= ((ro*_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
-        XYZgrid[:,2]+= _ZSUN
-        zgrid= XYZgrid[:,2]/ro/_REFR0       
-        surfgrid= numpy.zeros(ndsgrid)
-        for kk in range(ndsgrid):
-            surfgrid[kk]= qdf.surfacemass(Rgrid[kk],zgrid[kk],nmc=options.nmcv)
+            dsgrid= numpy.linspace(dmin,dmax,ndsgrid)
+            XYZgrid= bovy_coords.lbd_to_XYZ(numpy.array([platel[ii] for dd in range(ndsgrid)]),
+                                            numpy.array([plateb[ii] for dd in range(ndsgrid)]),
+                                            dsgrid,degree=True)
+            Rgrid= ((ro*_REFR0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)/ro/_REFR0
+            XYZgrid[:,2]+= _ZSUN
+            zgrid= XYZgrid[:,2]/ro/_REFR0       
+            surfgrid= numpy.zeros(ndsgrid)
+            for kk in range(ndsgrid):
+                surfgrid[kk]= qdf.surfacemass(Rgrid[kk],zgrid[kk],nmc=options.nmcv)
 #            print kk, dsgrid[kk], Rgrid[kk], zgrid[kk], surfgrid[kk]
         #Interpolate
 #        surfinterpolate= interpolate.InterpolatedUnivariateSpline(dsgrid/ro/_REFR0,
-        surfinterpolate= interpolate.UnivariateSpline(dsgrid/ro/_REFR0,
-                                                      numpy.log(surfgrid),
-                                                      k=3)
-        thisout*= ds**2.*(numpy.exp(surfinterpolate(ds/ro/_REFR0))\
-                              +outfrac*halodens*(2.*math.pi)**-1.5)
+            surfinterpolate= interpolate.UnivariateSpline(dsgrid/ro/_REFR0,
+                                                          numpy.log(surfgrid),
+                                                          k=3)
+            thisout*= ds**2.*(numpy.exp(surfinterpolate(ds/ro/_REFR0))\
+                                  +outfrac*halodens*(2.*math.pi)**-1.5)
+        else:
+            thisout*= ds**2.*(numpy.exp(surfInterp.ev(R,numpy.fabs(z)))\
+                                  +outfrac*halodens*(2.*math.pi)**-1.5)
 #        print ii, len(plates)
         out+= numpy.sum(thisout)
     vo= get_vo(params,options,npops)
