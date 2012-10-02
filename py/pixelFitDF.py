@@ -55,7 +55,7 @@ _SRHALO= 150. #km/s
 _SPHIHALO= 100. #km/s
 _SZHALO= 100. #km/s
 _PRECALCVSAMPLES= True
-_SURFSUBTRACTEXPON= False
+_SURFSUBTRACTEXPON= True
 _SURFNRS= 251
 _SURFNZS= 251
 def pixelFitDF(options,args):
@@ -959,9 +959,9 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
             vrs= []
             vts= []
             vzs= []
-            for ii in range(nrs):
-                for jj in range(nzs):
-                    dummy, thisvrs, thisvts, thisvzs= normintqdf.vmomentsurfacemass(Rgrid[ii],zgrid[jj],0.,0.,0.,
+            for jj in range(nrs):
+                for kk in range(nzs):
+                    dummy, thisvrs, thisvts, thisvzs= normintqdf.vmomentsurfacemass(Rgrid[jj],zgrid[kk],0.,0.,0.,
                                                                              nmc=options.nmcv,
                                                                              _returnmc=True,_rawgausssamples=True)
                     vrs.append(thisvrs)
