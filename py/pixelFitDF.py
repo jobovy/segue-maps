@@ -2,7 +2,6 @@
 #
 # TO DO:
 #   - run single bins in one go
-#   - make sure bright and faint do not get doubled
 #   - loo FeH aFe
 #   - los + loo los
 #   - add sigmar to monoAbundanceMW
@@ -458,10 +457,13 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                                         numpy.log(surfgrid),
                                                         kx=3,ky=3,
                                                         s=10.*float(nzs*nrs))
-    print "BOVY: MAKE SURE THAT BRIGHT AND FAINT DO NOT GET DOUBLED"
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
-        if sf.platebright[str(plates[ii])] and not sf.type_bright.lower() == 'sharprcut':
+        if options.sample.lower() == 'k' and options.indiv_brightlims:
+            #For now, to be sure
+            thisrmin= rmin
+            thisrmax= rmax
+        elif sf.platebright[str(plates[ii])] and not sf.type_bright.lower() == 'sharprcut':
             thisrmin= rmin
             thisrmax= 17.8
         elif sf.platebright[str(plates[ii])] and sf.type_bright.lower() == 'sharprcut':
