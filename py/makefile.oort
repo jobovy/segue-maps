@@ -2,6 +2,7 @@ OUTDIR=../figs
 FAKEDIR=../fakeDF
 EXT=png
 NSAMPLES=10000
+MULTI=7 #number of cores for individual calls
 
 ####Fake data
 $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.6.fits: fakeDFData.py
@@ -20,11 +21,11 @@ $(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.6_justpot.sav: pixelFitDF.py
 	  -f $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.6.fits \
 	  $@ --novoprior --ninit=1 \
 	  --savenorm=$(subst .sav,_norm.sav,$@) \
-	  --justpot --nmcv=100
+	  --justpot --nmcv=100 -m $(MULTI)
 	$(PYTHON) pixelFitDF.py --dfeh=0.25 --dafe=0.2 \
 	  -f $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.6.fits \
 	  --init=$@ --novoprior --ninit=1 \
 	  --savenorm=$(subst .sav,_norm.sav,$@) \
-	  --justpot --nmcv=100 \
+	  --justpot --nmcv=100 -m $(MULTI) \
 	  --nsamples=$(NSAMPLES) \
 	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
