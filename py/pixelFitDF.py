@@ -98,8 +98,9 @@ def pixelFitDF(options,args):
     elif not options.plate is None:
         raw= raw[(raw.plate != options.plate)]
     #Setup error mc integration
-    print "Setting up error integration ..."
-    raw, errstuff= setup_err_mc(raw,options)
+    if not options.singles:
+        print "Setting up error integration ..."
+        raw, errstuff= setup_err_mc(raw,options)
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     #Map the bins with ndata > minndata in 1D
@@ -141,6 +142,9 @@ def pixelFitDF(options,args):
             nabundancebins= len(fehs)
             fehs= numpy.array(fehs)
             afes= numpy.array(afes)
+    if options.singles:
+        run_abundance_singles(options,args,fehs,afes)
+        return None
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
@@ -1049,6 +1053,62 @@ class normintstuffClass:
     """Empty class to hold normalization integral necessities"""
     pass
 
+
+##RUNNING SINGLE BINS IN A SINGLE CALL
+def run_abundance_singles(options,args,fehs,afes):
+    options.singles= False #First turn this off!
+    savename= args[0]
+    initname= options.init
+    normname= options.savenorm
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: run_abundance_singles_single(options,args,fehs,afes,x,
+                                                                          savename,initname,normname)),
+                                  range(len(fehs)),
+                                  numcores=numpy.amin([len(fehs),
+                                                       multiprocessing.cpu_count(),
+                                                       options.multi]))
+    else:
+        for ii in range(len(fehs)):
+            run_abundance_singles_single(options,args,fehs,afes,ii,
+                                         savename,initname,normname)
+    return None
+
+def run_abundance_singles_single(options,args,fehs,afes,ii,savename,initname,
+                                 normname):
+    #Prepare args and options
+    spl= savename.split('.')
+    newname= ''
+    for jj in range(len(spl)-1):
+        newname+= spl[jj]
+        if not jj == len(spl)-2: newname+= '.'
+    newname+= '_%i.' % ii
+    newname+= spl[-1]
+    args[0]= newname
+    if options.mcsample:
+        #Do the same for init
+        spl= initname.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        options.init= newname
+    if not normname is None:
+        #Do the same for init
+        spl= normname.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        options.savenorm= newname
+    options.singlefeh= fehs[ii]
+    options.singleafe= afes[ii]
+    #Now run
+    pixelFitDF(options,args)
+
 ##COORDINATE TRANSFORMATIONS AND RO/VO NORMALIZATION
 def prepare_coordinates(params,indx,fehs,afes,binned,errstuff):
     vo= get_vo(params,options,len(fehs))
@@ -1607,6 +1667,9 @@ def get_options():
                       help="FeH bin size")   
     parser.add_option("--dafe",dest='dafe',default=0.05,type='float',
                       help="[a/Fe] bin size")   
+    parser.add_option("--singles",action="store_true", dest="singles",
+                      default=False,
+                      help="If set, perform each bins independently, save as savefile_%i.sav' etc.")
     parser.add_option("--singlefeh",dest='singlefeh',default=None,type='float',
                       help="FeH when considering a single FeH (can be for loo)")   
     parser.add_option("--singleafe",dest='singleafe',default=None,type='float',
