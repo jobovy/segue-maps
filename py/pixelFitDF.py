@@ -54,6 +54,7 @@ _DEGTORAD= math.pi/180.
 _SRHALO= 150. #km/s
 _SPHIHALO= 100. #km/s
 _SZHALO= 100. #km/s
+_PRECALCVSAMPLES= True
 def pixelFitDF(options,args):
     #Check whether the savefile already exists
     if os.path.exists(args[0]):
@@ -408,7 +409,10 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options,logoutfrac):
 def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
     thisnormintstuff= normintstuff[indx]
-    sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
+    if _PRECALCVSAMPLES:
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
+    else:
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
     out= 0.
     ro= get_ro(params,options)
 #    outfrac= get_outfrac(params,indx,options)
@@ -416,7 +420,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     halodens= ro*outDens(1.,0.,None)
     globalInterp= True
     if globalInterp:
-        nrs, nzs= 51, 51
+        nrs, nzs= 251, 251
         thisrmin, thisrmax= 4./_REFR0/ro, 15./_REFR0/ro
         thiszmin, thiszmax= 0., .8
         Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
@@ -424,8 +428,17 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
         surfgrid= numpy.empty((nrs,nzs))
         for ii in range(nrs):
             for jj in range(nzs):
-                surfgrid[ii,jj]= qdf.surfacemass(Rgrid[ii],zgrid[jj],
-                                                 nmc=options.nmcv)
+                if _PRECALCVSAMPLES:
+                    surfgrid[ii,jj]= qdf.surfacemass(surfRgrid[ii],
+                                                     surfzgrid[jj],
+                                                     _vrs=surfvrs[jj+ii*surfnzs],
+                                                     _vts=surfvts[jj+ii*surfnzs],
+                                                     _vzs=surfvzs[jj+ii*surfnzs],
+                                                     nmc=options.nmcv,
+                                                     _rawgausssamples=True)
+                else:
+                    surfgrid[ii,jj]= qdf.surfacemass(Rgrid[ii],zgrid[jj],
+                                                     nmc=options.nmcv)
         surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
                                                     numpy.log(surfgrid),
                                                     kx=3,ky=3,
@@ -895,6 +908,49 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         thisnormintstuff.surfscale= surfscale
         thisnormintstuff.hr= thishr
         thisnormintstuff.hz= thishz
+        if _PRECALCVSAMPLES:
+            normintparams= initialize(options,fehs,afes)
+            normintpot= setup_potential(normintparams,options,len(fehs))
+            normintaA= setup_aA(normintpot,options)
+            normintdfparams= get_dfparams(normintparams,ii,options,log=False)
+            normintvo= get_vo(normintparams,options,len(fehs))
+            normintro= get_ro(normintparams,options)
+            if options.dfmodel.lower() == 'qdf':
+               #Normalize
+                norminthr= normintdfparams[0]/normintro
+                normintsr= normintdfparams[1]/normintvo
+                normintsz= normintdfparams[2]/normintvo
+                norminthsr= normintdfparams[3]/normintro
+                norminthsz= normintdfparams[4]/normintro
+            #Setup
+            normintqdf= quasiisothermaldf(norminthr,normintsr,
+                                          normintsz,norminthsr,
+                                          norminthsz,
+                                          pot=normintpot,aA=normintaA,
+                                          cutcounter=True)
+            nrs, nzs= 251, 251
+            thisrmin, thisrmax= 4./_REFR0, 15./_REFR0
+            thiszmin, thiszmax= 0., .8
+            Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
+            zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
+            vrs= []
+            vts= []
+            vzs= []
+            for ii in range(nrs):
+                for jj in range(nzs):
+                    dummy, thisvrs, thisvts, thisvzs= normintqdf.vmomentsurfacemass(Rgrid[ii],zgrid[jj],0.,0.,0.,
+                                                                             nmc=options.nmcv,
+                                                                             _returnmc=True,_rawgausssamples=True)
+                    vrs.append(thisvrs)
+                    vts.append(thisvts)
+                    vzs.append(thisvzs)
+            thisnormintstuff.surfnrs= nrs
+            thisnormintstuff.surfnzs= nzs
+            thisnormintstuff.surfRgrid= Rgrid
+            thisnormintstuff.surfzgrid= zgrid
+            thisnormintstuff.surfvrs= vrs
+            thisnormintstuff.surfvts= vts
+            thisnormintstuff.surfvzs= vzs
         if savetopickle:
             #Save to temporary pickle
             tmpfile= open(tmpfiles[ii][1],'wb')
@@ -907,32 +963,66 @@ def unpack_normintstuff(normintstuff,options):
     if options.mcall or options.mcwdf:
         return normintstuff.mock
     else:
-        return (normintstuff.sf,
-                normintstuff.plates,
-                normintstuff.platel,
-                normintstuff.plateb,
-                normintstuff.platebright,
-                normintstuff.platefaint,
-                normintstuff.grmin,
-                normintstuff.grmax,
-                normintstuff.rmin,
-                normintstuff.rmax,
-                normintstuff.fehmin,
-                normintstuff.fehmax,
-                normintstuff.feh,
-                normintstuff.colordist,
-                normintstuff.fehdist,
-                normintstuff.grs,
-                normintstuff.rhogr,
-                normintstuff.rhofeh,
-                normintstuff.mr,
-                normintstuff.dmin,
-                normintstuff.dmax,
-                normintstuff.ds,
-                normintstuff.surfscale,
-                normintstuff.hr,
-                normintstuff.hz)
-
+        if _PRECALCVSAMPLES:
+            return (normintstuff.sf,
+                    normintstuff.plates,
+                    normintstuff.platel,
+                    normintstuff.plateb,
+                    normintstuff.platebright,
+                    normintstuff.platefaint,
+                    normintstuff.grmin,
+                    normintstuff.grmax,
+                    normintstuff.rmin,
+                    normintstuff.rmax,
+                    normintstuff.fehmin,
+                    normintstuff.fehmax,
+                    normintstuff.feh,
+                    normintstuff.colordist,
+                    normintstuff.fehdist,
+                    normintstuff.grs,
+                    normintstuff.rhogr,
+                    normintstuff.rhofeh,
+                    normintstuff.mr,
+                    normintstuff.dmin,
+                    normintstuff.dmax,
+                    normintstuff.ds,
+                    normintstuff.surfscale,
+                    normintstuff.hr,
+                    normintstuff.hz,
+                    normintstuff.surfnrs,
+                    normintstuff.surfnzs,
+                    normintstuff.surfRgrid,
+                    normintstuff.surfzgrid,
+                    normintstuff.surfvrs,
+                    normintstuff.surfvts,
+                    normintstuff.surfvzs)
+        else:
+            return (normintstuff.sf,
+                    normintstuff.plates,
+                    normintstuff.platel,
+                    normintstuff.plateb,
+                    normintstuff.platebright,
+                    normintstuff.platefaint,
+                    normintstuff.grmin,
+                    normintstuff.grmax,
+                    normintstuff.rmin,
+                    normintstuff.rmax,
+                    normintstuff.fehmin,
+                    normintstuff.fehmax,
+                    normintstuff.feh,
+                    normintstuff.colordist,
+                    normintstuff.fehdist,
+                    normintstuff.grs,
+                    normintstuff.rhogr,
+                    normintstuff.rhofeh,
+                    normintstuff.mr,
+                    normintstuff.dmin,
+                    normintstuff.dmax,
+                    normintstuff.ds,
+                    normintstuff.surfscale,
+                    normintstuff.hr,
+                    normintstuff.hz)
+        
 class normintstuffClass:
     """Empty class to hold normalization integral necessities"""
     pass
