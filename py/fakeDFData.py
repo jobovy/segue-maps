@@ -22,6 +22,7 @@ _SRHALOFAKE=100. #not the same as in pixelFitDF
 _SPHIHALOFAKE=100.
 _SZHALOFAKE=100.
 _NMIN= 1000
+_DEBUG= False
 def generate_fakeDFData(options,args):
     #Check whether the savefile already exists
     if os.path.exists(args[0]):
@@ -185,10 +186,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         ro= get_ro(params,options)
     if vo is None:
         vo= get_vo(params,options,len(fehs))
-    thishr= qdf._hr*_REFR0*ro
-    #thishz= qdf.estimate_hz(1.,zmin=0.1,zmax=0.3,nz=11)*_REFR0*ro
-    print "BOVY: replace thishz with actual calculation ..."
-    thishz= 0.260657766654
+    thishr= qdf.estimate_hr(1.)*_REFR0*ro #qdf._hr*_REFR0*ro
+    thishz= qdf.estimate_hz(1.,zmin=0.1,zmax=0.3,nz=11)*_REFR0*ro
     thissr= qdf._sr*_REFV0*vo
     thissz= qdf._sz*_REFV0*vo
     thishsr= qdf._hsr*_REFR0*ro
@@ -280,7 +279,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         totnumbers= totfid+totout
         totfid/= totnumbers
         totout/= totnumbers
-        print totfid, totout
+        if _DEBUG:
+            print totfid, totout
         numbersout/= numbersout[-1]
         rdistsout= numpy.cumsum(rdistsout,axis=1)
         for ll in range(len(sf.plates)):
@@ -430,34 +430,35 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         accept= (accept < thisnewratio)
         fraccomplete= float(numpy.sum(accept))/ndata
         fracsuccess= float(numpy.sum(accept))/len(thisnewratio)
-        print fraccomplete, fracsuccess
-        print numpy.histogram(thisnewratio,bins=16)
-        indx= numpy.argmax(thisnewratio)
-        print numpy.array(newvr)[indx], \
-            numpy.array(newvt)[indx], \
-            numpy.array(newvz)[indx], \
-            numpy.array(newrs)[indx], \
-            numpy.array(newds)[indx], \
-            numpy.array(newls)[indx], \
-            numpy.array(newbs)[indx], \
-            numpy.array(newfideval)[indx]
-        bovy_plot.bovy_print()
-        bovy_plot.bovy_plot(numpy.array(newvt),
-                            numpy.exp(numpy.array(newqdfeval)),'b,',
-                            xrange=[-300.,500.],yrange=[0.,1.])
-        bovy_plot.bovy_plot(newvt,
-                            numpy.exp(numpy.array(newpropeval+maxnewlogratio)),
-                            'g,',
-                            overplot=True)
-        bovy_plot.bovy_plot(numpy.array(newvt),
-                            numpy.exp(numpy.array(newlogratio-maxnewlogratio)),
-                            'b,',
-                           xrange=[-300.,500.],
-#                            xrange=[0.,20.],
-#                            xrange=[0.,3.],
-#                            xrange=[6.,9.],
-                            yrange=[0.,1.])
-        bovy_plot.bovy_end_print('/home/bovy/public_html/segue-local/test.png')
+        if _DEBUG:
+            print fraccomplete, fracsuccess
+            print numpy.histogram(thisnewratio,bins=16)
+            indx= numpy.argmax(thisnewratio)
+            print numpy.array(newvr)[indx], \
+                numpy.array(newvt)[indx], \
+                numpy.array(newvz)[indx], \
+                numpy.array(newrs)[indx], \
+                numpy.array(newds)[indx], \
+                numpy.array(newls)[indx], \
+                numpy.array(newbs)[indx], \
+                numpy.array(newfideval)[indx]
+            bovy_plot.bovy_print()
+            bovy_plot.bovy_plot(numpy.array(newvt),
+                                numpy.exp(numpy.array(newqdfeval)),'b,',
+                                xrange=[-300.,500.],yrange=[0.,1.])
+            bovy_plot.bovy_plot(newvt,
+                                numpy.exp(numpy.array(newpropeval+maxnewlogratio)),
+                                'g,',
+                                overplot=True)
+            bovy_plot.bovy_plot(numpy.array(newvt),
+                                numpy.exp(numpy.array(newlogratio-maxnewlogratio)),
+                                'b,',
+                                xrange=[-300.,500.],
+                                #                            xrange=[0.,20.],
+                                #                            xrange=[0.,3.],
+                                #                            xrange=[6.,9.],
+                                yrange=[0.,1.])
+            bovy_plot.bovy_end_print('/home/bovy/public_html/segue-local/test.png')
     #Now collect the samples
     newrs= numpy.array(newrs)[accept][0:ndata]
     newls= numpy.array(newls)[accept][0:ndata]
