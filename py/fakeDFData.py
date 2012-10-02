@@ -14,7 +14,8 @@ from segueSelect import _ERASESTR, read_gdwarfs, read_kdwarfs, segueSelect, \
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import get_options,fidDens, get_dfparams, get_ro, get_vo, \
     _REFR0, _REFV0, setup_potential, setup_aA, initialize, \
-    outDens, _SRHALO, _SZHALO, _SPHIHALO, get_outfrac
+    outDens, _SRHALO, _SZHALO, _SPHIHALO, get_outfrac, \
+    get_potparams, set_potparams
 from fitDensz import _ZSUN, DistSpline, _ivezic_dist
 from compareDataModel import _predict_rdist_plate
 _SRHALOFAKE=100. #not the same as in pixelFitDF
@@ -120,6 +121,11 @@ def generate_fakeDFData(options,args):
     else:
         params= initialize(options,fehs,afes)
     #Setup potential
+    if options.potential.lower() == 'flatlog' and not options.flatten is None:
+        #Set flattening
+        potparams= list(get_potparams(params,options,len(fehs)))
+        potparams[1]= options.flatten
+        params= set_potparams(potparams,params,options,len(fehs))
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
     for ii in range(len(fehs)):
