@@ -426,6 +426,8 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
         Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
         zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
         surfgrid= numpy.empty((nrs,nzs))
+        if _PRECALCVSAMPLES:
+            nrs, nzs= surfnrs, surfnzs
         for ii in range(nrs):
             for jj in range(nzs):
                 if _PRECALCVSAMPLES:
@@ -439,8 +441,13 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                 else:
                     surfgrid[ii,jj]= qdf.surfacemass(Rgrid[ii],zgrid[jj],
                                                      nmc=options.nmcv)
+        Rs= numpy.tile(Rgrid,(nzs,1)).T
+        Zs= numpy.tile(zgrid,(nrs,1))
+        ehr= qdf.estimate_hr(1.)
+        ehz= qdf.estimate_hz(1.)
         surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
-                                                    numpy.log(surfgrid),
+                                                    numpy.log(surfgrid)
+                                                    +Rs/ehr+numpy.fabs(Zs)/ehz,
                                                     kx=3,ky=3,
                                                     s=10.*float(nzs*nrs))
     print "BOVY: MAKE SURE THAT BRIGHT AND FAINT DO NOT GET DOUBLED"
@@ -506,7 +513,8 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
             thisout*= ds**2.*(numpy.exp(surfinterpolate(ds/ro/_REFR0))\
                                   +outfrac*halodens*(2.*math.pi)**-1.5)
         else:
-            thisout*= ds**2.*(numpy.exp(surfInterp.ev(R,numpy.fabs(z)))\
+            thisout*= ds**2.*(numpy.exp(surfInterp.ev(R,numpy.fabs(z))
+                                        -R/ehr-numpy.fabs(z)/ehz)\
                                   +outfrac*halodens*(2.*math.pi)**-1.5)
             thisout[(R < thisrmin)*(R > thisrmax)*(numpy.fabs(z) > thiszmax)]= 0.
 #        print ii, len(plates)
