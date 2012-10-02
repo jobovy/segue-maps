@@ -1,15 +1,11 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
-#   - interpolate surface(R,Z) rather than / los
-#   - use same vr etc. sampling
-#   - justpot and justdf sampling
+#   - run single bins in one go
+#   - make sure bright and faint do not get doubled
 #   - loo FeH aFe
 #   - los + loo los
-#   - Investigate how precise we get normint
 #   - add sigmar to monoAbundanceMW
-#   - outlier model sigma (sr=150,sphi=100,sz=100)? MAKE SURE QDF IS NORMALIZED-ish
-#   - multi setting up the aA
 #
 # ADDING NEW POTENTIAL MODEL:
 #    Make sure first parameter is vo==vc(ro)
@@ -43,6 +39,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from compareDataModel import _predict_rdist_plate
 from pixelFitDens import pixelAfeFeh
+_DEBUG=False
 _REFR0= 8. #kpc
 _REFV0= 220. #km/s
 _VRSUN=-11.1 #km/s
@@ -272,7 +269,6 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
-    print "BOVY: MAKE SURE THAT qdf IS SOMEWHAT PROPERLY NORMALIZED"
     data_lndf= numpy.empty((ndata,2*options.nmcerr))
     data_lndf[:,0:options.nmcerr]= qdf(R.flatten(),vR.flatten(),vT.flatten(),
                                        z.flatten(),vz.flatten(),log=True).reshape((ndata,options.nmcerr))
@@ -284,7 +280,8 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     #Normalize
     normalization= calc_normint(qdf,indx,normintstuff,params,npops,options,
                                 logoutfrac)
-    print params, numpy.sum(data_lndf)-ndata*numpy.log(options.nmcerr),ndata*numpy.log(normalization), numpy.log(normalization), numpy.sum(data_lndf)-ndata*(numpy.log(normalization)+numpy.log(options.nmcerr))
+    if _DEBUG:
+        print params, numpy.sum(data_lndf)-ndata*numpy.log(options.nmcerr),ndata*numpy.log(normalization), numpy.log(normalization), numpy.sum(data_lndf)-ndata*(numpy.log(normalization)+numpy.log(options.nmcerr))
     return numpy.sum(data_lndf)\
         -ndata*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
 
