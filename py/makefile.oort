@@ -1,0 +1,16 @@
+OUTDIR=../figs
+FAKEDIR=../fakeDF
+EXT=png
+NSAMPLES=10000
+
+####Fake data
+$(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.6.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=0.25 --dafe=0.2 $@ -q 0.6
+$(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.7.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=0.25 --dafe=0.2 $@ -q 0.7
+$(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.8.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=0.25 --dafe=0.2 $@ -q 0.8
+$(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.9.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=0.25 --dafe=0.2 $@ -q 0.9
+$(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q1.0.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=0.25 --dafe=0.2 $@ -q 1.0
