@@ -1,7 +1,6 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
-#   - run single bins in one go
 #   - loo FeH aFe
 #   - los + loo los
 #   - add sigmar to monoAbundanceMW
