@@ -54,6 +54,8 @@ _SURFSUBTRACTEXPON= True
 _SURFNRS= 251
 _SURFNZS= 251
 def pixelFitDF(options,args):
+    print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
+    numpy.seterr(all='ignore')
     #Check whether the savefile already exists
     if os.path.exists(args[0]):
         savefile= open(args[0],'rb')
@@ -1255,7 +1257,6 @@ def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff,
                              errstuff):
     """Function for optimizing the potential w/ individual DFs fixed"""
     init_potparams= numpy.array(get_potparams(params,options,len(fehs)))
-    print init_potparams
     new_potparams= optimize.fmin_powell(indiv_optimize_pot_mloglike,
                                         init_potparams,
                                         args=(fehs,afes,binned,options,
