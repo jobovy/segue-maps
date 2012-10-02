@@ -55,6 +55,9 @@ _SRHALO= 150. #km/s
 _SPHIHALO= 100. #km/s
 _SZHALO= 100. #km/s
 _PRECALCVSAMPLES= True
+_SURFSUBTRACTEXPON= False
+_SURFNRS= 251
+_SURFNZS= 251
 def pixelFitDF(options,args):
     #Check whether the savefile already exists
     if os.path.exists(args[0]):
@@ -420,7 +423,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     halodens= ro*outDens(1.,0.,None)
     globalInterp= True
     if globalInterp:
-        nrs, nzs= 251, 251
+        nrs, nzs= _SURFNRS, _SURFNZS
         thisrmin, thisrmax= 4./_REFR0/ro, 15./_REFR0/ro
         thiszmin, thiszmax= 0., .8
         Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
@@ -428,6 +431,8 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
         surfgrid= numpy.empty((nrs,nzs))
         if _PRECALCVSAMPLES:
             nrs, nzs= surfnrs, surfnzs
+            Rgrid= surfRgrid
+            zgrid= surfzgrid
         for ii in range(nrs):
             for jj in range(nzs):
                 if _PRECALCVSAMPLES:
@@ -441,15 +446,21 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                 else:
                     surfgrid[ii,jj]= qdf.surfacemass(Rgrid[ii],zgrid[jj],
                                                      nmc=options.nmcv)
-        Rs= numpy.tile(Rgrid,(nzs,1)).T
-        Zs= numpy.tile(zgrid,(nrs,1))
-        ehr= qdf.estimate_hr(1.)
-        ehz= qdf.estimate_hz(1.)
-        surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
-                                                    numpy.log(surfgrid)
-                                                    +Rs/ehr+numpy.fabs(Zs)/ehz,
-                                                    kx=3,ky=3,
-                                                    s=10.*float(nzs*nrs))
+        if _SURFSUBTRACTEXPON:
+            Rs= numpy.tile(Rgrid,(nzs,1)).T
+            Zs= numpy.tile(zgrid,(nrs,1))
+            ehr= qdf.estimate_hr(1.)
+            ehz= qdf.estimate_hz(1.)
+            surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
+                                                        numpy.log(surfgrid)
+                                                        +Rs/ehr+numpy.fabs(Zs)/ehz,
+                                                        kx=3,ky=3,
+                                                        s=10.*float(nzs*nrs))
+        else:
+            surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
+                                                        numpy.log(surfgrid),
+                                                        kx=3,ky=3,
+                                                        s=10.*float(nzs*nrs))
     print "BOVY: MAKE SURE THAT BRIGHT AND FAINT DO NOT GET DOUBLED"
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
@@ -513,8 +524,12 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
             thisout*= ds**2.*(numpy.exp(surfinterpolate(ds/ro/_REFR0))\
                                   +outfrac*halodens*(2.*math.pi)**-1.5)
         else:
-            thisout*= ds**2.*(numpy.exp(surfInterp.ev(R,numpy.fabs(z))
-                                        -R/ehr-numpy.fabs(z)/ehz)\
+            if _SURFSUBTRACTEXPON:
+                thisout*= ds**2.*(numpy.exp(surfInterp.ev(R,numpy.fabs(z))
+                                            -R/ehr-numpy.fabs(z)/ehz)
+                                  +outfrac*halodens*(2.*math.pi)**-1.5)
+            else:
+                thisout*= ds**2.*(numpy.exp(surfInterp.ev(R,numpy.fabs(z)))
                                   +outfrac*halodens*(2.*math.pi)**-1.5)
             thisout[(R < thisrmin)*(R > thisrmax)*(numpy.fabs(z) > thiszmax)]= 0.
 #        print ii, len(plates)
@@ -936,7 +951,7 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
                                           norminthsz,
                                           pot=normintpot,aA=normintaA,
                                           cutcounter=True)
-            nrs, nzs= 251, 251
+            nrs, nzs= _SURFNRS, _SURFNZS
             thisrmin, thisrmax= 4./_REFR0, 15./_REFR0
             thiszmin, thiszmax= 0., .8
             Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
