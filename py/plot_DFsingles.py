@@ -124,6 +124,9 @@ def plot_DFsingles(options,args):
             elif options.type.lower() == 'vc':
                 s= get_potparams(sols[solindx],options,1)
                 plotthis[ii,jj]= s[0]
+            elif options.type.lower() == 'kz':
+                s= get_potparams(sols[solindx],options,1)
+                plotthis[ii,jj]= (s[0]**2./s[1]**2.)/(1./options.flatten**2.)
             elif options.type.lower() == 'ndata':
                 plotthis[ii,jj]= len(data)
     #Set up plot
@@ -137,6 +140,9 @@ def plot_DFsingles(options,args):
     elif options.type.lower() == 'vc':
         vmin, vmax= 0.95, 1.05
         zlabel=r'$V_c / %i\ \mathrm{km\,s}^{-1}$' % int(_REFV0)
+    elif options.type.lower() == 'kz':
+        vmin, vmax= 0.5, 1.5
+        zlabel=r'$K_z / K_z^{\mathrm{true}}$'
     elif options.type.lower() == 'ndata':
         vmin, vmax= numpy.nanmin(plotthis), numpy.nanmax(plotthis)
         zlabel=r'$N_\mathrm{data}$'

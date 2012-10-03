@@ -17,7 +17,8 @@ $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q1.0.fits: fakeDFData.py
 	$(PYTHON) fakeDFData.py --dfeh=0.25 --dafe=0.2 $@ -q 1.0
 #Huge
 $(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7.fits: fakeDFData.py
-	$(PYTHON) fakeDFData.py --dfeh=1. --dafe=0.6 $@ -q 0.7
+	$(PYTHON) fakeDFData.py --dfeh=1. --dafe=0.6 $@ -q 0.7 \
+	--minndata=10000 #for 1 bin
 $(FAKEDIR)/fakeDFFit_dfeh1._dafe0.6_q0.7_justpot.sav: pixelFitDF.py
 	$(PYTHON) pixelFitDF.py --dfeh=1. --dafe=0.6 \
 	  -f $(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7.fits \
