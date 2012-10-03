@@ -37,6 +37,7 @@ class pixelAfeFeh:
         self.data= data
         self.dfeh= dfeh
         self.dafe= dafe
+        if self.dafe > 0.1 and afemin == -.1: afemin= -self.dafe
         #These are somewhat ridiculous to be sure to contain the data
         self.fehmin= fehmin
         self.fehmax= fehmax

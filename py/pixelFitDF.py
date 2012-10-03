@@ -111,6 +111,7 @@ def pixelFitDF(options,args):
             data= binned(binned.feh(ii),binned.afe(jj))
             if len(data) < options.minndata:
                 continue
+            #print binned.feh(ii), binned.afe(jj), len(data)
             fehs.append(binned.feh(ii))
             afes.append(binned.afe(jj))
     nabundancebins= len(fehs)
@@ -124,14 +125,14 @@ def pixelFitDF(options,args):
             indx= binned.callIndx(options.singlefeh,options.singleafe)
             if numpy.sum(indx) == 0:
                 raise IOError("Bin corresponding to singlefeh and singleafe is empty ...")
-            data= copy.copy(binned.data[indx])
+            raw= copy.copy(binned.data[indx])
             newerrstuff= []
             for ii in range(len(binned.data)):
                 if indx[ii]: newerrstuff.append(errstuff[ii])
             errstuff= newerrstuff
             print "Using %i data points ..." % (len(data))
             #Bin again
-            binned= pixelAfeFeh(data,dfeh=options.dfeh,dafe=options.dafe)
+            binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
             fehs, afes= [], []
             for ii in range(len(binned.fehedges)-1):
                 for jj in range(len(binned.afeedges)-1):
@@ -141,6 +142,7 @@ def pixelFitDF(options,args):
                     fehs.append(binned.feh(ii))
                     afes.append(binned.afe(jj))
             nabundancebins= len(fehs)
+            print fehs, afes
             fehs= numpy.array(fehs)
             afes= numpy.array(afes)
     if options.singles:
@@ -285,7 +287,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     normalization= calc_normint(qdf,indx,normintstuff,params,npops,options,
                                 logoutfrac)
     if _DEBUG:
-        print params, numpy.sum(data_lndf)-ndata*numpy.log(options.nmcerr),ndata*numpy.log(normalization), numpy.log(normalization), numpy.sum(data_lndf)-ndata*(numpy.log(normalization)+numpy.log(options.nmcerr))
+        print fehs[indx], afes[indx], params, numpy.sum(data_lndf)-ndata*numpy.log(options.nmcerr),ndata*numpy.log(normalization), numpy.log(normalization), numpy.sum(data_lndf)-ndata*(numpy.log(normalization)+numpy.log(options.nmcerr))
     return numpy.sum(data_lndf)\
         -ndata*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
 
