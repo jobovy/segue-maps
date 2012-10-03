@@ -71,33 +71,7 @@ def pixelFitDF(options,args):
         return None
     #Read the data
     print "Reading the data ..."
-    if options.sample.lower() == 'g':
-        if not options.fakedata is None:
-            raw= read_gdwarfs(options.fakedata,logg=True,ebv=True,sn=options.snmin,nosolar=True)
-        elif options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
-        else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
-    elif options.sample.lower() == 'k':
-        if options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
-        else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
-    if not options.bmin is None:
-        #Cut on |b|
-        raw= raw[(numpy.fabs(raw.b) > options.bmin)]
-    if not options.fehmin is None:
-        raw= raw[(raw.feh >= options.fehmin)]
-    if not options.fehmax is None:
-        raw= raw[(raw.feh < options.fehmax)]
-    if not options.afemin is None:
-        raw= raw[(raw.afe >= options.afemin)]
-    if not options.afemax is None:
-        raw= raw[(raw.afe < options.afemax)]
-    if not options.plate is None and not options.loo:
-        raw= raw[(raw.plate == options.plate)]
-    elif not options.plate is None:
-        raw= raw[(raw.plate != options.plate)]
+    raw= read_rawdata(options)
     #Setup error mc integration
     if not options.singles:
         print "Setting up error integration ..."
@@ -205,6 +179,37 @@ def pixelFitDF(options,args):
         save_pickles(args[0],samples,len(fehs))
         print_samples_qa(samples,options,len(fehs))
     return None
+
+##DATA
+def read_rawdata(options):
+    if options.sample.lower() == 'g':
+        if not options.fakedata is None:
+            raw= read_gdwarfs(options.fakedata,logg=True,ebv=True,sn=options.snmin,nosolar=True)
+        elif options.select.lower() == 'program':
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
+        else:
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
+    elif options.sample.lower() == 'k':
+        if options.select.lower() == 'program':
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
+        else:
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
+    if not options.bmin is None:
+        #Cut on |b|
+        raw= raw[(numpy.fabs(raw.b) > options.bmin)]
+    if not options.fehmin is None:
+        raw= raw[(raw.feh >= options.fehmin)]
+    if not options.fehmax is None:
+        raw= raw[(raw.feh < options.fehmax)]
+    if not options.afemin is None:
+        raw= raw[(raw.afe >= options.afemin)]
+    if not options.afemax is None:
+        raw= raw[(raw.afe < options.afemax)]
+    if not options.plate is None and not options.loo:
+        raw= raw[(raw.plate == options.plate)]
+    elif not options.plate is None:
+        raw= raw[(raw.plate != options.plate)]
+    return raw
 
 ##LOG LIKELIHOODS
 def mloglike(*args,**kwargs):
@@ -1632,11 +1637,20 @@ def outDens(R,z,dummy):
 def print_samples_qa(samples,options,npops):
     print "Mean, standard devs, acor tau, acor mean, acor s ..."
     #potparams
-    for kk in range(len(get_potparams(samples[0],options,npops))):
-        xs= numpy.array([get_potparams(s,options,npops)[kk] for s in samples])
+    if options.justpot:
+        if options.potential.lower() == 'flatlog':
+            nparams= 2
+        for kk in range(nparams):
+            xs= numpy.array([s[kk] for s in samples])
+            #Auto-correlation time
+            tau, m, s= acor.acor(xs)
+            print numpy.mean(xs), numpy.std(xs), tau, m, s
+    else:
+        for kk in range(len(get_potparams(samples[0],options,npops))):
+            xs= numpy.array([get_potparams(s,options,npops)[kk] for s in samples])
         #Auto-correlation time
-        tau, m, s= acor.acor(xs)
-        print numpy.mean(xs), numpy.std(xs), tau, m, s
+            tau, m, s= acor.acor(xs)
+            print numpy.mean(xs), numpy.std(xs), tau, m, s
 
 ##UTILITY
 def mylogsumexp(arr,axis=0):
