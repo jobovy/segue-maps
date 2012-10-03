@@ -142,7 +142,6 @@ def pixelFitDF(options,args):
                     fehs.append(binned.feh(ii))
                     afes.append(binned.afe(jj))
             nabundancebins= len(fehs)
-            print fehs, afes
             fehs= numpy.array(fehs)
             afes= numpy.array(afes)
     if options.singles:
