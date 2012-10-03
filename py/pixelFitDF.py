@@ -1822,6 +1822,9 @@ def get_options():
                       help="Shortcut to set fake flattening")
     parser.add_option("-o",dest='outfilename',default=None,
                       help="Name for an output file")
+    parser.add_option("--tighten",action="store_true", dest="tighten",
+                      default=False,
+                      help="If set, tighten axes")
     return parser
   
 if __name__ == '__main__':
