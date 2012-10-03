@@ -149,9 +149,10 @@ def plot_DFsingles(options,args):
                               vmin=vmin,vmax=vmax,
                               contours=False,
                               colorbar=True,shrink=0.78)
-        bovy_plot.bovy_text(r'$\mathrm{median} = %.2f \pm %.2f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
-                                                           1.4826*numpy.median(numpy.fabs(plotthis[numpy.isfinite(plotthis)]-numpy.median(plotthis[numpy.isfinite(plotthis)])))),
-                            bottom_left=True,size=14.)
+        if not options.type.lower() == 'ndata':
+            bovy_plot.bovy_text(r'$\mathrm{median} = %.2f \pm %.2f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
+                                                                        1.4826*numpy.median(numpy.fabs(plotthis[numpy.isfinite(plotthis)]-numpy.median(plotthis[numpy.isfinite(plotthis)])))),
+                                bottom_left=True,size=14.)
     bovy_plot.bovy_end_print(options.outfilename)
     return None
                 
