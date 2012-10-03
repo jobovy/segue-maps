@@ -29,7 +29,7 @@ $(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.6_justpot.sav: pixelFitDF.py
 	  --justpot --nmcv=100 -m $(MULTI) \
 	  --nsamples=$(NSAMPLES) \
 	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
-$(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.6_justpot_singles.sav: pixelFitDF.py
+$(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.6_justpot_singles.sav: pixelFitDF.py $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.6.fits
 	$(PYTHON) pixelFitDF.py --dfeh=0.25 --dafe=0.2 \
 	  -f $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.6.fits \
 	  $@ --novoprior --ninit=1 --singles \
@@ -43,7 +43,7 @@ $(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.6_justpot_singles.sav: pixelFitDF.py
 	  --nsamples=$(NSAMPLES) \
 	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
 
-$(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.7_justpot_singles.sav: pixelFitDF.py
+$(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.7_justpot_singles.sav: pixelFitDF.py $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.7.fits
 	$(PYTHON) pixelFitDF.py --dfeh=0.25 --dafe=0.2 \
 	  -f $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.7.fits \
 	  $@ --novoprior --ninit=1 --singles \
@@ -57,7 +57,7 @@ $(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.7_justpot_singles.sav: pixelFitDF.py
 	  --nsamples=$(NSAMPLES) \
 	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
 
-$(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.8_justpot_singles.sav: pixelFitDF.py
+$(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.8_justpot_singles.sav: pixelFitDF.py $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.8.fits
 	$(PYTHON) pixelFitDF.py --dfeh=0.25 --dafe=0.2 \
 	  -f $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.8.fits \
 	  $@ --novoprior --ninit=1 --singles \
@@ -71,7 +71,7 @@ $(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.8_justpot_singles.sav: pixelFitDF.py
 	  --nsamples=$(NSAMPLES) \
 	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
 
-$(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.9_justpot_singles.sav: pixelFitDF.py
+$(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.9_justpot_singles.sav: pixelFitDF.py $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.9.fits
 	$(PYTHON) pixelFitDF.py --dfeh=0.25 --dafe=0.2 \
 	  -f $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.9.fits \
 	  $@ --novoprior --ninit=1 --singles \
