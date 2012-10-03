@@ -15,7 +15,24 @@ $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.9.fits: fakeDFData.py
 	$(PYTHON) fakeDFData.py --dfeh=0.25 --dafe=0.2 $@ -q 0.9
 $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q1.0.fits: fakeDFData.py
 	$(PYTHON) fakeDFData.py --dfeh=0.25 --dafe=0.2 $@ -q 1.0
+#Huge
+$(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=1. --dafe=0.6 $@ -q 0.7
+$(FAKEDIR)/fakeDFFit_dfeh1._dafe0.6_q0.7_justpot.sav: pixelFitDF.py
+	$(PYTHON) pixelFitDF.py --dfeh=1. --dafe=0.6 \
+	  -f $(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7.fits \
+	  $@ --novoprior --ninit=1 \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI) --minndata=10000 #for 1 bin
+	$(PYTHON) pixelFitDF.py --dfeh=1. --dafe=0.6 \
+	  -f $(FAKEDIR)/fakeDF_dfehq._dafe0.6_q0.7.fits \
+	  --init=$@ --novoprior --ninit=1 \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI)  --minndata=10000 \
+	  --nsamples=$(NSAMPLES) --mcsample \
+	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
 
+#q series
 $(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.6_justpot.sav: pixelFitDF.py
 	$(PYTHON) pixelFitDF.py --dfeh=0.25 --dafe=0.2 \
 	  -f $(FAKEDIR)/fakeDF_dfeh0.25_dafe0.2_q0.6.fits \
