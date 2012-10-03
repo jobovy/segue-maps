@@ -67,9 +67,14 @@ def plot_DFsingles(options,args):
         newname+= spl[-1]
         savefilename= newname
         #Read savefile
-        savefile= open(savefilename,'rb')
-        sols.append(pickle.load(savefile))
-        savefile.close()
+        try:
+            savefile= open(savefilename,'rb')
+        except IOError:
+            print "WARNING: MISSING ABUNDANCE BIN"
+            sols.append(None)
+        else:
+            sols.append(pickle.load(savefile))
+            savefile.close()
         #Load samples as well
         if options.mcsample:
             #Do the same for init
@@ -104,6 +109,13 @@ def plot_DFsingles(options,args):
             fehindx= binned.fehindx(tightbinned.feh(ii))#Map onto regular binning
             afeindx= binned.afeindx(tightbinned.afe(jj))
             solindx= abindx[fehindx,afeindx]
+            if sols[solindx] is None:
+                if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
+                        or options.type.lower() == 'afefeh':
+                    continue
+                else:
+                    plotthis[ii,jj]= numpy.nan
+                    continue
             if options.type.lower() == 'q':
                 s= get_potparams(sols[solindx],options,1)
                 plotthis[ii,jj]= s[1]
