@@ -1,3 +1,4 @@
+#ython plotDensComparisonDF.py --type=z --dfeh=1. --dafe=0.6 -f ../fakeDF/fakeDF_dfeh1._dafe0.6_q0.7.fits  --savenorm=../fakeDF/fakeDFFit_dfeh1._dafe0.6_q0.7_justpot_norm.sav --nmcv=100 --minndata=10000 ../figs/fakeDFFit_dfeh1._dafe0.6_q0.7_
 import os, os.path
 import numpy
 import cPickle as pickle
@@ -268,6 +269,63 @@ def calc_model(params,options,pop):
 def interpDens(R,z,surfInterp):
     """Function to give density using the interpolated representation"""
     return numpy.exp(surfInterp.ev(R/_REFR0,numpy.fabs(z)/_REFR0))
+
+
+##RUNNING SINGLE BINS IN A SINGLE CALL
+def run_abundance_singles_plotdens(options,args,fehs,afes):
+    options.singles= False #First turn this off!
+    savename= args[0]
+    initname= options.init
+    normname= options.savenorm
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: run_abundance_singles_plotdens_single(options,args,fehs,afes,x,
+                                                                          savename,initname,normname)),
+                                  range(len(fehs)),
+                                  numcores=numpy.amin([len(fehs),
+                                                       multiprocessing.cpu_count(),
+                                                       options.multi]))
+    else:
+        for ii in range(len(fehs)):
+            run_abundance_singles_plotdens_single(options,args,fehs,afes,ii,
+                                                  savename,initname,normname)
+    return None
+
+def run_abundance_singles_plotdens_single(options,args,fehs,afes,ii,savename,
+                                          initname,
+                                          normname):
+    #Prepare args and options
+    spl= savename.split('.')
+    newname= ''
+    for jj in range(len(spl)-1):
+        newname+= spl[jj]
+        if not jj == len(spl)-2: newname+= '.'
+    newname+= '_%i.' % ii
+    newname+= spl[-1]
+    args[0]= newname
+    if not initname is None:
+        #Do the same for init
+        spl= initname.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        options.init= newname
+    if not normname is None:
+        #Do the same for init
+        spl= normname.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        options.savenorm= newname
+    options.singlefeh= fehs[ii]
+    options.singleafe= afes[ii]
+    #Now run
+    plotDensComparisonDF(options,args)
 
 if __name__ == '__main__':
     (options,args)= get_options().parse_args()
