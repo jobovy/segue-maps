@@ -74,10 +74,18 @@ def plotDensComparisonDF(options,args):
     pop= 0 #assume first population
     model1= interpDens
     params1= calc_model(params,options,pop)
-    model2= None
-    params2= None
-    model3= None
-    params3= None
+    if True:
+        params= set_potparams([1.,0.8],params,options,1)
+        model2= interpDens
+        params2= calc_model(params,options,pop)
+        params= set_potparams([1.,0.6],params,options,1)
+        model3= interpDens
+        params3= calc_model(params,options,pop)
+    else:
+        model2= None
+        params2= None
+        model3= None
+        params3= None
     data= binned(fehs[pop],afes[pop])
     #Setup everything for selection function
     thisnormintstuff= normintstuff[pop]
