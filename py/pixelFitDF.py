@@ -106,7 +106,7 @@ def pixelFitDF(options,args):
             for ii in range(len(binned.data)):
                 if indx[ii]: newerrstuff.append(errstuff[ii])
             errstuff= newerrstuff
-            print "Using %i data points ..." % (len(data))
+            print "Using %i data points ..." % (len(raw))
             #Bin again
             binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
             fehs, afes= [], []
