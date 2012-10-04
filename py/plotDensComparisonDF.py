@@ -271,7 +271,7 @@ def calc_model(params,options,pop):
 
 def interpDens(R,z,surfInterp):
     """Function to give density using the interpolated representation"""
-    return numpy.exp(surfInterp.ev(R,z))
+    return numpy.exp(surfInterp.ev(R/_REFR0,numpy.fabs(z)/_REFR0))
 
 if __name__ == '__main__':
     (options,args)= get_options().parse_args()
