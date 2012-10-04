@@ -77,33 +77,29 @@ def plotDensComparisonDF(options,args):
     params2= None
     model3= None
     params3= None
-    """
-    #Cut out bright stars on faint plates and vice versa
-    indx= []
-    nfaintbright, nbrightfaint= 0, 0
-    for ii in range(len(data.feh)):
-        if sf.platebright[str(data[ii].plate)] and data[ii].dered_r >= 17.8:
-            indx.append(False)
-            nbrightfaint+= 1
-        elif not sf.platebright[str(data[ii].plate)] and data[ii].dered_r < 17.8:
-            indx.append(False)
-            nfaintbright+= 1
-        else:
-            indx.append(True)
-    print "nbrightfaint, nfaintbright", nbrightfaint, nfaintbright
-    indx= numpy.array(indx,dtype='bool')
-    data= data[indx]
-    XYZ= XYZ[indx,:]
-    vxvyvz= vxvyvz[indx,:]
-    cov_vxvyvz= cov_vxvyvz[indx,:]
-    """
+    data= binned(fehs[pop],afes[pop])
     #Setup everything for selection function
     thisnormintstuff= normintstuff[pop]
     if _PRECALCVSAMPLES:
         sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
     else:
         sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
-    data= binned(fehs[pop],afes[pop])
+    if True:
+        #Cut out bright stars on faint plates and vice versa
+        indx= []
+        nfaintbright, nbrightfaint= 0, 0
+        for ii in range(len(data.feh)):
+            if sf.platebright[str(data[ii].plate)] and data[ii].dered_r >= 17.8:
+                indx.append(False)
+                nbrightfaint+= 1
+            elif not sf.platebright[str(data[ii].plate)] and data[ii].dered_r < 17.8:
+                indx.append(False)
+                nfaintbright+= 1
+            else:
+                indx.append(True)
+        print "nbrightfaint, nfaintbright", nbrightfaint, nfaintbright
+        indx= numpy.array(indx,dtype='bool')
+        data= data[indx]
     #Ranges
     if options.type == 'z':
         xrange= [-0.1,5.]

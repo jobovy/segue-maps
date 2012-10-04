@@ -506,6 +506,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                         newqdfeval[ii]])
         return out
     #Load into data
+    binned.data.feh[thisdataIndx]= newfeh
     oldgr= thisdata.dered_g-thisdata.dered_r
     oldr= thisdata.dered_r
     binned.data.dered_r[thisdataIndx]= newrs\
@@ -517,11 +518,12 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                         dfeh=binned.data[thisdataIndx].feh_err,
                         return_error=True,
                         _returndmr=True)
+    binned.data.dered_r[thisdataIndx]= newrs
     binned.data.dered_r[(binned.data.dered_r >= rmax)]= rmax #tweak to make sure everything stays within the observed range
     binned.data.dered_r[(binned.data.dered_r <= rmin)]= rmin
     binned.data.dered_g[thisdataIndx]= oldgr+binned.data[thisdataIndx].dered_r
     #Also change plate and l and b
-    binned.data[thisdataIndx].plate= newplate
+    binned.data.plate[thisdataIndx]= newplate
     radec= bovy_coords.lb_to_radec(newls,newbs,degree=True)
     binned.data.ra[thisdataIndx]= radec[:,0]
     binned.data.dec[thisdataIndx]= radec[:,1]
