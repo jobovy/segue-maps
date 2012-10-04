@@ -414,7 +414,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             if options.mcout:
                 outlogeval= logoutfrac+loghalodens\
                     -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
-                    -0.5*((newvr[-1]/vo/_REFV0)**2./srhalo**2.+(newvz[-1]/vo/_REFV0)**2./szhalo**2.+(newvt[-1]/vo/_REFV0)**2./sphihalo**2.)
+                    -0.5*((newvr[-1]/vo/_REFV0)**2./srhalo**2.+(newvz[-1]/vo/_REFV0)**2./szhalo**2.+(newvt[-1]/vo/_REFV0)**2./sphihalo**2.)\
+                    -1.5*numpy.log(2.*math.pi)
                 newqdfeval.append(logsumexp([qdflogeval,outlogeval]))
             else:
                 newqdfeval.append(qdflogeval)

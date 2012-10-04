@@ -286,7 +286,8 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
                                        z.flatten(),vz.flatten(),log=True).reshape((ndata,options.nmcerr))
     data_lndf[:,options.nmcerr:2*options.nmcerr]= logoutfrac+loghalodens\
         -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
-        -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)
+        -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)\
+        -1.5*numpy.log(2.*math.pi)
     #Sum data and outlier df, for all MC samples
     data_lndf= mylogsumexp(data_lndf,axis=1)
     #Normalize
@@ -534,15 +535,15 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                                           numpy.log(surfgrid),
                                                           k=3)
             thisout*= ds**2.*(numpy.exp(surfinterpolate(ds/ro/_REFR0))\
-                                  +outfrac*halodens*(2.*math.pi)**-1.5)
+                                  +outfrac*halodens)#*(2.*math.pi)**-1.5)
         else:
             if _SURFSUBTRACTEXPON:
                 thisout*= ds**2.*(numpy.exp(surfInterp.ev(R,numpy.fabs(z))
                                             -R/ehr-numpy.fabs(z)/ehz)
-                                  +outfrac*halodens*(2.*math.pi)**-1.5)
+                                  +outfrac*halodens)#*(2.*math.pi)**-1.5)
             else:
                 thisout*= ds**2.*(numpy.exp(surfInterp.ev(R,numpy.fabs(z)))
-                                  +outfrac*halodens*(2.*math.pi)**-1.5)
+                                  +outfrac*halodens)#*(2.*math.pi)**-1.5)
             thisout[(R < thisrmin)*(R > thisrmax)*(numpy.fabs(z) > thiszmax)]= 0.
 #        print ii, len(plates)
         out+= numpy.sum(thisout)
@@ -1460,7 +1461,7 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
                       numpy.log(monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaZ
                       numpy.log(7./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
             #Outlier fraction
-            p.append(0.025) #BOVY: UPDATE FIRST GUESS
+            p.append(0.0000000000000000000000001) #BOVY: UPDATE FIRST GUESS
     if options.potential.lower() == 'flatlog':
         p.extend([1.,.7])
     return p
