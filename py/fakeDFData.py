@@ -22,7 +22,7 @@ _SRHALOFAKE=100. #not the same as in pixelFitDF
 _SPHIHALOFAKE=100.
 _SZHALOFAKE=100.
 _NMIN= 1000
-_DEBUG= True
+_DEBUG= False
 def generate_fakeDFData(options,args):
     #Check whether the savefile already exists
     if os.path.exists(args[0]):
