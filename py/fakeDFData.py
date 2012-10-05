@@ -15,7 +15,8 @@ from pixelFitDens import pixelAfeFeh
 from pixelFitDF import get_options,fidDens, get_dfparams, get_ro, get_vo, \
     _REFR0, _REFV0, setup_potential, setup_aA, initialize, \
     outDens, _SRHALO, _SZHALO, _SPHIHALO, get_outfrac, \
-    get_potparams, set_potparams
+    get_potparams, set_potparams, \
+    _VRSUN, _VTSUN, _VZSUN
 from fitDensz import _ZSUN, DistSpline, _ivezic_dist
 from compareDataModel import _predict_rdist_plate
 _SRHALOFAKE=100. #not the same as in pixelFitDF
@@ -474,7 +475,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     newds= numpy.array(newds)[accept][0:ndata]
     newqdfeval= numpy.array(newqdfeval)[accept][0:ndata]
     vx, vy, vz= bovy_coords.galcencyl_to_vxvyvz(newvr,newvt,newvz,newphi,
-                                                vsun=[-11.1,245.,7.25])
+                                                vsun=[_VRSUN,_VTSUN,_VZSUN])
     vrpmllpmbb= bovy_coords.vxvyvz_to_vrpmllpmbb(vx,vy,vz,newls,newbs,newds,
                                                  XYZ=False,degree=True)
     pmrapmdec= bovy_coords.pmllpmbb_to_pmrapmdec(vrpmllpmbb[:,1],
