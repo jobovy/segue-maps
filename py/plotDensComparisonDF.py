@@ -75,10 +75,10 @@ def plotDensComparisonDF(options,args):
     model1= interpDens
     params1= calc_model(params,options,pop)
     if True:
-        params= set_potparams([.95,0.75],params,options,1)
+        params= set_potparams([1.,0.75],params,options,1)
         model2= interpDens
         params2= calc_model(params,options,pop)
-        params= set_potparams([1.05,0.65],params,options,1)
+        params= set_potparams([1.,0.65],params,options,1)
         model3= interpDens
         params3= calc_model(params,options,pop)
     else:
@@ -273,11 +273,6 @@ def calc_model(params,options,pop):
                                                     kx=3,ky=3,
                                                     s=10.*float(nzs*nrs))
     return surfInterp
-
-def interpDens(R,z,surfInterp):
-    """Function to give density using the interpolated representation"""
-    return numpy.exp(surfInterp.ev(R/_REFR0,numpy.fabs(z)/_REFR0))
-
 
 ##RUNNING SINGLE BINS IN A SINGLE CALL
 def run_abundance_singles_plotdens(options,args,fehs,afes):

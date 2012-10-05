@@ -22,7 +22,7 @@ $(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7.fits: fakeDFData.py
 $(FAKEDIR)/fakeDFFit_dfeh1._dafe0.6_q0.7_justpot.sav: pixelFitDF.py
 	$(PYTHON) pixelFitDF.py --dfeh=1. --dafe=0.6 \
 	  -f $(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7.fits \
-	  $@ --novoprior --ninit=1 \
+	  $@ --novoprior --ninit=1 --mcvalt \
 	  --savenorm=$(subst .sav,_norm.sav,$@) \
 	  --justpot --nmcv=100 -m $(MULTI) --minndata=10000 #for 1 bin
 	$(PYTHON) pixelFitDF.py --dfeh=1. --dafe=0.6 \

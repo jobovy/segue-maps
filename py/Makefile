@@ -1,4 +1,4 @@
-OUTDIR=../new_figs
+UTDIR=../new_figs
 EXT=png
 NSAMPLES=1000
 

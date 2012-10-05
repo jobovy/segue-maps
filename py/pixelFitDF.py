@@ -38,7 +38,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
     segueSelect, _mr_gi, _gi_gr, _ERASESTR, _append_field_recarray, \
     ivezic_dist_gr
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
-from compareDataModel import _predict_rdist_plate
+from compareDataModel import _predict_rdist_plate, comparernumberPlate
 from pixelFitDens import pixelAfeFeh
 _DEBUG= False
 _REFR0= 8. #kpc
@@ -397,7 +397,7 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                               vxvyvz[:,2],
                                               ro*_REFR0-XYZ[:,0],
                                               XYZ[:,1],
-                                              XYZ[:,2]+_ZSUN,
+                                              XYZ[:,2],
                                               vsun=vsun,
                                               galcen=False)
     vR/= _REFV0*vo
@@ -472,6 +472,18 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                                         numpy.log(surfgrid),
                                                         kx=3,ky=3,
                                                         s=10.*float(nzs*nrs))
+    if options.mcvalt:
+        #Alternative manner that uses well-tested compareDataModel code
+        n,d,x= comparernumberPlate(interpDens,surfInterp,sf,
+                                   colordist,fehdist,data,
+                                   'all',
+                                   rmin=rmin,rmax=rmax,
+                                   grmin=grmin,grmax=grmax,
+                                   fehmin=fehmin,
+                                   fehmax=fehmax,
+                                   feh=feh,
+                                   noplot=True)
+        return numpy.sum(n)*vo**3.
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
         if options.sample.lower() == 'k' and options.indiv_brightlims:
@@ -900,7 +912,7 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         for kk in range(_THISNGR):
             thisfehs[kk,:]= numpy.linspace(fehrange[0],fehrange[1],_THISNFEH)
         for kk in range(_THISNFEH):
-                thisgrs[:,kk]= numpy.linspace(grmin,grmax,_THISNGR)
+            thisgrs[:,kk]= numpy.linspace(grmin,grmax,_THISNGR)
         dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))
         dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))
         ds= numpy.linspace(dmin,dmax,_NDS)
@@ -1647,6 +1659,10 @@ def outDens(R,z,dummy):
     """Fiducial outlier density for normalization integral (constant)"""
     return 1./12.
 
+def interpDens(R,z,surfInterp):
+    """Function to give density using the interpolated representation"""
+    return numpy.exp(surfInterp.ev(R/_REFR0,numpy.fabs(z)/_REFR0))
+
 ##SAMPLES QA
 def print_samples_qa(samples,options,npops):
     print "Mean, standard devs, acor tau, acor mean, acor s ..."
@@ -1792,6 +1808,9 @@ def get_options():
     parser.add_option("--mcwdf",action="store_true", dest="mcwdf",
                       default=False,
                       help="If set, calculate the normalization integral by first calculating the normalization of a fiducial DF given the best-fit MAP and then calculating the difference with Monte Carlo integration (based on an actual qdf)")
+    parser.add_option("--mcvalt",action="store_true", dest="mcvalt",
+                      default=False,
+                      help="If set, calculate the normalization integral by first mcv, but in an alternative implementation")
     parser.add_option("--mcout",action="store_true", dest="mcout",
                       default=False,
                       help="If set, add an outlier model to the mock data used for the normalization integral")
