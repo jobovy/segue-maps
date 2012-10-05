@@ -474,15 +474,15 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                                         s=10.*float(nzs*nrs))
     if options.mcvalt:
         #Alternative manner that uses well-tested compareDataModel code
-        n,d,x= comparernumberPlate(interpDens,surfInterp,sf,
-                                   colordist,fehdist,data,
-                                   'all',
-                                   rmin=rmin,rmax=rmax,
-                                   grmin=grmin,grmax=grmax,
-                                   fehmin=fehmin,
-                                   fehmax=fehmax,
-                                   feh=feh,
-                                   noplot=True)
+        n= comparernumberPlate(interpDens,surfInterp,sf,
+                               colordist,fehdist,None,
+                               'all',
+                               rmin=rmin,rmax=rmax,
+                               grmin=grmin,grmax=grmax,
+                               fehmin=fehmin,
+                               fehmax=fehmax,
+                               feh=feh,
+                               noplot=True,nodata=True)
         return numpy.sum(n)*vo**3.
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])

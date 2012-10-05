@@ -779,7 +779,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                         vsx='|sinb|',
                         xrange=None,yrange=None,
                         overplot=False,color='k',marker='v',cumul=False,
-                        runavg=0,noplot=False):
+                        runavg=0,noplot=False,nodata=False):
     """
     NAME:
        comparernumberPlate
@@ -928,6 +928,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
 #        norm= numpy.nansum(numbers)
 #        numbers/= norm
         numbers*= (zs[1]-zs[0])/(20.2-14.5)*1000 #backward compatibility
+        if noplot and nodata:
+            return numbers
         if xrange is None:
             xrange= [numpy.amin(xs)-addx,numpy.amax(xs)+addx]
         if yrange is None and not cumul:
