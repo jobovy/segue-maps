@@ -1324,7 +1324,7 @@ def setup_err_mc(data,options):
         lb= bovy_coords.radec_to_lb(data.ra,data.dec,degree=True)
         XYZ= bovy_coords.lbd_to_XYZ(lb[:,0],
                                     lb[:,1],
-                                    dsamples,degree=True)
+                                    dsamples,degree=True).reshape((1,len(data),3))
     """
     vxvyvz= numpy.zeros((len(data),3))
     vxvyvz[:,0]= data.vxc
@@ -1367,6 +1367,7 @@ def setup_err_mc(data,options):
                                                      numpy.ones(options.nmcerr)*b,
                                                      dsamples[ii,:],
                                                      degree=True)
+            outvxvyvz[ii,:,:]= vxvyvz.T
         else:
             vrsamples= data[ii].vr
             pmrasamples= data[ii].pmra
@@ -1383,10 +1384,12 @@ def setup_err_mc(data,options):
                                                      b,
                                                      dsamples[ii],
                                                      degree=True)
-        outvxvyvz[ii,:,:]= vxvyvz.T
+            outvxvyvz[ii,0,0]= vxvyvz[0]
+            outvxvyvz[ii,1,0]= vxvyvz[1]
+            outvxvyvz[ii,2,0]= vxvyvz[2]
         #Load into vdraws
         if options.nmcerr == 1:
-            xdraws[ii]= [XYZ[ii,:]]
+            xdraws[ii]= [XYZ[0,ii,:]]
             vdraws[ii]= [vxvyvz]
         else:
             vdraws[ii]= [vxvyvz[jj,:] for jj in range(options.nmcerr)]
