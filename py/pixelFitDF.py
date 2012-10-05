@@ -40,7 +40,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from compareDataModel import _predict_rdist_plate
 from pixelFitDens import pixelAfeFeh
-_DEBUG=True
+_DEBUG= False
 _REFR0= 8. #kpc
 _REFV0= 220. #km/s
 _VRSUN=-11.1 #km/s
