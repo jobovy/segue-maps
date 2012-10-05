@@ -483,6 +483,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                fehmax=fehmax,
                                feh=feh,
                                noplot=True,nodata=True)
+        vo= get_vo(params,options,npops)
         return numpy.sum(n)*vo**3.
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
