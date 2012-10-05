@@ -1834,6 +1834,9 @@ def get_options():
     parser.add_option("--all",action="store_true", dest="all",
                       default=False,
                       help="Just make the 'all' figure")
+    parser.add_option("--noerrs",action="store_true", dest="noerrs",
+                      default=False,
+                      help="Don't add uncertainties")
     return parser
   
 if __name__ == '__main__':

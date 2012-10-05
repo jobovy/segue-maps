@@ -528,9 +528,14 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     binned.data.dec[thisdataIndx]= radec[:,1]
     binned.data.l[thisdataIndx]= newls
     binned.data.b[thisdataIndx]= newbs
-    binned.data.vr[thisdataIndx]= vrpmllpmbb[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.vr_err[thisdataIndx]
-    binned.data.pmra[thisdataIndx]= pmrapmdec[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.pmra_err[thisdataIndx]
-    binned.data.pmdec[thisdataIndx]= pmrapmdec[:,1]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.pmdec_err[thisdataIndx]
+    if options.noerrs:
+        binned.data.vr[thisdataIndx]= vrpmllpmbb[:,0]
+        binned.data.pmra[thisdataIndx]= pmrapmdec[:,0]
+        binned.data.pmdec[thisdataIndx]= pmrapmdec[:,1]
+    else:
+        binned.data.vr[thisdataIndx]= vrpmllpmbb[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.vr_err[thisdataIndx]
+        binned.data.pmra[thisdataIndx]= pmrapmdec[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.pmra_err[thisdataIndx]
+        binned.data.pmdec[thisdataIndx]= pmrapmdec[:,1]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.pmdec_err[thisdataIndx]
     return binned
 
 if __name__ == '__main__':

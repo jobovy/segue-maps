@@ -32,6 +32,10 @@ $(FAKEDIR)/fakeDFFit_dfeh1._dafe0.6_q0.7_justpot.sav: pixelFitDF.py
 	  --justpot --nmcv=100 -m $(MULTI)  --minndata=10000 \
 	  --nsamples=$(NSAMPLES) --mcsample \
 	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
+#Huge, no errors
+$(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7_noerrs.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=1. --dafe=0.6 $@ -q 0.7 \
+	--noerrs --minndata=10000 #for 1 bin
 
 #q series
 $(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.6_justpot.sav: pixelFitDF.py
