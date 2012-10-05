@@ -435,9 +435,9 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     globalInterp= True
     if globalInterp:
         nrs, nzs= _SURFNRS, _SURFNZS
-        thisrmin, thisrmax= 4./_REFR0/ro, 15./_REFR0/ro
+        thisRmin, thisRmax= 4./_REFR0/ro, 15./_REFR0/ro
         thiszmin, thiszmax= 0., .8
-        Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
+        Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
         zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
         surfgrid= numpy.empty((nrs,nzs))
         if _PRECALCVSAMPLES:
@@ -498,6 +498,9 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                 #What rs do these ds correspond to
                 rs= 5.*numpy.log10(ds)+10.+mr[kk,jj]
                 thisout+= sf(plates[ii],r=rs)*rhogr[kk]*rhofeh[jj]
+                #We know the following are zero
+                thisout[(rs < thisrmin)]= 0.
+                thisout[(rs > thisrmax)]= 0.
         #Calculate (R,z)s
         XYZ= bovy_coords.lbd_to_XYZ(numpy.array([platel[ii] for dd in range(len(ds))]),
                                     numpy.array([plateb[ii] for dd in range(len(ds))]),
@@ -545,7 +548,10 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
             else:
                 thisout*= ds**2.*(numpy.exp(surfInterp.ev(R,numpy.fabs(z)))
                                   +outfrac*halodens)#*(2.*math.pi)**-1.5)
-            thisout[(R < thisrmin)*(R > thisrmax)*(numpy.fabs(z) > thiszmax)]= 0.
+            #To be sure we are not bothered by extrapolation
+            thisout[(R < thisRmin)]= 0.
+            thisout[(R > thisRmax)]= 0.
+            thisout[(numpy.fabs(z) > thiszmax)]= 0.
 #        print ii, len(plates)
         out+= numpy.sum(thisout)
     vo= get_vo(params,options,npops)
@@ -566,6 +572,7 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
                     sample=options.sample,type_bright='tanhrcut',
                     sn=options.snmin,select=options.select,
                     indiv_brightlims=options.indiv_brightlims)
+    plates= sf.plates #To make sure that these are matched up
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                      degree=True)
     indx= [not 'faint' in name for name in sf.platestr.programname]
