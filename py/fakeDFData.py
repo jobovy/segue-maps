@@ -510,15 +510,18 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     binned.data.feh[thisdataIndx]= newfeh
     oldgr= thisdata.dered_g-thisdata.dered_r
     oldr= thisdata.dered_r
-    binned.data.dered_r[thisdataIndx]= newrs\
-        +numpy.random.normal(size=numpy.sum(thisdataIndx))\
-        *ivezic_dist_gr(oldgr,0., #g-r is all that counts
-                        binned.data.feh[thisdataIndx],
-                        dg=binned.data[thisdataIndx].g_err,
-                        dr=binned.data[thisdataIndx].r_err,
-                        dfeh=binned.data[thisdataIndx].feh_err,
-                        return_error=True,
-                        _returndmr=True)
+    if options.noerrs:
+        binned.data.dered_r[thisdataIndx]= newrs
+    else:
+        binned.data.dered_r[thisdataIndx]= newrs\
+            +numpy.random.normal(size=numpy.sum(thisdataIndx))\
+            *ivezic_dist_gr(oldgr,0., #g-r is all that counts
+                            binned.data.feh[thisdataIndx],
+                            dg=binned.data[thisdataIndx].g_err,
+                            dr=binned.data[thisdataIndx].r_err,
+                            dfeh=binned.data[thisdataIndx].feh_err,
+                            return_error=True,
+                            _returndmr=True)
     binned.data.dered_r[(binned.data.dered_r >= rmax)]= rmax #tweak to make sure everything stays within the observed range
     binned.data.dered_r[(binned.data.dered_r <= rmin)]= rmin
     binned.data.dered_g[thisdataIndx]= oldgr+binned.data[thisdataIndx].dered_r
