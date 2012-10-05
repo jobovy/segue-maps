@@ -151,7 +151,7 @@ def plotDensComparisonDF(options,args):
                      right_legend=thisright_legend)
         if not params2 is None:
             compare_func(model2,params2,sf,colordist,fehdist,
-                         data,plate,color='k',
+                         data,plate,color='k',bins=bins[ii],
                          rmin=14.5,rmax=rmax,
                          grmin=grmin,grmax=grmax,
                          fehmin=fehmin,fehmax=fehmax,feh=feh,
@@ -159,7 +159,7 @@ def plotDensComparisonDF(options,args):
                          overplot=True,ls='--')
         if not params3 is None:
             compare_func(model3,params3,sf,colordist,fehdist,
-                         data,plate,color='k',
+                         data,plate,color='k',bins=bins[ii],
                          rmin=14.5,rmax=rmax,
                          grmin=grmin,grmax=grmax,
                          fehmin=fehmin,fehmax=fehmax,feh=feh,

@@ -1,6 +1,7 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
+#   - fix the units of outDens
 #   - write code to compareDataDFModel
 #   - generate fake data using new normalization method
 #   - loo FeH aFe
@@ -39,7 +40,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from compareDataModel import _predict_rdist_plate
 from pixelFitDens import pixelAfeFeh
-_DEBUG=False
+_DEBUG=True
 _REFR0= 8. #kpc
 _REFV0= 220. #km/s
 _VRSUN=-11.1 #km/s
