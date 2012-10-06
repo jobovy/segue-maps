@@ -435,7 +435,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     globalInterp= True
     if globalInterp:
         nrs, nzs= _SURFNRS, _SURFNZS
-        thisRmin, thisRmax= 4./_REFR0/ro, 15./_REFR0/ro
+        thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
         thiszmin, thiszmax= 0., .8
         Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
         zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
@@ -474,10 +474,11 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                                         s=10.*float(nzs*nrs))
     if options.mcvalt:
         #Alternative manner that uses well-tested compareDataModel code
+        print "WARNING: SHOULD INCLUDE OUTLIER MODEL"
         if _SURFSUBTRACTEXPON:
-            compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0)-x/ro/_REFR0/ehr-numpy.fabs(y)/ehz/ro/_REFR0)
+            compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0)-x/ro/_REFR0/ehr-numpy.fabs(y)/ehz/ro/_REFR0)+outfrac*halodens
         else:
-            compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0))
+            compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0))+outfrac*halodens
         n= comparernumberPlate(compare_func,
                                None,sf,
                                colordist,fehdist,None,
