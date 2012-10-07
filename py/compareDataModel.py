@@ -851,7 +851,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
     fehs= numpy.zeros((_NGR,_NFEH))
     for ii in range(_NGR):
         if feh > -0.5: #rich, actually only starts at 0.05
-            fehs[ii,:]= numpy.linspace(fehmin,0.05,_NFEH)
+            fehs[ii,:]= numpy.linspace(fehmin,fehmax,_NFEH)
         else:
             fehs[ii,:]= numpy.linspace(fehmin,fehmax,_NFEH)
     for ii in range(_NFEH):

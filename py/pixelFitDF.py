@@ -1,6 +1,7 @@
 #for testing: python pixelFitDF.py --dfeh=0.5 --dafe=0.25 --mcall --mcout --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1
 #
 # TO DO:
+#   - mcvalt in compareDataModel fixes Ro=8
 #   - fix the units of outDens
 #   - write code to compareDataDFModel
 #   - generate fake data using new normalization method
