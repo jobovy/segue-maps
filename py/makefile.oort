@@ -75,6 +75,24 @@ $(FAKEDIR)/fakeDFFit_dfeh1._dafe0.6_q0.7_noerrs_justpot.sav: pixelFitDF.py
 	  --justpot --nmcv=100 -m $(MULTI)  --minndata=10000 \
 	  --nsamples=$(NSAMPLES) --mcsample \
 	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
+#Huge, new errs
+$(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7_newerrs.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=1. --dafe=0.6 $@ -q 0.7 \
+	--minndata=10000 #for 1 bin
+$(FAKEDIR)/fakeDFFit_dfeh1._dafe0.6_q0.7_newerrs_justpot.sav: pixelFitDF.py \
+							      $(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7_newerrs.fits
+	$(PYTHON) pixelFitDF.py --dfeh=1. --dafe=0.6 \
+	  -f $(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7_newerrs.fits \
+	  $@ --novoprior --ninit=1 \#--mcvalt \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI) --minndata=10000 #for 1 bin
+	$(PYTHON) pixelFitDF.py --dfeh=1. --dafe=0.6 \
+	  -f $(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7.fits \
+	  --init=$@ --novoprior --ninit=1 \#--mcvalt \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI)  --minndata=10000 \
+	  --nsamples=$(NSAMPLES) --mcsample \
+	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
 
 #q series
 $(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.6_justpot.sav: pixelFitDF.py

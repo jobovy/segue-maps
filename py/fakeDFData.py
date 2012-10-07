@@ -522,8 +522,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                             dfeh=binned.data[thisdataIndx].feh_err,
                             return_error=True,
                             _returndmr=True)
-    binned.data.dered_r[(binned.data.dered_r >= rmax)]= rmax #tweak to make sure everything stays within the observed range
-    binned.data.dered_r[(binned.data.dered_r <= rmin)]= rmin
+#    binned.data.dered_r[(binned.data.dered_r >= rmax)]= rmax #tweak to make sure everything stays within the observed range
+#    binned.data.dered_r[(binned.data.dered_r <= rmin)]= rmin
     binned.data.dered_g[thisdataIndx]= oldgr+binned.data[thisdataIndx].dered_r
     #Also change plate and l and b
     binned.data.plate[thisdataIndx]= newplate
