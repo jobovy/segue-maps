@@ -1814,8 +1814,8 @@ def get_options():
     parser.add_option("--mcwdf",action="store_true", dest="mcwdf",
                       default=False,
                       help="If set, calculate the normalization integral by first calculating the normalization of a fiducial DF given the best-fit MAP and then calculating the difference with Monte Carlo integration (based on an actual qdf)")
-    parser.add_option("--mcvalt",action="store_true", dest="mcvalt",
-                      default=False,
+    parser.add_option("--nomcvalt",action="store_false", dest="mcvalt",
+                      default=True,
                       help="If set, calculate the normalization integral by first mcv, but in an alternative implementation")
     parser.add_option("--mcout",action="store_true", dest="mcout",
                       default=False,
