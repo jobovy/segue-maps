@@ -163,3 +163,72 @@ $(FAKEDIR)/fakeDFFit_dfeh0.25_dafe0.2_q0.9_justpot_singles.sav: pixelFitDF.py $(
 	  --justpot --nmcv=100 -m $(MULTI) \
 	  --nsamples=$(NSAMPLES) --mcsample \
 	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
+
+
+###Actual MAP bin sizes
+####Fake data
+$(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.6.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=0.1 --dafe=0.05 $@ -q 0.6
+$(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.7.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=0.1 --dafe=0.05 $@ -q 0.7
+$(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.8.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=0.1 --dafe=0.05 $@ -q 0.8
+$(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.9.fits: fakeDFData.py
+	$(PYTHON) fakeDFData.py --dfeh=0.1 --dafe=0.05 $@ -q 0.9
+
+#Fits
+$(FAKEDIR)/fakeDFFit_dfeh0.1_dafe0.05_q0.6_justpot_singles.sav: pixelFitDF.py $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.6.fits
+	$(PYTHON) pixelFitDF.py --dfeh=0.1 --dafe=0.05 \
+	  -f $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.6.fits \
+	  $@ --novoprior --ninit=1 --singles \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI) 
+	$(PYTHON) pixelFitDF.py --dfeh=0.1 --dafe=0.05 \
+	  -f $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.6.fits \
+	  --init=$@ --novoprior --ninit=1 --singles \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI) \
+	  --nsamples=$(NSAMPLES) --mcsample \
+	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
+
+$(FAKEDIR)/fakeDFFit_dfeh0.1_dafe0.05_q0.7_justpot_singles.sav: pixelFitDF.py $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.7.fits
+	$(PYTHON) pixelFitDF.py --dfeh=0.1 --dafe=0.05 \
+	  -f $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.7.fits \
+	  $@ --novoprior --ninit=1 --singles \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI) 
+	$(PYTHON) pixelFitDF.py --dfeh=0.1 --dafe=0.05 \
+	  -f $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.7.fits \
+	  --init=$@ --novoprior --ninit=1 --singles \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI) \
+	  --nsamples=$(NSAMPLES) --mcsample \
+	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
+
+$(FAKEDIR)/fakeDFFit_dfeh0.1_dafe0.05_q0.8_justpot_singles.sav: pixelFitDF.py $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.8.fits
+	$(PYTHON) pixelFitDF.py --dfeh=0.1 --dafe=0.05 \
+	  -f $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.8.fits \
+	  $@ --novoprior --ninit=1 --singles \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI) 
+	$(PYTHON) pixelFitDF.py --dfeh=0.1 --dafe=0.05 \
+	  -f $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.8.fits \
+	  --init=$@ --novoprior --ninit=1 --singles \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI) \
+	  --nsamples=$(NSAMPLES) --mcsample \
+	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
+
+$(FAKEDIR)/fakeDFFit_dfeh0.1_dafe0.05_q0.9_justpot_singles.sav: pixelFitDF.py $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.9.fits
+	$(PYTHON) pixelFitDF.py --dfeh=0.1 --dafe=0.05 \
+	  -f $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.9.fits \
+	  $@ --novoprior --ninit=1 --singles \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI) 
+	$(PYTHON) pixelFitDF.py --dfeh=0.1 --dafe=0.05 \
+	  -f $(FAKEDIR)/fakeDF_dfeh0.1_dafe0.05_q0.9.fits \
+	  --init=$@ --novoprior --ninit=1 --singles \
+	  --savenorm=$(subst .sav,_norm.sav,$@) \
+	  --justpot --nmcv=100 -m $(MULTI) \
+	  --nsamples=$(NSAMPLES) --mcsample \
+	  $(subst .sav,_$(NSAMPLES)samples.sav,$@)
