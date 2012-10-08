@@ -4,6 +4,7 @@ import numpy
 from scipy import interpolate
 import cPickle as pickle
 from optparse import OptionParser
+import monoAbundanceMW
 from galpy.util import bovy_plot, save_pickles
 from matplotlib import pyplot, cm
 from galpy import potential
@@ -123,24 +124,48 @@ def plot_hzszq(options,args):
         #Save
         save_pickles(args[0],hzs,szs,qs)
     #Re-sample
-    hzsgrid= numpy.linspace(50.,2000.,nhzs)/8000.
+    hzsgrid= numpy.linspace(50.,1500.,nhzs)/8000.
     qs2d= numpy.zeros((nszs,nhzs))
     for ii in range(nszs):
-        interpQ= interpolate.interp1d(hzs[:,ii],qs,kind=3,bounds_error=False)
+        #interpQ= interpolate.interp1d(hzs[:,ii],qs,kind='cubic',bounds_error=False)
+        interpQ= interpolate.UnivariateSpline(hzs[:,ii],qs,k=3)
         qs2d[ii,:]= interpQ(hzsgrid)
+        qs2d[ii,(hzsgrid < hzs[0,ii])]= numpy.nan
+        qs2d[ii,(hzsgrid > hzs[-1,ii])]= numpy.nan
     #Now plot
     bovy_plot.bovy_print()
-    bovy_plot.bovy_dens2d(qs2d.T,origin='lower',cmap='jet',
-#                          interpolation='gaussian',
-                          interpolation='nearest',
-                           xlabel=r'$\sigma_z\ [\mathrm{km\,s}^{-1}]$',
-                          ylabel=r'$h_z\ [\mathrm{pc}]$',
+    bovy_plot.bovy_dens2d(qs2d,origin='lower',cmap='jet',
+                          interpolation='gaussian',
+#                          interpolation='nearest',
+                          ylabel=r'$\sigma_z\ [\mathrm{km\,s}^{-1}]$',
+                          xlabel=r'$h_z\ [\mathrm{pc}]$',
                           zlabel=r'$\mathrm{flattening}\ q$',
-                          xrange=[szs[0],szs[-1]],
-                          yrange=[8000.*hzsgrid[0],8000.*hzsgrid[-1]],
-                           #vmin=vmin,vmax=vmax,
+                          yrange=[szs[0],szs[-1]],
+                          xrange=[8000.*hzsgrid[0],8000.*hzsgrid[-1]],
+                          vmin=0.5,vmax=1.,
                            contours=False,
                            colorbar=True,shrink=0.78)
+    _OVERPLOTMAPS= True
+    if _OVERPLOTMAPS:
+        fehs= monoAbundanceMW.fehs()
+        afes= monoAbundanceMW.afes()
+        npops= len(fehs)
+        mapszs= []
+        maphzs= []
+        for ii in range(npops):
+            thissz, thiserr= monoAbundanceMW.sigmaz(fehs[ii],afes[ii],err=True)
+            if thiserr/thissz > 0.1:
+                continue
+            thishz, thiserr= monoAbundanceMW.hz(fehs[ii],afes[ii],err=True)
+            if thiserr/thishz > 0.1:
+                continue
+            mapszs.append(thissz)
+            maphzs.append(thishz)
+        mapszs= numpy.array(mapszs)
+        maphzs= numpy.array(maphzs)
+        bovy_plot.bovy_plot(maphzs,mapszs,'ko',overplot=True,mfc='none',mew=1.5)
+    bovy_plot.bovy_text(r'$h_R = %i\,\mathrm{kpc}$' % int(options.hr),
+                        bottom_right=True)
     bovy_plot.bovy_end_print(options.plotfilename)
                            
 
