@@ -132,7 +132,7 @@ def plot_DFsingles(options,args):
     #Set up plot
     if options.type.lower() == 'q':
         if not options.flatten is None:
-            vmin, vmax= 0.5, 1.5
+            vmin, vmax= 0.8, 1.2
             zlabel=r'$\mathrm{flattening}\ q / %.1f$' % options.flatten
         else:
             vmin, vmax= 0.5, 1.2
