@@ -130,7 +130,7 @@ def generate_fakeDFData(options,args):
         params= set_potparams(potparams,params,options,len(fehs))
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
-    for ii in range(len(fehs)):
+    for ii in range(33,len(fehs)):
         print "Working on population %i / %i ..." % (ii+1,len(fehs))
         #Setup qdf
         dfparams= get_dfparams(params,ii,options,log=False)
@@ -189,6 +189,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         vo= get_vo(params,options,len(fehs))
     thishr= qdf.estimate_hr(1.)*_REFR0*ro #qdf._hr*_REFR0*ro
     thishz= qdf.estimate_hz(1.,zmin=0.1,zmax=0.3,nz=11)*_REFR0*ro
+    if thishr < 0.: thishr= 10. #Probably close to flat
+    if thishz  < 0.1: thishz= 0.2
     thissr= qdf._sr*_REFV0*vo
     thissz= qdf._sz*_REFV0*vo
     thishsr= qdf._hsr*_REFR0*ro

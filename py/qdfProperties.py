@@ -41,7 +41,7 @@ def plot_hrhrvshr(options,args):
                 qdf= quasiisothermaldf(hrs[ii,jj]/8.,srs[ii,jj]/220.,
                                        srs[ii,jj]/2./220.,7./8.,7./8.,
                                        pot=pot,aA=aA)
-                plotthis[ii,jj]= qdf.estimate_hr(1.,
+                plotthis[ii,jj]= qdf.estimate_hr(1.,z=None,nR=101,nmc=100,
                                                  dR=numpy.amin([6./8.,
                                                                 3./8.*hrs[ii,jj]]))/hrs[ii,jj]*8.
                 print ii*options.nsr+jj+1, options.nsr*options.nhr, \
@@ -188,19 +188,19 @@ def get_options():
                       default=1.,
                       help="Minimum scale length")
     parser.add_option("--hrmax",dest='hrmax',type='float',
-                      default=6.,
+                      default=5.,
                       help="Maximum scale length")
     parser.add_option("--srmin",dest='srmin',type='float',
-                      default=5.,
+                      default=20.,
                       help="Minimum scale length")
     parser.add_option("--srmax",dest='srmax',type='float',
                       default=80.,
                       help="Maximum scale length")
     parser.add_option("--nr",dest='nr',default=2,type='int',
                       help="Number of r to use")
-    parser.add_option("--nhr",dest='nhr',default=2,type='int',
+    parser.add_option("--nhr",dest='nhr',default=11,type='int',
                       help="Number of hr to use")
-    parser.add_option("--nsr",dest='nsr',default=2,type='int',
+    parser.add_option("--nsr",dest='nsr',default=11,type='int',
                       help="Number of sr to use")
     return parser
 
