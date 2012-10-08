@@ -1,6 +1,7 @@
 import os, os.path
 import math
 import numpy
+from scipy import interpolate
 import cPickle as pickle
 from optparse import OptionParser
 from galpy.util import bovy_plot, save_pickles
@@ -8,7 +9,6 @@ from matplotlib import pyplot, cm
 from galpy import potential
 from galpy.actionAngle_src.actionAngleAdiabaticGrid import  actionAngleAdiabaticGrid
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
-from galpy.actionAngle_src.actionAngleAdiabaticGrid import actionAngleAdiabaticGrid
 from galpy.potential import MiyamotoNagaiPotential, LogarithmicHaloPotential, MWPotential
 def plot_hrhrvshr(options,args):
     """Plot hr^out/hr^in as a function of hr for various sr"""
@@ -87,6 +87,63 @@ def plot_hrhrvshr(options,args):
     cbar.set_label(r'$\sigma_R \,[\mathrm{km\,s}^{-1}]$')
     bovy_plot.bovy_end_print(options.plotfilename)
 
+def plot_hzszq(options,args):
+    """Plot sz,hz, q"""
+    if len(args) == 0.:
+        print "Must provide a savefilename ..."
+        print "Returning ..."
+        return None
+    nqs, nszs, nhzs= 31, 51, 51
+    #nqs, nszs, nhzs= 5,5,5
+    if os.path.exists(args[0]):
+        #Load
+        savefile= open(args[0],'rb')
+        hzs= pickle.load(savefile)
+        szs= pickle.load(savefile)
+        qs= pickle.load(savefile)
+        savefile.close()
+    else:
+        qs= numpy.linspace(0.5,1.,nqs)
+        szs= numpy.linspace(15.,50.,nszs)
+        hzs= numpy.zeros((nqs,nszs))
+        for ii in range(nqs):
+            print "Working on potential %i / %i ..." % (ii+1,nqs)
+            #Setup potential
+            lp= LogarithmicHaloPotential(normalize=1.,q=qs[ii])
+            aA= actionAngleAdiabaticGrid(pot=lp,nR=16,
+                                         nEz=16,nEr=31,
+                                         nLz=31,
+                                         zmax=1.,
+                                         Rmax=5.)
+            for jj in range(nszs):
+                qdf= quasiisothermaldf(options.hr/8.,2.*szs[jj]/220.,
+                                       szs[jj]/220.,7./8.,7./8.,pot=lp,
+                                       aA=aA,cutcounter=True)    
+                hzs[ii,jj]= qdf.estimate_hz(1.)
+        #Save
+        save_pickles(args[0],hzs,szs,qs)
+    #Re-sample
+    hzsgrid= numpy.linspace(50.,2000.,nhzs)/8000.
+    qs2d= numpy.zeros((nszs,nhzs))
+    for ii in range(nszs):
+        interpQ= interpolate.interp1d(hzs[:,ii],qs,kind=3,bounds_error=False)
+        qs2d[ii,:]= interpQ(hzsgrid)
+    #Now plot
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_dens2d(qs2d.T,origin='lower',cmap='jet',
+#                          interpolation='gaussian',
+                          interpolation='nearest',
+                           xlabel=r'$\sigma_z\ [\mathrm{km\,s}^{-1}]$',
+                          ylabel=r'$h_z\ [\mathrm{pc}]$',
+                          zlabel=r'$\mathrm{flattening}\ q$',
+                          xrange=[szs[0],szs[-1]],
+                          yrange=[8000.*hzsgrid[0],8000.*hzsgrid[-1]],
+                           #vmin=vmin,vmax=vmax,
+                           contours=False,
+                           colorbar=True,shrink=0.78)
+    bovy_plot.bovy_end_print(options.plotfilename)
+                           
+
 def get_options():
     usage = "usage: %prog [options] <savefile>\n\nsavefile= name of the file that will hold the data to be plotted"
     parser = OptionParser(usage=usage)
@@ -100,6 +157,9 @@ def get_options():
     parser.add_option("--rmax",dest='rmax',type='float',
                       default=8.,
                       help="Maximum radius")
+    parser.add_option("--hr",dest='hr',type='float',
+                      default=3.,
+                      help="Scale length (kpc)")
     parser.add_option("--hrmin",dest='hrmin',type='float',
                       default=1.,
                       help="Minimum scale length")
@@ -128,4 +188,6 @@ if __name__ == '__main__':
         plot_hrhrvshr(options,args)
     elif options.type.lower() == 'hrhrr':
         plot_hrhrvsr(options,args)
+    elif options.type.lower() == 'hzszq':
+        plot_hzszq(options,args)
 
