@@ -125,16 +125,15 @@ def plot_hzszq(options,args):
         save_pickles(args[0],hzs,szs,qs)
     #Re-sample
     hzsgrid= numpy.linspace(50.,1500.,nhzs)/8000.
-    qs2d= numpy.zeros((nszs,nhzs))
+    qs2d= numpy.zeros((nhzs,nszs))
     for ii in range(nszs):
-        #interpQ= interpolate.interp1d(hzs[:,ii],qs,kind='cubic',bounds_error=False)
         interpQ= interpolate.UnivariateSpline(hzs[:,ii],qs,k=3)
-        qs2d[ii,:]= interpQ(hzsgrid)
-        qs2d[ii,(hzsgrid < hzs[0,ii])]= numpy.nan
-        qs2d[ii,(hzsgrid > hzs[-1,ii])]= numpy.nan
+        qs2d[:,ii]= interpQ(hzsgrid)
+        qs2d[(hzsgrid < hzs[0,ii]),ii]= numpy.nan
+        qs2d[(hzsgrid > hzs[-1,ii]),ii]= numpy.nan
     #Now plot
     bovy_plot.bovy_print()
-    bovy_plot.bovy_dens2d(qs2d,origin='lower',cmap='jet',
+    bovy_plot.bovy_dens2d(qs2d.T,origin='lower',cmap='jet',
                           interpolation='gaussian',
 #                          interpolation='nearest',
                           ylabel=r'$\sigma_z\ [\mathrm{km\,s}^{-1}]$',
@@ -142,7 +141,7 @@ def plot_hzszq(options,args):
                           zlabel=r'$\mathrm{flattening}\ q$',
                           yrange=[szs[0],szs[-1]],
                           xrange=[8000.*hzsgrid[0],8000.*hzsgrid[-1]],
-                          vmin=0.5,vmax=1.,
+#                          vmin=0.5,vmax=1.,
                            contours=False,
                            colorbar=True,shrink=0.78)
     _OVERPLOTMAPS= True
