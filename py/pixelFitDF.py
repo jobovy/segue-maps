@@ -55,8 +55,8 @@ _SPHIHALO= 100. #km/s
 _SZHALO= 100. #km/s
 _PRECALCVSAMPLES= True
 _SURFSUBTRACTEXPON= True
-_SURFNRS= 251
-_SURFNZS= 251
+_SURFNRS= 51
+_SURFNZS= 51
 def pixelFitDF(options,args):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
@@ -201,6 +201,8 @@ def read_rawdata(options):
     if not options.bmin is None:
         #Cut on |b|
         raw= raw[(numpy.fabs(raw.b) > options.bmin)]
+    if not options.zmax is None:
+        raw= raw[(raw.zc <= options.zmax)]
     if not options.fehmin is None:
         raw= raw[(raw.feh >= options.fehmin)]
     if not options.fehmax is None:
@@ -482,7 +484,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
         n= comparernumberPlate(compare_func,
                                None,sf,
                                colordist,fehdist,None,
-                               'all',
+                               'all',zmax=options.zmax,
                                rmin=rmin,rmax=rmax,
                                grmin=grmin,grmax=grmax,
                                fehmin=fehmin,

@@ -776,6 +776,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                         rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
                         fehmin=-0.4,
                         fehmax=0.5,feh=-0.15,
+                        zmax=None,
                         vsx='|sinb|',
                         xrange=None,yrange=None,
                         overplot=False,color='k',marker='v',cumul=False,
@@ -863,7 +864,10 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
     dmax= numpy.amax(_ivezic_dist(grs,thisrmax,fehs))
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
-    zmin, zmax= dmin*numpy.sin(bmin*_DEGTORAD), dmax*numpy.sin(bmax*_DEGTORAD)
+    if zmax is None:
+        zmax= dmax*numpy.sin(bmax*_DEGTORAD)
+        zmax+= 2.*_ZSUN #Just to be sure we have the North covered
+    zmin= dmin*numpy.sin(bmin*_DEGTORAD)
     zmin-= 2.*_ZSUN #Just to be sure we have the South covered
     zs= numpy.linspace(zmin,zmax,_NZS)
     #Set up x
