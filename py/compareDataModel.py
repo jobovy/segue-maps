@@ -829,6 +829,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
         faintplates= True
     #Zmin and Zmax for this rmin, rmax
     bs= []
+    allbright, allfaint= False, False
     for p in plate:
         #l and b?
         pindx= (sf.plates == p)
