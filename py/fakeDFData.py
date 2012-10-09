@@ -130,7 +130,7 @@ def generate_fakeDFData(options,args):
         params= set_potparams(potparams,params,options,len(fehs))
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
-    for ii in range(33,len(fehs)):
+    for ii in range(len(fehs)):
         print "Working on population %i / %i ..." % (ii+1,len(fehs))
         #Setup qdf
         dfparams= get_dfparams(params,ii,options,log=False)

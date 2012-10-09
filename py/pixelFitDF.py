@@ -1481,6 +1481,9 @@ def initialize(options,fehs,afes):
         p.extend([0.,1.,0.])
     mapfehs= monoAbundanceMW.fehs()
     mapafes= monoAbundanceMW.afes()
+    indx= (mapfehs != -0.45)*(mapafes != 0.075) #Pop this one, bc sz is crazy
+    mapfehs= mapfehs[indx]
+    mapafes= mapafes[indx]
     for ii in range(len(fehs)):
         if options.dfmodel.lower() == 'qdf':
             #Find nearest mono-abundance bin that has a measurement
