@@ -866,7 +866,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
     sys.stdout.flush()
     if zmax is None:
         zmax= dmax*numpy.sin(bmax*_DEGTORAD)
-        zmax+= 2.*_ZSUN #Just to be sure we have the North covered
+#        zmax+= 2.*_ZSUN #Just to be sure we have the North covered
     zmin= dmin*numpy.sin(bmin*_DEGTORAD)
     zmin-= 2.*_ZSUN #Just to be sure we have the South covered
     zs= numpy.linspace(zmin,zmax,_NZS)

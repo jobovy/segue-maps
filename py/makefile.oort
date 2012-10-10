@@ -102,7 +102,7 @@ $(FAKEDIR)/fakeDFFit_dfeh1._dafe0.6_q0.7_noerrs2_zmax5_justpot.sav: pixelFitDF.p
 	  -f $(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7_noerrs2.fits \
 	  $@ --novoprior --ninit=1 --nmcerr=1 \
 	  --savenorm=$(subst .sav,_norm.sav,$(FAKEDIR)/fakeDFFit_dfeh1._dafe0.6_q0.7_noerrs2_justpot.sav) \
-	  --zmax=5. \
+	  --zmax=15. \
 	  --justpot --nmcv=100 -m $(MULTI) --minndata=10000 #for 1 bin
 	$(PYTHON) pixelFitDF.py --dfeh=1. --dafe=0.6 \
 	  -f $(FAKEDIR)/fakeDF_dfeh1._dafe0.6_q0.7_noerrs2.fits \

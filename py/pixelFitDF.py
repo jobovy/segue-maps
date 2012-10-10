@@ -464,6 +464,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
             Rs= numpy.tile(Rgrid,(nzs,1)).T
             Zs= numpy.tile(zgrid,(nrs,1))
             ehr= qdf.estimate_hr(1.)
+#            ehz= qdf.estimate_hz(1.,zmin=0.5,zmax=0.7)#Get large z behavior right
             ehz= qdf.estimate_hz(1.)
             surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
                                                         numpy.log(surfgrid)
