@@ -9,7 +9,7 @@ from galpy.util import bovy_coords, bovy_plot, save_pickles
 import bovy_mcmc
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE
 from fitSigz import _IsothermLikeMinus, _HWRLikeMinus, _ZSUN, \
-    _HWRLike, _IsothermLike
+    _HWRLike, _IsothermLike, _HWRRZLike, _HWRRZLikeMinus
 from pixelFitDens import pixelAfeFeh
 def pixelFitVel(options,args):
     if options.sample.lower() == 'g':
@@ -68,6 +68,27 @@ def pixelFitVel(options,args):
                         [False,True]]
         domain=[[0.,1.],[-10.,10.],[-100.,100.],[-100.,100.],
                 [0.,4.6051701859880918]]
+    elif options.model.lower() == 'hwrrz':
+        like_func= _HWRRZLikeMinus
+        pdf_func= _HWRRZLike
+        step= [0.01,0.3,0.3,0.3,0.3,
+               0.3,0.3,0.3,0.3,
+               0.3,0.3,0.3]
+        create_method=['full',
+                       'step_out','step_out',
+                       'step_out','step_out',
+                       'step_out','step_out',
+                       'step_out','step_out',
+                       'step_out','step_out',
+                       'step_out']
+        isDomainFinite=[[True,True],
+                        [True,True],[True,True],[True,True],[False,True],
+                        [True,True],[True,True],[True,True],[False,True],
+                        [True,True],[True,True],[True,True]]
+        domain=[[0.,1.],
+                [-10.,10.],[-100.,100.],[-100.,100.],[0.,4.6051701859880918],
+                [-10.,10.],[-100.,100.],[-100.,100.],[0.,4.6051701859880918],
+                [-2.,2.],[-10.,10.],[-100.,100.]]
     elif options.model.lower() == 'isotherm':
         like_func= _IsothermLikeMinus
         pdf_func= _IsothermLike
@@ -117,7 +138,7 @@ def pixelFitVel(options,args):
             cov_vxvyvz[:,0,1]= data.vxvyc_rho*data.vxc_err*data.vyc_err
             cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err
             cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err
-            if options.vr:
+            if options.vr or options.vrz:
                 #Rotate vxvyvz to vRvTvz
                 cosphi= (8.-XYZ[:,0])/R
                 sinphi= XYZ[:,1]/R
@@ -137,16 +158,20 @@ def pixelFitVel(options,args):
             #Initial condition
             if options.model.lower() == 'hwr':
                 params= numpy.array([0.02,numpy.log(30.),0.,0.,numpy.log(6.)])
+            elif options.model.lower() == 'hwrrz':
+                params= numpy.array([0.02,numpy.log(30.),0.,0.,numpy.log(6.),
+                                     numpy.log(30.),0.,0.,numpy.log(6.),
+                                     0.2,0.,0.])
             elif options.model.lower() == 'isotherm':
                 params= numpy.array([0.02,numpy.log(30.),numpy.log(6.)])
             if not options.mcsample:
                 #Optimize likelihood
                 params= optimize.fmin_powell(like_func,params,
                                              args=(XYZ,vxvyvz,cov_vxvyvz,R,d,
-                                                   options.vr))
+                                                   options.vr,options.vrz))
                 if options.chi2:
                     #Calculate chi2 and chi2/dof
-                    chi2, dof= like_func(params,XYZ,vxvyvz,cov_vxvyvz,R,d,options.vr,
+                    chi2, dof= like_func(params,XYZ,vxvyvz,cov_vxvyvz,R,d,options.vr,options.vrz,
                                     chi2=True)
                     dof-= len(params)
                     params.resize(len(params)+2)
@@ -164,7 +189,7 @@ def pixelFitVel(options,args):
                                                  0.01,
                                                  pdf_func,
                                                  (XYZ,vxvyvz,cov_vxvyvz,R,d,
-                                                  options.vr),
+                                                  options.vr,options.vrz),
                                                  #create_method=create_method,
                                                  isDomainFinite=isDomainFinite,
                                                  domain=domain,
@@ -475,6 +500,9 @@ def get_options():
     parser.add_option("--vr",action="store_true", dest="vr",
                       default=False,
                       help="If set, fit vR instead of vz")
+    parser.add_option("--vrz",action="store_true", dest="vrz",
+                      default=False,
+                      help="If set, fit vR and vz instead of vz alone")
     parser.add_option("--observed",action="store_true", dest="observed",
                       default=False,
                       help="If set, write observed on it")

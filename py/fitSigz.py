@@ -236,6 +236,93 @@ def _HWRLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False,chi2=False):
         print "Current params, minus likelihood:", params, out
     return out
 
+def _HWRRZLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False,vrz=False):
+    """log likelihood for the HWRRZ model"""
+    return -_HWRRZLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=vr,vrz=vrz)
+
+def _HWRRZLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False,vrz=False,
+                    chi2=False):
+    """Minus log likelihood for the HWRRZ model"""
+    if params[0] < 0. or params[0] > 1.\
+            or params[1] < -10. or params[1] > 10. \
+            or params[2] < -100. or params[2] > 100. \
+            or params[3] < -100. or params[3] > 100. \
+            or params[4] > 4.6051701859880918 \
+            or params[5] < -10. or params[5] > 10. \
+            or params[6] < -100. or params[6] > 100. \
+            or params[7] < -100. or params[7] > 100. \
+            or params[8] > 4.6051701859880918 \
+            or params[9] < -2. or params[9] > 2. \
+            or params[10] < -10. or params[10] > 10. \
+            or params[11] < -100. or params[11] > 100.:
+        return numpy.finfo(numpy.dtype(numpy.float64)).max
+    #Get model sigma_z, sigma_r, and sigma_rz
+    sigoz= math.exp(params[1])
+    Rzs= math.exp(params[4])
+    sigz= (sigoz+params[2]*d+params[3]*d**2.)*numpy.exp(-(R-8.)/Rzs)
+    if vrz:
+        sigor= math.exp(params[5])
+        Rrs= math.exp(params[8])
+        sigr= (sigor+params[6]*d+params[7]*d**2.)*numpy.exp(-(R-8.)/Rrs)
+        z= XYZ[:,2]
+        tana= params[9]+params[10]*z/R+params[11]*(z/R)**2.
+        sig2rz= (sigr**2.-sigz**2.)*tana/(1.-tana**2.)
+        #Do likelihood
+        out= 0.
+        for ii in range(vxvyvz.shape[0]):
+            vv= numpy.array([vxvyvz[ii,0],vxvyvz[ii,2]])
+            VV= numpy.array([[sigr[ii]**2.+cov_vxvyvz[ii,0,0],
+                              sig2rz[ii]+cov_vxvyvz[ii,0,2]],
+                             [sig2rz[ii]+cov_vxvyvz[ii,0,2],
+                              sigz[ii]**2.+cov_vxvyvz[ii,2,2]]])
+            outVV= numpy.array([[100.**2.+cov_vxvyvz[ii,0,0],
+                                 cov_vxvyvz[ii,0,2]],
+                                [cov_vxvyvz[ii,0,2],
+                                100.**2.+cov_vxvyvz[ii,2,2]]])
+            #print VV, outVV, numpy.linalg.det(VV), numpy.linalg.det(outVV)
+            detVV= numpy.linalg.det(VV)
+            if detVV < 0.: return numpy.finfo(numpy.dtype(numpy.float64)).max
+            out-= numpy.log(params[0]/numpy.sqrt(numpy.linalg.det(outVV))\
+                                *numpy.exp(-0.5*numpy.dot(vv,
+                                                          numpy.dot(numpy.linalg.inv(outVV),vv)))
+                            +(1.-params[0])/numpy.sqrt(detVV)
+                                *numpy.exp(-0.5*numpy.dot(vv,
+                                                          numpy.dot(numpy.linalg.inv(VV),vv))))
+        return out                            
+    if vr:
+        vz= vxvyvz[:,0]
+        ez2= cov_vxvyvz[:,0,0]
+    else:
+        vz= vxvyvz[:,2]
+        ez2= cov_vxvyvz[:,2,2]
+    sigz2= sigz**2.+ez2
+    sigz= numpy.sqrt(sigz2)
+    if chi2:
+        if vrz:
+            raise NotImplementedError("Chi2 not implemented yet for vrz")
+        postout= params[0]/numpy.sqrt(100.**2.+ez2)\
+                                      *numpy.exp(-vz**2./2./(100.**2.+ez2))
+        postin= (1.-params[0])/sigz*numpy.exp(-vz**2./2./\
+                                                   sigz2)
+        norm= numpy.zeros(len(postout))
+        for ii in range(len(postout)):
+            norm[ii]= postout[ii]+postin[ii]
+        postin/= norm
+        postout/= norm
+        indx= (postin > 0.5)
+        out= (numpy.sum(vz[indx]**2./sigz2[indx])+numpy.log(1.-params[0]),
+              numpy.sum(indx))
+    else:
+        out= -numpy.sum(numpy.log(params[0]/numpy.sqrt(100.**2.+
+                                                       ez2)\
+                                      *numpy.exp(-vz**2./2./(100.**2.+
+                                                             ez2))+
+                                  (1.-params[0])/sigz*numpy.exp(-vz**2./2./\
+                                                                     sigz2)))
+    if _DEBUG:
+        print "Current params, minus likelihood:", params, out
+    return out
+
 def _IsothermLike(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False):
     """log likelihood for the HWR model"""
     return -_IsothermLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=vr)
