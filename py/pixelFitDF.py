@@ -1214,13 +1214,15 @@ def setup_aA(pot,options):
         numcores= 1
     else:
         numcores= options.multi
-    if options.aAmethod.lower() == 'adiabatic':
+    if options.aAmethod.lower() == 'adiabaticggrid':
         return actionAngleAdiabaticGrid(pot=pot,nR=options.aAnR,
                                         nEz=options.aAnEz,nEr=options.aAnEr,
                                         nLz=options.aAnLz,
                                         zmax=options.aAzmax,
                                         Rmax=options.aARmax,
                                         numcores=numcores)
+    elif options.aAmethod.lower() == 'staeckel':
+        return actionAngleStaeckel(pot=pot,delta=options.staeckeldelta,c=True)
     
 def setup_potential(params,options,npops):
     """Function for setting up the potential"""
@@ -1782,7 +1784,7 @@ def get_options():
     parser.add_option("--dfmodel",dest='dfmodel',default='qdf',#Quasi-isothermal
                       help="DF model to fit")
     #Action-angle options
-    parser.add_option("--aAmethod",dest='aAmethod',default='adiabatic',
+    parser.add_option("--aAmethod",dest='aAmethod',default='adiabaticgrid',
                       help="action angle method to use")
     parser.add_option("--aAnR",dest='aAnR',default=16,type='int',
                       help="Number of radii for Ez grid in aA")
@@ -1796,6 +1798,9 @@ def get_options():
                       help="zmax in aA")
     parser.add_option("--aARmax",dest='aARmax',default=5.,type='float',
                       help="Rmax in aA")
+    parser.add_option("--staeckeldelta",dest='staeckeldelta',
+                      default=.45,type='float',
+                      help="Focal length for Staeckel approximation")
     #Fit options
     parser.add_option("--fitro",action="store_true", dest="fitro",
                       default=False,
