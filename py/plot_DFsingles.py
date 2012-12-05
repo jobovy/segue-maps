@@ -150,8 +150,8 @@ def plot_DFsingles(options,args):
         xrange=[-1.6,0.5]
         yrange=[-0.05,0.55]
     else:
-        xrange=[-2.,0.6]
-        yrange=[-0.1,0.6]
+        xrange=[-2.,0.5]
+        yrange=[-0.2,0.6]
     #Now plot
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
             or options.type.lower() == 'fehafe':
