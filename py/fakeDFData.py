@@ -429,13 +429,15 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         maxnewlogratio= numpy.amax(thisnewlogratio)
         thisnewlogratio-= numpy.amax(thisnewlogratio)
         thisnewratio= numpy.exp(thisnewlogratio)
+        if len(thisnewratio.shape) > 1 and thisnewratio.shape[1] == 1:
+            thisnewratio= numpy.reshape(thisnewratio,(thisnewratio.shape[0]))
         #Rejection sample
         accept= numpy.random.uniform(size=len(thisnewratio))
         accept= (accept < thisnewratio)
         fraccomplete= float(numpy.sum(accept))/ndata
         fracsuccess= float(numpy.sum(accept))/len(thisnewratio)
         if _DEBUG:
-            print fraccomplete, fracsuccess
+            print fraccomplete, fracsuccess, ndata
             print numpy.histogram(thisnewratio,bins=16)
             indx= numpy.argmax(thisnewratio)
             print numpy.array(newvr)[indx], \
