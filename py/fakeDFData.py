@@ -7,6 +7,7 @@ import os, os.path
 import copy
 import numpy
 from scipy.maxentropy import logsumexp
+from scipy import interpolate
 import fitsio
 from galpy.util import bovy_coords, bovy_plot
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
@@ -18,14 +19,15 @@ from pixelFitDF import get_options,fidDens, get_dfparams, get_ro, get_vo, \
     _REFR0, _REFV0, setup_potential, setup_aA, initialize, \
     outDens, _SRHALO, _SZHALO, _SPHIHALO, get_outfrac, \
     get_potparams, set_potparams, \
-    _VRSUN, _VTSUN, _VZSUN
+    _VRSUN, _VTSUN, _VZSUN, \
+    _SURFNRS, _SURFNZS, _SURFSUBTRACTEXPON
 from fitDensz import _ZSUN, DistSpline, _ivezic_dist
 from compareDataModel import _predict_rdist_plate
 _SRHALOFAKE=100. #not the same as in pixelFitDF
 _SPHIHALOFAKE=100.
 _SZHALOFAKE=100.
 _NMIN= 1000
-_DEBUG= False
+_DEBUG= True
 def generate_fakeDFData(options,args):
     #Check whether the savefile already exists
     if os.path.exists(args[0]):
@@ -145,6 +147,7 @@ def generate_fakeDFData(options,args):
             sz= dfparams[2]/vo
             hsr= dfparams[3]/ro
             hsz= dfparams[4]/ro
+        print hr, sr, sz, hsr, hsz
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
         #Some more selection stuff
         data= binned(fehs[ii],afes[ii])
@@ -198,13 +201,22 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     thishsr= qdf._hsr*_REFR0*ro
     thishsz= qdf._hsz*_REFR0*ro
     if True:
-        #Make everything 20% larger
-        thishr*= 1.2
-        thishz*= 1.2
-        thishsr*= 1.2
-        thishsz*= 1.2
-        thissr*= 1.4
-        thissz*= 1.2
+        if options.aAmethod.lower() == 'staeckel':
+            #Make everything 10% larger
+            thishr*= 1.1
+            thishz*= 1.1
+            thishsr*= 1.1
+            thishsz*= 1.1
+            thissr*= 1.1
+            thissz*= 1.1
+        else:
+            #Make everything 20% larger
+            thishr*= 1.2
+            thishz*= 1.2
+            thishsr*= 1.2
+            thishsz*= 1.2
+            thissr*= 1.4
+            thissz*= 1.2
     #Find nearest mono-abundance bin that has a measurement
     abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                              +(afes[ii]-mapafes)**2./0.0025)
@@ -235,13 +247,48 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     if options.mcout:
         fidoutfrac= get_outfrac(params,ii,options)
         rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
-    lagoutfrac= 0.2 #.0000000000000000000000001 #seems good
+    lagoutfrac= 0.15 #.0000000000000000000000001 #seems good
+    #Setup density model
+    use_real_dens= True
+    if use_real_dens:
+        nrs, nzs= 50, 50
+        thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
+        thiszmin, thiszmax= 0., .8
+        Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
+        zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
+        surfgrid= numpy.empty((nrs,nzs))
+        for ll in range(nrs):
+            for jj in range(nzs):
+                surfgrid[ll,jj]= qdf.surfacemass(Rgrid[ll],zgrid[jj],
+                                                 nmc=options.nmcv)
+        if _SURFSUBTRACTEXPON:
+            Rs= numpy.tile(Rgrid,(nzs,1)).T
+            Zs= numpy.tile(zgrid,(nrs,1))
+            ehr= qdf.estimate_hr(1.)
+#            ehz= qdf.estimate_hz(1.,zmin=0.5,zmax=0.7)#Get large z behavior right
+            ehz= qdf.estimate_hz(1.)
+            surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
+                                                        numpy.log(surfgrid)
+                                                        +Rs/ehr+numpy.fabs(Zs)/ehz,
+                                                        kx=3,ky=3,
+                                                        s=10.*float(nzs*nrs))
+        else:
+            surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
+                                                        numpy.log(surfgrid),
+                                                        kx=3,ky=3,
+                                                        s=10.*float(nzs*nrs))
+        if _SURFSUBTRACTEXPON:
+            compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0)-x/ro/_REFR0/ehr-numpy.fabs(y)/ehz/ro/_REFR0)
+        else:
+            compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0))
+    else:
+        compare_func= lambda x,y,z: fidDens(x,y,thishr,thishz,z)
     for jj in range(len(sf.plates)):
         p= sf.plates[jj]
         sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,jj+1,len(sf.plates)))
         sys.stdout.flush()
         rdists[jj,:,:,:]= _predict_rdist_plate(rs,
-                                               lambda x,y,z: fidDens(x,y,thishr,thishz,z),
+                                               compare_func,
                                                None,rmin,rmax,
                                                platelb[jj,0],platelb[jj,1],
                                                grmin,grmax,
@@ -376,7 +423,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
             #Estimate asymmetric drift
             va= sigr**2./2./_REFV0/vo\
-                *(-.5+R*(1./thishr+2./thishsr))
+                *(-.5+R*(1./thishr+2./thishsr))+7.*z
             newvas.append(va)
             if options.mcout and thisoutlier:
                 #Sample from outlier gaussian
@@ -387,7 +434,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                 #Sample from lagging gaussian
                 newvz.append(numpy.random.normal()*_SZHALOFAKE)
                 newvr.append(numpy.random.normal()*_SRHALOFAKE)
-                newvt.append(numpy.random.normal()*_SPHIHALOFAKE+_REFV0*vo/2.)
+                newvt.append(numpy.random.normal()*_SPHIHALOFAKE+_REFV0*vo/2.
+                             -(sigr-0.4)*1.5)
             else:
                 #Sample from disk gaussian
                 newvz.append(numpy.random.normal()*sigz)
@@ -395,14 +443,18 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                 newvt.append(numpy.random.normal()*sigphi+_REFV0*vo-va)
             newlogratio= list(newlogratio)
             fidlogeval= numpy.log(1.-lagoutfrac)\
-                +numpy.log(fidDens(R,z,thishr,thishz,None))\
                 -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0*vo+va)**2./sigphi**2.)
             lagoutlogeval= numpy.log(lagoutfrac)\
-                +numpy.log(fidDens(R,z,thishr,thishz,None))\
                 -numpy.log(_SRHALOFAKE)\
                 -numpy.log(_SPHIHALOFAKE)\
                 -numpy.log(_SZHALOFAKE)\
                 -0.5*(newvr[-1]**2./_SRHALOFAKE**2.+newvz[-1]**2./_SZHALOFAKE**2.+(newvt[-1]-_REFV0*vo/2)**2./_SPHIHALOFAKE**2.)
+            if use_real_dens:
+                fidlogeval+= compare_func(R,z,None)[0]
+                lagoutlogeval+= compare_func(R,z,None)[0]
+            else:
+                fidlogeval+= numpy.log(fidDens(R,z,thishr,thishz,None))
+                lagoutlogeval+= numpy.log(fidDens(R,z,thishr,thishz,None))
             newfideval.append(fidlogeval)
             if options.mcout:
                 fidoutlogeval= numpy.log(fidoutfrac)\
@@ -416,11 +468,13 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             else:
                 newpropeval.append(logsumexp([lagoutlogeval,fidlogeval]))
             qdflogeval= qdf(R/ro/_REFR0,newvr[-1]/vo/_REFV0,newvt[-1]/vo/_REFV0,z/ro/_REFR0,newvz[-1]/vo/_REFV0,log=True)
+            if isinstance(qdflogeval,(list,numpy.ndarray)):
+                qdflogeval= qdflogeval[0]
             if options.mcout:
                 outlogeval= logoutfrac+loghalodens\
                     -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
                     -0.5*((newvr[-1]/vo/_REFV0)**2./srhalo**2.+(newvz[-1]/vo/_REFV0)**2./szhalo**2.+(newvt[-1]/vo/_REFV0)**2./sphihalo**2.)\
-                    -1.5*numpy.log(2.*math.pi)
+                    -1.5*numpy.log(2.*numpy.pi)
                 newqdfeval.append(logsumexp([qdflogeval,outlogeval]))
             else:
                 newqdfeval.append(qdflogeval)
@@ -429,7 +483,11 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         newlogratio= numpy.array(newlogratio)
         thisnewlogratio= copy.copy(newlogratio)
         maxnewlogratio= numpy.amax(thisnewlogratio)
-        thisnewlogratio-= numpy.amax(thisnewlogratio)
+        if False:
+            argsort_thisnewlogratio= numpy.argsort(thisnewlogratio)[::-1]
+            thisnewlogratio-= thisnewlogratio[argsort_thisnewlogratio[2]] #3rd largest
+        else:
+            thisnewlogratio-= numpy.amax(thisnewlogratio)
         thisnewratio= numpy.exp(thisnewlogratio)
         if len(thisnewratio.shape) > 1 and thisnewratio.shape[1] == 1:
             thisnewratio= numpy.reshape(thisnewratio,(thisnewratio.shape[0]))
@@ -465,7 +523,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                 #                            xrange=[0.,20.],
                                 #                            xrange=[0.,3.],
                                 #                            xrange=[6.,9.],
-                                yrange=[0.,1.])
+                                yrange=[0.001,1.],semilogy=True)
             bovy_plot.bovy_end_print('/home/bovy/public_html/segue-local/test.png')
     #Now collect the samples
     newrs= numpy.array(newrs)[accept][0:ndata]
