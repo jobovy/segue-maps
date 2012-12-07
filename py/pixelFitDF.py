@@ -58,8 +58,8 @@ _SPHIHALO= 100. #km/s
 _SZHALO= 100. #km/s
 _PRECALCVSAMPLES= True
 _SURFSUBTRACTEXPON= True
-_SURFNRS= 51
-_SURFNZS= 51
+_SURFNRS= 101
+_SURFNZS= 101
 def pixelFitDF(options,args):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
@@ -1217,7 +1217,7 @@ def setup_aA(pot,options):
         numcores= 1
     else:
         numcores= options.multi
-    if options.aAmethod.lower() == 'adiabaticggrid':
+    if options.aAmethod.lower() == 'adiabaticgrid':
         return actionAngleAdiabaticGrid(pot=pot,nR=options.aAnR,
                                         nEz=options.aAnEz,nEr=options.aAnEr,
                                         nLz=options.aAnLz,
