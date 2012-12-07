@@ -1,6 +1,6 @@
 #for testing: python fakeDFData.py --dfeh=0.5 --dafe=0.25 --singlefeh=-0.2 --singleafe=0.2 -p 1880 --minndata=1 testFakeDFData.sav
 #
-#for running: python fakeDFData.py --dfeh=0.25 --dafe=0.2 ../fakeDF/fakeDF_dfeh0.25_dafe0.2_q0.7_staeckel.fits --aAmethod=staeckel -q 0.7
+#for running: python fakeDFData.py --dfeh=0.25 --dafe=0.2 --aAmethod=staeckel -q 0.7 ../fakeDF/fakeDF_dfeh0.25_dafe0.2_q0.7_staeckel.fits --nmcv=100
 #
 import sys
 import os, os.path
