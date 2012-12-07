@@ -27,7 +27,7 @@ _SRHALOFAKE=100. #not the same as in pixelFitDF
 _SPHIHALOFAKE=100.
 _SZHALOFAKE=100.
 _NMIN= 1000
-_DEBUG= False
+_DEBUG= True
 def generate_fakeDFData(options,args):
     #Check whether the savefile already exists
     if os.path.exists(args[0]):
@@ -203,12 +203,12 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     if True:
         if options.aAmethod.lower() == 'staeckel':
             #Make everything 10% larger
-            thishr*= 1.1
-            thishz*= 1.1
-            thishsr*= 1.1
-            thishsz*= 1.1
-            thissr*= 1.1
-            thissz*= 1.1
+            thishr*= 1.4
+            thishz*= 1.4
+            thishsr*= 1.2
+            thishsz*= 1.2
+            thissr*= 1.5
+            thissz*= 1.4
         else:
             #Make everything 20% larger
             thishr*= 1.2
@@ -420,10 +420,10 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             newzs.append(z)
             sigz= thissz*numpy.exp(-(R-_REFR0)/thishsz)
             sigr= thissr*numpy.exp(-(R-_REFR0)/thishsr)
-            sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
+            sigphi= sigr #/numpy.sqrt(2.) #BOVY: FOR NOW
             #Estimate asymmetric drift
             va= sigr**2./2./_REFV0/vo\
-                *(-.5+R*(1./thishr+2./thishsr))+7.*z
+                *(-.5+R*(1./thishr+2./thishsr))+10.*numpy.fabs(z)
             newvas.append(va)
             if options.mcout and thisoutlier:
                 #Sample from outlier gaussian
@@ -434,8 +434,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                 #Sample from lagging gaussian
                 newvz.append(numpy.random.normal()*_SZHALOFAKE)
                 newvr.append(numpy.random.normal()*_SRHALOFAKE)
-                newvt.append(numpy.random.normal()*_SPHIHALOFAKE+_REFV0*vo/2.
-                             -(sigr-0.4)*1.5)
+                newvt.append(numpy.random.normal()*_SPHIHALOFAKE*2.+_REFV0*vo/4.)
             else:
                 #Sample from disk gaussian
                 newvz.append(numpy.random.normal()*sigz)
@@ -446,12 +445,12 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                 -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0*vo+va)**2./sigphi**2.)
             lagoutlogeval= numpy.log(lagoutfrac)\
                 -numpy.log(_SRHALOFAKE)\
-                -numpy.log(_SPHIHALOFAKE)\
+                -numpy.log(_SPHIHALOFAKE*2.)\
                 -numpy.log(_SZHALOFAKE)\
-                -0.5*(newvr[-1]**2./_SRHALOFAKE**2.+newvz[-1]**2./_SZHALOFAKE**2.+(newvt[-1]-_REFV0*vo/2)**2./_SPHIHALOFAKE**2.)
+                -0.5*(newvr[-1]**2./_SRHALOFAKE**2.+newvz[-1]**2./_SZHALOFAKE**2.+(newvt[-1]-_REFV0*vo/4.)**2./_SPHIHALOFAKE**2./4.)
             if use_real_dens:
-                fidlogeval+= compare_func(R,z,None)[0]
-                lagoutlogeval+= compare_func(R,z,None)[0]
+                fidlogeval+= numpy.log(compare_func(R,z,None)[0])
+                lagoutlogeval+= numpy.log(compare_func(R,z,None)[0])
             else:
                 fidlogeval+= numpy.log(fidDens(R,z,thishr,thishz,None))
                 lagoutlogeval+= numpy.log(fidDens(R,z,thishr,thishz,None))
