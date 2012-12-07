@@ -203,12 +203,12 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     if True:
         if options.aAmethod.lower() == 'staeckel':
             #Make everything 10% larger
-            thishr*= 1.4
-            thishz*= 1.4
+            thishr*= 1.2
+            thishz*= 1.2
             thishsr*= 1.2
             thishsz*= 1.2
-            thissr*= 1.5
-            thissz*= 1.4
+            thissr*= 1.3
+            thissz*= 1.3
         else:
             #Make everything 20% larger
             thishr*= 1.2
@@ -251,7 +251,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     #Setup density model
     use_real_dens= True
     if use_real_dens:
-        nrs, nzs= 50, 50
+        nrs, nzs= 101, 101
         thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
         thiszmin, thiszmax= 0., .8
         Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
@@ -363,6 +363,105 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         thisdata= binned(fehs[ii],afes[ii])
         thisdataIndx= binned.callIndx(fehs[ii],afes[ii])
         ndata= len(thisdata)
+    #First sample from spatial density
+    for ll in range(ndata):
+        #First sample a plate
+        ran= numpy.random.uniform()
+        kk= 0
+        while numbers[kk] < ran: kk+= 1
+        #Also sample a FeH and a color
+        ran= numpy.random.uniform()
+        ff= 0
+        while fehdists[ff] < ran: ff+= 1
+        ran= numpy.random.uniform()
+        cc= 0
+        while colordists[cc] < ran: cc+= 1
+        #plate==kk, feh=ff,color=cc; now sample from the rdist of this plate
+        ran= numpy.random.uniform()
+        jj= 0
+        if options.mcout and numpy.random.uniform() < totout: #outlier
+            while rdistsout[kk,jj,cc,ff] < ran: jj+= 1
+            thisoutlier= True
+        else:
+            while rdists[kk,jj,cc,ff] < ran: jj+= 1
+            thisoutlier= False
+        #r=jj
+        newrs.append(rs[jj])
+        newls.append(platelb[kk,0])
+        newbs.append(platelb[kk,1])
+        newplate.append(sf.plates[kk])
+        newgr.append(tgrs[cc])
+        newfeh.append(tfehs[ff])
+        dist= _ivezic_dist(tgrs[cc],rs[jj],tfehs[ff])
+        newds.append(dist)
+        #calculate R,z
+        XYZ= bovy_coords.lbd_to_XYZ(platelb[kk,0],platelb[kk,1],
+                                    dist,degree=True)
+        R= ((_REFR0-XYZ[0])**2.+XYZ[1]**2.)**(0.5)
+        newRs.append(R)
+        phi= numpy.arcsin(XYZ[1]/R)
+        if (_REFR0-XYZ[0]) < 0.:
+            phi= numpy.pi-phi
+        newphi.append(phi)
+        z= XYZ[2]+_ZSUN
+        newzs.append(z)
+    newrs= numpy.array(newrs)
+    newls= numpy.array(newls)
+    newbs= numpy.array(newbs)
+    newplate= numpy.array(newplate)
+    newgr= numpy.array(newgr)
+    newfeh= numpy.array(newfeh)
+    newds= numpy.array(newds)
+    newRs= numpy.array(newRs)
+    newzs= numpy.array(newzs)
+    newphi= numpy.array(newphi)
+    #Add mock velocities
+    newvr= numpy.empty_like(newrs)
+    newvt= numpy.empty_like(newrs)
+    newvz= numpy.empty_like(newrs)
+    accept_v= numpy.zeros(ndata,dtype='bool')
+    naccept= numpy.sum(accept_v)
+    sigz= thissz*numpy.exp(-(newRs-_REFR0)/thishsz)
+    sigr= thissr*numpy.exp(-(newRs-_REFR0)/thishsr)
+    va= sigr**2./2./_REFV0/vo\
+        *(-.5+newRs*(1./thishr+2./thishsr))+7.*numpy.fabs(newzs)
+    maxqdf= qdf(newRs/ro/_REFR0,
+                numpy.zeros(ndata),
+                (_REFV0*vo-va)/_REFV0/vo,
+                newzs/ro/_REFR0,
+                numpy.zeros(ndata),log=True)+numpy.log(1000.) #rough estimate
+    ntries= 0
+    while naccept < ndata:
+        #print ntries
+        #ntries+= 1
+        accept_v_comp= True-accept_v
+        prop_vr= numpy.random.normal(size=ndata)*sigr
+        prop_vt= numpy.random.normal(size=ndata)*sigr+vo*_REFV0-va
+        prop_vz= numpy.random.normal(size=ndata)*sigz
+        qoverp= numpy.zeros(ndata)-numpy.finfo(numpy.dtype(numpy.float64)).max
+        qoverp[accept_v_comp]= (qdf(newRs[accept_v_comp]/ro/_REFR0,
+                                    prop_vr[accept_v_comp]/vo/_REFV0,
+                                    prop_vt[accept_v_comp]/vo/_REFV0,
+                                    newzs[accept_v_comp]/ro/_REFR0,
+                                    prop_vz[accept_v_comp]/vo/_REFV0,log=True)
+                                -maxqdf[accept_v_comp] #normalize max to 1
+                                -(-0.5*(prop_vr[accept_v_comp]**2./sigr[accept_v_comp]**2.+prop_vz[accept_v_comp]**2./sigz[accept_v_comp]**2.+(prop_vt[accept_v_comp]-_REFV0*vo+va[accept_v_comp])**2./sigr[accept_v_comp]**2.)))
+        if numpy.any(qoverp > 0.):
+            qindx= (qoverp > 0.)
+            print naccept, ndata, newRs[qindx], newzs[qindx], prop_vr[qindx], prop_vt[qindx], prop_vz[qindx], qoverp[qindx]
+            raise RuntimeError("max qoverp = %f > 1, but shouldn't be" % (numpy.exp(numpy.amax(qoverp))))
+        accept_these= numpy.log(numpy.random.uniform(size=ndata))
+        #print accept_these, (accept_these < qoverp)
+        accept_these= (accept_these < qoverp)        
+        newvr[accept_these]= prop_vr[accept_these]
+        newvt[accept_these]= prop_vt[accept_these]
+        newvz[accept_these]= prop_vz[accept_these]
+        accept_v[accept_these]= True
+        naccept= numpy.sum(accept_v)
+    print newvr
+    print newvt
+    print newvz
+    """
     ntot= 0
     nsamples= 0
     itt= 0
@@ -377,47 +476,6 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         count= 0
         while count < nthis:
             count+= 1
-            #First sample a plate
-            ran= numpy.random.uniform()
-            kk= 0
-            while numbers[kk] < ran: kk+= 1
-            #Also sample a Feh and a color
-            ran= numpy.random.uniform()
-            ff= 0
-            while fehdists[ff] < ran: ff+= 1
-            ran= numpy.random.uniform()
-            cc= 0
-            while colordists[cc] < ran: cc+= 1
-            #plate==kk, feh=ff,color=cc; now sample from the rdist of this plate
-            ran= numpy.random.uniform()
-            jj= 0
-            if options.mcout and numpy.random.uniform() < totout: #outlier
-                while rdistsout[kk,jj,cc,ff] < ran: jj+= 1
-                thisoutlier= True
-            else:
-                while rdists[kk,jj,cc,ff] < ran: jj+= 1
-                thisoutlier= False
-            #r=jj
-            newrs.append(rs[jj])
-            newls.append(platelb[kk,0])
-            newbs.append(platelb[kk,1])
-            newplate.append(sf.plates[kk])
-            newgr.append(tgrs[cc])
-            newfeh.append(tfehs[ff])
-            dist= _ivezic_dist(tgrs[cc],rs[jj],tfehs[ff])
-            newds.append(dist)
-            #Add mock velocities
-            #First calculate all R
-            XYZ= bovy_coords.lbd_to_XYZ(platelb[kk,0],platelb[kk,1],
-                                        dist,degree=True)
-            R= ((_REFR0-XYZ[0])**2.+XYZ[1]**2.)**(0.5)
-            newRs.append(R)
-            phi= numpy.arcsin(XYZ[1]/R)
-            if (_REFR0-XYZ[0]) < 0.:
-                phi= numpy.pi-phi
-            newphi.append(phi)
-            z= XYZ[2]+_ZSUN
-            newzs.append(z)
             sigz= thissz*numpy.exp(-(R-_REFR0)/thishsz)
             sigr= thissr*numpy.exp(-(R-_REFR0)/thishsr)
             sigphi= sigr #/numpy.sqrt(2.) #BOVY: FOR NOW
@@ -442,12 +500,12 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                 newvt.append(numpy.random.normal()*sigphi+_REFV0*vo-va)
             newlogratio= list(newlogratio)
             fidlogeval= numpy.log(1.-lagoutfrac)\
-                -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0*vo+va)**2./sigphi**2.)
+                     -numpy.log(sigr)-numpy.log(sigphi)-numpy.log(sigz)-0.5*(newvr[-1]**2./sigr**2.+newvz[-1]**2./sigz**2.+(newvt[-1]-_REFV0*vo+va)**2./sigphi**2.)
             lagoutlogeval= numpy.log(lagoutfrac)\
-                -numpy.log(_SRHALOFAKE)\
-                -numpy.log(_SPHIHALOFAKE*2.)\
-                -numpy.log(_SZHALOFAKE)\
-                -0.5*(newvr[-1]**2./_SRHALOFAKE**2.+newvz[-1]**2./_SZHALOFAKE**2.+(newvt[-1]-_REFV0*vo/4.)**2./_SPHIHALOFAKE**2./4.)
+                     -numpy.log(_SRHALOFAKE)\
+                     -numpy.log(_SPHIHALOFAKE*2.)\
+                     -numpy.log(_SZHALOFAKE)\
+                     -0.5*(newvr[-1]**2./_SRHALOFAKE**2.+newvz[-1]**2./_SZHALOFAKE**2.+(newvt[-1]-_REFV0*vo/4.)**2./_SPHIHALOFAKE**2./4.)
             if use_real_dens:
                 fidlogeval+= numpy.log(compare_func(R,z,None)[0])
                 lagoutlogeval+= numpy.log(compare_func(R,z,None)[0])
@@ -537,6 +595,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     newphi= numpy.array(newphi)[accept][0:ndata]
     newds= numpy.array(newds)[accept][0:ndata]
     newqdfeval= numpy.array(newqdfeval)[accept][0:ndata]
+    """
     vx, vy, vz= bovy_coords.galcencyl_to_vxvyvz(newvr,newvt,newvz,newphi,
                                                 vsun=[_VRSUN,_VTSUN,_VZSUN])
     vrpmllpmbb= bovy_coords.vxvyvz_to_vrpmllpmbb(vx,vy,vz,newls,newbs,newds,
@@ -566,8 +625,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                         False, #outlier?
                         vrpmllpmbb[ii,0],
                         vrpmllpmbb[ii,1],
-                        vrpmllpmbb[ii,2],
-                        newqdfeval[ii]])
+                        vrpmllpmbb[ii,2]])#,
+#                        newqdfeval[ii]])
         return out
     #Load into data
     binned.data.feh[thisdataIndx]= newfeh
