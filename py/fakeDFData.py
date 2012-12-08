@@ -207,16 +207,16 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             thishz*= 1.2
             thishsr*= 1.2
             thishsz*= 1.2
-            thissr*= 1.3
-            thissz*= 1.3
+            thissr*= 2.
+            thissz*= 2.
         else:
             #Make everything 20% larger
             thishr*= 1.2
             thishz*= 1.2
             thishsr*= 1.2
             thishsz*= 1.2
-            thissr*= 1.4
-            thissz*= 1.2
+            thissr*= 2.
+            thissz*= 2.
     #Find nearest mono-abundance bin that has a measurement
     abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                              +(afes[ii]-mapafes)**2./0.0025)
@@ -423,20 +423,39 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     naccept= numpy.sum(accept_v)
     sigz= thissz*numpy.exp(-(newRs-_REFR0)/thishsz)
     sigr= thissr*numpy.exp(-(newRs-_REFR0)/thishsr)
-    va= sigr**2./2./_REFV0/vo\
-        *(-.5+newRs*(1./thishr+2./thishsr))+7.*numpy.fabs(newzs)
-    maxqdf= qdf(newRs/ro/_REFR0,
-                numpy.zeros(ndata),
-                (_REFV0*vo-va)/_REFV0/vo,
-                newzs/ro/_REFR0,
-                numpy.zeros(ndata),log=True)+numpy.log(1000.) #rough estimate
+    va= numpy.empty_like(newrs)
+    sigphi= numpy.empty_like(newrs)
+    maxqdf= numpy.empty_like(newrs)
+    nvt= 101
+    tvt= numpy.linspace(0.1,1.5,nvt)
+    for kk in range(ndata):
+        #evaluate qdf for vt
+        pvt= qdf(newRs[kk]/ro/_REFR0+numpy.zeros(nvt),
+                 numpy.zeros(nvt),
+                 tvt,
+                 newzs[kk]/ro/_REFR0+numpy.zeros(nvt),
+                 numpy.zeros(nvt),log=True)
+        pvt_maxindx= numpy.argmax(pvt)
+        va[kk]= (1.-tvt[pvt_maxindx])*_REFV0*vo
+        maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(10.)
+        sigphi[kk]= _REFV0*vo*4.*numpy.sqrt(numpy.sum(numpy.exp(pvt)*tvt**2.)/numpy.sum(numpy.exp(pvt))-(numpy.sum(numpy.exp(pvt)*tvt)/numpy.sum(numpy.exp(pvt)))**2.)
+    #va= sigr**2./2./_REFV0/vo\
+    #    *(-.5+newRs*(1./thishr+2./thishsr))+7.*numpy.fabs(newzs)
+    #va[(va > 0.75*(_REFV0*vo))]= _REFV0*vo/2.
+    #maxqdf= qdf(newRs/ro/_REFR0,
+    #            numpy.zeros(ndata),
+    #            (_REFV0*vo-va)/_REFV0/vo,
+    #            newzs/ro/_REFR0,
+    #           numpy.zeros(ndata),log=True)+numpy.log(1000.) #rough estimate
     ntries= 0
     while naccept < ndata:
-        #print ntries
-        #ntries+= 1
+        sys.stdout.write('\r %i %i %i \r' % (ntries,naccept,ndata))
+        sys.stdout.flush()
+        #print ntries, naccept, ndata
+        ntries+= 1
         accept_v_comp= True-accept_v
         prop_vr= numpy.random.normal(size=ndata)*sigr
-        prop_vt= numpy.random.normal(size=ndata)*sigr+vo*_REFV0-va
+        prop_vt= numpy.random.normal(size=ndata)*sigphi+vo*_REFV0-va
         prop_vz= numpy.random.normal(size=ndata)*sigz
         qoverp= numpy.zeros(ndata)-numpy.finfo(numpy.dtype(numpy.float64)).max
         qoverp[accept_v_comp]= (qdf(newRs[accept_v_comp]/ro/_REFR0,
@@ -445,10 +464,10 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                     newzs[accept_v_comp]/ro/_REFR0,
                                     prop_vz[accept_v_comp]/vo/_REFV0,log=True)
                                 -maxqdf[accept_v_comp] #normalize max to 1
-                                -(-0.5*(prop_vr[accept_v_comp]**2./sigr[accept_v_comp]**2.+prop_vz[accept_v_comp]**2./sigz[accept_v_comp]**2.+(prop_vt[accept_v_comp]-_REFV0*vo+va[accept_v_comp])**2./sigr[accept_v_comp]**2.)))
+                                -(-0.5*(prop_vr[accept_v_comp]**2./sigr[accept_v_comp]**2.+prop_vz[accept_v_comp]**2./sigz[accept_v_comp]**2.+(prop_vt[accept_v_comp]-_REFV0*vo+va[accept_v_comp])**2./sigphi[accept_v_comp]**2.)))
         if numpy.any(qoverp > 0.):
             qindx= (qoverp > 0.)
-            print naccept, ndata, newRs[qindx], newzs[qindx], prop_vr[qindx], prop_vt[qindx], prop_vz[qindx], qoverp[qindx]
+            print naccept, ndata, newRs[qindx], newzs[qindx], prop_vr[qindx], pva[qindx], sigphi[qindx], rop_vt[qindx], prop_vz[qindx], qoverp[qindx]
             raise RuntimeError("max qoverp = %f > 1, but shouldn't be" % (numpy.exp(numpy.amax(qoverp))))
         accept_these= numpy.log(numpy.random.uniform(size=ndata))
         #print accept_these, (accept_these < qoverp)
@@ -458,9 +477,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         newvz[accept_these]= prop_vz[accept_these]
         accept_v[accept_these]= True
         naccept= numpy.sum(accept_v)
-    print newvr
-    print newvt
-    print newvz
+    sys.stdout.write('\r'+_ERASESTR+'\r')
+    sys.stdout.flush()
     """
     ntot= 0
     nsamples= 0
