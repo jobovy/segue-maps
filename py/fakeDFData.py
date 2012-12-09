@@ -469,7 +469,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                 -(-0.5*(prop_vr[accept_v_comp]**2./sigr[accept_v_comp]**2.+prop_vz[accept_v_comp]**2./sigz[accept_v_comp]**2.+(prop_vt[accept_v_comp]-_REFV0*vo+va[accept_v_comp])**2./sigphi[accept_v_comp]**2.)))
         if numpy.any(qoverp > 0.):
             qindx= (qoverp > 0.)
-            print naccept, ndata, newRs[qindx], newzs[qindx], prop_vr[qindx], va[qindx], sigphi[qindx], rop_vt[qindx], prop_vz[qindx], qoverp[qindx]
+            print naccept, ndata, newRs[qindx], newzs[qindx], prop_vr[qindx], va[qindx], sigphi[qindx], prop_vt[qindx], prop_vz[qindx], qoverp[qindx]
             raise RuntimeError("max qoverp = %f > 1, but shouldn't be" % (numpy.exp(numpy.amax(qoverp))))
         accept_these= numpy.log(numpy.random.uniform(size=ndata))
         #print accept_these, (accept_these < qoverp)
