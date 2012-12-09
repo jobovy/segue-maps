@@ -439,7 +439,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                  numpy.zeros(nvt),log=True)
         pvt_maxindx= numpy.argmax(pvt)
         va[kk]= (1.-tvt[pvt_maxindx])*_REFV0*vo
-        if options.aAmethod.lower() == 'adiabaticgrid' and options.q == 0.8:
+        if options.aAmethod.lower() == 'adiabaticgrid' and options.flatten == 0.8:
             maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(200.)
         else:
             maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(40.)
