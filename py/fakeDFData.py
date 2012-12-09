@@ -439,7 +439,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                  numpy.zeros(nvt),log=True)
         pvt_maxindx= numpy.argmax(pvt)
         va[kk]= (1.-tvt[pvt_maxindx])*_REFV0*vo
-        maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(10.)
+        maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(20.)
         sigphi[kk]= _REFV0*vo*4.*numpy.sqrt(numpy.sum(numpy.exp(pvt)*tvt**2.)/numpy.sum(numpy.exp(pvt))-(numpy.sum(numpy.exp(pvt)*tvt)/numpy.sum(numpy.exp(pvt)))**2.)
     #va= sigr**2./2./_REFV0/vo\
     #    *(-.5+newRs*(1./thishr+2./thishsr))+7.*numpy.fabs(newzs)
@@ -469,7 +469,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                 -(-0.5*(prop_vr[accept_v_comp]**2./sigr[accept_v_comp]**2.+prop_vz[accept_v_comp]**2./sigz[accept_v_comp]**2.+(prop_vt[accept_v_comp]-_REFV0*vo+va[accept_v_comp])**2./sigphi[accept_v_comp]**2.)))
         if numpy.any(qoverp > 0.):
             qindx= (qoverp > 0.)
-            print naccept, ndata, newRs[qindx], newzs[qindx], prop_vr[qindx], pva[qindx], sigphi[qindx], rop_vt[qindx], prop_vz[qindx], qoverp[qindx]
+            print naccept, ndata, newRs[qindx], newzs[qindx], prop_vr[qindx], va[qindx], sigphi[qindx], rop_vt[qindx], prop_vz[qindx], qoverp[qindx]
             raise RuntimeError("max qoverp = %f > 1, but shouldn't be" % (numpy.exp(numpy.amax(qoverp))))
         accept_these= numpy.log(numpy.random.uniform(size=ndata))
         #print accept_these, (accept_these < qoverp)
