@@ -2,6 +2,8 @@
 #
 #for running: python fakeDFData.py --dfeh=0.25 --dafe=0.2 --aAmethod=staeckel -q 0.7 ../fakeDF/fakeDF_dfeh0.25_dafe0.2_q0.7_staeckel.fits --nmcv=100
 #
+# for adiabatic: python fakeDFData.py --dfeh=0.25 --dafe=0.2 ../fakeDF/fakeDF_dfeh0.25_dafe0.2_q0.6_aa.fits  -q 0.6 --nmcv=100
+#
 import sys
 import os, os.path
 import copy
