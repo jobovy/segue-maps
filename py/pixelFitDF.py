@@ -358,7 +358,7 @@ def logprior_pot(params,options,npops):
         else:
             out-= 0.5*(vo-218./_REFV0)**2./(6./_REFV0)**2.
     potparams= get_potparams(params,options,npops)
-    if options.potential.lower() == 'flatlog':
+    if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         q= potparams[1]
         if q <= 0.53: #minimal flattening for positive density at R > 5 kpc, |Z| < 4 kpc, ALSO CHANGE IN SETUP_DOMAIN
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -1234,6 +1234,9 @@ def setup_potential(params,options,npops):
     potparams= get_potparams(params,options,npops)
     if options.potential.lower() == 'flatlog':
         return potential.LogarithmicHaloPotential(normalize=1.,q=potparams[1])
+    if options.potential.lower() == 'flatlogdisk':
+        return [potential.LogarithmicHaloPotential(normalize=.5,q=potparams[1]),
+                potential.MiyamotoNagaiPotential(normalize=.5,a=0.5,b=0.1)]
 
 ##FULL OPTIMIZER
 def full_optimize(params,fehs,afes,binned,options,normintstuff,errstuff):
@@ -1505,7 +1508,7 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
                       numpy.log(7./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
             #Outlier fraction
             p.append(0.0000000000000000000000001) #BOVY: UPDATE FIRST GUESS
-    if options.potential.lower() == 'flatlog':
+    if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         p.extend([1.,.7])
     return p
 
@@ -1533,7 +1536,7 @@ def setup_domain(options,npops):
             #Outlier fraction
             isDomainFinite.append([True,True])
             domain.append([0.,1.])
-    if options.potential.lower() == 'flatlog':
+    if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
         isDomainFinite.append([True,False])
@@ -1558,7 +1561,7 @@ def setup_domain_indiv_potential(options,npops):
     """Setup isDomainFinite, domain for markovpy for sampling the potential"""
     isDomainFinite= []
     domain= []
-    if options.potential.lower() == 'flatlog':
+    if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
         isDomainFinite.append([True,False])
@@ -1573,7 +1576,7 @@ def get_potparams(p,options,npops):
     if options.fitvsun: startindx+= 3
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*npops
-    if options.potential.lower() == 'flatlog':
+    if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         return (p[startindx],p[startindx+1]) #vo, q
 
 def get_vo(p,options,npops):
@@ -1583,7 +1586,7 @@ def get_vo(p,options,npops):
     if options.fitvsun: startindx+= 3
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*npops
-    if options.potential.lower() == 'flatlog':
+    if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         return p[startindx]
 
 def get_outfrac(p,indx,options):
@@ -1603,7 +1606,7 @@ def set_potparams(p,params,options,npops):
     if options.fitvsun: startindx+= 3
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*npops
-    if options.potential.lower() == 'flatlog':
+    if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         params[startindx]= p[0]
         params[startindx+1]= p[1]
     return params
@@ -1651,7 +1654,7 @@ def get_ndfparams(options):
 
 def get_npotparams(options):
     """Function that returns the number of potential parameters"""
-    if options.potential.lower() == 'flatlog':
+    if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         return 2
 
 def get_ro(p,options):
@@ -1688,7 +1691,7 @@ def print_samples_qa(samples,options,npops):
     print "Mean, standard devs, acor tau, acor mean, acor s ..."
     #potparams
     if options.justpot:
-        if options.potential.lower() == 'flatlog':
+        if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
             nparams= 2
         for kk in range(nparams):
             xs= numpy.array([s[kk] for s in samples])
