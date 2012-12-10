@@ -439,8 +439,10 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                  numpy.zeros(nvt),log=True)
         pvt_maxindx= numpy.argmax(pvt)
         va[kk]= (1.-tvt[pvt_maxindx])*_REFV0*vo
-        if options.aAmethod.lower() == 'adiabaticgrid' and options.flatten == 0.8:
-            maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(200.)
+        if options.aAmethod.lower() == 'adiabaticgrid' and options.flatten >= 0.9:
+            maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(250.)
+        elif options.aAmethod.lower() == 'adiabaticgrid' and options.flatten >= 0.8:
+            maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(250.)
         else:
             maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(40.)
         sigphi[kk]= _REFV0*vo*4.*numpy.sqrt(numpy.sum(numpy.exp(pvt)*tvt**2.)/numpy.sum(numpy.exp(pvt))-(numpy.sum(numpy.exp(pvt)*tvt)/numpy.sum(numpy.exp(pvt)))**2.)
@@ -453,6 +455,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     #            newzs/ro/_REFR0,
     #           numpy.zeros(ndata),log=True)+numpy.log(1000.) #rough estimate
     ntries= 0
+    ngtr1= 0
     while naccept < ndata:
         sys.stdout.write('\r %i %i %i \r' % (ntries,naccept,ndata))
         sys.stdout.flush()
@@ -471,9 +474,11 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                 -maxqdf[accept_v_comp] #normalize max to 1
                                 -(-0.5*(prop_vr[accept_v_comp]**2./sigr[accept_v_comp]**2.+prop_vz[accept_v_comp]**2./sigz[accept_v_comp]**2.+(prop_vt[accept_v_comp]-_REFV0*vo+va[accept_v_comp])**2./sigphi[accept_v_comp]**2.)))
         if numpy.any(qoverp > 0.):
-            qindx= (qoverp > 0.)
-            print naccept, ndata, newRs[qindx], newzs[qindx], prop_vr[qindx], va[qindx], sigphi[qindx], prop_vt[qindx], prop_vz[qindx], qoverp[qindx]
-            raise RuntimeError("max qoverp = %f > 1, but shouldn't be" % (numpy.exp(numpy.amax(qoverp))))
+            ngtr1+= numpy.sum((qoverp > 0.))
+            if ngtr1 > 5:
+                qindx= (qoverp > 0.)
+                print naccept, ndata, newRs[qindx], newzs[qindx], prop_vr[qindx], va[qindx], sigphi[qindx], prop_vt[qindx], prop_vz[qindx], qoverp[qindx]
+                raise RuntimeError("max qoverp = %f > 1, but shouldn't be" % (numpy.exp(numpy.amax(qoverp))))
         accept_these= numpy.log(numpy.random.uniform(size=ndata))
         #print accept_these, (accept_these < qoverp)
         accept_these= (accept_these < qoverp)        

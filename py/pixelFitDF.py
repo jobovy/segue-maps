@@ -21,6 +21,7 @@ import os, os.path
 import sys
 import copy
 import tempfile
+import time
 import math
 import numpy
 from scipy import optimize, interpolate, linalg
@@ -242,6 +243,7 @@ def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
     #Set up potential and actionAngle
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
+    print "params", params
     out= logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff)
     return out+logroprior+logpotprior
 
