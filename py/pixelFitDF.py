@@ -250,7 +250,7 @@ def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
 def logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff):
     logl= numpy.zeros(len(fehs))
     #Evaluate individual DFs
-    args= (pot,aA,fehs,afes,binned,normintstuff,len(fehs),errstuff)
+    args= (pot,aA,fehs,afes,binned,normintstuff,len(fehs),errstuff,options)
     if not options.multi is None:
         logl= multi.parallel_map((lambda x: indiv_logdf(params,x,
                                                         *args)),
@@ -265,7 +265,7 @@ def logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff):
     return numpy.sum(logl)
 
 def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
-                errstuff):
+                errstuff,options):
     """Individual population log likelihood"""
     dfparams= get_dfparams(params,indx,options,log=False)
     vo= get_vo(params,options,npops)
@@ -284,7 +284,8 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     #Calculate surface(R=1.) for relative outlier normalization
     logoutfrac+= numpy.log(qdf.surfacemass_z(1.))
     #Get data ready
-    R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned,errstuff)
+    R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned,errstuff,
+                                      optons)
     ndata= R.shape[0]
     data_lndf= numpy.zeros((ndata,2*options.nmcerr))
     srhalo= _SRHALO/vo/_REFV0
@@ -319,7 +320,7 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
     if logoutfracprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         return -logoutfracprior
     ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff,
-                     len(fehs),errstuff)
+                     len(fehs),errstuff,options)
     print params, ml
     return ml
 
@@ -1155,8 +1156,9 @@ def run_abundance_singles_single(options,args,fehs,afes,ii,savename,initname,
     pixelFitDF(options,args)
 
 ##COORDINATE TRANSFORMATIONS AND RO/VO NORMALIZATION
-def prepare_coordinates(params,indx,fehs,afes,binned,errstuff):
+def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
     vo= get_vo(params,options,len(fehs))
+    print vo
     ro= get_ro(params,options)
     vsun= get_vsun(params,options)
     data= copy.copy(binned(fehs[indx],afes[indx]))
@@ -1225,7 +1227,10 @@ def setup_aA(pot,options):
                                         nLz=options.aAnLz,
                                         zmax=options.aAzmax,
                                         Rmax=options.aARmax,
-                                        numcores=numcores)
+                                        numcores=numcores,
+                                        c=True)
+    elif options.aAmethod.lower() == 'adiabatic':
+        return actionAngleAdiabatic(pot=pot,gamma=1.,c=True)
     elif options.aAmethod.lower() == 'staeckel':
         return actionAngleStaeckel(pot=pot,delta=options.staeckeldelta,c=True)
     
@@ -1351,6 +1356,7 @@ def setup_err_mc(data,options):
         dsamples= ivezic_dist_gr(numpy.tile(data.dered_g-data.dered_r,(options.nmcerr,1)).T+rsamples,
                                  rsamples,
                                  numpy.tile(data.feh,(options.nmcerr,1)).T)[0]
+        #dsamples[(dsamples > 15.)]= 15. #to make sure samples don't go nuts
         #Transform to XYZ
         lb= bovy_coords.radec_to_lb(data.ra,data.dec,degree=True)
         XYZ= bovy_coords.lbd_to_XYZ(numpy.tile(lb[:,0],(options.nmcerr,1)).T,
