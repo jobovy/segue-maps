@@ -129,7 +129,8 @@ def generate_fakeDFData(options,args):
     else:
         params= initialize(options,fehs,afes)
     #Setup potential
-    if options.potential.lower() == 'flatlog' and not options.flatten is None:
+    if (options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk') \
+            and not options.flatten is None:
         #Set flattening
         potparams= list(get_potparams(params,options,len(fehs)))
         potparams[1]= options.flatten
