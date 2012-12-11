@@ -133,7 +133,7 @@ def generate_fakeDFData(options,args):
             and not options.flatten is None:
         #Set flattening
         potparams= list(get_potparams(params,options,len(fehs)))
-        potparams[1]= options.flatten
+        potparams[0]= options.flatten
         params= set_potparams(potparams,params,options,len(fehs))
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)

@@ -243,7 +243,6 @@ def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
     #Set up potential and actionAngle
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
-    print "params", params
     out= logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff)
     return out+logroprior+logpotprior
 
@@ -285,7 +284,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     logoutfrac+= numpy.log(qdf.surfacemass_z(1.))
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned,errstuff,
-                                      optons)
+                                      options)
     ndata= R.shape[0]
     data_lndf= numpy.zeros((ndata,2*options.nmcerr))
     srhalo= _SRHALO/vo/_REFV0
@@ -360,7 +359,7 @@ def logprior_pot(params,options,npops):
             out-= 0.5*(vo-218./_REFV0)**2./(6./_REFV0)**2.
     potparams= get_potparams(params,options,npops)
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
-        q= potparams[1]
+        q= potparams[0]
         if q <= 0.53: #minimal flattening for positive density at R > 5 kpc, |Z| < 4 kpc, ALSO CHANGE IN SETUP_DOMAIN
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     return out
@@ -1158,7 +1157,6 @@ def run_abundance_singles_single(options,args,fehs,afes,ii,savename,initname,
 ##COORDINATE TRANSFORMATIONS AND RO/VO NORMALIZATION
 def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
     vo= get_vo(params,options,len(fehs))
-    print vo
     ro= get_ro(params,options)
     vsun= get_vsun(params,options)
     data= copy.copy(binned(fehs[indx],afes[indx]))
@@ -1238,9 +1236,9 @@ def setup_potential(params,options,npops):
     """Function for setting up the potential"""
     potparams= get_potparams(params,options,npops)
     if options.potential.lower() == 'flatlog':
-        return potential.LogarithmicHaloPotential(normalize=1.,q=potparams[1])
-    if options.potential.lower() == 'flatlogdisk':
-        return [potential.LogarithmicHaloPotential(normalize=.5,q=potparams[1]),
+        return potential.LogarithmicHaloPotential(normalize=1.,q=potparams[0])
+    elif options.potential.lower() == 'flatlogdisk':
+        return [potential.LogarithmicHaloPotential(normalize=.5,q=potparams[0]),
                 potential.MiyamotoNagaiPotential(normalize=.5,a=0.5,b=0.1)]
 
 ##FULL OPTIMIZER
@@ -1515,7 +1513,7 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
             #Outlier fraction
             p.append(0.0000000000000000000000001) #BOVY: UPDATE FIRST GUESS
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
-        p.extend([1.,.7])
+        p.extend([.7,1.])
     return p
 
 ##SETUP DOMAIN FOR MARKOVPY
@@ -1543,10 +1541,10 @@ def setup_domain(options,npops):
             isDomainFinite.append([True,True])
             domain.append([0.,1.])
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
-        isDomainFinite.append([True,True])
-        domain.append([100./_REFV0,350./_REFV0])
         isDomainFinite.append([True,False])
         domain.append([0.53,0.])
+        isDomainFinite.append([True,True])
+        domain.append([100./_REFV0,350./_REFV0])
     return (isDomainFinite,domain)
 
 def setup_domain_indiv_df(options,npops):
@@ -1568,10 +1566,10 @@ def setup_domain_indiv_potential(options,npops):
     isDomainFinite= []
     domain= []
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
-        isDomainFinite.append([True,True])
-        domain.append([100./_REFV0,350./_REFV0])
         isDomainFinite.append([True,False])
         domain.append([0.53,0.])
+        isDomainFinite.append([True,True])
+        domain.append([100./_REFV0,350./_REFV0])
     return (isDomainFinite,domain)
 
 ##GET AND SET THE PARAMETERS
@@ -1593,7 +1591,7 @@ def get_vo(p,options,npops):
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*npops
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
-        return p[startindx]
+        return p[startindx+1]
 
 def get_outfrac(p,indx,options):
     """Function that returns the outlier fraction for these options"""
