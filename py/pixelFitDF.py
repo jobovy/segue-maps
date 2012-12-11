@@ -32,6 +32,7 @@ import multi
 import multiprocessing
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 from galpy import potential
+from galpy.actionAngle import actionAngleAdiabatic
 from galpy.actionAngle import actionAngleAdiabaticGrid
 from galpy.actionAngle import actionAngleStaeckel
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
