@@ -246,7 +246,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     logoutfrac= numpy.log(get_outfrac(params,ii,options))
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
     #Calculate surface(R=1.) for relative outlier normalization
-    logoutfrac+= numpy.log(qdf.surfacemass_z(1.))
+    logoutfrac+= numpy.log(qdf.surfacemass_z(1.,ngl=options.ngl))
     if options.mcout:
         fidoutfrac= get_outfrac(params,ii,options)
         rdistsout= numpy.zeros((len(sf.plates),nrs,ngr,nfeh))
@@ -263,7 +263,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         for ll in range(nrs):
             for jj in range(nzs):
                 surfgrid[ll,jj]= qdf.surfacemass(Rgrid[ll],zgrid[jj],
-                                                 nmc=options.nmcv)
+                                                 nmc=options.nmcv,
+                                                 ngl=options.ngl)
         if _SURFSUBTRACTEXPON:
             Rs= numpy.tile(Rgrid,(nzs,1)).T
             Zs= numpy.tile(zgrid,(nrs,1))

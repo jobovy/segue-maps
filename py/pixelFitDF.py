@@ -58,7 +58,7 @@ _DEGTORAD= math.pi/180.
 _SRHALO= 150. #km/s
 _SPHIHALO= 100. #km/s
 _SZHALO= 100. #km/s
-_PRECALCVSAMPLES= True
+_PRECALCVSAMPLES= False
 _SURFSUBTRACTEXPON= True
 _SURFNRS= 101
 _SURFNZS= 101
@@ -282,7 +282,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
         #Setup
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
     #Calculate surface(R=1.) for relative outlier normalization
-    logoutfrac+= numpy.log(qdf.surfacemass_z(1.))
+    logoutfrac+= numpy.log(qdf.surfacemass_z(1.,ngl=options.ngl))
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned,errstuff,
                                       options)
@@ -465,6 +465,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                                      _rawgausssamples=True)
                 else:
                     surfgrid[ii,jj]= qdf.surfacemass(Rgrid[ii],zgrid[jj],
+                                                     ngl=options.ngl,
                                                      nmc=options.nmcv)
         if _SURFSUBTRACTEXPON:
             Rs= numpy.tile(Rgrid,(nzs,1)).T
@@ -1829,6 +1830,8 @@ def get_options():
     #Normalization integral
     parser.add_option("--nmcv",dest='nmcv',default=1000,type='int',
                       help="Number of MC samples to use for velocity integration")
+    parser.add_option("--ngl",dest='ngl',default=20,type='int',
+                      help="Order of Gauss-Legendre quadrature to use for velocity integration")
     parser.add_option("--nscale",dest='nscale',default=1.,type='float',
                       help="Number of 'scales' to calculate the surface scale over when integrating the density (can be float)")
     parser.add_option("--nmc",dest='nmc',default=1000,type='int',
