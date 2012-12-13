@@ -431,7 +431,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     sigphi= numpy.empty_like(newrs)
     maxqdf= numpy.empty_like(newrs)
     nvt= 101
-    tvt= numpy.linspace(0.1,1.5,nvt)
+    tvt= numpy.linspace(0.1,1.2,nvt)
     for kk in range(ndata):
         #evaluate qdf for vt
         pvt= qdf(newRs[kk]/ro/_REFR0+numpy.zeros(nvt),

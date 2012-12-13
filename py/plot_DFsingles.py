@@ -118,15 +118,15 @@ def plot_DFsingles(options,args):
                     continue
             if options.type.lower() == 'q':
                 s= get_potparams(sols[solindx],options,1)
-                plotthis[ii,jj]= s[1]
+                plotthis[ii,jj]= s[0]
                 if not options.flatten is None:
                     plotthis[ii,jj]/= options.flatten
             elif options.type.lower() == 'vc':
                 s= get_potparams(sols[solindx],options,1)
-                plotthis[ii,jj]= s[0]
+                plotthis[ii,jj]= s[1]
             elif options.type.lower() == 'kz':
                 s= get_potparams(sols[solindx],options,1)
-                plotthis[ii,jj]= (s[0]**2./s[1]**2.)/(1./options.flatten**2.)
+                plotthis[ii,jj]= (s[1]**2./s[0]**2.)/(1./options.flatten**2.)
             elif options.type.lower() == 'ndata':
                 plotthis[ii,jj]= len(data)
     #Set up plot
