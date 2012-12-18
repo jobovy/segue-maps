@@ -4,7 +4,7 @@
 #
 # TO DO:
 #   - mcvalt in compareDataModel fixes Ro=8
-#   - fix the units of outDens
+#   - fix the units of outDens (correct?)
 #   - write code to compareDataDFModel
 #   - generate fake data using new normalization method
 #   - loo FeH aFe
