@@ -60,8 +60,8 @@ _SPHIHALO= 100. #km/s
 _SZHALO= 100. #km/s
 _PRECALCVSAMPLES= False
 _SURFSUBTRACTEXPON= True
-_SURFNRS= 101
-_SURFNZS= 101
+_SURFNRS= 16
+_SURFNZS= 16
 def pixelFitDF(options,args):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
@@ -477,12 +477,14 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                                         numpy.log(surfgrid)
                                                         +Rs/ehr+numpy.fabs(Zs)/ehz,
                                                         kx=3,ky=3,
-                                                        s=10.*float(nzs*nrs))
+                                                        s=0.)
+            #s=10.*float(nzs*nrs))
         else:
             surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
                                                         numpy.log(surfgrid),
                                                         kx=3,ky=3,
-                                                        s=10.*float(nzs*nrs))
+                                                        s=0.)
+#                                                        s=10.*float(nzs*nrs))
     if options.mcvalt:
         #Alternative manner that uses well-tested compareDataModel code
         if _SURFSUBTRACTEXPON:
@@ -1233,6 +1235,8 @@ def setup_aA(pot,options):
         return actionAngleAdiabatic(pot=pot,gamma=1.,c=True)
     elif options.aAmethod.lower() == 'staeckel':
         return actionAngleStaeckel(pot=pot,delta=options.staeckeldelta,c=True)
+    elif options.aAmethod.lower() == 'staeckelgrid':
+        return actionAngleStaeckelGrid(pot=pot,delta=options.staeckeldelta,c=True)
     
 def setup_potential(params,options,npops):
     """Function for setting up the potential"""

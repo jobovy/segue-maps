@@ -275,12 +275,14 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                                                         numpy.log(surfgrid)
                                                         +Rs/ehr+numpy.fabs(Zs)/ehz,
                                                         kx=3,ky=3,
-                                                        s=10.*float(nzs*nrs))
+                                                        s=0.)
+#                                                        s=10.*float(nzs*nrs))
         else:
             surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
                                                         numpy.log(surfgrid),
                                                         kx=3,ky=3,
-                                                        s=10.*float(nzs*nrs))
+                                                        s=0.)
+#                                                        s=10.*float(nzs*nrs))
         if _SURFSUBTRACTEXPON:
             compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0)-x/ro/_REFR0/ehr-numpy.fabs(y)/ehz/ro/_REFR0)
         else:

@@ -6,6 +6,7 @@ _NZS= 1001
 _legendsize= 16
 import sys
 import os, os.path
+import time
 import math as m
 import numpy
 from scipy import ndimage
