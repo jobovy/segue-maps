@@ -329,7 +329,7 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
         return -logoutfracprior
     logdfprior= logprior_dfparams(theseparams,indx,options)
     if logdfprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-        return logdfprior
+        return -logdfprior
     ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff,
                      len(fehs),errstuff,options)
     print params, ml
