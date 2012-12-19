@@ -372,9 +372,9 @@ def logprior_dfparams(p,ii,options):
     if options.dfmodel.lower() == 'qdf':
         if theseparams[0] < -2.77 or theseparams[0] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if theseparams[1] < -4.7 or theseparams[1] > -0.4:
+        if theseparams[1] < -3.1 or theseparams[1] > -0.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if theseparams[2] < -4.7 or theseparams[2] > -0.4:
+        if theseparams[2] < -3.1 or theseparams[2] > -0.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if theseparams[3] < -2.77 or theseparams[3] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
