@@ -236,6 +236,9 @@ def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
                                           options)
         if logoutfracprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
             return logoutfracprior
+        logdfprior= logprior_dfparams(params,ii,options)
+        if logdfprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+            return logdfprior
     logroprior= logprior_ro(get_ro(params,options),options)
     if logroprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         return logroprior
@@ -320,6 +323,9 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
                                       options)
     if logoutfracprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         return -logoutfracprior
+    logdfprior= logprior_dfparams(theseparams,indx,options)
+    if logdfprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+        return logdfprior
     ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff,
                      len(fehs),errstuff,options)
     print params, ml
@@ -347,6 +353,24 @@ def logprior_outfrac(outfrac,options):
     """Prior on the outlier fraction"""
     if outfrac <= 0. or outfrac >= 1.:
         return -numpy.finfo(numpy.dtype(numpy.float64)).max
+    return 0.
+
+def logprior_dfparams(p,ii,options):
+    """Prior on the DF"""
+    #get params
+    theseparams= get_dfparams(p,ii,options,log=True)
+    if options.dfmodel.lower() == 'qdf':
+        if theseparams[0] < -2.77 or theseparams[0] > 2.53:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if theseparams[1] < -4.7 or theseparams[1] > -0.4:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if theseparams[2] < -4.7 or theseparams[2] > -0.4:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if theseparams[3] < -2.77 or theseparams[3] > 2.53:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if theseparams[4] < -2.77 or theseparams[4] > 2.53:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        return 0.
 
 def logprior_pot(params,options,npops):
     """Prior on the potential"""
@@ -1644,7 +1668,7 @@ def get_dfparams(p,indx,options,log=False):
                     numpy.exp(p[startindx+2]),
                     numpy.exp(p[startindx+3]),
                     numpy.exp(p[startindx+4]),
-                    p[startindx+5]) #outlier fraction neveer gets exponentiated
+                    p[startindx+5]) #outlier fraction never gets exponentiated
         
 def set_dfparams(p,params,indx,options):
     """Function that sets the set of DF parameters for population indx for these options"""
