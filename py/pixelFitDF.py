@@ -249,7 +249,11 @@ def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
     out= logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff)
-    return out+logroprior+logpotprior
+    returnThis= out+logroprior+logpotprior
+    if numpy.isnan(returnThis):
+        return -numpy.finfo(numpy.dtype(numpy.float64)).max
+    else:
+        returnThis
 
 def logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff):
     logl= numpy.zeros(len(fehs))
@@ -329,7 +333,10 @@ def indiv_optimize_df_mloglike(params,fehs,afes,binned,options,pot,aA,
     ml= -indiv_logdf(theseparams,indx,pot,aA,fehs,afes,binned,normintstuff,
                      len(fehs),errstuff,options)
     print params, ml
-    return ml
+    if numpy.isnan(ml):
+        return numpy.finfo(numpy.dtype(numpy.float64)).max
+    else:
+        return ml
 
 def indiv_optimize_pot_loglike(*args,**kwargs):
     return -indiv_optimize_pot_mloglike(*args,**kwargs)
@@ -340,7 +347,10 @@ def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
     theseparams= set_potparams(params,_bigparams,options,len(fehs))
     ml= mloglike(theseparams,fehs,afes,binned,options,normintstuff,errstuff)
     print params, ml
-    return ml#oglike(theseparams,fehs,afes,binned,options)
+    if numpy.isnan(ml):
+        return numpy.finfo(numpy.dtype(numpy.float64)).max
+    else:
+        return ml
 
 ##PRIORS
 def logprior_ro(ro,options):
