@@ -61,8 +61,8 @@ _SPHIHALO= 100. #km/s
 _SZHALO= 100. #km/s
 _PRECALCVSAMPLES= False
 _SURFSUBTRACTEXPON= True
-_SURFNRS= 16
-_SURFNZS= 16
+_SURFNRS= 31
+_SURFNZS= 31
 def pixelFitDF(options,args):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
@@ -253,7 +253,7 @@ def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
     if numpy.isnan(returnThis):
         return -numpy.finfo(numpy.dtype(numpy.float64)).max
     else:
-        returnThis
+        return returnThis
 
 def logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff):
     logl= numpy.zeros(len(fehs))
