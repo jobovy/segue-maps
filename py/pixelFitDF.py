@@ -61,8 +61,8 @@ _SPHIHALO= 100. #km/s
 _SZHALO= 100. #km/s
 _PRECALCVSAMPLES= False
 _SURFSUBTRACTEXPON= True
-_SURFNRS= 31
-_SURFNZS= 31
+_SURFNRS= 16
+_SURFNZS= 16
 def pixelFitDF(options,args):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
