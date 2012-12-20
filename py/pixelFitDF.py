@@ -1923,6 +1923,9 @@ def get_options():
     parser.add_option("--all",action="store_true", dest="all",
                       default=False,
                       help="Just make the 'all' figure")
+    parser.add_option("--relative",action="store_true", dest="relative",
+                      default=False,
+                      help="Plot quantities relative to some reference value")
     parser.add_option("--noerrs",action="store_true", dest="noerrs",
                       default=False,
                       help="Don't add uncertainties")

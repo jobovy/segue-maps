@@ -10,6 +10,7 @@ import cPickle as pickle
 from optparse import OptionParser
 import multi
 import multiprocessing
+import monoAbundanceMW
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 from galpy import potential
 #from galpy.actionAngle_src.actionAngleAdiabaticGrid import  actionAngleAdiabaticGrid
@@ -24,7 +25,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import _REFV0, get_options, read_rawdata, get_potparams, \
-    get_dfparams
+    get_dfparams, _REFR0
 def plot_DFsingles(options,args):
     raw= read_rawdata(options)
     #Bin the data
@@ -86,6 +87,8 @@ def plot_DFsingles(options,args):
             newname+= '_%i.' % ii
             newname+= spl[-1]
             options.init= newname
+    mapfehs= monoAbundanceMW.fehs()
+    mapafes= monoAbundanceMW.afes()
     #Now plot
     #Run through the pixels and gather
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
@@ -109,6 +112,8 @@ def plot_DFsingles(options,args):
             fehindx= binned.fehindx(tightbinned.feh(ii))#Map onto regular binning
             afeindx= binned.afeindx(tightbinned.afe(jj))
             solindx= abindx[fehindx,afeindx]
+            monoabindx= numpy.argmin((tightbinned.feh(ii)-mapfehs)**2./0.01 \
+                                         +(tightbinned.afe(jj)-mapafes)**2./0.0025)
             if sols[solindx] is None:
                 if options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
                         or options.type.lower() == 'afefeh':
@@ -129,6 +134,24 @@ def plot_DFsingles(options,args):
                 plotthis[ii,jj]= (s[1]**2./s[0]**2.)/(1./options.flatten**2.)
             elif options.type.lower() == 'ndata':
                 plotthis[ii,jj]= len(data)
+            elif options.type.lower() == 'hr':
+                s= get_dfparams(sols[solindx],0,options)
+                plotthis[ii,jj]= s[0]*_REFR0
+                if options.relative:
+                    thishr= monoAbundanceMW.hr(mapfehs[monoabindx],mapafes[monoabindx])
+                    plotthis[ii,jj]/= thishr
+            elif options.type.lower() == 'sz':
+                s= get_dfparams(sols[solindx],0,options)
+                plotthis[ii,jj]= s[2]*_REFV0
+                if options.relative:
+                    thissz= monoAbundanceMW.sigmaz(mapfehs[monoabindx],mapafes[monoabindx])
+                    plotthis[ii,jj]/= thissz
+            elif options.type.lower() == 'sr':
+                s= get_dfparams(sols[solindx],0,options)
+                plotthis[ii,jj]= s[1]*_REFV0
+                if options.relative:
+                    thissr= monoAbundanceMW.sigmaz(mapfehs[monoabindx],mapafes[monoabindx])*2.
+                    plotthis[ii,jj]/= thissr
     #Set up plot
     if options.type.lower() == 'q':
         if not options.flatten is None:
@@ -146,6 +169,27 @@ def plot_DFsingles(options,args):
     elif options.type.lower() == 'ndata':
         vmin, vmax= numpy.nanmin(plotthis), numpy.nanmax(plotthis)
         zlabel=r'$N_\mathrm{data}$'
+    elif options.type == 'hr':
+        if options.relative:
+            vmin, vmax= 0.8, 1.2
+            zlabel=r'$\mathrm{input / output\ radial\ scale\ length}$'
+        else:
+            vmin, vmax= 1.35,4.5
+            zlabel=r'$\mathrm{model\ radial\ scale\ length\ [kpc]}$'
+    elif options.type == 'sz':
+        if options.relative:
+            vmin, vmax= 0.8, 1.2
+            zlabel= r'$\mathrm{input / output\ model}\ \sigma_z$'
+        else:
+            vmin, vmax= 10.,60.
+            zlabel= r'$\mathrm{model}\ \sigma_z\ [\mathrm{km\ s}^{-1}]$'
+    elif options.type == 'sr':
+        if options.relative:
+            vmin, vmax= 0.8, 1.2
+            zlabel= r'$\mathrm{input/output\ model}\ \sigma_R$'
+        else:
+            vmin, vmax= 20.,100.
+            zlabel= r'$\mathrm{model}\ \sigma_R\ [\mathrm{km\ s}^{-1}]$'
     if options.tighten:
         xrange=[-1.6,0.5]
         yrange=[-0.05,0.55]
@@ -167,7 +211,8 @@ def plot_DFsingles(options,args):
                               vmin=vmin,vmax=vmax,
                               contours=False,
                               colorbar=True,shrink=0.78)
-        if not options.type.lower() == 'ndata':
+        if options.type.lower() == 'q' or options.type.lower() == 'vc' \
+                or options.relative:
 
             bovy_plot.bovy_text(r'$\mathrm{median} = %.2f \pm %.2f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
                                                                         1.4826*numpy.median(numpy.fabs(plotthis[numpy.isfinite(plotthis)]-numpy.median(plotthis[numpy.isfinite(plotthis)])))),
