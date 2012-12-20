@@ -267,11 +267,12 @@ def calc_model(params,options,pop):
     for ii in range(nrs):
         for jj in range(nzs):
             surfgrid[ii,jj]= qdf.surfacemass(Rgrid[ii],zgrid[jj],
-                                             nmc=options.nmcv)
+                                             nmc=options.nmcv,
+                                             ngl=options.ngl)
         surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
                                                     numpy.log(surfgrid),
                                                     kx=3,ky=3,
-                                                    s=10.*float(nzs*nrs))
+                                                    s=0.)
     return surfInterp
 
 ##RUNNING SINGLE BINS IN A SINGLE CALL
