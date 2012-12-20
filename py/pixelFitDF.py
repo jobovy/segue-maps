@@ -194,7 +194,7 @@ def pixelFitDF(options,args):
 def read_rawdata(options):
     if options.sample.lower() == 'g':
         if not options.fakedata is None:
-            raw= read_gdwarfs(options.fakedata,logg=True,ebv=True,sn=options.snmin,nosolar=True)
+            raw= read_gdwarfs(options.fakedata,logg=True,ebv=True,sn=options.snmin,nosolar=True,norcut=True)
         elif options.select.lower() == 'program':
             raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
         else:
