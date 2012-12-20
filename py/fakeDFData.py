@@ -745,6 +745,8 @@ def combine_abundance_singles(binned,options,savename,fehs,afes):
         binned.data.vr[thisdataIndx]= newdata.vr
         binned.data.pmra[thisdataIndx]= newdata.pmra
         binned.data.pmdec[thisdataIndx]= newdata.pmdec
+        #Remove temporary file
+        os.remove(newname)
     return binned
 
 def fakeDFData_abundance_singles_single(options,args,fehs,afes,ii,savename):
