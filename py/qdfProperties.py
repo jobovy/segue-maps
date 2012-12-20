@@ -8,6 +8,7 @@ import monoAbundanceMW
 from galpy.util import bovy_plot, save_pickles
 from matplotlib import pyplot, cm
 from galpy import potential
+from galpy.actionAngle import actionAngleStaeckel
 from galpy.actionAngle_src.actionAngleAdiabaticGrid import  actionAngleAdiabaticGrid
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 from galpy.potential import MiyamotoNagaiPotential, LogarithmicHaloPotential, MWPotential
@@ -34,8 +35,11 @@ def plot_hrhrvshr(options,args):
         plotthis= numpy.zeros((options.nhr,options.nsr))
         #Setup potential and aA
         pot= MWPotential
-        aA=actionAngleAdiabaticGrid(pot=pot,nR=16,nEz=16,nEr=31,nLz=31,zmax=1.,
-                                    Rmax=5.)
+        if options.aAmethod.lower() == 'staeckel':
+            aA= actionAngleStaeckel(pot=pot,delta=0.45,c=True)
+        else:
+            aA=actionAngleAdiabaticGrid(pot=pot,nR=16,nEz=16,nEr=31,nLz=31,
+                                        zmax=1.,Rmax=5.)
         for ii in range(options.nhr):
             for jj in range(options.nsr):
                 qdf= quasiisothermaldf(hrs[ii,jj]/8.,srs[ii,jj]/220.,
@@ -111,11 +115,11 @@ def plot_hzszq(options,args):
             print "Working on potential %i / %i ..." % (ii+1,nqs)
             #Setup potential
             lp= LogarithmicHaloPotential(normalize=1.,q=qs[ii])
-            aA= actionAngleAdiabaticGrid(pot=lp,nR=16,
-                                         nEz=16,nEr=31,
-                                         nLz=31,
-                                         zmax=1.,
-                                         Rmax=5.)
+            if options.aAmethod.lower() == 'staeckel':
+                aA= actionAngleStaeckel(pot=lp,delta=0.45,c=True)
+            else:
+                aA=actionAngleAdiabaticGrid(pot=pot,nR=16,nEz=16,nEr=31,nLz=31,
+                                            zmax=1.,Rmax=5.)
             for jj in range(nszs):
                 qdf= quasiisothermaldf(options.hr/8.,2.*szs[jj]/220.,
                                        szs[jj]/220.,7./8.,7./8.,pot=lp,
@@ -202,6 +206,8 @@ def get_options():
                       help="Number of hr to use")
     parser.add_option("--nsr",dest='nsr',default=11,type='int',
                       help="Number of sr to use")
+    parser.add_option("--aAmethod",dest='aAmethod',default='adiabaticgrid',
+                      help="action angle method to use")
     return parser
 
 if __name__ == '__main__':
