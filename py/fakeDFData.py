@@ -227,7 +227,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     nrs= 1001
     ngr, nfeh= 11, 11 #BOVY: INCREASE?
     tgrs= numpy.linspace(grmin,grmax,ngr)
-    tfehs= numpy.linspace(fehrange[0],fehrange[1],nfeh)
+    tfehs= numpy.linspace(fehrange[0]+0.00001,fehrange[1]-0.00001,nfeh)
     #Calcuate FeH and gr distriutions
     fehdists= numpy.zeros(nfeh)
     for jj in range(nfeh): fehdists[jj]= fehdist(tfehs[jj])
@@ -677,6 +677,7 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                             return_error=True,
                             _returndmr=True)
     binned.data.dered_r[(binned.data.dered_r >= rmax)]= rmax #tweak to make sure everything stays within the observed range
+    print binned.data.dered_r[(binned.data.dered_r <= rmin)]
     binned.data.dered_r[(binned.data.dered_r <= rmin)]= rmin
     binned.data.dered_g[thisdataIndx]= oldgr+binned.data[thisdataIndx].dered_r
     #Also change plate and l and b

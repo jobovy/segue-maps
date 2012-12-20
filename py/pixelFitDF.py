@@ -1856,7 +1856,7 @@ def get_options():
     #Normalization integral
     parser.add_option("--nmcv",dest='nmcv',default=1000,type='int',
                       help="Number of MC samples to use for velocity integration")
-    parser.add_option("--ngl",dest='ngl',default=20,type='int',
+    parser.add_option("--ngl",dest='ngl',default=10,type='int',
                       help="Order of Gauss-Legendre quadrature to use for velocity integration")
     parser.add_option("--nscale",dest='nscale',default=1.,type='float',
                       help="Number of 'scales' to calculate the surface scale over when integrating the density (can be float)")
