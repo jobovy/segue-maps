@@ -11,11 +11,13 @@ import numpy
 from scipy.maxentropy import logsumexp
 from scipy import interpolate
 import fitsio
+import multi
+import multiprocessing
 from galpy.util import bovy_coords, bovy_plot
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import monoAbundanceMW
 from segueSelect import _ERASESTR, read_gdwarfs, read_kdwarfs, segueSelect, \
-    ivezic_dist_gr
+    ivezic_dist_gr, _load_fits
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import get_options,fidDens, get_dfparams, get_ro, get_vo, \
     _REFR0, _REFV0, setup_potential, setup_aA, initialize, \
@@ -137,45 +139,48 @@ def generate_fakeDFData(options,args):
         params= set_potparams(potparams,params,options,len(fehs))
     pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
-    for ii in range(len(fehs)):
-        print "Working on population %i / %i ..." % (ii+1,len(fehs))
-        #Setup qdf
-        dfparams= get_dfparams(params,ii,options,log=False)
-        vo= get_vo(params,options,len(fehs))
-        ro= get_ro(params,options)
-        if options.dfmodel.lower() == 'qdf':
-            #Normalize
-            hr= dfparams[0]/ro
-            sr= dfparams[1]/vo
-            sz= dfparams[2]/vo
-            hsr= dfparams[3]/ro
-            hsz= dfparams[4]/ro
-        print hr, sr, sz, hsr, hsz
-        qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
-        #Some more selection stuff
-        data= binned(fehs[ii],afes[ii])
-        #feh and color
-        feh= fehs[ii]
-        fehrange= [feh-options.dfeh/2.,feh+options.dfeh/2.]
-        #FeH
-        fehdist= DistSpline(*numpy.histogram(data.feh,bins=5,
-                                             range=fehrange),
-                             xrange=fehrange,dontcuttorange=False)
-        #Color
-        colordist= DistSpline(*numpy.histogram(data.dered_g\
-                                                   -data.dered_r,
-                                               bins=9,range=colorrange),
-                               xrange=colorrange)
-        #Re-sample
-        binned= fakeDFData(binned,qdf,ii,params,fehs,afes,options,
-                           rmin,rmax,
-                           platelb,
-                           grmin,grmax,
-                           fehrange,
-                           colordist,
-                           fehdist,feh,sf,
-                           mapfehs,mapafes,
-                           ro=None,vo=None)
+    if not options.multi is None:
+        binned= fakeDFData_abundance_singles(binned,options,args,fehs,afes)
+    else:
+        for ii in range(len(fehs)):
+            print "Working on population %i / %i ..." % (ii+1,len(fehs))
+            #Setup qdf
+            dfparams= get_dfparams(params,ii,options,log=False)
+            vo= get_vo(params,options,len(fehs))
+            ro= get_ro(params,options)
+            if options.dfmodel.lower() == 'qdf':
+                #Normalize
+                hr= dfparams[0]/ro
+                sr= dfparams[1]/vo
+                sz= dfparams[2]/vo
+                hsr= dfparams[3]/ro
+                hsz= dfparams[4]/ro
+            print hr, sr, sz, hsr, hsz
+            qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
+            #Some more selection stuff
+            data= binned(fehs[ii],afes[ii])
+            #feh and color
+            feh= fehs[ii]
+            fehrange= [feh-options.dfeh/2.,feh+options.dfeh/2.]
+            #FeH
+            fehdist= DistSpline(*numpy.histogram(data.feh,bins=5,
+                                                 range=fehrange),
+                                 xrange=fehrange,dontcuttorange=False)
+            #Color
+            colordist= DistSpline(*numpy.histogram(data.dered_g\
+                                                       -data.dered_r,
+                                                   bins=9,range=colorrange),
+                                   xrange=colorrange)
+            #Re-sample
+            binned= fakeDFData(binned,qdf,ii,params,fehs,afes,options,
+                               rmin,rmax,
+                               platelb,
+                               grmin,grmax,
+                               fehrange,
+                               colordist,
+                               fehdist,feh,sf,
+                               mapfehs,mapafes,
+                               ro=None,vo=None)
     #Save to new file
     fitsio.write(args[0],binned.data)
     return None
@@ -677,8 +682,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
                             return_error=True,
                             _returndmr=True)
     binned.data.dered_r[(binned.data.dered_r >= rmax)]= rmax #tweak to make sure everything stays within the observed range
-    print binned.data.dered_r[(binned.data.dered_r <= rmin)]
-    binned.data.dered_r[(binned.data.dered_r <= rmin)]= rmin
+    if False:
+        binned.data.dered_r[(binned.data.dered_r <= rmin)]= rmin
     binned.data.dered_g[thisdataIndx]= oldgr+binned.data[thisdataIndx].dered_r
     #Also change plate and l and b
     binned.data.plate[thisdataIndx]= newplate
@@ -696,6 +701,68 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         binned.data.pmra[thisdataIndx]= pmrapmdec[:,0]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.pmra_err[thisdataIndx]
         binned.data.pmdec[thisdataIndx]= pmrapmdec[:,1]+numpy.random.normal(size=numpy.sum(thisdataIndx))*binned.data.pmdec_err[thisdataIndx]
     return binned
+
+##RUNNING SINGLE BINS IN A SINGLE CALL
+def fakeDFData_abundance_singles(binned,options,args,fehs,afes):
+    savename= args[0]
+    if True:
+        if not options.multi is None:
+            dummy= multi.parallel_map((lambda x: fakeDFData_abundance_singles_single(options,args,fehs,afes,x,
+                                                                                     savename)),
+                                      range(len(fehs)),
+                                      numcores=numpy.amin([len(fehs),
+                                                           multiprocessing.cpu_count(),
+                                                       options.multi]))
+        else:
+            for ii in range(len(fehs)):
+                fakeDFData_abundance_singles_single(options,args,fehs,afes,ii,
+                                                    savename)
+    #Combine
+    return combine_abundance_singles(binned,options,savename,fehs,afes)
+
+def combine_abundance_singles(binned,options,savename,fehs,afes):
+    for ii in range(len(fehs)):
+        thisdata= binned(fehs[ii],afes[ii])
+        thisdataIndx= binned.callIndx(fehs[ii],afes[ii])
+        #Read from temporary file
+        spl= savename.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        newdata= _load_fits(newname)
+        #Load into binned
+        binned.data.feh[thisdataIndx]= newdata.feh
+        binned.data.dered_r[thisdataIndx]= newdata.dered_r
+        binned.data.dered_g[thisdataIndx]= newdata.dered_g
+        binned.data.plate[thisdataIndx]= newdata.plate
+        binned.data.ra[thisdataIndx]= newdata.ra
+        binned.data.dec[thisdataIndx]= newdata.dec
+        binned.data.l[thisdataIndx]= newdata.l
+        binned.data.b[thisdataIndx]= newdata.b
+        binned.data.vr[thisdataIndx]= newdata.vr
+        binned.data.pmra[thisdataIndx]= newdata.pmra
+        binned.data.pmdec[thisdataIndx]= newdata.pmdec
+    return binned
+
+def fakeDFData_abundance_singles_single(options,args,fehs,afes,ii,savename):
+    #Prepare args and options
+    spl= savename.split('.')
+    newname= ''
+    for jj in range(len(spl)-1):
+        newname+= spl[jj]
+        if not jj == len(spl)-2: newname+= '.'
+    newname+= '_%i.' % ii
+    newname+= spl[-1]
+    args[0]= newname
+    options.singlefeh= fehs[ii]
+    options.singleafe= afes[ii]
+    #Now run
+    toptions= copy.copy(options)
+    toptions.multi= None
+    generate_fakeDFData(toptions,args)
 
 if __name__ == '__main__':
     parser= get_options()
