@@ -1409,19 +1409,6 @@ def setup_err_mc(data,options):
         XYZ= bovy_coords.lbd_to_XYZ(lb[:,0],
                                     lb[:,1],
                                     dsamples,degree=True).reshape((1,len(data),3))
-    """
-    vxvyvz= numpy.zeros((len(data),3))
-    vxvyvz[:,0]= data.vxc
-    vxvyvz[:,1]= data.vyc
-    vxvyvz[:,2]= data.vzc
-    cov_vxvyvz= numpy.zeros((len(data),3,3))
-    cov_vxvyvz[:,0,0]= data.vxc_err**2.
-    cov_vxvyvz[:,1,1]= data.vyc_err**2.
-    cov_vxvyvz[:,2,2]= data.vzc_err**2.
-    cov_vxvyvz[:,0,1]= data.vxvyc_rho*data.vxc_err*data.vyc_err
-    cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err
-    cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err
-    """
     #draw velocity
     vdraws= numpy.zeros(len(data),dtype=list)
     xdraws= numpy.zeros(len(data),dtype=list)
