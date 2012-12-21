@@ -430,74 +430,74 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     newvr= numpy.empty_like(newrs)
     newvt= numpy.empty_like(newrs)
     newvz= numpy.empty_like(newrs)
-    accept_v= numpy.zeros(ndata,dtype='bool')
-    naccept= numpy.sum(accept_v)
-    sigz= thissz*numpy.exp(-(newRs-_REFR0)/thishsz)
-    sigr= thissr*numpy.exp(-(newRs-_REFR0)/thishsr)
-    va= numpy.empty_like(newrs)
-    sigphi= numpy.empty_like(newrs)
-    maxqdf= numpy.empty_like(newrs)
-    nvt= 101
-    tvt= numpy.linspace(0.1,1.2,nvt)
-    for kk in range(ndata):
-        #evaluate qdf for vt
-        pvt= qdf(newRs[kk]/ro/_REFR0+numpy.zeros(nvt),
-                 numpy.zeros(nvt),
-                 tvt,
-                 newzs[kk]/ro/_REFR0+numpy.zeros(nvt),
-                 numpy.zeros(nvt),log=True)
-        pvt_maxindx= numpy.argmax(pvt)
-        va[kk]= (1.-tvt[pvt_maxindx])*_REFV0*vo
-        if options.aAmethod.lower() == 'adiabaticgrid' and options.flatten >= 0.9:
-            maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(250.)
-        elif options.aAmethod.lower() == 'adiabaticgrid' and options.flatten >= 0.8:
-            maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(250.)
-        else:
-            maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(40.)
-        sigphi[kk]= _REFV0*vo*4.*numpy.sqrt(numpy.sum(numpy.exp(pvt)*tvt**2.)/numpy.sum(numpy.exp(pvt))-(numpy.sum(numpy.exp(pvt)*tvt)/numpy.sum(numpy.exp(pvt)))**2.)
-    #va= sigr**2./2./_REFV0/vo\
-    #    *(-.5+newRs*(1./thishr+2./thishsr))+7.*numpy.fabs(newzs)
-    #va[(va > 0.75*(_REFV0*vo))]= _REFV0*vo/2.
-    #maxqdf= qdf(newRs/ro/_REFR0,
-    #            numpy.zeros(ndata),
-    #            (_REFV0*vo-va)/_REFV0/vo,
-    #            newzs/ro/_REFR0,
-    #           numpy.zeros(ndata),log=True)+numpy.log(1000.) #rough estimate
-    ntries= 0
-    ngtr1= 0
-    while naccept < ndata:
-        sys.stdout.write('\r %i %i %i \r' % (ntries,naccept,ndata))
-        sys.stdout.flush()
-        #print ntries, naccept, ndata
-        ntries+= 1
-        accept_v_comp= True-accept_v
-        prop_vr= numpy.random.normal(size=ndata)*sigr
-        prop_vt= numpy.random.normal(size=ndata)*sigphi+vo*_REFV0-va
-        prop_vz= numpy.random.normal(size=ndata)*sigz
-        qoverp= numpy.zeros(ndata)-numpy.finfo(numpy.dtype(numpy.float64)).max
-        qoverp[accept_v_comp]= (qdf(newRs[accept_v_comp]/ro/_REFR0,
-                                    prop_vr[accept_v_comp]/vo/_REFV0,
-                                    prop_vt[accept_v_comp]/vo/_REFV0,
-                                    newzs[accept_v_comp]/ro/_REFR0,
-                                    prop_vz[accept_v_comp]/vo/_REFV0,log=True)
-                                -maxqdf[accept_v_comp] #normalize max to 1
-                                -(-0.5*(prop_vr[accept_v_comp]**2./sigr[accept_v_comp]**2.+prop_vz[accept_v_comp]**2./sigz[accept_v_comp]**2.+(prop_vt[accept_v_comp]-_REFV0*vo+va[accept_v_comp])**2./sigphi[accept_v_comp]**2.)))
-        if numpy.any(qoverp > 0.):
-            ngtr1+= numpy.sum((qoverp > 0.))
-            if ngtr1 > 5:
-                qindx= (qoverp > 0.)
-                print naccept, ndata, newRs[qindx], newzs[qindx], prop_vr[qindx], va[qindx], sigphi[qindx], prop_vt[qindx], prop_vz[qindx], qoverp[qindx]
-                raise RuntimeError("max qoverp = %f > 1, but shouldn't be" % (numpy.exp(numpy.amax(qoverp))))
-        accept_these= numpy.log(numpy.random.uniform(size=ndata))
-        #print accept_these, (accept_these < qoverp)
-        accept_these= (accept_these < qoverp)        
-        newvr[accept_these]= prop_vr[accept_these]
-        newvt[accept_these]= prop_vt[accept_these]
-        newvz[accept_these]= prop_vz[accept_these]
-        accept_v[accept_these]= True
+    use_sampleV= True
+    if use_sampleV:
+        for kk in range(ndata):
+            newv= qdf.sampleV(newRs[kk]/_REFR0,newzs[kk]/_REFR0,n=1)
+            newvr[kk]= newv[0,0]*_REFV0*vo
+            newvt[kk]= newv[0,1]*_REFV0*vo
+            newvz[kk]= newv[0,2]*_REFV0*vo
+    else:
+        accept_v= numpy.zeros(ndata,dtype='bool')
         naccept= numpy.sum(accept_v)
-    sys.stdout.write('\r'+_ERASESTR+'\r')
-    sys.stdout.flush()
+        sigz= thissz*numpy.exp(-(newRs-_REFR0)/thishsz)
+        sigr= thissr*numpy.exp(-(newRs-_REFR0)/thishsr)
+        va= numpy.empty_like(newrs)
+        sigphi= numpy.empty_like(newrs)
+        maxqdf= numpy.empty_like(newrs)
+        nvt= 101
+        tvt= numpy.linspace(0.1,1.2,nvt)
+        for kk in range(ndata):
+            #evaluate qdf for vt
+            pvt= qdf(newRs[kk]/ro/_REFR0+numpy.zeros(nvt),
+                     numpy.zeros(nvt),
+                     tvt,
+                     newzs[kk]/ro/_REFR0+numpy.zeros(nvt),
+                     numpy.zeros(nvt),log=True)
+            pvt_maxindx= numpy.argmax(pvt)
+            va[kk]= (1.-tvt[pvt_maxindx])*_REFV0*vo
+            if options.aAmethod.lower() == 'adiabaticgrid' and options.flatten >= 0.9:
+                maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(250.)
+            elif options.aAmethod.lower() == 'adiabaticgrid' and options.flatten >= 0.8:
+                maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(250.)
+            else:
+                maxqdf[kk]= pvt[pvt_maxindx]+numpy.log(40.)
+            sigphi[kk]= _REFV0*vo*4.*numpy.sqrt(numpy.sum(numpy.exp(pvt)*tvt**2.)/numpy.sum(numpy.exp(pvt))-(numpy.sum(numpy.exp(pvt)*tvt)/numpy.sum(numpy.exp(pvt)))**2.)
+        ntries= 0
+        ngtr1= 0
+        while naccept < ndata:
+            sys.stdout.write('\r %i %i %i \r' % (ntries,naccept,ndata))
+            sys.stdout.flush()
+            #print ntries, naccept, ndata
+            ntries+= 1
+            accept_v_comp= True-accept_v
+            prop_vr= numpy.random.normal(size=ndata)*sigr
+            prop_vt= numpy.random.normal(size=ndata)*sigphi+vo*_REFV0-va
+            prop_vz= numpy.random.normal(size=ndata)*sigz
+            qoverp= numpy.zeros(ndata)-numpy.finfo(numpy.dtype(numpy.float64)).max
+            qoverp[accept_v_comp]= (qdf(newRs[accept_v_comp]/ro/_REFR0,
+                                        prop_vr[accept_v_comp]/vo/_REFV0,
+                                        prop_vt[accept_v_comp]/vo/_REFV0,
+                                        newzs[accept_v_comp]/ro/_REFR0,
+                                        prop_vz[accept_v_comp]/vo/_REFV0,log=True)
+                                    -maxqdf[accept_v_comp] #normalize max to 1
+                                    -(-0.5*(prop_vr[accept_v_comp]**2./sigr[accept_v_comp]**2.+prop_vz[accept_v_comp]**2./sigz[accept_v_comp]**2.+(prop_vt[accept_v_comp]-_REFV0*vo+va[accept_v_comp])**2./sigphi[accept_v_comp]**2.)))
+            if numpy.any(qoverp > 0.):
+                ngtr1+= numpy.sum((qoverp > 0.))
+                if ngtr1 > 5:
+                    qindx= (qoverp > 0.)
+                    print naccept, ndata, newRs[qindx], newzs[qindx], prop_vr[qindx], va[qindx], sigphi[qindx], prop_vt[qindx], prop_vz[qindx], qoverp[qindx]
+                    raise RuntimeError("max qoverp = %f > 1, but shouldn't be" % (numpy.exp(numpy.amax(qoverp))))
+            accept_these= numpy.log(numpy.random.uniform(size=ndata))
+            #print accept_these, (accept_these < qoverp)
+            accept_these= (accept_these < qoverp)        
+            newvr[accept_these]= prop_vr[accept_these]
+            newvt[accept_these]= prop_vt[accept_these]
+            newvz[accept_these]= prop_vz[accept_these]
+            accept_v[accept_these]= True
+            naccept= numpy.sum(accept_v)
+        sys.stdout.write('\r'+_ERASESTR+'\r')
+        sys.stdout.flush()
     """
     ntot= 0
     nsamples= 0
