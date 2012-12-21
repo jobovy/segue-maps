@@ -161,8 +161,11 @@ def plot_DFsingles(options,args):
             vmin, vmax= 0.5, 1.2
             zlabel=r'$\mathrm{flattening}\ q$'
     elif options.type.lower() == 'vc':
+        if 'real' in options.outfilename.lower():
+           medianvc= numpy.median(plotthis[numpy.isfinite(plotthis)])
+           plotthis/= medianvc
         vmin, vmax= 0.95, 1.05
-        zlabel=r'$V_c / %i\ \mathrm{km\,s}^{-1}$' % int(_REFV0)
+        zlabel=r'$V_c / %i\ \mathrm{km\,s}^{-1}$' % int(_REFV0*medianvc)
     elif options.type.lower() == 'kz':
         vmin, vmax= 0.5, 1.5
         zlabel=r'$K_z / K_z^{\mathrm{true}}$'
