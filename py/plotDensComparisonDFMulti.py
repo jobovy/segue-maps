@@ -162,7 +162,7 @@ def plotDensComparisonDFMulti(options,args):
     for ii in range(len(plates)):
         plate= plates[ii]
         if plate == 'all':
-#            thisleft_legend= left_legend
+            thisleft_legend= left_legend
 #            thisright_legend= right_legend
             thisleft_legend= None
             thisright_legend= None
