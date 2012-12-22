@@ -859,12 +859,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             fehs[ii,:]= numpy.linspace(fehmin,fehmax,_NFEH)
     for ii in range(_NFEH):
         grs[:,ii]= numpy.linspace(grmin,grmax,_NGR)
-    sys.stdout.write('\r'+"Determining minimal and maximal distance")
-    sys.stdout.flush()
     dmin= numpy.amin(_ivezic_dist(grs,thisrmin,fehs))
     dmax= numpy.amax(_ivezic_dist(grs,thisrmax,fehs))
-    sys.stdout.write('\r'+_ERASESTR+'\r')
-    sys.stdout.flush()
     if zmax is None:
         zmax= dmax*numpy.sin(bmax*_DEGTORAD)
 #        zmax+= 2.*_ZSUN #Just to be sure we have the North covered
@@ -1023,6 +1019,287 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                 size=_legendsize)
         return (numbers, data_numbers, xs)
     
+def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
+                           rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
+                           fehmin=-0.4,fehmax=0.5,feh=-0.15,
+                           convolve=0.,xrange=None,yrange=None,
+                           overplot=False,bins=21,color='k',ls='-',
+                           left_legend=None,right_legend=None):
+    """
+    NAME:
+       comparezdistPlateMulti
+    PURPOSE:
+       compare the observed distribution of heights zto the model prediction (for M multiple populations
+    INPUT:
+       densfunc - underlying density function densfunc(R,z,params) LIST OF M
+       params - array of parameters of the density function LIST OF M
+       sf - segueSelect instance
+       colordist - color g-r distribution LIST OF M
+       fehdist - Fe/H distribution of the sample LIST OF M
+       data - data recarray (.dered_r is used) LIST OF M
+       plate - plate number(s), or 'all', 'faint', or 'bright'
+       rmin, rmax= minimum and maximum r
+       grmin, grmax= minimum and maximum g-r
+       fehmin, fehmax= minimum and maximum [Fe/H] LIST OF M
+       feh= metallicity to use in d->r LIST OF M
+       convolve= set to convolution kernel size (convolve predicted 
+                 distribution with Gaussian of this width)
+       xrange=, yrange= ranges for plot
+       overplot= if True, overplot
+       bins= hist number of bins
+       color= color for model
+       left_legend = if set, legend to put at the left top
+       right_legend = if set, legend to put at the right top
+    OUTPUT:
+       plot to output
+       return rdist, datahist, dataedges
+    HISTORY:
+       2011-07-29 - Written - Bovy (NYU)
+       2012-12-21 - Adapted for multiple populations - Bovy (IAS)
+    """
+    M= len(densfunc)
+    #Set up plates
+    platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
+                                     degree=True)
+    platelb= platelb.astype('float')
+    allplates, faintplates, brightplates = False, False, False
+    if isinstance(plate,str) and plate.lower() == 'all':
+        plate= sf.plates
+        allplates= True
+    elif isinstance(plate,str) and plate.lower() == 'bright':
+        plate= []
+        for ii in range(len(sf.plates)):
+            if not 'faint' in sf.platestr[ii].programname:
+                plate.append(sf.plates[ii])
+        brightplates= True
+    elif isinstance(plate,str) and plate.lower() == 'faint':
+        plate= []
+        for ii in range(len(sf.plates)):
+            if 'faint' in sf.platestr[ii].programname:
+                plate.append(sf.plates[ii])
+        faintplates= True
+    elif isinstance(plate,int):
+        plate= [plate]
+    allfaint, allbright= True, True
+    #Zmin and Zmax for this rmin, rmax
+    bs= []
+    for p in plate:
+        #l and b?
+        pindx= (sf.plates == p)
+        plateb= platelb[pindx,1][0]
+        bs.append(plateb)
+        if 'faint' in sf.platestr[pindx].programname[0]:
+            allbright= False
+        else:
+            allfaint= False
+    bs= numpy.array(bs)
+    bmin, bmax= numpy.amin(numpy.fabs(bs)),numpy.amax(numpy.fabs(bs))
+    if allbright:
+        thisrmin, thisrmax= rmin, 17.8
+    elif allfaint:
+        thisrmin, thisrmax= 17.8, rmax
+    else:
+        thisrmin, thisrmax= rmin, rmax
+    _NGR, _NFEH= 51, 51
+    grs= numpy.zeros((M,_NGR,_NFEH))
+    fehs= numpy.zeros((M,_NGR,_NFEH))
+    for jj in range(M):
+        for ii in range(_NGR):
+            if feh[jj] > -0.5: #rich, actually only starts at 0.05
+                fehs[jj,ii,:]= numpy.linspace(fehmin[jj],0.05,_NFEH)
+            else:
+                fehs[jj,ii,:]= numpy.linspace(fehmin[jj],fehmax[jj],_NFEH)
+        for ii in range(_NFEH):
+            grs[jj,:,ii]= numpy.linspace(grmin,grmax,_NGR)
+    sys.stdout.write('\r'+"Determining minimal and maximal distance")
+    sys.stdout.flush()
+    dmin= numpy.array([numpy.amin(_ivezic_dist(grs[jj,:,:],thisrmin,fehs[jj,:,:])) for jj in range(M)])
+    dmax= numpy.array([numpy.amax(_ivezic_dist(grs[jj,:,:],thisrmax,fehs[jj,:,:])) for jj in range(M)])
+    sys.stdout.write('\r'+_ERASESTR+'\r')
+    sys.stdout.flush()
+    zmin, zmax= dmin*numpy.sin(bmin*_DEGTORAD), dmax*numpy.sin(bmax*_DEGTORAD)
+    zs= numpy.linspace(numpy.amin(zmin),numpy.amax(zmax),_NZS)
+    if False: #remnant of old code
+        pass
+    else: #single value
+        zdist= numpy.zeros((M,_NZS))
+        platels, platebs= [], []
+        for jj in range(M):
+            cnt= 0
+            for p in plate:
+                cnt+= 1
+                sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,cnt,len(plate)))
+                sys.stdout.flush()
+                #l and b?
+                pindx= (sf.plates == p)
+                platel= platelb[pindx,0][0]
+                plateb= platelb[pindx,1][0]
+                if jj == 0: #only do this once
+                    platels.append(platel)
+                    platebs.append(plateb)
+                thiszdist= _predict_zdist_plate(zs,
+                                                densfunc[jj],params[jj],
+                                                rmin,rmax,
+                                                platel,
+                                                plateb,grmin,grmax,
+                                                fehmin[jj],fehmax[jj],
+                                                feh[jj],colordist[jj],
+                                                fehdist[jj],sf,p)
+                zdist[jj,:]+= thiszdist
+        sys.stdout.write('\r'+_ERASESTR+'\r')
+        sys.stdout.flush()
+        #Fix relative normalization
+        prednumbers= numpy.nansum(zdist,axis=1)
+        obsnumbers= numpy.array([len(data[jj]) for jj in range(M)])
+        relamp= obsnumbers/prednumbers
+        for jj in range(M):
+            zdist[jj:]*= relamp[jj]
+        zdist= numpy.nansum(zdist,axis=0)
+        norm= numpy.nansum(zdist*(zs[1]-zs[0]))
+        zdist/= norm
+        if convolve > 0.:
+            ndimage.filters.gaussian_filter1d(zdist,convolve/(zs[1]-zs[0]),
+                                              output=zdist)
+        if xrange is None:
+            if allplates or brightplates:
+                xrange=[-0.2,5]
+            else:
+                if feh[0] > -0.5:
+                    xrange= [numpy.amin(zs)-0.2,
+                             0.7*(numpy.amax(zs)-numpy.amin(zs)+0.5)+numpy.amin(zs)-0.2]
+                else:
+                    xrange= [numpy.amin(zs)-0.2,
+                             1*(numpy.amax(zs)-numpy.amin(zs)+0.5)+numpy.amin(zs)-0.2]
+        if yrange is None:
+            yrange= [0.,1.65*numpy.amax(zdist)]
+        bovy_plot.bovy_plot(zs,zdist,ls=ls,color=color,
+                            xrange=xrange,yrange=yrange,
+                            xlabel='$|Z|\ [\mathrm{kpc}]$',
+                            ylabel='$\mathrm{density}$',overplot=overplot)
+        #Plot the data
+        data_z= []
+        for jj in range(M):
+            for p in plate:
+                data_z.extend(numpy.fabs(data[jj][(data[jj].plate == p)].zc))
+        hist= bovy_plot.bovy_hist(data_z,
+                                  normed=True,bins=bins,ec='k',
+                                  histtype='step',
+                                  overplot=True,
+                                  range=[numpy.amin(zmin),numpy.amax(zmax)])
+        if not right_legend is None:
+            bovy_plot.bovy_text(right_legend,top_right=True,size=_legendsize)
+        if len(plate) > 1 and len(plate) < 9:
+            platestr= '\mathrm{plates}\ \ '
+            for ii in range(len(plate)-1):
+                platestr= platestr+'%i, ' % plate[ii]
+            platestr+= '%i' % plate[-1]
+            lbstr= '$l = %i^\circ \pm %i^\circ$' % (int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
+                +'$b = %i^\circ \pm %i^\circ$' % (int(numpy.mean(platebs)),
+            int(numpy.std(platebs)))
+        elif allplates:
+            platestr= '\mathrm{all\ plates}'
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_z),top_right=True,
+                                    size=_legendsize)
+        elif brightplates:
+            platestr= '\mathrm{bright\ plates}'
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_z),top_right=True,
+                                    size=_legendsize)
+        elif faintplates:
+            platestr= '\mathrm{faint\ plates}'
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_z),top_right=True,
+                                    size=_legendsize)
+        elif len(plate) >= 9:
+            platestr= '%i\ \mathrm{plates}' % len(plate)
+            lbstr= '$l = %i^\circ \pm %i^\circ$' % (
+                int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
+                +'$b = %i^\circ\pm%i^\circ$' % (int(numpy.mean(platebs)),
+            int(numpy.std(platebs)))
+        else:
+            platestr= '\mathrm{plate}\ \ %i' % plate[0]
+            lbstr= '$l = %i^\circ$' % int(platel)+'\n'\
+                +'$b = %i^\circ$' % int(plateb)           
+        if not (allplates or brightplates or faintplates):
+            if right_legend is None:
+                bovy_plot.bovy_text(r'$'+platestr+'$'
+                                    +'\n'+
+                                    '$%i \ \ \mathrm{stars}$' % 
+                                    len(data_z)
+                                    +'\n'+
+                                    lbstr,top_right=True,
+                                    size=_legendsize)
+            #Overplot direction in (R,z) plane
+            ax= matplotlib.pyplot.gca()
+            yrange= ax.get_ylim()
+            dy= yrange[1]-yrange[0]
+            xfac= 1./(20.8-14.5)*(xrange[1]-xrange[0])
+            rx, ry,dr, dz= xrange[1]-2.1*xfac,yrange[1]-0.5*dy, 2.*xfac, 0.4*dy
+            #x-axis
+            bovy_plot.bovy_plot([rx-0.2*xfac,rx-0.2*xfac+dr],
+                                [ry,ry],
+                                'k-',overplot=True)
+            #y-axis
+            bovy_plot.bovy_plot([rx,rx],
+                                [ry-dz/2.,ry+dz/2.],
+                                'k-',overplot=True)
+            #Sun's position
+            bovy_plot.bovy_plot([rx+dr/2.],[ry],'ko',overplot=True)
+            #Draw los
+            gr= (grmax+grmin)/2.
+            if allbright:
+                thisrmin= rmin
+                thisrmax= 17.8
+            if allfaint:
+                thisrmin= 17.8
+                thisrmax= rmax
+            dmin, dmax= _ivezic_dist(gr,thisrmin,numpy.mean(numpy.array(feh))), _ivezic_dist(gr,thisrmax,numpy.mean(numpy.array(feh)))
+            ds= numpy.linspace(dmin,dmax,101)
+            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels)+numpy.std(platels) for ii in range(len(ds))]),
+                                         numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
+                                         ds,degree=True).astype('float')
+            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+            zs= xyzs[:,2]/8.*dz/2.+ry
+            bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels)-numpy.std(platels) for ii in range(len(ds))]),
+                                         numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
+                                         ds,degree=True).astype('float')
+            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+            zs= xyzs[:,2]/8.*dz/2.+ry
+            bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels) for ii in range(len(ds))]),
+                                         numpy.array([numpy.mean(platebs)+numpy.std(platebs) for ii in range(len(ds))]),
+                                         ds,degree=True).astype('float')
+            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+            zs= xyzs[:,2]/8.*dz/2.+ry
+            bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels) for ii in range(len(ds))]),
+                                         numpy.array([numpy.mean(platebs)-numpy.std(platebs) for ii in range(len(ds))]),
+                                         ds,degree=True).astype('float')
+            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+            zs= xyzs[:,2]/8.*dz/2.+ry
+            bovy_plot.bovy_plot(rs,zs,'-',color='0.75',overplot=True)
+            xyzs= bovy_coords.lbd_to_XYZ(numpy.array([numpy.mean(platels) for ii in range(len(ds))]),
+                                         numpy.array([numpy.mean(platebs) for ii in range(len(ds))]),
+                                         ds,degree=True).astype('float')
+            rs= (((8.-xyzs[:,0])**2.+xyzs[:,1]**2.)**0.5)/8.*dr/2.+rx
+            zs= xyzs[:,2]/8.*dz/2.+ry
+            bovy_plot.bovy_plot(rs,zs,'k-',overplot=True)
+            bovy_plot.bovy_text(rx+3./4.*dr,ry-0.1*dz,r'$R$')
+            bovy_plot.bovy_text(rx-0.25*xfac,ry+3./4.*dz/2.,r'$Z$')
+        if not left_legend is None:
+            bovy_plot.bovy_text(left_legend,top_left=True,size=_legendsize)
+        return (zdist, hist[0], hist[1])
 
 ###############################################################################
 #   Good sets of plates to run comparerdistPlate for

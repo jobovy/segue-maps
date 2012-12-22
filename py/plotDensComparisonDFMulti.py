@@ -1,0 +1,344 @@
+import os, os.path
+import copy
+import numpy
+import cPickle as pickle
+from optparse import OptionParser
+from galpy.util import bovy_plot, bovy_coords
+import segueSelect
+import compareDataModel
+from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
+    segueSelect, _ERASESTR
+from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
+from pixelFitDens import pixelAfeFeh
+from pixelFitDF import *
+from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
+def plotDensComparisonDFMulti(options,args):
+    #Read data etc.
+    print "Reading the data ..."
+    raw= read_rawdata(options)
+    #Bin the data
+    binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
+    #Map the bins with ndata > minndata in 1D
+    fehs, afes= [], []
+    for ii in range(len(binned.fehedges)-1):
+        for jj in range(len(binned.afeedges)-1):
+            data= binned(binned.feh(ii),binned.afe(jj))
+            if len(data) < options.minndata:
+                continue
+            #print binned.feh(ii), binned.afe(jj), len(data)
+            fehs.append(binned.feh(ii))
+            afes.append(binned.afe(jj))
+    nabundancebins= len(fehs)
+    fehs= numpy.array(fehs)
+    afes= numpy.array(afes)
+    if options.group == 'aenhanced':
+        gfehs= [-0.75,-0.95,-0.85,-0.75,-0.65,-0.55,
+                 -0.95,-0.85,-0.75,-0.65,-0.55,-0.45]
+        gafes= [0.475,0.425,0.425,0.425,0.425,0.425,
+                0.375,0.375,0.375,0.375,0.375,0.375]
+    #Setup everything for the selection function
+    print "Setting up stuff for the normalization integral ..."
+    normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
+    M= len(gfehs)
+    model1s= []
+    model2s= []
+    model3s= []
+    params1= []
+    params2= []
+    params3= []
+    data= []
+    colordists= []
+    fehdists= []
+    fehmins= []
+    fehmaxs= []
+    cfehs= []
+    for jj in range(M):
+        print "Working on group %i / %i ..." % (jj+1,M)
+        #Find pop corresponding to this bin
+        pop= numpy.argmin((gfehs[jj]-fehs)**2./0.1+(gafes[jj]-afes)**2./0.0025)
+        #Load savefile
+        if not options.init is None:
+            #Load initial parameters from file
+            savename= options.init
+            spl= savename.split('.')
+            newname= ''
+            for ll in range(len(spl)-1):
+                newname+= spl[ll]
+                if not ll == len(spl)-2: newname+= '.'
+            newname+= '_%i.' % pop
+            newname+= spl[-1]
+            savefile= open(newname,'rb')
+            tparams= pickle.load(savefile)
+            savefile.close()
+        else:
+            raise IOError("base filename not specified ...")
+        print tparams
+        #Set up density models and their parameters
+        model1s.append(interpDens)
+        params1.append(calc_model(tparams,options,0))
+        if False:
+            tparams= set_potparams([1.,0.6],tparams,options,1)
+            model2s.append(interpDens)
+            params2.append(calc_model(tparams,options,pop))
+            tparams= set_potparams([1.,0.7],tparams,options,1)
+            model3s.append(interpDens)
+            params3.append(calc_model(tparams,options,pop))
+        else:
+            model2s.append(None)
+            params2.append(None)
+            model3s.append(None)
+            params3.append(None)
+        data.append(binned(fehs[pop],afes[pop]))
+        #Setup everything for selection function
+        thisnormintstuff= normintstuff[pop]
+        if _PRECALCVSAMPLES:
+            sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
+        else:
+            sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
+        colordists.append(colordist)
+        fehdists.append(fehdist)
+        fehmins.append(fehmin)
+        fehmaxs.append(fehmax)
+        cfehs.append(feh)
+        if True:
+            #Cut out bright stars on faint plates and vice versa
+            indx= []
+            nfaintbright, nbrightfaint= 0, 0
+            for ii in range(len(data[jj].feh)):
+                if sf.platebright[str(data[jj][ii].plate)] and data[jj][ii].dered_r >= 17.8:
+                    indx.append(False)
+                    nbrightfaint+= 1
+                elif not sf.platebright[str(data[jj][ii].plate)] and data[jj][ii].dered_r < 17.8:
+                    indx.append(False)
+                    nfaintbright+= 1
+                else:
+                    indx.append(True)
+            print "nbrightfaint, nfaintbright", nbrightfaint, nfaintbright
+            indx= numpy.array(indx,dtype='bool')
+            if numpy.sum(indx) > 0:
+                data[jj]= data[jj][indx]
+    #Ranges
+    if options.type == 'z':
+        xrange= [-0.1,5.]
+    elif options.type == 'R':
+        xrange= [4.8,14.2]
+    elif options.type == 'r':
+        xrange= [14.2,20.1]
+    #We do bright/faint for 4 directions and all, all bright, all faint
+    ls= [180,180,45,45]
+    bs= [0,90,-23,23]
+    bins= 21
+    #Set up comparison
+    if options.type == 'r':
+        compare_func= compareDataModel.comparerdistPlateMulti
+    elif options.type == 'z':
+        compare_func= compareDataModel.comparezdistPlateMulti
+    elif options.type == 'R':
+        compare_func= compareDataModel.compareRdistPlateMulti
+    #all, faint, bright
+    bins= [31,31,31]
+    plates= ['all','bright','faint']
+    for ii in range(len(plates)):
+        plate= plates[ii]
+        if plate == 'all':
+#            thisleft_legend= left_legend
+#            thisright_legend= right_legend
+            thisleft_legend= None
+            thisright_legend= None
+        else:
+            thisleft_legend= None
+            thisright_legend= None
+        bovy_plot.bovy_print()
+        compare_func(model1s,params1,sf,colordists,fehdists,
+                     data,plate,color='k',
+                     rmin=14.5,rmax=rmax,
+                     grmin=grmin,grmax=grmax,
+                     fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                     xrange=xrange,
+                     bins=bins[ii],ls='-',left_legend=thisleft_legend,
+                     right_legend=thisright_legend)
+        if not params2[0] is None:
+            compare_func(model2s,params2,sf,colordists,fehdists,
+                         data,plate,color='k',bins=bins[ii],
+                         rmin=14.5,rmax=rmax,
+                         grmin=grmin,grmax=grmax,
+                         fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                         xrange=xrange,
+                         overplot=True,ls='--')
+        if not params3[0] is None:
+            compare_func(model3s,params3,sf,colordists,fehdists,
+                         data,plate,color='k',bins=bins[ii],
+                         rmin=14.5,rmax=rmax,
+                         grmin=grmin,grmax=grmax,
+                         fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                         xrange=xrange,
+                         overplot=True,ls=':')
+        if options.type == 'r':
+            bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+plate+'.'+options.ext)
+        else:
+            bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_'+plate+'.'+options.ext)
+        if options.all: return None
+    bins= 16
+    for ii in range(len(ls)):
+        #Bright
+        plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
+                                                       sf,data,
+                                                       faint=False)
+        bovy_plot.bovy_print()
+        compare_func(model1s,params1,sf,colordists,fehdists,
+                     data,plate,color='k',
+                     rmin=14.5,rmax=rmax,
+                     grmin=grmin,
+                     grmax=grmax,
+                     fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                     xrange=xrange,
+                     bins=bins,ls='-')
+        if not params2[0] is None:
+            compare_func(model2s,params2,sf,colordists,fehdists,
+                         data,plate,color='k',bins=bins,
+                         rmin=14.5,rmax=rmax,
+                         grmin=grmin,
+                         grmax=grmax,
+                         fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                         xrange=xrange,
+                         overplot=True,ls='--')
+        if not params3[0] is None:
+            compare_func(model3s,params3,sf,colordists,fehdists,
+                         data,plate,color='k',bins=bins,
+                         rmin=14.5,rmax=rmax,
+                         grmin=grmin,
+                         grmax=grmax,
+                         fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                         xrange=xrange,
+                         overplot=True,ls=':')
+        if options.type == 'r':
+            bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+'l%i_b%i_bright.' % (ls[ii],bs[ii])+options.ext)
+        else:
+            bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_l%i_b%i_bright.' % (ls[ii],bs[ii])+options.ext)
+        #Faint
+        plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
+                                                       sf,data,
+                                                       bright=False)
+        bovy_plot.bovy_print()
+        compare_func(model1s,params1,sf,colordists,fehdists,
+                     data,plate,color='k',
+                     rmin=14.5,rmax=rmax,
+                     grmin=grmin,
+                     grmax=grmax,
+                     fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                     xrange=xrange,
+                     bins=bins,ls='-')
+        if not params2[0] is None:
+            compare_func(model2s,params2,sf,colordists,fehdists,
+                         data,plate,color='k',bins=bins,
+                         rmin=14.5,rmax=rmax,grmin=grmin,
+                         grmax=grmax,
+                         fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                         xrange=xrange,
+                         overplot=True,ls='--')
+        if not params3[0] is None:
+            compare_func(model3s,params3,sf,colordists,fehdists,
+                         data,plate,color='k',bins=bins,
+                         rmin=14.5,rmax=rmax,grmin=grmin,
+                         grmax=grmax,
+                         fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                         xrange=xrange,
+                         overplot=True,ls=':')
+        if options.type == 'r':
+            bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+'l%i_b%i_faint.' % (ls[ii],bs[ii])+options.ext)
+        else:
+            bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_l%i_b%i_faint.' % (ls[ii],bs[ii])+options.ext)
+    return None
+
+def calc_model(params,options,pop):
+    nrs, nzs= 31, 31
+    thisrmin, thisrmax= 4./_REFR0, 15./_REFR0
+    thiszmin, thiszmax= 0., .8
+    Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
+    zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
+    #Model 1
+    vo= get_vo(params,options,1)
+    ro= get_ro(params,options)
+    pot= setup_potential(params,options,1)
+    aA= setup_aA(pot,options)
+    dfparams= get_dfparams(params,pop,options,log=False)
+    if options.dfmodel.lower() == 'qdf':
+        #Normalize
+        hr= dfparams[0]/ro
+        sr= dfparams[1]/vo
+        sz= dfparams[2]/vo
+        hsr= dfparams[3]/ro
+        hsz= dfparams[4]/ro
+        #Setup
+        qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
+    surfgrid= numpy.empty((nrs,nzs))
+    for ii in range(nrs):
+        for jj in range(nzs):
+            surfgrid[ii,jj]= qdf.surfacemass(Rgrid[ii],zgrid[jj],
+                                             nmc=options.nmcv,
+                                             ngl=options.ngl)
+        surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
+                                                    numpy.log(surfgrid),
+                                                    kx=3,ky=3,
+                                                    s=0.)
+    return surfInterp
+
+##RUNNING SINGLE BINS IN A SINGLE CALL
+def run_abundance_singles_plotdens(options,args,fehs,afes):
+    options.singles= False #First turn this off!
+    savename= args[0]
+    initname= options.init
+    normname= options.savenorm
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: run_abundance_singles_plotdens_single(options,args,fehs,afes,x,
+                                                                          savename,initname,normname)),
+                                  range(len(fehs)),
+                                  numcores=numpy.amin([len(fehs),
+                                                       multiprocessing.cpu_count(),
+                                                       options.multi]))
+    else:
+        for ii in range(len(fehs)):
+            run_abundance_singles_plotdens_single(options,args,fehs,afes,ii,
+                                                  savename,initname,normname)
+    return None
+
+def run_abundance_singles_plotdens_single(options,args,fehs,afes,ii,savename,
+                                          initname,
+                                          normname):
+    #Prepare args and options
+    spl= savename.split('.')
+    newname= ''
+    for jj in range(len(spl)-1):
+        newname+= spl[jj]
+        if not jj == len(spl)-2: newname+= '.'
+    newname+= '_%i.' % ii
+    newname+= spl[-1]
+    args[0]= newname
+    if not initname is None:
+        #Do the same for init
+        spl= initname.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        options.init= newname
+    if not normname is None:
+        #Do the same for init
+        spl= normname.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        options.savenorm= newname
+    options.singlefeh= fehs[ii]
+    options.singleafe= afes[ii]
+    #Now run
+    plotDensComparisonDF(options,args)
+
+if __name__ == '__main__':
+    (options,args)= get_options().parse_args()
+    plotDensComparisonDFMulti(options,args)

@@ -1910,6 +1910,8 @@ def get_options():
     #Other options (not necessarily used in this file
     parser.add_option("-t","--type",dest='type',default=None,
                       help="Type of thing to do")
+    parser.add_option("--group",dest='group',default=None,
+                      help="Group to consider (in plotDensComparisonDFMulti and others(?)")
     parser.add_option("-q","--flatten",dest='flatten',default=None,
                       type='float',
                       help="Shortcut to set fake flattening")
