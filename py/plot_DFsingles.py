@@ -157,6 +157,11 @@ def plot_DFsingles(options,args):
         if not options.flatten is None:
             vmin, vmax= 0.9, 1.1
             zlabel=r'$\mathrm{flattening}\ q / %.1f$' % options.flatten
+        elif 'real' in options.outfilename.lower():
+            vmin, vmax= 0.9, 1.1
+            medianq= numpy.median(plotthis[numpy.isfinite(plotthis)])
+            plotthis/= medianq
+            zlabel=r'$\mathrm{flattening}\ q / %.2f$' % medianq
         else:
             vmin, vmax= 0.5, 1.2
             zlabel=r'$\mathrm{flattening}\ q$'
