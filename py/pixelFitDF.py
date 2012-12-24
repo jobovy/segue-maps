@@ -1278,6 +1278,8 @@ def setup_potential(params,options,npops):
     potparams= get_potparams(params,options,npops)
     if options.potential.lower() == 'flatlog':
         return potential.LogarithmicHaloPotential(normalize=1.,q=potparams[0])
+    elif options.potential.lower() == 'mwpotential':
+        return potential.MWPotential #Just used for fake data
     elif options.potential.lower() == 'flatlogdisk':
         return [potential.LogarithmicHaloPotential(normalize=.5,q=potparams[0]),
                 potential.MiyamotoNagaiPotential(normalize=.5,a=0.5,b=0.1)]
