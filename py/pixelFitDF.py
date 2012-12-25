@@ -396,7 +396,7 @@ def logprior_pot(params,options,npops):
     potparams= get_potparams(params,options,npops)
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         q= potparams[0]
-        if q <= 0.53: #minimal flattening for positive density at R > 5 kpc, |Z| < 4 kpc, ALSO CHANGE IN SETUP_DOMAIN
+        if not options.noqprior and q <= 0.53: #minimal flattening for positive density at R > 5 kpc, |Z| < 4 kpc, ALSO CHANGE IN SETUP_DOMAIN
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     return out
 
@@ -1572,7 +1572,10 @@ def setup_domain(options,npops):
             domain.append([0.,1.])
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         isDomainFinite.append([True,False])
-        domain.append([0.53,0.])
+        if not options.noqprior:
+            domain.append([0.53,0.])
+        else:
+            domain.append([0.0,0.])
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
     return (isDomainFinite,domain)
@@ -1597,7 +1600,10 @@ def setup_domain_indiv_potential(options,npops):
     domain= []
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         isDomainFinite.append([True,False])
-        domain.append([0.53,0.])
+        if not options.noqprior:
+            domain.append([0.53,0.])
+        else:
+            domain.append([0.0,0.])
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
     return (isDomainFinite,domain)
@@ -1889,6 +1895,9 @@ def get_options():
     parser.add_option("--novoprior",action="store_true", dest="novoprior",
                       default=False,
                       help="If set, do not apply a vo prior (default: Bovy et al. 2012)")
+    parser.add_option("--noqprior",action="store_true", dest="noqprior",
+                      default=False,
+                      help="If set, do not apply a q prior (default: q > 0.53)")
     parser.add_option("--bovy09voprior",action="store_true", 
                       dest="bovy09voprior",
                       default=False,
