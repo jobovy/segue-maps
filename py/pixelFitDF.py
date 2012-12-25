@@ -1612,6 +1612,8 @@ def get_potparams(p,options,npops):
     startindx+= ndfparams*npops
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         return (p[startindx],p[startindx+1]) #vo, q
+    elif options.potential.lower() == 'mwpotential':
+        return (1.) #vo
 
 def get_vo(p,options,npops):
     """Function that returns the vo parameter for these options"""
@@ -1622,6 +1624,8 @@ def get_vo(p,options,npops):
     startindx+= ndfparams*npops
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         return p[startindx+1]
+    elif options.potential.lower() == 'mwpotential':
+        return 1.
 
 def get_outfrac(p,indx,options):
     """Function that returns the outlier fraction for these options"""
