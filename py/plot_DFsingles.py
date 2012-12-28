@@ -129,6 +129,12 @@ def plot_DFsingles(options,args):
             elif options.type.lower() == 'vc':
                 s= get_potparams(sols[solindx],options,1)
                 plotthis[ii,jj]= s[1]
+            elif options.type.lower() == 'rd':
+                s= get_potparams(sols[solindx],options,1)
+                plotthis[ii,jj]= numpy.exp(s[0])
+            elif options.type.lower() == 'zh':
+                s= get_potparams(sols[solindx],options,1)
+                plotthis[ii,jj]= numpy.exp(s[2])
             elif options.type.lower() == 'kz':
                 s= get_potparams(sols[solindx],options,1)
                 plotthis[ii,jj]= (s[1]**2./s[0]**2.)/(1./options.flatten**2.)
@@ -172,6 +178,12 @@ def plot_DFsingles(options,args):
            medianvc= numpy.median(plotthis[numpy.isfinite(plotthis)])
            plotthis/= medianvc
            zlabel=r'$V_c / %i\ \mathrm{km\,s}^{-1}$' % int(_REFV0*medianvc)
+    elif options.type.lower() == 'rd':
+        vmin, vmax= 0.2, 0.6
+        zlabel=r'$R_d / R_0$'
+    elif options.type.lower() == 'zh':
+        vmin, vmax= 0.0125, 0.075
+        zlabel=r'$z_h / R_0$'
     elif options.type.lower() == 'kz':
         vmin, vmax= 0.5, 1.5
         zlabel=r'$K_z / K_z^{\mathrm{true}}$'
