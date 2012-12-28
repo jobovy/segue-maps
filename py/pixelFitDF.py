@@ -403,7 +403,7 @@ def logprior_pot(params,options,npops):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if potparams[2] < -9. or potparams[2] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if potparams[3] < 0. or potparams[2] > 1.:
+        if potparams[3] < 0. or potparams[3] > 1.:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     return out
 
@@ -1639,11 +1639,11 @@ def get_potparams(p,options,npops):
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*npops
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
-        return (p[startindx],p[startindx+1]) #vo, q
+        return (p[startindx],p[startindx+1]) #q, vo
     elif options.potential.lower() == 'mwpotential':
         return (1.) #vo
     elif options.potential.lower() == 'mwpotentialsimplefit':
-        return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3]) #vo, hr,hz,ampd
+        return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3]) # hr, vo, hz,ampd
 
 def get_vo(p,options,npops):
     """Function that returns the vo parameter for these options"""
@@ -1679,6 +1679,11 @@ def set_potparams(p,params,options,npops):
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         params[startindx]= p[0]
         params[startindx+1]= p[1]
+    elif options.potential.lower() == 'mwpotentialsimplefit':
+        params[startindx]= p[0]
+        params[startindx+1]= p[1]
+        params[startindx+2]= p[2]
+        params[startindx+3]= p[3]
     return params
 
 def get_dfparams(p,indx,options,log=False):
@@ -1726,7 +1731,8 @@ def get_npotparams(options):
     """Function that returns the number of potential parameters"""
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         return 2
-
+    elif options.potential.lower() == 'mwpotentialsimplefit':
+        return 4
 def get_ro(p,options):
     """Function that returns R0 for these options"""
     if options.fitro:
