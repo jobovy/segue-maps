@@ -399,11 +399,11 @@ def logprior_pot(params,options,npops):
         if (not options.noqprior and q <= 0.53) or (options.noqprior and q <= 0.): #minimal flattening for positive density at R > 5 kpc, |Z| < 4 kpc, ALSO CHANGE IN SETUP_DOMAIN
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     elif options.potential.lower() == 'mwpotentialsimplefit':
-        if potparams[0] < -2.77 or potarams[0] > 2.53:
+        if potparams[0] < -2.77 or potparams[0] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if potparams[2] < -9. or potarams[2] > 2.53:
+        if potparams[2] < -9. or potparams[2] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if potparams[3] < 0. or potarams[2] > 1.:
+        if potparams[3] < 0. or potparams[2] > 1.:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     return out
 
@@ -1291,11 +1291,11 @@ def setup_potential(params,options,npops):
         ro= get_ro(params,options)
         ampd= 0.95*potparams[3]
         amph= 0.95*(1.-potparams[3])
-        return [MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
-                                       b=numpy.exp(potparams[2])/ro,
-                                       normalize=ampd),
-                NFWPotential(a=4.5,normalize=amph),
-                HernquistPotential(a=0.6/8,normalize=0.05)]
+        return [potential.MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
+                                                 b=numpy.exp(potparams[2])/ro,
+                                                 normalize=ampd),
+                potential.NFWPotential(a=4.5,normalize=amph),
+                potential.HernquistPotential(a=0.6/8,normalize=0.05)]
     elif options.potential.lower() == 'flatlogdisk':
         return [potential.LogarithmicHaloPotential(normalize=.5,q=potparams[0]),
                 potential.MiyamotoNagaiPotential(normalize=.5,a=0.5,b=0.1)]
