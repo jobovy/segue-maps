@@ -396,7 +396,14 @@ def logprior_pot(params,options,npops):
     potparams= get_potparams(params,options,npops)
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         q= potparams[0]
-        if not options.noqprior and q <= 0.53: #minimal flattening for positive density at R > 5 kpc, |Z| < 4 kpc, ALSO CHANGE IN SETUP_DOMAIN
+        if (not options.noqprior and q <= 0.53) or (options.noqprior and q <= 0.): #minimal flattening for positive density at R > 5 kpc, |Z| < 4 kpc, ALSO CHANGE IN SETUP_DOMAIN
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+    elif options.potential.lower() == 'mwpotentialsimplefit':
+        if potparams[0] < -2.77 or potarams[0] > 2.53:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if potparams[2] < -9. or potarams[2] > 2.53:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if potparams[3] < 0. or potarams[2] > 1.:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     return out
 
@@ -1280,6 +1287,15 @@ def setup_potential(params,options,npops):
         return potential.LogarithmicHaloPotential(normalize=1.,q=potparams[0])
     elif options.potential.lower() == 'mwpotential':
         return potential.MWPotential #Just used for fake data
+    elif options.potential.lower() == 'mwpotentialsimplefit':
+        ro= get_ro(params,options)
+        ampd= 0.95*potparams[3]
+        amph= 0.95*(1.-potparams[3])
+        return [MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
+                                       b=numpy.exp(potparams[2])/ro,
+                                       normalize=ampd),
+                NFWPotential(a=4.5,normalize=amph),
+                HernquistPotential(a=0.6/8,normalize=0.05)]
     elif options.potential.lower() == 'flatlogdisk':
         return [potential.LogarithmicHaloPotential(normalize=.5,q=potparams[0]),
                 potential.MiyamotoNagaiPotential(normalize=.5,a=0.5,b=0.1)]
@@ -1544,6 +1560,8 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
             p.append(0.0000000000000000000000001) #BOVY: UPDATE FIRST GUESS
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         p.extend([.7,1.])
+    elif options.potential.lower() == 'mwpotentialsimplefit':
+        p.extend([-1.,1.,-3.,0.5])
     return p
 
 ##SETUP DOMAIN FOR MARKOVPY
@@ -1578,6 +1596,8 @@ def setup_domain(options,npops):
             domain.append([0.0,0.])
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
+    elif options.potential.lower() == 'mwpotentialsimplefit':
+        raise NotImplementedError("setup domain for sampling of mwpotentialsimplefit not setup")
     return (isDomainFinite,domain)
 
 def setup_domain_indiv_df(options,npops):
@@ -1606,6 +1626,8 @@ def setup_domain_indiv_potential(options,npops):
             domain.append([0.0,0.])
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
+    elif options.potential.lower() == 'mwpotentialsimplefit':
+        raise NotImplementedError("setup domain for sampling of mwpotentialsimplefit not setup")
     return (isDomainFinite,domain)
 
 ##GET AND SET THE PARAMETERS
@@ -1620,6 +1642,8 @@ def get_potparams(p,options,npops):
         return (p[startindx],p[startindx+1]) #vo, q
     elif options.potential.lower() == 'mwpotential':
         return (1.) #vo
+    elif options.potential.lower() == 'mwpotentialsimplefit':
+        return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3]) #vo, hr,hz,ampd
 
 def get_vo(p,options,npops):
     """Function that returns the vo parameter for these options"""
@@ -1632,6 +1656,8 @@ def get_vo(p,options,npops):
         return p[startindx+1]
     elif options.potential.lower() == 'mwpotential':
         return 1.
+    elif options.potential.lower() == 'mwpotentialsimplefit':
+        return p[startindx+1]
 
 def get_outfrac(p,indx,options):
     """Function that returns the outlier fraction for these options"""
