@@ -16,7 +16,10 @@
 #    Make sure first parameter is vo==vc(ro)
 #    edit: - logprior_pot
 #          - get_potparams
+#          - set_potparams
+#          - get_vo
 #          - get_npotparams
+#          functions for setting up the domain
 #
 import os, os.path
 import sys
