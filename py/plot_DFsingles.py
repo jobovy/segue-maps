@@ -233,9 +233,12 @@ def plot_DFsingles(options,args):
                               contours=False,
                               colorbar=True,shrink=0.78)
         if options.type.lower() == 'q' or options.type.lower() == 'vc' \
-                or options.relative:
-
+                or options.relative or options.type.lower() == 'rd':
             bovy_plot.bovy_text(r'$\mathrm{median} = %.2f \pm %.2f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
+                                                                        1.4826*numpy.median(numpy.fabs(plotthis[numpy.isfinite(plotthis)]-numpy.median(plotthis[numpy.isfinite(plotthis)])))),
+                                bottom_left=True,size=14.)
+        if options.type.lower() == 'zh':
+            bovy_plot.bovy_text(r'$\mathrm{median} = %.4f \pm %.4f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
                                                                         1.4826*numpy.median(numpy.fabs(plotthis[numpy.isfinite(plotthis)]-numpy.median(plotthis[numpy.isfinite(plotthis)])))),
                                 bottom_left=True,size=14.)
     bovy_plot.bovy_end_print(options.outfilename)
