@@ -1281,7 +1281,11 @@ def setup_aA(pot,options):
     elif options.aAmethod.lower() == 'staeckel':
         return actionAngleStaeckel(pot=pot,delta=options.staeckeldelta,c=True)
     elif options.aAmethod.lower() == 'staeckelgrid':
-        return actionAngleStaeckelGrid(pot=pot,delta=options.staeckeldelta,c=True)
+        return actionAngleStaeckelGrid(pot=pot,delta=options.staeckeldelta,
+                                       c=True,Rmax=options.staeckelRmax,
+                                       nLz=options.staeckelnLz,
+                                       nE=options.staeckelnE,
+                                       npsi=options.staeckelnpsi)
     
 def setup_potential(params,options,npops):
     """Function for setting up the potential"""
@@ -1888,6 +1892,16 @@ def get_options():
     parser.add_option("--staeckeldelta",dest='staeckeldelta',
                       default=.45,type='float',
                       help="Focal length for Staeckel approximation")
+    parser.add_option("--staeckelRmax",dest='staeckelRmax',
+                      default=5.,type='float',
+                      help="Rmax in Staeckel AA")
+    parser.add_option("--staeckelnLz",dest='staeckelnLz',default=60,type='int',
+                      help="Number of Lz grid points in Staeckel")
+    parser.add_option("--staeckelnE",dest='staeckelnE',default=50,type='int',
+                      help="Number of E grid points in Staeckel")
+    parser.add_option("--staeckelnpsi",dest='staeckelnpsi',
+                      default=50,type='int',
+                      help="Number of psi grid points in Staeckel")
     #Fit options
     parser.add_option("--fitro",action="store_true", dest="fitro",
                       default=False,
