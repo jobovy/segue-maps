@@ -39,6 +39,7 @@ from galpy import potential
 from galpy.actionAngle import actionAngleAdiabatic
 from galpy.actionAngle import actionAngleAdiabaticGrid
 from galpy.actionAngle import actionAngleStaeckel
+from galpy.actionAngle import actionAngleStaeckelGrid
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import bovy_mcmc
 import acor
