@@ -2057,6 +2057,10 @@ def get_options():
     parser.add_option("--noerrs",action="store_true", dest="noerrs",
                       default=False,
                       help="Don't add uncertainties")
+    parser.add_option("--usemedianpotential",action="store_true",
+                      dest="usemedianpotential",
+                      default=False,
+                      help="Use the median potential of all the bins")
     return parser
   
 if __name__ == '__main__':

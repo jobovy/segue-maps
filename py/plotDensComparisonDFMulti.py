@@ -63,7 +63,10 @@ def plotDensComparisonDFMulti(options,args):
     nabundancebins= len(fehs)
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
-    fafes, gfehs, left_legend= getMultiComparisonBins(options)
+    gafes, gfehs, left_legend= getMultiComparisonBins(options)
+    if options.usemedianpotential:
+        potparams= get_median_potential(options,nabundancebins)
+        print "Median potential parameters: ", potparams
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
@@ -100,17 +103,22 @@ def plotDensComparisonDFMulti(options,args):
             savefile.close()
         else:
             raise IOError("base filename not specified ...")
+        if options.usemedianpotential:
+            tparams= set_potparams(potparams,tparams,options,1)
         print tparams
         #Set up density models and their parameters
         model1s.append(interpDens)
         params1.append(calc_model(tparams,options,0))
         if False:
-            tparams= set_potparams([1.,0.6],tparams,options,1)
-            model2s.append(interpDens)
-            params2.append(calc_model(tparams,options,pop))
-            tparams= set_potparams([1.,0.7],tparams,options,1)
-            model3s.append(interpDens)
-            params3.append(calc_model(tparams,options,pop))
+            if options.potential.lower() == 'flatlog':
+                tparams= set_potparams([potparams[0]*1.05,tparams[1]],
+                                       tparams,options,1)
+                model2s.append(interpDens)
+                params2.append(calc_model(tparams,options,pop))
+                tparams= set_potparams([potparams[0]*0.95,tparams[1]],
+                                       tparams,options,1)
+                model3s.append(interpDens)
+                params3.append(calc_model(tparams,options,pop))
         else:
             model2s.append(None)
             params2.append(None)
@@ -426,6 +434,29 @@ def plotMultiBins(options,args):
 
 def inMultiBin(feh,afe,gfehs,gafes):
     return (numpy.fabs(numpy.amin((gfehs-feh)**2./0.1+(gafes-afe)**2./0.0025)) < 0.00001)
+
+def get_median_potential(options,ndfbins):
+    #Run through all of the bins and medianize
+    all_potparams= numpy.zeros((get_npotparams(options),62))
+    for ii in range(ndfbins):
+        #Load savefile
+        if not options.init is None:
+            #Load initial parameters from file
+            savename= options.init
+            spl= savename.split('.')
+            newname= ''
+            for ll in range(len(spl)-1):
+                newname+= spl[ll]
+                if not ll == len(spl)-2: newname+= '.'
+            newname+= '_%i.' % ii
+            newname+= spl[-1]
+            savefile= open(newname,'rb')
+            tparams= pickle.load(savefile)
+            savefile.close()
+        else:
+            raise IOError("base filename not specified ...")
+        all_potparams[:,ii]= get_potparams(tparams,options,1)
+    return numpy.median(all_potparams,axis=1)
     
 if __name__ == '__main__':
     (options,args)= get_options().parse_args()
