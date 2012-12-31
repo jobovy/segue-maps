@@ -2061,6 +2061,8 @@ def get_options():
                       dest="usemedianpotential",
                       default=False,
                       help="Use the median potential of all the bins")
+    parser.add_option("--nv",dest='nv',default=201,type='int',
+                      help="Number of vs for v pdf")
     return parser
   
 if __name__ == '__main__':
