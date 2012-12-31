@@ -12,25 +12,7 @@ from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
-def plotDensComparisonDFMulti(options,args):
-    #Read data etc.
-    print "Reading the data ..."
-    raw= read_rawdata(options)
-    #Bin the data
-    binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
-    #Map the bins with ndata > minndata in 1D
-    fehs, afes= [], []
-    for ii in range(len(binned.fehedges)-1):
-        for jj in range(len(binned.afeedges)-1):
-            data= binned(binned.feh(ii),binned.afe(jj))
-            if len(data) < options.minndata:
-                continue
-            #print binned.feh(ii), binned.afe(jj), len(data)
-            fehs.append(binned.feh(ii))
-            afes.append(binned.afe(jj))
-    nabundancebins= len(fehs)
-    fehs= numpy.array(fehs)
-    afes= numpy.array(afes)
+def getMultiComparisonBins(options):
     if options.group == 'aenhanced':
         gfehs= [-0.75,-0.95,-0.85,-0.75,-0.65,-0.55,
                  -0.95,-0.85,-0.75,-0.65,-0.55,-0.45]
@@ -57,6 +39,27 @@ def plotDensComparisonDFMulti(options,args):
                  -0.45,-0.35,-0.25,
                  -0.25,-0.15]
         left_legend= r'$\alpha-\mathrm{intermediate\ populations}$'
+    return (gafes,gfehs,left_legend)
+def plotDensComparisonDFMulti(options,args):
+    #Read data etc.
+    print "Reading the data ..."
+    raw= read_rawdata(options)
+    #Bin the data
+    binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
+    #Map the bins with ndata > minndata in 1D
+    fehs, afes= [], []
+    for ii in range(len(binned.fehedges)-1):
+        for jj in range(len(binned.afeedges)-1):
+            data= binned(binned.feh(ii),binned.afe(jj))
+            if len(data) < options.minndata:
+                continue
+            #print binned.feh(ii), binned.afe(jj), len(data)
+            fehs.append(binned.feh(ii))
+            afes.append(binned.afe(jj))
+    nabundancebins= len(fehs)
+    fehs= numpy.array(fehs)
+    afes= numpy.array(afes)
+    fafes, gfehs, left_legend= getMultiComparisonBins(options)
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
