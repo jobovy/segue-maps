@@ -1311,9 +1311,13 @@ def setup_potential(params,options,npops):
 ##FULL OPTIMIZER
 def full_optimize(params,fehs,afes,binned,options,normintstuff,errstuff):
     """Function for optimizing the full set of parameters"""
+    typf= mloglike(params,fehs,afes,binned,options,normintstuff,errstuff)
+    ftol= .1/numpy.fabs(typf)#should be plenty, assuming we're not too far off to start
     return optimize.fmin_powell(mloglike,params,
                                 args=(fehs,afes,binned,options,normintstuff,
-                                      errstuff))
+                                      errstuff),
+                                callback=cb,
+                                ftol=ftol,xtol=10.**-3.)
 
 ##INDIVIDUAL OPTIMIZATIONS
 def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff,errstuff):
@@ -1345,13 +1349,20 @@ def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff,errstuff):
         for ii in range(len(fehs)):
             print ii
             init_dfparams= list(get_dfparams(params,ii,options,log=True))
+            typf= indiv_optimize_df_mloglike(init_dfparams,
+                                             fehs,afes,binned,
+                                             options,pot,aA,
+                                             ii,copy.copy(params),
+                                             normintstuff,errstuff)
+            ftol= .1/numpy.fabs(typf)#should be plenty, assuming we're not too far off to start
             new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
                                                init_dfparams,
                                            args=(fehs,afes,binned,
                                                  options,pot,aA,
                                                  ii,copy.copy(params),
                                                  normintstuff,errstuff),
-                                               callback=cb)
+                                               callback=cb,
+                                               ftol=ftol,xtol=10.**-3.)
             params= set_dfparams(new_dfparams,params,ii,options)
     return params
 
@@ -1359,13 +1370,20 @@ def indiv_optimize_df_single(params,ii,fehs,afes,binned,options,aA,pot,normintst
     """Function to optimize the DF params for a single population when holding the potential fixed and using multi-processing"""
     print ii
     init_dfparams= list(get_dfparams(params,ii,options,log=True))
+    typf= indiv_optimize_df_mloglike(init_dfparams,
+                                     fehs,afes,binned,
+                                     options,pot,aA,
+                                     ii,copy.copy(params),
+                                     normintstuff,errstuff)
+    ftol= .1/numpy.fabs(typf)#should be plenty, assuming we're not too far off to start
     new_dfparams= optimize.fmin_powell(indiv_optimize_df_mloglike,
                                        init_dfparams,
                                        args=(fehs,afes,binned,
                                              options,pot,aA,
                                              ii,copy.copy(params),
                                              normintstuff,errstuff),
-                                       callback=cb)
+                                       callback=cb,
+                                       ftol=ftol,xtol=10.**-3.)
     #Now save to temporary pickle
     tmpfile= open(tmpfiles[ii][1],'wb')
     pickle.dump(new_dfparams,tmpfile)
@@ -1376,12 +1394,20 @@ def indiv_optimize_potential(params,fehs,afes,binned,options,normintstuff,
                              errstuff):
     """Function for optimizing the potential w/ individual DFs fixed"""
     init_potparams= numpy.array(get_potparams(params,options,len(fehs)))
+    #Get a typical value to estimate necessary ftol for delta chi <~ 1
+    typf= indiv_optimize_pot_mloglike(init_potparams,
+                                      fehs,afes,binned,options,
+                                      copy.copy(params),
+                                      normintstuff,errstuff)
+    ftol= .1/numpy.fabs(typf)#should be plenty, assuming we're not too far off to start
     new_potparams= optimize.fmin_powell(indiv_optimize_pot_mloglike,
                                         init_potparams,
                                         args=(fehs,afes,binned,options,
                                               copy.copy(params),
                                               normintstuff,errstuff),
-                                        callback=cb)
+                                        callback=cb,
+                                        xtol=10.**-3.,
+                                        ftol=ftol)
     params= set_potparams(new_potparams,params,options,len(fehs))
     return params
 
