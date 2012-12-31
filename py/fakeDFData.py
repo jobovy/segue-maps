@@ -259,7 +259,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
     #Setup density model
     use_real_dens= True
     if use_real_dens:
-        nrs, nzs= 101, 101
+        #nrs, nzs= 101, 101
+        nrs, nzs= 64, 64
         thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
         thiszmin, thiszmax= 0., .8
         Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
@@ -267,9 +268,13 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         surfgrid= numpy.empty((nrs,nzs))
         for ll in range(nrs):
             for jj in range(nzs):
+                sys.stdout.write('\r'+"Working on grid-point %i/%i" % (jj+ll*nzs+1,nzs*nrs))
+                sys.stdout.flush()
                 surfgrid[ll,jj]= qdf.surfacemass(Rgrid[ll],zgrid[jj],
                                                  nmc=options.nmcv,
                                                  ngl=options.ngl)
+        sys.stdout.write('\r'+_ERASESTR+'\r')
+        sys.stdout.flush()
         if _SURFSUBTRACTEXPON:
             Rs= numpy.tile(Rgrid,(nzs,1)).T
             Zs= numpy.tile(zgrid,(nrs,1))
