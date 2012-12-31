@@ -158,6 +158,19 @@ def plot_DFsingles(options,args):
                 if options.relative:
                     thissr= monoAbundanceMW.sigmaz(mapfehs[monoabindx],mapafes[monoabindx])*2.
                     plotthis[ii,jj]/= thissr
+            elif options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
+                    or options.type.lower() == 'afefeh':
+                thisplot=[tightbinned.feh(ii),
+                          tightbinned.afe(jj),
+                          len(data)]
+                if options.subtype.lower() == 'qvc':
+                    s= get_potparams(sols[solindx],options,1)
+                    thisq= s[0]
+                    if not options.flatten is None:
+                        thisq/= options.flatten
+                    thisvc= s[1]
+                    thisplot.extend([thisq,thisvc])
+                plotthis.append(thisplot)
     #Set up plot
     if options.type.lower() == 'q':
         if not options.flatten is None:
@@ -211,6 +224,18 @@ def plot_DFsingles(options,args):
         else:
             vmin, vmax= 20.,100.
             zlabel= r'$\mathrm{model}\ \sigma_R\ [\mathrm{km\ s}^{-1}]$'
+    elif options.type == 'afe':
+        vmin, vmax= 0.0,.5
+        zlabel=r'$[\alpha/\mathrm{Fe}]$'
+    elif options.type == 'feh':
+        vmin, vmax= -1.6,0.4
+        zlabel=r'$[\mathrm{Fe/H}]$'
+    elif options.type == 'fehafe':
+        vmin, vmax= -.7,.7
+        zlabel=r'$[\mathrm{Fe/H}]-[\mathrm{Fe/H}]_{1/2}([\alpha/\mathrm{Fe}])$'
+    elif options.type == 'afefeh':
+        vmin, vmax= -.15,.15
+        zlabel=r'$[\alpha/\mathrm{Fe}]-[\alpha/\mathrm{Fe}]_{1/2}([\mathrm{Fe/H}])$'
     if options.tighten:
         xrange=[-1.6,0.5]
         yrange=[-0.05,0.55]
@@ -220,7 +245,76 @@ def plot_DFsingles(options,args):
     #Now plot
     if options.type.lower() == 'afe' or options.type.lower() == 'feh' \
             or options.type.lower() == 'fehafe':
+        #Gather everything
+        afe, feh, ndata, x, y= [], [], [], [], []
+        for ii in range(len(plotthis)):
+            afe.append(plotthis[ii][1])
+            feh.append(plotthis[ii][0])
+            ndata.append(plotthis[ii][2])
+            x.append(plotthis[ii][3])
+            y.append(plotthis[ii][4])
+        afe= numpy.array(afe)
+        feh= numpy.array(feh)
+        ndata= numpy.array(ndata)
+        x= numpy.array(x)
+        y= numpy.array(y)
+        #Process ndata
+        ndata= ndata**.5
+        ndata= ndata/numpy.median(ndata)*35.
+        if options.type.lower() == 'afe':
+            plotc= afe
+        elif options.type.lower() == 'feh':
+            plotc= feh
+        elif options.type.lower() == 'afefeh':
+            #Go through the bins to determine whether feh is high or low for this alpha
+            plotc= numpy.zeros(len(afe))
+            for ii in range(tightbinned.npixfeh()):
+                fehbin= ii
+                data= tightbinned.data[(tightbinned.data.feh > tightbinned.fehedges[fehbin])\
+                                           *(tightbinned.data.feh <= tightbinned.fehedges[fehbin+1])]
+                medianafe= numpy.median(data.afe)
+                for jj in range(len(afe)):
+                    if feh[jj] == tightbinned.feh(ii):
+                        plotc[jj]= afe[jj]-medianafe
+        else:
+            #Go through the bins to determine whether feh is high or low for this alpha
+            plotc= numpy.zeros(len(feh))
+            for ii in range(tightbinned.npixafe()):
+                afebin= ii
+                data= tightbinned.data[(tightbinned.data.afe > tightbinned.afeedges[afebin])\
+                                           *(tightbinned.data.afe <= tightbinned.afeedges[afebin+1])]
+                medianfeh= numpy.median(data.feh)
+                for jj in range(len(feh)):
+                    if afe[jj] == tightbinned.afe(ii):
+                        plotc[jj]= feh[jj]-medianfeh
+        if options.subtype.lower() == 'qvc':
+            if not options.flatten is None:
+                xrange= [0.9,1.1]
+                xlabel=r'$\mathrm{flattening}\ q / %.1f$' % options.flatten
+            elif 'real' in options.outfilename.lower():
+                xrange= [0.9,1.1]
+                medianq= numpy.median(x[numpy.isfinite(x)])
+                x/= medianq
+                xlabel=r'$\mathrm{flattening}\ q / %.2f$' % medianq
+            else:
+                xrange= [0.5, 1.2]
+                xlabel=r'$\mathrm{flattening}\ q$'
+            yrange= [0.95, 1.05]
+            ylabel=r'$V_c / %i\ \mathrm{km\,s}^{-1}$' % int(_REFV0)
+            if 'real' in options.outfilename.lower():
+                medianvc= numpy.median(y[numpy.isfinite(y)])
+                y/= medianvc
+                ylabel=r'$V_c / %i\ \mathrm{km\,s}^{-1}$' % int(_REFV0*medianvc)
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
+        bovy_plot.bovy_plot(x,y,
+                            s=ndata,c=plotc,
+                            cmap='jet',
+                            xlabel=xlabel,ylabel=ylabel,
+                            clabel=zlabel,
+                            xrange=xrange,yrange=yrange,
+                            vmin=vmin,vmax=vmax,
+                            scatter=True,edgecolors='none',
+                            colorbar=True)       
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
