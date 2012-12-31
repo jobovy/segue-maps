@@ -412,7 +412,8 @@ def logprior_pot(params,options,npops):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if options.potential.lower() == 'mwpotentialfixhalo' \
                 and (potparams[4] < 0. or potparams[4] > 1. \
-                         or (potparams[3]+potparams[4] > 1.)):
+                         or (potparams[3]+potparams[4] > 1.) \
+                         or (potparams[3]+potparams[4] < .9)):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     return out
 
@@ -2033,6 +2034,8 @@ def get_options():
     #Other options (not necessarily used in this file
     parser.add_option("-t","--type",dest='type',default=None,
                       help="Type of thing to do")
+    parser.add_option("--subtype",dest='subtype',default=None,
+                      help="Sub-type of thing to do")
     parser.add_option("--group",dest='group',default=None,
                       help="Group to consider (in plotDensComparisonDFMulti and others(?)")
     parser.add_option("-q","--flatten",dest='flatten',default=None,
