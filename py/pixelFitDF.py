@@ -402,12 +402,17 @@ def logprior_pot(params,options,npops):
         q= potparams[0]
         if (not options.noqprior and q <= 0.53) or (options.noqprior and q <= 0.): #minimal flattening for positive density at R > 5 kpc, |Z| < 4 kpc, ALSO CHANGE IN SETUP_DOMAIN
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-    elif options.potential.lower() == 'mwpotentialsimplefit':
+    elif options.potential.lower() == 'mwpotentialsimplefit' \
+            or options.potential.lower() == 'mwpotentialfixhalo':
         if potparams[0] < -2.77 or potparams[0] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if potparams[2] < -9. or potparams[2] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if potparams[3] < 0. or potparams[3] > 1.:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if options.potential.lower() == 'mwpotentialfixhalo' \
+                and (potparams[4] < 0. or potparams[4] > 1. \
+                         or (potparams[3]+potparams[4] > 1.)):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     return out
 
@@ -1304,6 +1309,16 @@ def setup_potential(params,options,npops):
                                                  normalize=ampd),
                 potential.NFWPotential(a=4.5,normalize=amph),
                 potential.HernquistPotential(a=0.6/8,normalize=0.05)]
+    elif options.potential.lower() == 'mwpotentialfixhalo':
+        ro= get_ro(params,options)
+        ampd= potparams[3]
+        amph= potparams[4]
+        ampb= 1.-ampd-amph
+        return [potential.MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
+                                                 b=numpy.exp(potparams[2])/ro,
+                                                 normalize=ampd),
+                potential.NFWPotential(a=4.5,normalize=amph),
+                potential.HernquistPotential(a=0.6/8,normalize=ampb)]
     elif options.potential.lower() == 'flatlogdisk':
         return [potential.LogarithmicHaloPotential(normalize=.5,q=potparams[0]),
                 potential.MiyamotoNagaiPotential(normalize=.5,a=0.5,b=0.1)]
@@ -1596,6 +1611,8 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
         p.extend([.7,1.])
     elif options.potential.lower() == 'mwpotentialsimplefit':
         p.extend([-1.,1.,-3.,0.5])
+    elif options.potential.lower() == 'mwpotentialfixhalo':
+        p.extend([-1.,1.,-3.,0.5,0.45])
     return p
 
 ##SETUP DOMAIN FOR MARKOVPY
@@ -1630,7 +1647,8 @@ def setup_domain(options,npops):
             domain.append([0.0,0.])
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
-    elif options.potential.lower() == 'mwpotentialsimplefit':
+    elif options.potential.lower() == 'mwpotentialsimplefit' \
+            or options.potential.lower() == 'mwpotentialfixhalo':
         raise NotImplementedError("setup domain for sampling of mwpotentialsimplefit not setup")
     return (isDomainFinite,domain)
 
@@ -1660,7 +1678,8 @@ def setup_domain_indiv_potential(options,npops):
             domain.append([0.0,0.])
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
-    elif options.potential.lower() == 'mwpotentialsimplefit':
+    elif options.potential.lower() == 'mwpotentialsimplefit' \
+            or options.potential.lower() == 'mwpotentialfixhalo':
         raise NotImplementedError("setup domain for sampling of mwpotentialsimplefit not setup")
     return (isDomainFinite,domain)
 
@@ -1678,6 +1697,8 @@ def get_potparams(p,options,npops):
         return (1.) #vo
     elif options.potential.lower() == 'mwpotentialsimplefit':
         return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3]) # hr, vo, hz,ampd
+    elif options.potential.lower() == 'mwpotentialfixhalo':
+        return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4]) # hr, vo, hz,ampd, amph
 
 def get_vo(p,options,npops):
     """Function that returns the vo parameter for these options"""
@@ -1691,6 +1712,8 @@ def get_vo(p,options,npops):
     elif options.potential.lower() == 'mwpotential':
         return 1.
     elif options.potential.lower() == 'mwpotentialsimplefit':
+        return p[startindx+1]
+    elif options.potential.lower() == 'mwpotentialfixhalo':
         return p[startindx+1]
 
 def get_outfrac(p,indx,options):
@@ -1718,6 +1741,12 @@ def set_potparams(p,params,options,npops):
         params[startindx+1]= p[1]
         params[startindx+2]= p[2]
         params[startindx+3]= p[3]
+    elif options.potential.lower() == 'mwpotentialfixhalo':
+        params[startindx]= p[0]
+        params[startindx+1]= p[1]
+        params[startindx+2]= p[2]
+        params[startindx+3]= p[3]
+        params[startindx+4]= p[4]
     return params
 
 def get_dfparams(p,indx,options,log=False):
@@ -1767,6 +1796,9 @@ def get_npotparams(options):
         return 2
     elif options.potential.lower() == 'mwpotentialsimplefit':
         return 4
+    elif options.potential.lower() == 'mwpotentialfixhalo':
+        return 5
+
 def get_ro(p,options):
     """Function that returns R0 for these options"""
     if options.fitro:
