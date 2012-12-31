@@ -113,11 +113,11 @@ def plotDensComparisonDFMulti(options,args):
             if not options.usemedianpotential:
                 potparams= get_potparams(tparams,options,1)
             if options.potential.lower() == 'flatlog':
-                tparams= set_potparams([potparams[0]*1.05,pottparams[1]],
+                tparams= set_potparams([potparams[0]*1.05,potparams[1]],
                                        tparams,options,1)
                 model2s.append(interpDens)
                 params2.append(calc_model(tparams,options,0))
-                tparams= set_potparams([potparams[0]*0.95,pottparams[1]],
+                tparams= set_potparams([potparams[0]*0.95,potparams[1]],
                                        tparams,options,1)
                 model3s.append(interpDens)
                 params3.append(calc_model(tparams,options,0))
