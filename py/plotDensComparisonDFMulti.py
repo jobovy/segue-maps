@@ -20,11 +20,11 @@ def getMultiComparisonBins(options):
         gafes= [0.425,0.425,0.425,0.425, #0.425
                 0.375,0.375,0.375,0.375,0.375, #0.375
                 0.325,0.325,0.325,0.325] #0.325
-        left_legend= r'$\alpha-\mathrm{old\ populations}$'
+        left_legend= r'$\alpha\!-\!\mathrm{old\ populations}$'
     elif options.group == 'apoor':
         gafes= [0.125,0.075,0.075,0.025,0.025,0.025,0.025]
         gfehs= [-0.05,-0.05,0.05,-0.05,0.05,0.15,0.25]
-        left_legend= r'$\alpha-\mathrm{young\ populations}$'
+        left_legend= r'$\alpha\!-\!\mathrm{young\ populations}$'
     elif options.group == 'apoorfpoor':
         gafes= [0.025,0.075,0.075,0.075,0.075,
                 0.125,0.125,0.125,0.125,0.125,0.125,
@@ -34,7 +34,7 @@ def getMultiComparisonBins(options):
                  -0.15,-0.25,-0.35,-0.45,-0.55,-0.65,
                  -0.35,-0.45,-0.55,-0.65,
                  -0.55,-0.65,-0.75]
-        left_legend= r'$\alpha-\mathrm{young,\ [Fe/H]-rich\ populations}$'
+        left_legend= r'$\alpha\!-\!\mathrm{young,\ [Fe/H]\!-\!rich\ populations}$'
     elif options.group == 'aintermediate':
         gafes= [0.275,0.275,0.275,0.275,0.275,0.275,
                 0.225,0.225,0.225,
@@ -42,7 +42,7 @@ def getMultiComparisonBins(options):
         gfehs= [-0.75,-0.65,-0.55,-0.45,-0.35,-0.25,
                  -0.45,-0.35,-0.25,
                  -0.25,-0.15]
-        left_legend= r'$\alpha-\mathrm{intermediate\ populations}$'
+        left_legend= r'$\alpha\!-\!\mathrm{intermediate\ populations}$'
     return (gafes,gfehs,left_legend)
 def plotDensComparisonDFMulti(options,args):
     #Read data etc.

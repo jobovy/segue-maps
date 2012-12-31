@@ -103,13 +103,15 @@ def plotVelComparisonDFMulti(options,args):
         print tparams
         thisdata= binned(fehs[pop],afes[pop])
         velps[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
-        alts= False
+        alts= True
         if alts:
+            if not options.usemedianpotential:
+                potparams= get_potparams(tparams,options,1)
             if options.potential.lower() == 'flatlog':
-                tparams= set_potparams([potparams[0]*1.05,tparams[1]],
+                tparams= set_potparams([potparams[0]*1.05,potparams[1]],
                                        tparams,options,1)
                 velps2[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
-                tparams= set_potparams([potparams[0]*0.95,tparams[1]],
+                tparams= set_potparams([potparams[0]*0.95,potparams[1]],
                                        tparams,options,1)
                 velps3[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
         #Also add the correct data
@@ -140,6 +142,11 @@ def plotVelComparisonDFMulti(options,args):
         bovy_plot.bovy_plot(vs,plotp,'k:',overplot=True)
     if not left_legend is None:
         bovy_plot.bovy_text(left_legend,top_left=True,size=_legendsize)
+    bovy_plot.bovy_text(r'$\mathrm{full subsample}$'
+                        +'\n'+
+                        '$%i \ \ \mathrm{stars}$' % 
+                        len(data),top_right=True,
+                        size=_legendsize)
     bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_all.'+options.ext)
     if options.all: return None
     #Plot zranges
@@ -160,7 +167,11 @@ def plotVelComparisonDFMulti(options,args):
             bovy_plot.bovy_plot(vs,plotp,'k--',overplot=True)
             plotp= numpy.nansum(velps3[indx,:],axis=0)/numpy.sum(indx)
             bovy_plot.bovy_plot(vs,plotp,'k:',overplot=True)
-            bovy_plot.bovy_text(r'$ %i \leq |Z| < %i$' % (int(1000*zranges[ii]),int(1000*zranges[ii+1])),top_right=True,size=_legendsize)
+        bovy_plot.bovy_text(r'$ %i \leq |Z| < %i$' % (int(1000*zranges[ii]),int(1000*zranges[ii+1]))
+                            +'\n'+
+                            '$%i \ \ \mathrm{stars}$' % 
+                            (numpy.sum(indx)),top_right=True,
+                            size=_legendsize)
         bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_z%.1f_z%.1f.' % (zranges[ii],zranges[ii+1])+options.ext)
     return None
 

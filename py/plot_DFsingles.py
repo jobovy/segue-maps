@@ -25,7 +25,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import _REFV0, get_options, read_rawdata, get_potparams, \
-    get_dfparams, _REFR0
+    get_dfparams, _REFR0, get_vo, get_ro, setup_potential
 def plot_DFsingles(options,args):
     raw= read_rawdata(options)
     #Bin the data
@@ -158,6 +158,13 @@ def plot_DFsingles(options,args):
                 if options.relative:
                     thissr= monoAbundanceMW.sigmaz(mapfehs[monoabindx],mapafes[monoabindx])*2.
                     plotthis[ii,jj]/= thissr
+            elif options.type.lower() == 'rhodm':
+                #Setup potential
+                pot= setup_potential(sols[solindx],options,1)
+                vo= get_vo(sols[solindx],options,1)
+                ro= get_ro(sols[solindx],options)
+                if 'mwpotential' in options.potential.lower():
+                    plotthis[ii,jj]= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro*2./4.302*10.**-3.
             elif options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
                     or options.type.lower() == 'afefeh':
                 thisplot=[tightbinned.feh(ii),
@@ -191,6 +198,9 @@ def plot_DFsingles(options,args):
            medianvc= numpy.median(plotthis[numpy.isfinite(plotthis)])
            plotthis/= medianvc
            zlabel=r'$V_c / %i\ \mathrm{km\,s}^{-1}$' % int(_REFV0*medianvc)
+    elif options.type.lower() == 'rhodm':
+        vmin, vmax= 0.001, 0.04
+        zlabel=r'$\rho_{\mathrm{DM}}(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
     elif options.type.lower() == 'rd':
         vmin, vmax= 0.2, 0.6
         zlabel=r'$R_d / R_0$'
@@ -331,7 +341,7 @@ def plot_DFsingles(options,args):
             bovy_plot.bovy_text(r'$\mathrm{median} = %.2f \pm %.2f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
                                                                         1.4826*numpy.median(numpy.fabs(plotthis[numpy.isfinite(plotthis)]-numpy.median(plotthis[numpy.isfinite(plotthis)])))),
                                 bottom_left=True,size=14.)
-        if options.type.lower() == 'zh':
+        if options.type.lower() == 'zh' or options.type.lower() == 'rhodm':
             bovy_plot.bovy_text(r'$\mathrm{median} = %.4f \pm %.4f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
                                                                         1.4826*numpy.median(numpy.fabs(plotthis[numpy.isfinite(plotthis)]-numpy.median(plotthis[numpy.isfinite(plotthis)])))),
                                 bottom_left=True,size=14.)
