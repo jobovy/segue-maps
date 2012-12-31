@@ -14,10 +14,12 @@ from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
 def getMultiComparisonBins(options):
     if options.group == 'aenhanced':
-        gfehs= [-0.75,-0.95,-0.85,-0.75,-0.65,-0.55,
-                 -0.95,-0.85,-0.75,-0.65,-0.55,-0.45]
-        gafes= [0.475,0.425,0.425,0.425,0.425,0.425,
-                0.375,0.375,0.375,0.375,0.375,0.375]
+        gfehs= [-0.95,-0.85,-0.75,-0.65,-0.55,
+                 -0.95,-0.85,-0.75,-0.65,-0.55,-0.45,
+                 -0.95,-0.85,-0.75,-0.65,-0.55]
+        gafes= [0.425,0.425,0.425,0.425,0.425,
+                0.375,0.375,0.375,0.375,0.375,0.375,
+                0.325,0.325,0.325,0.325,0.325]
         left_legend= r'$\alpha-\mathrm{old\ populations}$'
     elif options.group == 'apoor':
         gafes= [0.125,0.075,0.075,0.025,0.025,0.025,0.025]
@@ -26,10 +28,12 @@ def getMultiComparisonBins(options):
     elif options.group == 'apoorfpoor':
         gafes= [0.025,0.075,0.075,0.075,0.075,
                 0.125,0.125,0.125,0.125,0.125,0.125,
-                0.175,0.175,0.175,0.175]
+                0.175,0.175,0.175,0.175,
+                0.225,0.225,0.225]
         gfehs= [-0.15,-0.15,-0.25,-0.35,-0.45,
                  -0.15,-0.25,-0.35,-0.45,-0.55,-0.65,
-                 -0.35,-0.45,-0.55,-0.65]
+                 -0.35,-0.45,-0.55,-0.65,
+                 -0.55,-0.65,-0.75]
         left_legend= r'$\alpha-\mathrm{young,\ [Fe/H]-rich\ populations}$'
     elif options.group == 'aintermediate':
         gafes= [0.275,0.275,0.275,0.275,0.275,0.275,
@@ -363,6 +367,69 @@ def run_abundance_singles_plotdens_single(options,args,fehs,afes,ii,savename,
     #Now run
     plotDensComparisonDF(options,args)
 
+def plotMultiBins(options,args):
+    raw= read_rawdata(options)
+    #Bin the data   
+    binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
+    if options.tighten:
+        tightbinned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe,
+                                 fehmin=-1.6,fehmax=0.5,afemin=-0.05,
+                                 afemax=0.55)
+    else:
+        tightbinned= binned
+    #Load the different categories
+    #aenhanced
+    options.group= 'aenhanced'
+    gafes_aenhanced, gfehs_aenhanced, dummy= getMultiComparisonBins(options)
+    options.group= 'apoor'
+    gafes_apoor, gfehs_apoor, dummy= getMultiComparisonBins(options)
+    options.group= 'apoorfpoor'
+    gafes_apoorfpoor, gfehs_apoorfpoor, dummy= getMultiComparisonBins(options)
+    options.group= 'aintermediate'
+    gafes_aintermediate, gfehs_aintermediate, dummy= getMultiComparisonBins(options)
+    #Run through the pixels and gather
+    plotthis= numpy.zeros((tightbinned.npixfeh(),tightbinned.npixafe()))
+    plotthis[:,:]= numpy.nan
+    for ii in range(tightbinned.npixfeh()):
+        for jj in range(tightbinned.npixafe()):
+            data= binned(tightbinned.feh(ii),tightbinned.afe(jj))
+            fehindx= binned.fehindx(tightbinned.feh(ii))#Map onto regular binning
+            afeindx= binned.afeindx(tightbinned.afe(jj))
+            thisfeh= tightbinned.feh(ii)
+            thisafe= tightbinned.afe(jj)
+            if inMultiBin(thisfeh,thisafe,gfehs_aenhanced,gafes_aenhanced):
+                plotthis[ii,jj]= 3
+            elif inMultiBin(thisfeh,thisafe,gfehs_apoor,gafes_apoor):
+                plotthis[ii,jj]= 2
+            elif inMultiBin(thisfeh,thisafe,gfehs_apoorfpoor,gafes_apoorfpoor):
+                plotthis[ii,jj]= 1
+            elif inMultiBin(thisfeh,thisafe,gfehs_aintermediate,gafes_aintermediate):
+                plotthis[ii,jj]= 0
+    print "Bins accounted for: %i / 62 ..." % (numpy.sum(True-numpy.isnan(plotthis)))
+    vmin, vmax= -1,3.5
+    if options.tighten:
+        xrange=[-1.6,0.5]
+        yrange=[-0.05,0.55]
+    else:
+        xrange=[-2.,0.6]
+        yrange=[-0.1,0.6]
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
+                          interpolation='nearest',
+                          xlabel=r'$[\mathrm{Fe/H}]$',
+                          ylabel=r'$[\alpha/\mathrm{Fe}]$',
+                          xrange=xrange,yrange=yrange,
+                          vmin=vmin,vmax=vmax,
+                          contours=False,
+                          colorbar=False)
+    bovy_plot.bovy_end_print(args[0])
+
+def inMultiBin(feh,afe,gfehs,gafes):
+    return (numpy.fabs(numpy.amin((gfehs-feh)**2./0.1+(gafes-afe)**2./0.0025)) < 0.00001)
+    
 if __name__ == '__main__':
     (options,args)= get_options().parse_args()
-    plotDensComparisonDFMulti(options,args)
+    if options.type == 'bins':
+        plotMultiBins(options,args)
+    else:
+        plotDensComparisonDFMulti(options,args)
