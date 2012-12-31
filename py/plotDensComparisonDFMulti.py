@@ -14,12 +14,12 @@ from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
 def getMultiComparisonBins(options):
     if options.group == 'aenhanced':
-        gfehs= [-0.95,-0.85,-0.75,-0.65,-0.55,
-                 -0.95,-0.85,-0.75,-0.65,-0.55,-0.45,
-                 -0.95,-0.85,-0.75,-0.65,-0.55]
-        gafes= [0.425,0.425,0.425,0.425,0.425,
-                0.375,0.375,0.375,0.375,0.375,0.375,
-                0.325,0.325,0.325,0.325,0.325]
+        gfehs= [-0.85,-0.75,-0.65,-0.55, #-0.95
+                 -0.85,-0.75,-0.65,-0.55,-0.45, #-0.95
+                 -0.85,-0.75,-0.65,-0.55] #-0.95
+        gafes= [0.425,0.425,0.425,0.425, #0.425
+                0.375,0.375,0.375,0.375,0.375, #0.375
+                0.325,0.325,0.325,0.325] #0.325
         left_legend= r'$\alpha-\mathrm{old\ populations}$'
     elif options.group == 'apoor':
         gafes= [0.125,0.075,0.075,0.025,0.025,0.025,0.025]
@@ -181,7 +181,7 @@ def plotDensComparisonDFMulti(options,args):
         if plate == 'all':
             thisleft_legend= left_legend
 #            thisright_legend= right_legend
-            thisleft_legend= None
+#            thisleft_legend= None
             thisright_legend= None
         else:
             thisleft_legend= None
@@ -289,7 +289,7 @@ def plotDensComparisonDFMulti(options,args):
     return None
 
 def calc_model(params,options,pop):
-    nrs, nzs= 31, 31
+    nrs, nzs= 21, 21
     thisrmin, thisrmax= 4./_REFR0, 15./_REFR0
     thiszmin, thiszmax= 0., .8
     Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
