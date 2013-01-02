@@ -143,13 +143,14 @@ def plotVelComparisonDFMulti(options,args):
                                        tparams,options,1)
                 velps3[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
         #Also add the correct data
+        vo= get_vo(tparams,options,1)
         ro= get_ro(tparams,options)
         if 'vr' in options.type.lower() or 'vt' in options.type.lower():
             R= ((ro*_REFR0-thisdata.xc)**2.+thisdata.yc**2.)**(0.5)/ro/_REFR0
             cosphi= (_REFR0*ro-thisdata.xc)/R
             sinphi= thisdata.yc/R
             vR= -thisdata.vxc*cosphi+thisdata.vyc*sinphi
-            vT= thisdata.vxc*sinphi+thisdata.vyc*cosphi
+            vT= thisdata.vxc*sinphi+thisdata.vyc*cosphi+_REFV0*vo
         if options.type.lower() == 'vz':
             data.extend(thisdata.vzc)
         elif options.type.lower() == 'vr':
