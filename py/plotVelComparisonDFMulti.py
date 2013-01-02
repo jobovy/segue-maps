@@ -143,7 +143,9 @@ def plotVelComparisonDFMulti(options,args):
                                        tparams,options,1)
                 velps3[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
         #Also add the correct data
+        ro= get_ro(tparams,options)
         if 'vr' in options.type.lower() or 'vt' in options.type.lower():
+            R= ((ro*_REFR0-thisdata.xc)**2.+thisdata.yc**2.)**(0.5)/ro/_REFR0
             cosphi= (_REFR0*ro-thisdata.xc)/R
             sinphi= thisdata.yc/R
             vR= -thisdata.vxc*cosphi+thisdata.vyc*sinphi
@@ -232,9 +234,9 @@ def calc_model(params,options,data,vs):
         cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err
         cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err
         #Rotate vxvyvz to vRvTvz
-        cosphi= (_REFR0*ro-XYZ[:,0])/R
-        sinphi= XYZ[:,1]/R
-        for rr in range(len(XYZ[:,0])):
+        cosphi= (_REFR0*ro-data.xc)/R
+        sinphi= data.yc/R
+        for rr in range(len(data.xc)):
             rot= numpy.array([[cosphi[rr],sinphi[rr]],
                               [-sinphi[rr],cosphi[rr]]])
             sxy= cov_vxvyvz[rr,0:2,0:2]
