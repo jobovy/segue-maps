@@ -39,6 +39,34 @@ def plotVelComparisonDFMulti(options,args):
         potparams= get_median_potential(options,nabundancebins)
         print "Median potential parameters: ", potparams
     M= len(gfehs)
+    #Check whether fits exist, if not, pop
+    removeBins= numpy.ones(M,dtype='bool')
+    for jj in range(M):
+        #Find pop corresponding to this bin
+        pop= numpy.argmin((gfehs[jj]-fehs)**2./0.1+(gafes[jj]-afes)**2./0.0025)
+        #Load savefile
+        if not options.init is None:
+            #Load initial parameters from file
+            savename= options.init
+            spl= savename.split('.')
+            newname= ''
+            for ll in range(len(spl)-1):
+                newname+= spl[ll]
+                if not ll == len(spl)-2: newname+= '.'
+            newname+= '_%i.' % pop
+            newname+= spl[-1]
+            if not os.path.exists(newname):
+                removeBins[jj]= False
+        else:
+            raise IOError("base filename not specified ...")
+    if numpy.sum(removeBins) == 0:
+        raise IOError("None of the group bins have been fit ...")
+    elif numpy.sum(removeBins) < M:
+        #Some bins have not been fit yet, and have to be remove
+        gfehs= list((numpy.array(gfehs))[removeBins])
+        gafes= list((numpy.array(gafes))[removeBins])
+        print "Only using %i bins out of %i ..." % (numpy.sum(removeBins),M)
+        M= len(gfehs)
     data= []
     zs= []
     velps= numpy.zeros((len(binned.data),options.nv))
@@ -142,7 +170,7 @@ def plotVelComparisonDFMulti(options,args):
         bovy_plot.bovy_plot(vs,plotp,'k:',overplot=True)
     if not left_legend is None:
         bovy_plot.bovy_text(left_legend,top_left=True,size=_legendsize)
-    bovy_plot.bovy_text(r'$\mathrm{full subsample}$'
+    bovy_plot.bovy_text(r'$\mathrm{full\ subsample}$'
                         +'\n'+
                         '$%i \ \ \mathrm{stars}$' % 
                         len(data),top_right=True,
@@ -167,7 +195,7 @@ def plotVelComparisonDFMulti(options,args):
             bovy_plot.bovy_plot(vs,plotp,'k--',overplot=True)
             plotp= numpy.nansum(velps3[indx,:],axis=0)/numpy.sum(indx)
             bovy_plot.bovy_plot(vs,plotp,'k:',overplot=True)
-        bovy_plot.bovy_text(r'$ %i \leq |Z| < %i$' % (int(1000*zranges[ii]),int(1000*zranges[ii+1]))
+        bovy_plot.bovy_text(r'$ %i\ \mathrm{pc} \leq |Z| < %i\ \mathrm{pc}$' % (int(1000*zranges[ii]),int(1000*zranges[ii+1]))
                             +'\n'+
                             '$%i \ \ \mathrm{stars}$' % 
                             (numpy.sum(indx)),top_right=True,
