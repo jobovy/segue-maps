@@ -71,6 +71,34 @@ def plotDensComparisonDFMulti(options,args):
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
     M= len(gfehs)
+    #Check whether fits exist, if not, pop
+    removeBins= numpy.ones(M,dtype='bool')
+    for jj in range(M):
+        #Find pop corresponding to this bin
+        pop= numpy.argmin((gfehs[jj]-fehs)**2./0.1+(gafes[jj]-afes)**2./0.0025)
+        #Load savefile
+        if not options.init is None:
+            #Load initial parameters from file
+            savename= options.init
+            spl= savename.split('.')
+            newname= ''
+            for ll in range(len(spl)-1):
+                newname+= spl[ll]
+                if not ll == len(spl)-2: newname+= '.'
+            newname+= '_%i.' % pop
+            newname+= spl[-1]
+            if not os.path.exists(newname):
+                removeBins[jj]= False
+        else:
+            raise IOError("base filename not specified ...")
+    if numpy.sum(removeBins) == 0:
+        raise IOError("None of the group bins have been fit ...")
+    elif numpy.sum(removeBins) < M:
+        #Some bins have not been fit yet, and have to be remove
+        gfehs= list((numpy.array(gfehs))[removeBins])
+        gafes= list((numpy.array(gafes))[removeBins])
+        print "Only using %i bins out of %i ..." % (numpy.sum(removeBins),M)
+        M= len(gfehs)
     model1s= []
     model2s= []
     model3s= []
@@ -118,6 +146,17 @@ def plotDensComparisonDFMulti(options,args):
                 model2s.append(interpDens)
                 params2.append(calc_model(tparams,options,0))
                 tparams= set_potparams([potparams[0]*0.95,potparams[1]],
+                                       tparams,options,1)
+                model3s.append(interpDens)
+                params3.append(calc_model(tparams,options,0))
+            elif options.potential.lower() == 'mwpotentialfixhalo':
+                tparams= set_potparams([numpy.log(2./_REFR0),potparams[1],
+                                        potparams[2],potparams[3],potparams[4]],
+                                       tparams,options,1)
+                model2s.append(interpDens)
+                params2.append(calc_model(tparams,options,0))
+                tparams= set_potparams([numpy.log(3./8.),potparams[1],
+                                        potparams[2],potparams[3],potparams[4]],
                                        tparams,options,1)
                 model3s.append(interpDens)
                 params3.append(calc_model(tparams,options,0))
