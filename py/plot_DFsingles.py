@@ -164,7 +164,7 @@ def plot_DFsingles(options,args):
                 vo= get_vo(sols[solindx],options,1)
                 ro= get_ro(sols[solindx],options)
                 if 'mwpotential' in options.potential.lower():
-                    plotthis[ii,jj]= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro*2./4.302*10.**-3.
+                    plotthis[ii,jj]= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
             elif options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
                     or options.type.lower() == 'afefeh':
                 thisplot=[tightbinned.feh(ii),
