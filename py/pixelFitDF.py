@@ -251,6 +251,7 @@ def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
         return logpotprior
     #Set up potential and actionAngle
     pot= setup_potential(params,options,len(fehs))
+    print params
     aA= setup_aA(pot,options)
     out= logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff)
     returnThis= out+logroprior+logpotprior
