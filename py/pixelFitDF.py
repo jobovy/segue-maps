@@ -1270,6 +1270,20 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
         vR= -vx*cosphi+vy*sinphi
         vT= vx*sinphi+vy*cosphi.T
         return (R,vR,vT,z,vz)       
+    elif not (options.fitvsun or options.fitvtsun) and options.fitro:
+        callindx= binned.callIndx(fehs[indx],afes[indx])
+        x= numpy.array([e.x for e in errstuff])[callindx]/ro/_REFR0
+        y= numpy.array([e.y for e in errstuff])[callindx]/ro/_REFR0
+        z= numpy.array([e.z for e in errstuff])[callindx]/ro/_REFR0
+        vx= numpy.array([e.vx for e in errstuff])[callindx]/vo/_REFV0
+        vy= numpy.array([e.vy for e in errstuff])[callindx]/vo/_REFV0
+        vz= numpy.array([e.vz for e in errstuff])[callindx]/vo/_REFV0
+        R= ((1.-x)**2.+y**2.)**0.5
+        cosphi= (1.-x)/R
+        sinphi= y/R
+        vR= -vx*cosphi+vy*sinphi
+        vT= vx*sinphi+vy*cosphi.T
+        return (R,vR,vT,z,vz)       
     XYZ= numpy.zeros((len(data),3,options.nmcerr))
     vxvyvz= numpy.zeros((len(data),3,options.nmcerr))
     for ii in range(len(data)):
@@ -1614,6 +1628,24 @@ def setup_err_mc(data,options):
             thiserrstuff.vz= outvxvyvz[ii,2,:]
             thiserrstuff.cosphi= cosphi[:,ii]
             thiserrstuff.sinphi= sinphi[:,ii]
+            errstuff.append(thiserrstuff)
+    elif not (options.fitvsun or options.fitvtsun) and options.fitro:
+        vsun = [_VRSUN,_VTSUN,_VZSUN]
+        #Do coordinate transformations
+        outvxvyvz[:,0,:]-= vsun[0]
+        outvxvyvz[:,1,:]+= vsun[1]
+        outvxvyvz[:,2,:]+= vsun[2]
+        z= XYZ[:,:,2]+_ZSUN
+        #Load into structure
+        errstuff= []
+        for ii in range(len(data)):
+            thiserrstuff= errstuffClass()
+            thiserrstuff.x= XYZ[:,ii,0]
+            thiserrstuff.y= XYZ[:,ii,1]
+            thiserrstuff.vx= outvxvyvz[ii,0,:]
+            thiserrstuff.vy= outvxvyvz[ii,1,:]
+            thiserrstuff.z= z[:,ii]
+            thiserrstuff.vz= outvxvyvz[ii,2,:]
             errstuff.append(thiserrstuff)
     else:
         #Load into structure
@@ -2030,6 +2062,9 @@ def get_options():
                       help="If set, fit for v_{t,sun}")
     parser.add_option("--ninit",dest='ninit',default=1,type='int',
                       help="Number of initial optimizations to perform (indiv DF + potential w/ fixed DF")
+    parser.add_option("--fitdm",action="store_true", dest="fitdm",
+                      default=False,
+                      help="If set, fit for a distance modulus offset")
     #Errors
     parser.add_option("--nmcerr",dest='nmcerr',default=30,type='int',
                       help="Number of MC samples to use for Monte Carlo integration over error distribution")
