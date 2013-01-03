@@ -211,7 +211,7 @@ def plotTilt(options,args):
                 if velerrors: #Don't plot if errors > 30%
                     if tilt_err[ii]/tilt[ii] > .2: continue
                 ds= numpy.linspace(zmin[ii]*1000.,zmax[ii]*1000.,1001)/8000.
-                thiszfunc= numpy.arctan(tilt[ii]+tiltp1[ii]*ds+tiltp2[ii]*ds**2.)/_DEGTORAD
+                thiszfunc= numpy.arctan(tilt[ii]+tiltp1[ii]*ds)/_DEGTORAD #+tiltp2[ii]*ds**2.
                 pyplot.plot(numpy.linspace(zmin[ii]*1000.,1000*zmax[ii],1001),
                             thiszfunc,'-',
                             color=colormap(_squeeze(plotc[ii],vmin,vmax)),
@@ -241,6 +241,9 @@ def plotTilt(options,args):
                               vmin=vmin,vmax=vmax,
                               contours=False,
                               colorbar=True,shrink=0.78)
+        bovy_plot.bovy_text(r'$\mathrm{median} = %.2f \pm %.2f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
+                                                                    1.4826*numpy.median(numpy.fabs(plotthis[numpy.isfinite(plotthis)]-numpy.median(plotthis[numpy.isfinite(plotthis)])))),
+                            bottom_left=True,size=14.)
     bovy_plot.bovy_end_print(options.plotfile)
     return None
 

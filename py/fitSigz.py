@@ -253,8 +253,8 @@ def _HWRRZLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False,vrz=False,
             or params[7] < -100. or params[7] > 100. \
             or params[8] > 4.6051701859880918 \
             or params[9] < -2. or params[9] > 2. \
-            or params[10] < -10. or params[10] > 10. \
-            or params[11] < -100. or params[11] > 100.:
+            or params[10] < -10. or params[10] > 10.: # \
+#            or params[11] < -100. or params[11] > 100.:
         return numpy.finfo(numpy.dtype(numpy.float64)).max
     #Get model sigma_z, sigma_r, and sigma_rz
     sigoz= math.exp(params[1])
@@ -265,7 +265,7 @@ def _HWRRZLikeMinus(params,XYZ,vxvyvz,cov_vxvyvz,R,d,vr=False,vrz=False,
         Rrs= math.exp(params[8])
         sigr= (sigor+params[6]*d+params[7]*d**2.)*numpy.exp(-(R-8.)/Rrs)
         z= XYZ[:,2]
-        tana= params[9]+params[10]*z/R+params[11]*(z/R)**2.
+        tana= params[9]+params[10]*z/R #+params[11]*(z/R)**2.
         sig2rz= (sigr**2.-sigz**2.)*tana/(1.-tana**2.)
         #Do likelihood
         out= 0.

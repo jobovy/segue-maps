@@ -79,16 +79,16 @@ def pixelFitVel(options,args):
                        'step_out','step_out',
                        'step_out','step_out',
                        'step_out','step_out',
-                       'step_out','step_out',
-                       'step_out']
+                       'step_out','step_out']
+#                       'step_out']
         isDomainFinite=[[True,True],
                         [True,True],[True,True],[True,True],[False,True],
                         [True,True],[True,True],[True,True],[False,True],
-                        [True,True],[True,True],[True,True]]
+                        [True,True],[True,True]]#,[True,True]]
         domain=[[0.,1.],
                 [-10.,10.],[-100.,100.],[-100.,100.],[0.,4.6051701859880918],
                 [-10.,10.],[-100.,100.],[-100.,100.],[0.,4.6051701859880918],
-                [-2.,2.],[-10.,10.],[-100.,100.]]
+                [-2.,2.],[-10.,10.]]#,[-100.,100.]]
     elif options.model.lower() == 'isotherm':
         like_func= _IsothermLikeMinus
         pdf_func= _IsothermLike
@@ -161,7 +161,7 @@ def pixelFitVel(options,args):
             elif options.model.lower() == 'hwrrz':
                 params= numpy.array([0.02,numpy.log(30.),0.,0.,numpy.log(6.),
                                      numpy.log(30.),0.,0.,numpy.log(6.),
-                                     0.2,0.,0.])
+                                     0.2,0.])#,0.])
             elif options.model.lower() == 'isotherm':
                 params= numpy.array([0.02,numpy.log(30.),numpy.log(6.)])
             if not options.mcsample:
