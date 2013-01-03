@@ -3,7 +3,6 @@
 #for running: python pixelFitDF.py --dfeh=0.25 --dafe=0.2 --novoprior --nmcv=100 --justpot --singles --aAmethod=staeckel -m 7 ../fakeDF/fakeDFFit_dfeh0.25_dafe0.2_q0.7_staeckel_justpot_singles.sav -f ../fakeDF/fakeDF_dfeh0.25_dafe0.2_q0.7_staeckel.fits
 #
 # TO DO:
-#   - why are there only 62 fake data bins but 64 fit bins?
 #   - mcvalt in compareDataModel fixes Ro=8
 #   - fix the units of outDens (correct?)
 #   - write code to compareDataDFModel
