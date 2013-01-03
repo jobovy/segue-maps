@@ -210,17 +210,17 @@ def plot_DFRotcurves(options,args):
             vc_disk[:,ii]= medianvc_disk[ii]
             vc_halo[:,ii]= medianvc_halo[ii]
             vc_bulge[:,ii]= medianvc_bulge[ii]
-        vc= numpy.median(vc,axis=1)
-        vcro= vc[numpy.argmin(numpy.fabs(medianrs-1.))]
-        vc/= vcro
-        vc_disk= numpy.median(vc_disk,axis=1)/vcro
-        vc_halo= numpy.median(vc_halo,axis=1)/vcro
-        vc_bulge= numpy.median(vc_bulge,axis=1)/vcro
+        vc= numpy.median(vc,axis=1)*_REFV0
+        #vcro= vc[numpy.argmin(numpy.fabs(medianrs-1.))]
+        #vc/= vcro
+        vc_disk= numpy.median(vc_disk,axis=1)*_REFV0
+        vc_halo= numpy.median(vc_halo,axis=1)*_REFV0
+        vc_bulge= numpy.median(vc_bulge,axis=1)*_REFV0
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         bovy_plot.bovy_plot(medianrs,vc,'k-',
                             xlabel=r"$R/R_0$",
-                            ylabel= r"$V_c(R)/V_c(R_0)$",
-                            yrange=[0.,1.29],
+                            ylabel= r"$V_c(R)\ [\mathrm{km\,s}^{-1}]$",
+                            yrange=[0.,1.29*_REFV0],
                             xrange=[0.,2.])
         linedisk= bovy_plot.bovy_plot(medianrs,vc_disk,'k--',
                                       overplot=True)
@@ -230,11 +230,11 @@ def plot_DFRotcurves(options,args):
         linebulge= bovy_plot.bovy_plot(medianrs,vc_bulge,'k--',
                                        overplot=True)
         linebulge[0].set_dashes([10,4])
-        bovy_plot.bovy_text(1.95,0.5,r'$\mathrm{Disk}$',size=_legendsize,
+        bovy_plot.bovy_text(1.95,120.,r'$\mathrm{Disk}$',size=_legendsize,
                             horizontalalignment='right')
-        bovy_plot.bovy_text(1.95,0.83,r'$\mathrm{Halo}$',size=_legendsize,
+        bovy_plot.bovy_text(1.95,193.,r'$\mathrm{Halo}$',size=_legendsize,
                             horizontalalignment='right')
-        bovy_plot.bovy_text(1.95,0.1,r'$\mathrm{Bulge}$',size=_legendsize,
+        bovy_plot.bovy_text(1.95,28.,r'$\mathrm{Bulge}$',size=_legendsize,
                             horizontalalignment='right')
     bovy_plot.bovy_end_print(options.outfilename)
 
