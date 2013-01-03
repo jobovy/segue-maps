@@ -12,7 +12,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
-from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
+from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0, _VRSUN, _VTSUN, _VZSUN
 from plotDensComparisonDFMulti import getMultiComparisonBins, get_median_potential
 _legendsize= 16
 def plotVelComparisonDFMulti(options,args):
@@ -98,8 +98,8 @@ def plotVelComparisonDFMulti(options,args):
         xlabel=r'$v_R\ [\mathrm{km\,s}^{-1}]$'
     elif options.type.lower() == 'vt':
         if options.group == 'aenhanced':
-            vs= numpy.linspace(0.01,250.,options.nv)
-            xrange=[0.,250.]
+            vs= numpy.linspace(0.01,450.,options.nv)
+            xrange=[0.,450.]
             bins= 39
         else: # options.group == 'aenhanced':
             vs= numpy.linspace(0.01,250.,options.nv)
@@ -146,13 +146,13 @@ def plotVelComparisonDFMulti(options,args):
         vo= get_vo(tparams,options,1)
         ro= get_ro(tparams,options)
         if 'vr' in options.type.lower() or 'vt' in options.type.lower():
-            R= ((ro*_REFR0-thisdata.xc)**2.+thisdata.yc**2.)**(0.5)/ro/_REFR0
+            R= ((ro*_REFR0-thisdata.xc)**2.+thisdata.yc**2.)**(0.5)
             cosphi= (_REFR0*ro-thisdata.xc)/R
             sinphi= thisdata.yc/R
-            vR= -thisdata.vxc*cosphi+thisdata.vyc*sinphi
-            vT= thisdata.vxc*sinphi+thisdata.vyc*cosphi+_REFV0*vo
+            vR= -(thisdata.vxc-_VRSUN)*cosphi+(thisdata.vyc+_VTSUN)*sinphi
+            vT= (thisdata.vxc-_VRSUN)*sinphi+(thisdata.vyc+_VTSUN)*cosphi
         if options.type.lower() == 'vz':
-            data.extend(thisdata.vzc)
+            data.extend(thisdata.vzc+_VZSUN)
         elif options.type.lower() == 'vr':
             data.extend(vR)
         elif options.type.lower() == 'vt':
@@ -243,7 +243,6 @@ def calc_model(params,options,data,vs):
             sxy= cov_vxvyvz[rr,0:2,0:2]
             sRT= numpy.dot(rot,numpy.dot(sxy,rot.T))
             cov_vxvyvz[rr,0:2,0:2]= sRT
-
     for ii in range(len(data)):
         if options.type.lower() == 'vz':
             thisp= numpy.array([qdf.pvz(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
@@ -255,7 +254,7 @@ def calc_model(params,options,data,vs):
             ndimage.filters.gaussian_filter1d(thisp,
                                               numpy.sqrt(cov_vxvyvz[ii,0,0])/(vs[1]-vs[0]),
                                               output=thisp)
-        if options.type.lower() == 'vt':
+        elif options.type.lower() == 'vt':
             thisp= numpy.array([qdf.pvT(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
             ndimage.filters.gaussian_filter1d(thisp,
                                               numpy.sqrt(cov_vxvyvz[ii,1,1])/(vs[1]-vs[0]),

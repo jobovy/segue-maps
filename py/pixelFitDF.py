@@ -306,15 +306,21 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     if options.marginalizevt:
         data_lndf[:,0:options.nmcerr]= numpy.log(qdf.pvRvz(vR.flatten(),vz.flatten(),
                                                  R.flatten(),z.flatten())).reshape((ndata,options.nmcerr))
+        data_lndf[:,options.nmcerr:2*options.nmcerr]= logoutfrac+loghalodens\
+            -numpy.log(srhalo)-numpy.log(szhalo)\
+            -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.)\
+            -1.*numpy.log(2.*math.pi)
     else:
         data_lndf[:,0:options.nmcerr]= qdf(R.flatten(),vR.flatten(),vT.flatten(),
                                        z.flatten(),vz.flatten(),log=True).reshape((ndata,options.nmcerr))
-    data_lndf[:,options.nmcerr:2*options.nmcerr]= logoutfrac+loghalodens\
-        -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
-        -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)\
-        -1.5*numpy.log(2.*math.pi)
+        data_lndf[:,options.nmcerr:2*options.nmcerr]= logoutfrac+loghalodens\
+            -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
+            -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)\
+            -1.5*numpy.log(2.*math.pi)
     #Sum data and outlier df, for all MC samples
     data_lndf= mylogsumexp(data_lndf,axis=1)
+    if options.marginalizevt:
+        data_lndf+= numpy.log(vo)
     #Normalize
     normalization= calc_normint(qdf,indx,normintstuff,params,npops,options,
                                 logoutfrac)
