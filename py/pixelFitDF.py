@@ -1268,7 +1268,7 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
         vy+= vsun[1]/vo
         vz+= vsun[2]/vo
         vR= -vx*cosphi+vy*sinphi
-        vT= vx*sinphi+vy*cosphi.T
+        vT= vx*sinphi+vy*cosphi
         return (R,vR,vT,z,vz)       
     elif not (options.fitvsun or options.fitvtsun) and options.fitro:
         callindx= binned.callIndx(fehs[indx],afes[indx])
@@ -1282,7 +1282,37 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
         cosphi= (1.-x)/R
         sinphi= y/R
         vR= -vx*cosphi+vy*sinphi
-        vT= vx*sinphi+vy*cosphi.T
+        vT= vx*sinphi+vy*cosphi
+        return (R,vR,vT,z,vz)       
+    elif options.fitdm:
+        callindx= binned.callIndx(fehs[indx],afes[indx])
+        distfac= 10.**(get_dm(params,options)/5.)
+        x= numpy.array([e.x for e in errstuff])[callindx]*distfac
+        y= numpy.array([e.y for e in errstuff])[callindx]*distfac
+        z= numpy.array([e.z for e in errstuff])[callindx]*distfac
+        vr= numpy.array([e.vr for e in errstuff])[callindx]
+        pmll= numpy.array([e.pmll for e in errstuff])[callindx]
+        pmbb= numpy.array([e.pmbb for e in errstuff])[callindx]
+        vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(vr.flatten(),
+                                                 pmll.flatten(),
+                                                 pmbb.flatten(),
+                                                 x.flatten(),
+                                                 y.flatten(),
+                                                 z.flatten(),
+                                                 XYZ=True,
+                                                 degree=True)/vo/_REFV0
+        #Apply solar motion
+        vxvyvz[:,0]-= vsun[0]/vo
+        vxvyvz[:,1]+= vsun[1]/vo
+        vxvyvz[:,2]+= vsun[2]/vo
+        R= ((ro*_REFR0-x)**2.+y**2.)**0.5/ro/_REFR0
+        cosphi= (1.-x/ro/_REFR0)/R
+        sinphi= y/R/ro/_REFR0
+        vR= -vxvyvz[:,0]*cosphi.flatten()+vxvyvz[:,1]*sinphi.flatten()
+        vT= vxvyvz[:,0]*sinphi.flatten()+vxvyvz[:,1]*cosphi.flatten()
+        vz= numpy.reshape(vxvyvz[:,2],x.shape)
+        vR= numpy.reshape(vR,x.shape)
+        vT= numpy.reshape(vT,x.shape)
         return (R,vR,vT,z,vz)       
     XYZ= numpy.zeros((len(data),3,options.nmcerr))
     vxvyvz= numpy.zeros((len(data),3,options.nmcerr))
@@ -1538,14 +1568,19 @@ def setup_err_mc(data,options):
                                                         numpy.ones(options.nmcerr)*data[ii].ra,
                                                         numpy.ones(options.nmcerr)*data[ii].dec,degree=True)
             l,b= bovy_coords.radec_to_lb(data[ii].ra,data[ii].dec,degree=True)
-            vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(vrsamples,
-                                                     pmllpmbb[:,0],
-                                                     pmllpmbb[:,1],
-                                                     numpy.ones(options.nmcerr)*l,
-                                                     numpy.ones(options.nmcerr)*b,
-                                                     dsamples[ii,:],
-                                                     degree=True)
-            outvxvyvz[ii,:,:]= vxvyvz.T
+            if options.fitdm:
+                outvxvyvz[ii,0,:]= vrsamples
+                outvxvyvz[ii,1,:]= pmll
+                outvxvyvz[ii,2,:]= pmbb
+            else:
+                vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(vrsamples,
+                                                         pmllpmbb[:,0],
+                                                         pmllpmbb[:,1],
+                                                         numpy.ones(options.nmcerr)*l,
+                                                         numpy.ones(options.nmcerr)*b,
+                                                         dsamples[ii,:],
+                                                         degree=True)
+                outvxvyvz[ii,:,:]= vxvyvz.T
         else:
             vrsamples= data[ii].vr
             pmrasamples= data[ii].pmra
@@ -1555,16 +1590,21 @@ def setup_err_mc(data,options):
                                                         data[ii].ra,
                                                         data[ii].dec,degree=True)
             l,b= bovy_coords.radec_to_lb(data[ii].ra,data[ii].dec,degree=True)
-            vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(vrsamples,
-                                                     pmll,
-                                                     pmbb,
-                                                     l,
-                                                     b,
-                                                     dsamples[ii],
-                                                     degree=True)
-            outvxvyvz[ii,0,0]= vxvyvz[0]
-            outvxvyvz[ii,1,0]= vxvyvz[1]
-            outvxvyvz[ii,2,0]= vxvyvz[2]
+            if options.fitdm:
+                outvxvyvz[ii,0,0]= vrsamples
+                outvxvyvz[ii,1,0]= pmll
+                outvxvyvz[ii,2,0]= pmbb
+            else:
+                vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(vrsamples,
+                                                         pmll,
+                                                         pmbb,
+                                                         l,
+                                                         b,
+                                                         dsamples[ii],
+                                                         degree=True)
+                outvxvyvz[ii,0,0]= vxvyvz[0]
+                outvxvyvz[ii,1,0]= vxvyvz[1]
+                outvxvyvz[ii,2,0]= vxvyvz[2]
         #Load into vdraws
         if options.nmcerr == 1:
             xdraws[ii]= [XYZ[0,ii,:]]
@@ -1588,7 +1628,8 @@ def setup_err_mc(data,options):
          """
     data= _append_field_recarray(data,'vdraws',vdraws)
     data= _append_field_recarray(data,'xdraws',xdraws)
-    if not options.fitro and not options.fitvsun and not options.fitvtsun:
+    if not options.fitro and not options.fitvsun and not options.fitvtsun \
+            and not options.fitdm:
         vsun = [_VRSUN,_VTSUN,_VZSUN]
         #Do coordinate transformations
         outvxvyvz[:,0,:]-= vsun[0]
@@ -1611,7 +1652,8 @@ def setup_err_mc(data,options):
             thiserrstuff.z= z[:,ii]
             thiserrstuff.vz= outvxvyvz[ii,2,:]
             errstuff.append(thiserrstuff)
-    elif (options.fitvsun or options.fitvtsun) and not options.fitro:
+    elif (options.fitvsun or options.fitvtsun) and not options.fitro \
+            and not options.fitdm:
         R= ((_REFR0-XYZ[:,:,0])**2.+(XYZ[:,:,1])**2.)**0.5 
         z= XYZ[:,:,2]+_ZSUN
         #Rotate to Galactocentric frame
@@ -1629,7 +1671,8 @@ def setup_err_mc(data,options):
             thiserrstuff.cosphi= cosphi[:,ii]
             thiserrstuff.sinphi= sinphi[:,ii]
             errstuff.append(thiserrstuff)
-    elif not (options.fitvsun or options.fitvtsun) and options.fitro:
+    elif not (options.fitvsun or options.fitvtsun) and options.fitro \
+            and not options.fitdm:
         vsun = [_VRSUN,_VTSUN,_VZSUN]
         #Do coordinate transformations
         outvxvyvz[:,0,:]-= vsun[0]
@@ -1647,6 +1690,18 @@ def setup_err_mc(data,options):
             thiserrstuff.z= z[:,ii]
             thiserrstuff.vz= outvxvyvz[ii,2,:]
             errstuff.append(thiserrstuff)
+    elif options.fitdm:
+        #Load into structure
+        errstuff= []
+        for ii in range(len(data)):
+            thiserrstuff= errstuffClass()
+            thiserrstuff.x= XYZ[:,ii,0]
+            thiserrstuff.y= XYZ[:,ii,1]
+            thiserrstuff.z= XYZ[:,ii,2]
+            thiserrstuff.vr= outvxvyvz[ii,0,:]
+            thiserrstuff.pmll= outvxvyvz[ii,1,:]
+            thiserrstuff.pmbb= outvxvyvz[ii,2,:]
+            errstuff.append(thiserrstuff)      
     else:
         #Load into structure
         errstuff= []
@@ -1663,6 +1718,8 @@ class errstuffClass:
 def initialize(options,fehs,afes):
     """Function to initialize the fit; uses fehs and afes to initialize using MAPS"""
     p= []
+    if options.fitdm:
+        p.append(0.)
     if options.fitro:
         p.append(1.)
     if options.fitvsun:
@@ -1698,6 +1755,9 @@ def setup_domain(options,npops):
     """Setup isDomainFinite, domain for markovpy"""
     isDomainFinite= []
     domain= []
+    if options.fitdm:
+        isDomainFinite.append([True,True])
+        domain.append([-0.5,0.5])
     if options.fitro:
         isDomainFinite.append([True,True])
         domain.append([5./_REFR0,11./_REFR0])
@@ -1768,6 +1828,7 @@ def setup_domain_indiv_potential(options,npops):
 def get_potparams(p,options,npops):
     """Function that returns the set of potential parameters for these options"""
     startindx= 0
+    if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
     elif options.fitvsun: startindx+= 1
@@ -1785,6 +1846,7 @@ def get_potparams(p,options,npops):
 def get_vo(p,options,npops):
     """Function that returns the vo parameter for these options"""
     startindx= 0
+    if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
     elif options.fitvsun: startindx+= 1
@@ -1802,6 +1864,7 @@ def get_vo(p,options,npops):
 def get_outfrac(p,indx,options):
     """Function that returns the outlier fraction for these options"""
     startindx= 0
+    if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
     elif options.fitvsun: startindx+= 1
@@ -1813,6 +1876,7 @@ def get_outfrac(p,indx,options):
 def set_potparams(p,params,options,npops):
     """Function that sets the set of potential parameters for these options"""
     startindx= 0
+    if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
     elif options.fitvsun: startindx+= 1
@@ -1838,6 +1902,7 @@ def get_dfparams(p,indx,options,log=False):
     """Function that returns the set of DF parameters for population indx for these options,
     Returns them as a set such that they can be given to the initialization"""
     startindx= 0
+    if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
     elif options.fitvsun: startindx+= 1
@@ -1862,6 +1927,7 @@ def get_dfparams(p,indx,options,log=False):
 def set_dfparams(p,params,indx,options):
     """Function that sets the set of DF parameters for population indx for these options"""
     startindx= 0
+    if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
     elif options.fitvsun: startindx+= 1
@@ -1889,13 +1955,21 @@ def get_npotparams(options):
 def get_ro(p,options):
     """Function that returns R0 for these options"""
     if options.fitro:
-        return p[0]
+        return p[options.fitdm]
     else:
         return 1.
+
+def get_dm(p,options):
+    """Function that returns the change in distance modulus these options"""
+    if options.fitdm:
+        return p[0]
+    else:
+        return 0.
 
 def get_vsun(p,options):
     """Function to return motion of the Sun in the Galactocentric reference frame"""
     startindx= 0
+    if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun:
         return (p[startindx],p[startindx+1],p[startindx+2])
