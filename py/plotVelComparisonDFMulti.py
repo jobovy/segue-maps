@@ -235,8 +235,8 @@ def calc_model(params,options,data,vs):
         cov_vxvyvz[:,0,2]= data.vxvzc_rho*data.vxc_err*data.vzc_err
         cov_vxvyvz[:,1,2]= data.vyvzc_rho*data.vyc_err*data.vzc_err
         #Rotate vxvyvz to vRvTvz
-        cosphi= (_REFR0*ro-data.xc)/R
-        sinphi= data.yc/R
+        cosphi= (_REFR0*ro-data.xc)/R/ro/_REFR0
+        sinphi= data.yc/R/ro/_REFR0
         for rr in range(len(data.xc)):
             rot= numpy.array([[cosphi[rr],sinphi[rr]],
                               [-sinphi[rr],cosphi[rr]]])
