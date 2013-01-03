@@ -303,7 +303,11 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
     data_lndf= numpy.empty((ndata,2*options.nmcerr))
-    data_lndf[:,0:options.nmcerr]= qdf(R.flatten(),vR.flatten(),vT.flatten(),
+    if options.marginalizevt:
+        data_lndf[:,0:options.nmcerr]= numpy.log(qdf.pvRvz(vR.flatten(),vz.flatten(),
+                                                 R.flatten(),z.flatten())).reshape((ndata,options.nmcerr))
+    else:
+        data_lndf[:,0:options.nmcerr]= qdf(R.flatten(),vR.flatten(),vT.flatten(),
                                        z.flatten(),vz.flatten(),log=True).reshape((ndata,options.nmcerr))
     data_lndf[:,options.nmcerr:2*options.nmcerr]= logoutfrac+loghalodens\
         -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
@@ -2027,6 +2031,9 @@ def get_options():
     parser.add_option("--justpot",action="store_true", dest="justpot",
                       default=False,
                       help="If set, just fit the potential assuming fixed DF (CURRENTLY ONLY FOR FIT, NOT FOR SAMPLE")
+    parser.add_option("--marginalizevt",action="store_true", dest="marginalizevt",
+                      default=False,
+                      help="If set, don't use vT data")
     #seed
     parser.add_option("--seed",dest='seed',default=1,type='int',
                       help="seed for random number generator")
