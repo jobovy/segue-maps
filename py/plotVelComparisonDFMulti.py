@@ -85,7 +85,7 @@ def plotVelComparisonDFMulti(options,args):
             vs= numpy.linspace(-120.,120.,options.nv)
             xrange=[-120.,120.]
             bins= 26
-        xlabel=r'$v_Z\ [\mathrm{km\,s}^{-1}]$'
+        xlabel=r'$V_Z\ [\mathrm{km\,s}^{-1}]$'
     elif options.type.lower() == 'vr':
         if options.group == 'aenhanced':
             vs= numpy.linspace(-220.,220.,options.nv)
@@ -95,7 +95,7 @@ def plotVelComparisonDFMulti(options,args):
             vs= numpy.linspace(-150.,150.,options.nv)
             xrange=[-150.,150.]
             bins= 26
-        xlabel=r'$v_R\ [\mathrm{km\,s}^{-1}]$'
+        xlabel=r'$V_R\ [\mathrm{km\,s}^{-1}]$'
     elif options.type.lower() == 'vt':
         if options.group == 'aenhanced':
             vs= numpy.linspace(0.01,450.,options.nv)
@@ -105,7 +105,7 @@ def plotVelComparisonDFMulti(options,args):
             vs= numpy.linspace(0.01,250.,options.nv)
             xrange=[0.,250.]
             bins= 39
-        xlabel=r'$v_T\ [\mathrm{km\,s}^{-1}]$'
+        xlabel=r'$V_T\ [\mathrm{km\,s}^{-1}]$'
     for jj in range(M):
         print "Working on group %i / %i ..." % (jj+1,M)
         #Find pop corresponding to this bin
