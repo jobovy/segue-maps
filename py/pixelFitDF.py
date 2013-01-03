@@ -1246,7 +1246,7 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
     XYZ[:,2]= (data.zc+_ZSUN)/_REFR0/ro
     z= XYZ[:,2]
     """
-    if not options.fitro and not options.fitvsun:
+    if not options.fitro and not options.fitvsun and not options.fitvtsun:
         callindx= binned.callIndx(fehs[indx],afes[indx])
         R= numpy.array([e.R for e in errstuff])[callindx]/ro/_REFR0
         z= numpy.array([e.z for e in errstuff])[callindx]/ro/_REFR0
@@ -1254,6 +1254,22 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
         vT= numpy.array([e.vT for e in errstuff])[callindx]/vo/_REFV0
         vz= numpy.array([e.vz for e in errstuff])[callindx]/vo/_REFV0
         return (R,vR,vT,z,vz)
+    elif (options.fitvsun or options.fitvtsun) and not options.fitro:
+        callindx= binned.callIndx(fehs[indx],afes[indx])
+        R= numpy.array([e.R for e in errstuff])[callindx]/ro/_REFR0
+        z= numpy.array([e.z for e in errstuff])[callindx]/ro/_REFR0
+        vx= numpy.array([e.vx for e in errstuff])[callindx]/vo/_REFV0
+        vy= numpy.array([e.vy for e in errstuff])[callindx]/vo/_REFV0
+        vz= numpy.array([e.vz for e in errstuff])[callindx]/vo/_REFV0
+        cosphi= numpy.array([e.cosphi for e in errstuff])[callindx]/vo/_REFV0
+        sinphi= numpy.array([e.sinphi for e in errstuff])[callindx]/vo/_REFV0
+        #Apply solar motion
+        vx-= vsun[0]/vo
+        vy+= vsun[1]/vo
+        vz+= vsun[2]/vo
+        vR= -vx*cosphi+vy*sinphi
+        vT= vx*sinphi+vy*cosphi.T
+        return (R,vR,vT,z,vz)       
     XYZ= numpy.zeros((len(data),3,options.nmcerr))
     vxvyvz= numpy.zeros((len(data),3,options.nmcerr))
     for ii in range(len(data)):
@@ -1558,7 +1574,7 @@ def setup_err_mc(data,options):
          """
     data= _append_field_recarray(data,'vdraws',vdraws)
     data= _append_field_recarray(data,'xdraws',xdraws)
-    if not options.fitro and not options.fitvsun:
+    if not options.fitro and not options.fitvsun and not options.fitvtsun:
         vsun = [_VRSUN,_VTSUN,_VZSUN]
         #Do coordinate transformations
         outvxvyvz[:,0,:]-= vsun[0]
@@ -1581,6 +1597,24 @@ def setup_err_mc(data,options):
             thiserrstuff.z= z[:,ii]
             thiserrstuff.vz= outvxvyvz[ii,2,:]
             errstuff.append(thiserrstuff)
+    elif (options.fitvsun or options.fitvtsun) and not options.fitro:
+        R= ((_REFR0-XYZ[:,:,0])**2.+(XYZ[:,:,1])**2.)**0.5 
+        z= XYZ[:,:,2]+_ZSUN
+        #Rotate to Galactocentric frame
+        cosphi= (_REFR0-XYZ[:,:,0])/R
+        sinphi= XYZ[:,:,1]/R
+        #Load into structure
+        errstuff= []
+        for ii in range(len(data)):
+            thiserrstuff= errstuffClass()
+            thiserrstuff.R= R[:,ii]
+            thiserrstuff.vx= outvxvyvz[ii,0,:]
+            thiserrstuff.vy= outvxvyvz[ii,1,:]
+            thiserrstuff.z= z[:,ii]
+            thiserrstuff.vz= outvxvyvz[ii,2,:]
+            thiserrstuff.cosphi= cosphi[:,ii]
+            thiserrstuff.sinphi= sinphi[:,ii]
+            errstuff.append(thiserrstuff)
     else:
         #Load into structure
         errstuff= []
@@ -1600,7 +1634,9 @@ def initialize(options,fehs,afes):
     if options.fitro:
         p.append(1.)
     if options.fitvsun:
-        p.extend([0.,1.,0.])
+        p.extend([0.,1.1,0.])
+    elif options.fitvtsun:
+        p.append(1.1)
     mapfehs= monoAbundanceMW.fehs()
     mapafes= monoAbundanceMW.afes()
     indx= (mapfehs != -0.45)*(mapafes != 0.075) #Pop this one, bc sz is crazy
@@ -1638,6 +1674,9 @@ def setup_domain(options,npops):
         domain.append([0.,0.])
         isDomainFinite.append([False,False])
         domain.append([0.,0.])
+        isDomainFinite.append([False,False])
+        domain.append([0.,0.])
+    elif options.fitvsun:
         isDomainFinite.append([False,False])
         domain.append([0.,0.])
     for ii in range(npops):
@@ -1699,6 +1738,7 @@ def get_potparams(p,options,npops):
     startindx= 0
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
+    elif options.fitvsun: startindx+= 1
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*npops
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
@@ -1715,6 +1755,7 @@ def get_vo(p,options,npops):
     startindx= 0
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
+    elif options.fitvsun: startindx+= 1
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*npops
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
@@ -1731,6 +1772,7 @@ def get_outfrac(p,indx,options):
     startindx= 0
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
+    elif options.fitvsun: startindx+= 1
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*indx
     if options.dfmodel.lower() == 'qdf':
@@ -1741,6 +1783,7 @@ def set_potparams(p,params,options,npops):
     startindx= 0
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
+    elif options.fitvsun: startindx+= 1
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*npops
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
@@ -1765,6 +1808,7 @@ def get_dfparams(p,indx,options,log=False):
     startindx= 0
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
+    elif options.fitvsun: startindx+= 1
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*indx
     if options.dfmodel.lower() == 'qdf':
@@ -1788,6 +1832,7 @@ def set_dfparams(p,params,indx,options):
     startindx= 0
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
+    elif options.fitvsun: startindx+= 1
     ndfparams= get_ndfparams(options)
     startindx+= ndfparams*indx
     if options.dfmodel.lower() == 'qdf':
@@ -1822,6 +1867,8 @@ def get_vsun(p,options):
     if options.fitro: startindx+= 1
     if options.fitvsun:
         return (p[startindx],p[startindx+1],p[startindx+2])
+    elif options.fitvsun:
+        return p[startindx]
     else:
         return (_VRSUN/_REFV0,_VTSUN/_REFV0,_VZSUN/_REFV0) #BOVY:ADJUST?
 
@@ -1978,6 +2025,9 @@ def get_options():
     parser.add_option("--fitvsun",action="store_true", dest="fitvsun",
                       default=False,
                       help="If set, fit for v_sun")
+    parser.add_option("--fitvtsun",action="store_true", dest="fitvtsun",
+                      default=False,
+                      help="If set, fit for v_{t,sun}")
     parser.add_option("--ninit",dest='ninit',default=1,type='int',
                       help="Number of initial optimizations to perform (indiv DF + potential w/ fixed DF")
     #Errors
