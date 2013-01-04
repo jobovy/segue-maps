@@ -34,7 +34,7 @@ def getMultiComparisonBins(options):
                  -0.15,-0.25,-0.35,-0.45,-0.55,-0.65,
                  -0.35,-0.45,-0.55,-0.65,
                  -0.55,-0.65,-0.75]
-        left_legend= r'$\alpha\!-\!\mathrm{young},$'+'\n'+r'$\mathrm{[Fe/H]\!-\!poor\ populations}$'
+        left_legend= r'$\alpha\!-\!\mathrm{young},$'+'\n'+r'$\mathrm{[Fe/H]\!-\!poor}$'+'\n'+r'$\mathrm{populations}$'
     elif options.group == 'aintermediate':
         gafes= [0.275,0.275,0.275,0.275,0.275,0.275,
                 0.225,0.225,0.225,
