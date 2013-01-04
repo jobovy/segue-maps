@@ -127,14 +127,17 @@ def plot_DFsingles(options,args):
                 if not options.flatten is None:
                     plotthis[ii,jj]/= options.flatten
             elif options.type.lower() == 'vc':
-                s= get_potparams(sols[solindx],options,1)
-                plotthis[ii,jj]= s[1]
+                if options.fixvo:
+                    plotthis[ii,jj]= 1.
+                else:
+                    s= get_potparams(sols[solindx],options,1)
+                    plotthis[ii,jj]= s[1]
             elif options.type.lower() == 'rd':
                 s= get_potparams(sols[solindx],options,1)
                 plotthis[ii,jj]= numpy.exp(s[0])
             elif options.type.lower() == 'zh':
                 s= get_potparams(sols[solindx],options,1)
-                plotthis[ii,jj]= numpy.exp(s[2])
+                plotthis[ii,jj]= numpy.exp(s[2-(1-(options.fixvo is None))])
             elif options.type.lower() == 'kz':
                 s= get_potparams(sols[solindx],options,1)
                 plotthis[ii,jj]= (s[1]**2./s[0]**2.)/(1./options.flatten**2.)
@@ -158,6 +161,9 @@ def plot_DFsingles(options,args):
                 if options.relative:
                     thissr= monoAbundanceMW.sigmaz(mapfehs[monoabindx],mapafes[monoabindx])*2.
                     plotthis[ii,jj]/= thissr
+            elif options.type.lower() == 'outfrac':
+                s= get_dfparams(sols[solindx],0,options)
+                plotthis[ii,jj]= s[5]
             elif options.type.lower() == 'rhodm':
                 #Setup potential
                 pot= setup_potential(sols[solindx],options,1)
@@ -234,6 +240,9 @@ def plot_DFsingles(options,args):
         else:
             vmin, vmax= 20.,100.
             zlabel= r'$\mathrm{model}\ \sigma_R\ [\mathrm{km\ s}^{-1}]$'
+    elif options.type == 'outfrac':
+        vmin, vmax= 0., 1.
+        zlabel= r'$\mathrm{relative\ number\ of\ outliers}$'
     elif options.type == 'afe':
         vmin, vmax= 0.0,.5
         zlabel=r'$[\alpha/\mathrm{Fe}]$'
