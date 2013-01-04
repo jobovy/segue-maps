@@ -303,10 +303,9 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
     data_lndf= numpy.empty((ndata,2*options.nmcerr))
-    if options.marginalizevt:
+    if False: #options.marginalizevt:
         data_lndf[:,0:options.nmcerr]= numpy.log(qdf.pvRvz(vR.flatten(),vz.flatten(),
-                                                           R.flatten(),z.flatten(),
-                                                           ngl=40)).reshape((ndata,options.nmcerr))
+                                                           R.flatten(),z.flatten())).reshape((ndata,options.nmcerr))
         data_lndf[:,options.nmcerr:2*options.nmcerr]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(szhalo)\
             -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.)\
@@ -320,7 +319,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
             -1.5*numpy.log(2.*math.pi)
     #Sum data and outlier df, for all MC samples
     data_lndf= mylogsumexp(data_lndf,axis=1)
-    if options.marginalizevt:
+    if False: #options.marginalizevt:
         data_lndf+= numpy.log(vo)
     #Normalize
     normalization= calc_normint(qdf,indx,normintstuff,params,npops,options,
@@ -1568,6 +1567,9 @@ def setup_err_mc(data,options):
                                                         pmdecsamples,
                                                         numpy.ones(options.nmcerr)*data[ii].ra,
                                                         numpy.ones(options.nmcerr)*data[ii].dec,degree=True)
+            if options.marginalizevt:
+                #'sabotage' pm_ll to remove information in the plane
+                pmllpmbb[:,0]= 2.*(numpy.random.uniform(size=options.nmcerr)-1.)*100.
             l,b= bovy_coords.radec_to_lb(data[ii].ra,data[ii].dec,degree=True)
             if options.fitdm:
                 outvxvyvz[ii,0,:]= vrsamples
