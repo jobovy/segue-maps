@@ -305,7 +305,8 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     data_lndf= numpy.empty((ndata,2*options.nmcerr))
     if options.marginalizevt:
         data_lndf[:,0:options.nmcerr]= numpy.log(qdf.pvRvz(vR.flatten(),vz.flatten(),
-                                                 R.flatten(),z.flatten())).reshape((ndata,options.nmcerr))
+                                                           R.flatten(),z.flatten(),
+                                                           ngl=40)).reshape((ndata,options.nmcerr))
         data_lndf[:,options.nmcerr:2*options.nmcerr]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(szhalo)\
             -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.)\
