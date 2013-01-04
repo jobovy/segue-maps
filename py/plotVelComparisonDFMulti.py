@@ -98,12 +98,12 @@ def plotVelComparisonDFMulti(options,args):
         xlabel=r'$V_R\ [\mathrm{km\,s}^{-1}]$'
     elif options.type.lower() == 'vt':
         if options.group == 'aenhanced':
-            vs= numpy.linspace(0.01,450.,options.nv)
-            xrange=[0.,450.]
+            vs= numpy.linspace(0.01,350.,options.nv)
+            xrange=[0.,350.]
             bins= 39
         else: # options.group == 'aenhanced':
-            vs= numpy.linspace(0.01,250.,options.nv)
-            xrange=[0.,250.]
+            vs= numpy.linspace(0.01,350.,options.nv)
+            xrange=[0.,350.]
             bins= 39
         xlabel=r'$V_T\ [\mathrm{km\,s}^{-1}]$'
     for jj in range(M):
