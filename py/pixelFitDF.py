@@ -2005,6 +2005,10 @@ def interpDens(R,z,surfInterp):
     """Function to give density using the interpolated representation"""
     return numpy.exp(surfInterp.ev(R/_REFR0,numpy.fabs(z)/_REFR0))
 
+def interpDenswoutlier(R,z,params):
+    """Function to give density using the interpolated representation"""
+    return numpy.exp(params[0].ev(R/_REFR0,numpy.fabs(z)/_REFR0))+params[1]
+
 ##SAMPLES QA
 def print_samples_qa(samples,options,npops):
     print "Mean, standard devs, acor tau, acor mean, acor s ..."

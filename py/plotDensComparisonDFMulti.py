@@ -24,7 +24,7 @@ def getMultiComparisonBins(options):
     elif options.group == 'apoor':
         gafes= [0.125,0.075,0.075,0.025,0.025,0.025,0.025]
         gfehs= [-0.05,-0.05,0.05,-0.05,0.05,0.15,0.25]
-        left_legend= r'$\alpha\!-\!\mathrm{young\ populations}$'
+        left_legend= r'$\alpha\!-\!\mathrm{young}$'+'\n'+r'$\mathrm{populations}$'
     elif options.group == 'apoorfpoor':
         gafes= [0.025,0.075,0.075,0.075,0.075,
                 0.125,0.125,0.125,0.125,0.125,0.125,
@@ -136,8 +136,22 @@ def plotDensComparisonDFMulti(options,args):
         print tparams
         #Set up density models and their parameters
         model1s.append(interpDens)
-        params1.append(calc_model(tparams,options,0))
+        paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+        params1.append(paramsInterp)
         if True:
+            #Add outlier and plot sum
+            if not options.usemedianpotential:
+                potparams= get_potparams(tparams,options,1)
+            logoutfrac= numpy.log(get_outfrac(tparams,0,options))
+            logoutfrac+= numpy.log(surfz)
+            outfrac= numpy.exp(logoutfrac)
+            ro= get_ro(tparams,options)
+            halodens= ro*outDens(1.,0.,None)
+            model2s.append(interpDenswoutlier)
+            params2.append([paramsInterp,outfrac*halodens])
+            model3s.append(None)
+            params3.append(None)
+        elif False:
             if not options.usemedianpotential:
                 potparams= get_potparams(tparams,options,1)
             if options.potential.lower() == 'flatlog':
@@ -327,7 +341,7 @@ def plotDensComparisonDFMulti(options,args):
             bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_l%i_b%i_faint.' % (ls[ii],bs[ii])+options.ext)
     return None
 
-def calc_model(params,options,pop):
+def calc_model(params,options,pop,_retsurfz=False):
     nrs, nzs= 21, 21
     thisrmin, thisrmax= 4./_REFR0, 15./_REFR0
     thiszmin, thiszmax= 0., .8
@@ -358,7 +372,10 @@ def calc_model(params,options,pop):
                                                     numpy.log(surfgrid),
                                                     kx=3,ky=3,
                                                     s=0.)
-    return surfInterp
+    if _retsurfz:
+        return (surfInterp,qdf.surfacemass_z(1.,ngl=options.ngl))
+    else:
+        return surfInterp
 
 ##RUNNING SINGLE BINS IN A SINGLE CALL
 def run_abundance_singles_plotdens(options,args,fehs,afes):
