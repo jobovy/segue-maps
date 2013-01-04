@@ -123,7 +123,7 @@ def plotTilt(options,args):
                     for kk in [1,4,5,8]:
                         xs= numpy.array([s[kk] for s in thesesamples])
                         theseerrors.append(0.5*(numpy.exp(numpy.mean(xs))-numpy.exp(numpy.mean(xs)-numpy.std(xs))-numpy.exp(numpy.mean(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
-                    for kk in [0,2,3,6,7,9,10,11]:
+                    for kk in [0,2,3,6,7,9,10]: #,11]:
                         xs= numpy.array([s[kk] for s in thesesamples])
                         theseerrors.append(numpy.std(xs))
                         errors.append(theseerrors)
@@ -163,27 +163,27 @@ def plotTilt(options,args):
             if velerrors:
                 tilt_err.append(errors[ii][9])
                 tiltp1_err.append(errors[ii][10])
-                tiltp2_err.append(errors[ii][11])
-            tilt.append(plotthis[ii][12])
-            tiltp1.append(plotthis[ii][13])
-            tiltp2.append(plotthis[ii][14])
+#                tiltp2_err.append(errors[ii][11])
+            tilt.append(plotthis[ii][11])
+            tiltp1.append(plotthis[ii][12])
+#            tiltp2.append(plotthis[ii][13])
             afe.append(plotthis[ii][1])
             feh.append(plotthis[ii][0])
             ndata.append(plotthis[ii][4])
-            zmin.append(plotthis[ii][15])
-            zmax.append(plotthis[ii][16])
-            pivot.append(plotthis[ii][17])
+            zmin.append(plotthis[ii][13])
+            zmax.append(plotthis[ii][14])
+            pivot.append(plotthis[ii][15])
         indxarray= numpy.array([True for ii in range(len(plotthis))],dtype='bool')
         tilt= numpy.array(tilt)[indxarray]
         tiltp1= numpy.array(tiltp1)[indxarray]
-        tiltp2= numpy.array(tiltp2)[indxarray]
+#        tiltp2= numpy.array(tiltp2)[indxarray]
         pivot= numpy.array(pivot)[indxarray]
         zmin= numpy.array(zmin)[indxarray]
         zmax= numpy.array(zmax)[indxarray]
         if velerrors:
             tilt_err= numpy.array(tilt_err)[indxarray]
             tiltp1_err= numpy.array(tiltp1_err)[indxarray]
-            tiltp2_err= numpy.array(tiltp2_err)[indxarray]
+#            tiltp2_err= numpy.array(tiltp2_err)[indxarray]
         afe= numpy.array(afe)[indxarray]
         feh= numpy.array(feh)[indxarray]
         ndata= numpy.array(ndata)[indxarray]
