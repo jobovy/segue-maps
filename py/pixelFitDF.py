@@ -1842,12 +1842,16 @@ def get_potparams(p,options,npops):
     elif options.potential.lower() == 'mwpotential':
         return (1.) #vo
     elif options.potential.lower() == 'mwpotentialsimplefit':
-        return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3]) # hr, vo, hz,ampd
+        if not options.fixvo is None:
+            return (p[startindx],p[startindx+1],p[startindx+2]) # hr, hz,ampd
+        else:
+            return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3]) # hr, vo, hz,ampd
     elif options.potential.lower() == 'mwpotentialfixhalo':
         return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4]) # hr, vo, hz,ampd, amph
 
 def get_vo(p,options,npops):
     """Function that returns the vo parameter for these options"""
+    if not options.fixvo is None: return options.fixvo
     startindx= 0
     if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
@@ -1892,7 +1896,8 @@ def set_potparams(p,params,options,npops):
         params[startindx]= p[0]
         params[startindx+1]= p[1]
         params[startindx+2]= p[2]
-        params[startindx+3]= p[3]
+        if options.fixvo is None:
+            params[startindx+3]= p[3]
     elif options.potential.lower() == 'mwpotentialfixhalo':
         params[startindx]= p[0]
         params[startindx+1]= p[1]
@@ -1951,7 +1956,10 @@ def get_npotparams(options):
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         return 2
     elif options.potential.lower() == 'mwpotentialsimplefit':
-        return 4
+        if not options.fixvo is None:
+            return 3
+        else:
+            return 4
     elif options.potential.lower() == 'mwpotentialfixhalo':
         return 5
 
@@ -2175,6 +2183,9 @@ def get_options():
     parser.add_option("--novoprior",action="store_true", dest="novoprior",
                       default=False,
                       help="If set, do not apply a vo prior (default: Bovy et al. 2012)")
+    parser.add_option("--fixvo",dest="fixvo",type='float',
+                      default=None,
+                      help="If set, fix vo=V_c/220 to this value and do not fit for it")
     parser.add_option("--noqprior",action="store_true", dest="noqprior",
                       default=False,
                       help="If set, do not apply a q prior (default: q > 0.53)")
