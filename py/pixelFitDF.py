@@ -1246,7 +1246,8 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
     XYZ[:,2]= (data.zc+_ZSUN)/_REFR0/ro
     z= XYZ[:,2]
     """
-    if not options.fitro and not options.fitvsun and not options.fitvtsun:
+    if not options.fitro and not options.fitvsun and not options.fitvtsun \
+            and not options.fitdm:
         callindx= binned.callIndx(fehs[indx],afes[indx])
         R= numpy.array([e.R for e in errstuff])[callindx]/ro/_REFR0
         z= numpy.array([e.z for e in errstuff])[callindx]/ro/_REFR0
@@ -1573,8 +1574,8 @@ def setup_err_mc(data,options):
             l,b= bovy_coords.radec_to_lb(data[ii].ra,data[ii].dec,degree=True)
             if options.fitdm:
                 outvxvyvz[ii,0,:]= vrsamples
-                outvxvyvz[ii,1,:]= pmll
-                outvxvyvz[ii,2,:]= pmbb
+                outvxvyvz[ii,1,:]= pmllpmbb[:,0]
+                outvxvyvz[ii,2,:]= pmllpmbb[:,1]
             else:
                 vxvyvz= bovy_coords.vrpmllpmbb_to_vxvyvz(vrsamples,
                                                          pmllpmbb[:,0],
@@ -1608,13 +1609,22 @@ def setup_err_mc(data,options):
                 outvxvyvz[ii,0,0]= vxvyvz[0]
                 outvxvyvz[ii,1,0]= vxvyvz[1]
                 outvxvyvz[ii,2,0]= vxvyvz[2]
-        #Load into vdraws
-        if options.nmcerr == 1:
-            xdraws[ii]= [XYZ[0,ii,:]]
-            vdraws[ii]= [vxvyvz]
+        if (not options.fitro and not options.fitvsun and not options.fitvtsun \
+                and not options.fitdm) \
+                or ((options.fitvsun or options.fitvtsun) and not options.fitro \
+                        and not options.fitdm) \
+                        or (not (options.fitvsun or options.fitvtsun) and options.fitro \
+                                and not options.fitdm) \
+                                or options.fitdm:
+            pass
         else:
-            vdraws[ii]= [vxvyvz[jj,:] for jj in range(options.nmcerr)]
-            xdraws[ii]= [XYZ[jj,ii,:] for jj in range(options.nmcerr)]
+            #Load into vdraws
+            if options.nmcerr == 1:
+                xdraws[ii]= [XYZ[0,ii,:]]
+                vdraws[ii]= [vxvyvz]
+            else:
+                vdraws[ii]= [vxvyvz[jj,:] for jj in range(options.nmcerr)]
+                xdraws[ii]= [XYZ[jj,ii,:] for jj in range(options.nmcerr)]
         """
         for jj in range(options.nmcerr):
             #vn= numpy.random.normal(size=(3))
@@ -1629,8 +1639,6 @@ def setup_err_mc(data,options):
                 vdraws[ii].append(vxvyvz[jj,:])
                          xdraws[ii].append(XYZ[jj,ii,:])
          """
-    data= _append_field_recarray(data,'vdraws',vdraws)
-    data= _append_field_recarray(data,'xdraws',xdraws)
     if not options.fitro and not options.fitvsun and not options.fitvtsun \
             and not options.fitdm:
         vsun = [_VRSUN,_VTSUN,_VZSUN]
@@ -1706,6 +1714,8 @@ def setup_err_mc(data,options):
             thiserrstuff.pmbb= outvxvyvz[ii,2,:]
             errstuff.append(thiserrstuff)      
     else:
+        data= _append_field_recarray(data,'vdraws',vdraws)
+        data= _append_field_recarray(data,'xdraws',xdraws)
         #Load into structure
         errstuff= []
         for ii in range(len(data)):
