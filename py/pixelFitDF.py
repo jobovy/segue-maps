@@ -1372,10 +1372,10 @@ def setup_potential(params,options,npops):
         return potential.MWPotential #Just used for fake data
     elif options.potential.lower() == 'mwpotentialsimplefit':
         ro= get_ro(params,options)
-        ampd= 0.95*potparams[3]
-        amph= 0.95*(1.-potparams[3])
+        ampd= 0.95*potparams[3-(1-(options.fixvo is None))]
+        amph= 0.95*(1.-potparams[3-(1-(options.fixvo is None))])
         return [potential.MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
-                                                 b=numpy.exp(potparams[2])/ro,
+                                                 b=numpy.exp(potparams[2-(1-(options.fixvo is None))])/ro,
                                                  normalize=ampd),
                 potential.NFWPotential(a=4.5,normalize=amph),
                 potential.HernquistPotential(a=0.6/8,normalize=0.05)]
