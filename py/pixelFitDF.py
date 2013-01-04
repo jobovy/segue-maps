@@ -415,9 +415,9 @@ def logprior_pot(params,options,npops):
             or options.potential.lower() == 'mwpotentialfixhalo':
         if potparams[0] < -2.77 or potparams[0] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if potparams[2] < -9. or potparams[2] > 2.53:
+        if potparams[2-(1-(options.fixvo is None))] < -9. or potparams[2-(1-(options.fixvo is None))] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if potparams[3] < 0. or potparams[3] > 1.:
+        if potparams[3-(1-(options.fixvo is None))] < 0. or potparams[3-(1-(options.fixvo is None))] > 1.:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if options.potential.lower() == 'mwpotentialfixhalo' \
                 and (potparams[4] < 0. or potparams[4] > 1. \
@@ -1748,7 +1748,10 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         p.extend([.7,1.])
     elif options.potential.lower() == 'mwpotentialsimplefit':
-        p.extend([-1.,1.,-3.,0.5])
+        if options.fixvo is None:
+            p.extend([-1.,1.,-3.,0.5])
+        else:
+            p.extend([-1.,-3.,0.5])
     elif options.potential.lower() == 'mwpotentialfixhalo':
         p.extend([-1.,1.,-3.,0.5,0.45])
     return p
