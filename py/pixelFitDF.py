@@ -382,10 +382,10 @@ def logprior_dfparams(p,ii,options):
     """Prior on the DF"""
     #get params
     theseparams= get_dfparams(p,ii,options,log=True)
-#    if options.fitdm:
-#        dm= get_dm(params,options)
-#        if dm < -0.3 or dm > 0.3:
-#            return -numpy.finfo(numpy.dtype(numpy.float64)).max   
+    if options.fitdm:
+        dm= get_dm(p,options)
+        if dm < -0.4 or dm > 0.4:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max   
     if options.dfmodel.lower() == 'qdf':
         if theseparams[0] < -2.77 or theseparams[0] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -1259,7 +1259,8 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
         vT= numpy.array([e.vT for e in errstuff])[callindx]/vo/_REFV0
         vz= numpy.array([e.vz for e in errstuff])[callindx]/vo/_REFV0
         return (R,vR,vT,z,vz)
-    elif (options.fitvsun or options.fitvtsun) and not options.fitro:
+    elif (options.fitvsun or options.fitvtsun) and not options.fitro \
+            and not options.fitdm:
         callindx= binned.callIndx(fehs[indx],afes[indx])
         R= numpy.array([e.R for e in errstuff])[callindx]/ro/_REFR0
         z= numpy.array([e.z for e in errstuff])[callindx]/ro/_REFR0
@@ -1275,7 +1276,8 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
         vR= -vx*cosphi+vy*sinphi
         vT= vx*sinphi+vy*cosphi
         return (R,vR,vT,z,vz)       
-    elif not (options.fitvsun or options.fitvtsun) and options.fitro:
+    elif not (options.fitvsun or options.fitvtsun) and options.fitro \
+            and not options.fitdm:
         callindx= binned.callIndx(fehs[indx],afes[indx])
         x= numpy.array([e.x for e in errstuff])[callindx]/ro/_REFR0
         y= numpy.array([e.y for e in errstuff])[callindx]/ro/_REFR0
@@ -1318,7 +1320,7 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
         vz= numpy.reshape(vxvyvz[:,2],x.shape)
         vR= numpy.reshape(vR,x.shape)
         vT= numpy.reshape(vT,x.shape)
-        return (R,vR,vT,z,vz)       
+        return (R,vR,vT,z+_ZSUN,vz)
     XYZ= numpy.zeros((len(data),3,options.nmcerr))
     vxvyvz= numpy.zeros((len(data),3,options.nmcerr))
     for ii in range(len(data)):
