@@ -424,9 +424,9 @@ def logprior_pot(params,options,npops):
         if potparams[3-(1-(options.fixvo is None))] < 0. or potparams[3-(1-(options.fixvo is None))] > 1.:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if options.potential.lower() == 'mwpotentialfixhalo' \
-                and (potparams[4] < 0. or potparams[4] > 1. \
-                         or (potparams[3]+potparams[4] > 1.) \
-                         or (potparams[3]+potparams[4] < .9)):
+                and (potparams[4] < 0.9 or potparams[4] > 1.):
+#                         or (potparams[3]+potparams[4] > 1.) \
+#                         or (potparams[3]+potparams[4] < .9)):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     return out
 
@@ -1388,8 +1388,9 @@ def setup_potential(params,options,npops):
                 potential.HernquistPotential(a=0.6/8,normalize=0.05)]
     elif options.potential.lower() == 'mwpotentialfixhalo':
         ro= get_ro(params,options)
-        ampd= potparams[3]
-        amph= potparams[4]
+        ampdh= potparams[4]
+        ampd= potparams[3]*ampdh
+        amph= (1.-potparams[3])*ampdh
         ampb= 1.-ampd-amph
         return [potential.MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
                                                  b=numpy.exp(potparams[2])/ro,
@@ -1769,7 +1770,7 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
         else:
             p.extend([-1.,-3.,0.5])
     elif options.potential.lower() == 'mwpotentialfixhalo':
-        p.extend([-1.,1.,-3.,0.5,0.45])
+        p.extend([-1.,1.,-3.,0.5,0.95])
     return p
 
 ##SETUP DOMAIN FOR MARKOVPY
@@ -1866,7 +1867,7 @@ def get_potparams(p,options,npops):
         else:
             return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3]) # hr, vo, hz,ampd
     elif options.potential.lower() == 'mwpotentialfixhalo':
-        return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4]) # hr, vo, hz,ampd, amph
+        return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4]) # hr, vo, hz,ampd+h, ampd/d+h
 
 def get_vo(p,options,npops):
     """Function that returns the vo parameter for these options"""
