@@ -382,6 +382,10 @@ def logprior_dfparams(p,ii,options):
     """Prior on the DF"""
     #get params
     theseparams= get_dfparams(p,ii,options,log=True)
+#    if options.fitdm:
+#        dm= get_dm(params,options)
+#        if dm < -0.3 or dm > 0.3:
+#            return -numpy.finfo(numpy.dtype(numpy.float64)).max   
     if options.dfmodel.lower() == 'qdf':
         if theseparams[0] < -2.77 or theseparams[0] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
