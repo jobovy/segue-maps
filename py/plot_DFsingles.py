@@ -257,7 +257,7 @@ def plot_DFsingles(options,args):
         vmin, vmax= 0.00, 1.
         zlabel=r'$V_{c,\mathrm{halo}} / V_c\,(R_0)$'
     elif options.type.lower() == 'fb':
-        vmin, vmax= 0.00, 1.
+        vmin, vmax= 0.00, .1
         zlabel=r'$V_{c,\mathrm{halo}} / V_c\,(R_0)$'
     elif options.type.lower() == 'rd':
         vmin, vmax= 0.2, 0.6
@@ -401,7 +401,10 @@ def plot_DFsingles(options,args):
                               contours=False,
                               colorbar=True,shrink=0.78)
         if options.type.lower() == 'q' or options.type.lower() == 'vc' \
-                or options.relative or options.type.lower() == 'rd':
+                or options.relative or options.type.lower() == 'rd' \
+                or options.type.lower() == 'fd' \
+                or options.type.lower() == 'fh' \
+                or options.type.lower() == 'fb':
             bovy_plot.bovy_text(r'$\mathrm{median} = %.2f \pm %.2f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
                                                                         1.4826*numpy.median(numpy.fabs(plotthis[numpy.isfinite(plotthis)]-numpy.median(plotthis[numpy.isfinite(plotthis)])))),
                                 bottom_left=True,size=14.)
