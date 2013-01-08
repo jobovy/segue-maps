@@ -376,7 +376,7 @@ def logprior_outfrac(outfrac,options):
     """Prior on the outlier fraction"""
     if outfrac <= 0. or outfrac >= 1.:
         return -numpy.finfo(numpy.dtype(numpy.float64)).max
-    return 0.
+    return numpy.log(1./(1.+numpy.exp((outfrac-0.2)/0.02)))
 
 def logprior_dfparams(p,ii,options):
     """Prior on the DF"""
@@ -408,8 +408,10 @@ def logprior_pot(params,options,npops):
     else:
         if options.bovy09voprior:
             out-= 0.5*(vo-236./_REFV0)**2./(11./_REFV0)**2.
-        else:
+        elif options.bovy12voprior:
             out-= 0.5*(vo-218./_REFV0)**2./(6./_REFV0)**2.
+        else:
+            out-= 0.5*(vo-225./_REFV0)**2./(15./_REFV0)**2.
     potparams= get_potparams(params,options,npops)
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         q= potparams[0]
@@ -417,9 +419,9 @@ def logprior_pot(params,options,npops):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
     elif options.potential.lower() == 'mwpotentialsimplefit' \
             or options.potential.lower() == 'mwpotentialfixhalo':
-        if potparams[0] < -2.77 or potparams[0] > 2.53:
+        if potparams[0] < -2.1 or potparams[0] > -0.3:#2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if potparams[2-(1-(options.fixvo is None))] < -9. or potparams[2-(1-(options.fixvo is None))] > 2.53:
+        if potparams[2-(1-(options.fixvo is None))] < -5.1 or potparams[2-(1-(options.fixvo is None))] > 1.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if potparams[3-(1-(options.fixvo is None))] < 0. or potparams[3-(1-(options.fixvo is None))] > 1.:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -2216,7 +2218,11 @@ def get_options():
     parser.add_option("--bovy09voprior",action="store_true", 
                       dest="bovy09voprior",
                       default=False,
-                      help="If set, apply the Bovy, Rix, & Hogg vo prior (default: Bovy et al. 2012)")
+                      help="If set, apply the Bovy, Rix, & Hogg vo prior (225+/- 15)")
+    parser.add_option("--bovy12voprior",action="store_true", 
+                      dest="bovy12voprior",
+                      default=False,
+                      help="If set, apply the Bovy, et al. 2012 prior")
     #Sample?
     parser.add_option("--mcsample",action="store_true", dest="mcsample",
                       default=False,

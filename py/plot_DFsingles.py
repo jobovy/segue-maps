@@ -205,7 +205,7 @@ def plot_DFsingles(options,args):
            plotthis/= medianvc
            zlabel=r'$V_c / %i\ \mathrm{km\,s}^{-1}$' % int(_REFV0*medianvc)
     elif options.type.lower() == 'rhodm':
-        vmin, vmax= 0.001, 0.04
+        vmin, vmax= 0.00, 0.02
         zlabel=r'$\rho_{\mathrm{DM}}(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
     elif options.type.lower() == 'rd':
         vmin, vmax= 0.2, 0.6
