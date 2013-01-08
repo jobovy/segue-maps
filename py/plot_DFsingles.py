@@ -13,6 +13,7 @@ import multiprocessing
 import monoAbundanceMW
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 from galpy import potential
+from galpy.df import quasiisothermaldf
 #from galpy.actionAngle_src.actionAngleAdiabaticGrid import  actionAngleAdiabaticGrid
 #from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 #import bovy_mcmc
@@ -25,7 +26,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import _REFV0, get_options, read_rawdata, get_potparams, \
-    get_dfparams, _REFR0, get_vo, get_ro, setup_potential
+    get_dfparams, _REFR0, get_vo, get_ro, setup_potential, setup_aA
 def plot_DFsingles(options,args):
     raw= read_rawdata(options)
     #Bin the data
@@ -161,6 +162,27 @@ def plot_DFsingles(options,args):
                 if options.relative:
                     thissr= monoAbundanceMW.sigmaz(mapfehs[monoabindx],mapafes[monoabindx])*2.
                     plotthis[ii,jj]/= thissr
+            elif options.type.lower() == 'srsz':
+                #Setup everything
+                pot= setup_potential(sols[solindx],options,1)
+                vo= get_vo(sols[solindx],options,1)
+                ro= get_ro(sols[solindx],options)
+                aA= setup_aA(pot,options)               
+                dfparams= get_dfparams(sols[solindx],0,options,log=False)
+                if options.dfmodel.lower() == 'qdf':
+                    #Normalize
+                    hr= dfparams[0]/ro
+                    sr= dfparams[1]/vo
+                    sz= dfparams[2]/vo
+                    hsr= dfparams[3]/ro
+                    hsz= dfparams[4]/ro
+                    #Setup
+                    qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,
+                                           aA=aA,cutcounter=True)              
+                plotthis[ii,jj]= numpy.sqrt(qdf.sigmaR2(1.,1./_REFR0/ro,
+                                                        ngl=options.ngl,gl=True)\
+                                                /qdf.sigmaz2(1.,1./_REFR0/ro,
+                                                            ngl=options.ngl,gl=True))
             elif options.type.lower() == 'outfrac':
                 s= get_dfparams(sols[solindx],0,options)
                 plotthis[ii,jj]= s[5]
@@ -238,8 +260,11 @@ def plot_DFsingles(options,args):
             vmin, vmax= 0.8, 1.2
             zlabel= r'$\mathrm{input/output\ model}\ \sigma_R$'
         else:
-            vmin, vmax= 20.,100.
+            vmin, vmax= 10.,60.
             zlabel= r'$\mathrm{model}\ \sigma_R\ [\mathrm{km\ s}^{-1}]$'
+    elif options.type == 'srsz':
+        vmin, vmax= 0.5,2.
+        zlabel= r'$\sigma_R/\sigma_z\ (R_0,1\,\mathrm{kpc})$'
     elif options.type == 'outfrac':
         vmin, vmax= 0., 1.
         zlabel= r'$\mathrm{relative\ number\ of\ outliers}$'
