@@ -193,6 +193,27 @@ def plot_DFsingles(options,args):
                 ro= get_ro(sols[solindx],options)
                 if 'mwpotential' in options.potential.lower():
                     plotthis[ii,jj]= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+            elif options.type.lower() == 'fd':
+                #Setup potential
+                pot= setup_potential(sols[solindx],options,1)
+                vo= get_vo(sols[solindx],options,1)
+                ro= get_ro(sols[solindx],options)
+                if 'mwpotential' in options.potential.lower():
+                    plotthis[ii,jj]= (pot[0].vcirc(1.))**2.
+            elif options.type.lower() == 'fh':
+                #Setup potential
+                pot= setup_potential(sols[solindx],options,1)
+                vo= get_vo(sols[solindx],options,1)
+                ro= get_ro(sols[solindx],options)
+                if 'mwpotential' in options.potential.lower():
+                    plotthis[ii,jj]= (pot[1].vcirc(1.))**2.
+            elif options.type.lower() == 'fb':
+                #Setup potential
+                pot= setup_potential(sols[solindx],options,1)
+                vo= get_vo(sols[solindx],options,1)
+                ro= get_ro(sols[solindx],options)
+                if 'mwpotential' in options.potential.lower():
+                    plotthis[ii,jj]= (pot[2].vcirc(1.))**2.
             elif options.type.lower() == 'afe' or options.type.lower() == 'feh' or options.type.lower() == 'fehafe' \
                     or options.type.lower() == 'afefeh':
                 thisplot=[tightbinned.feh(ii),
@@ -229,6 +250,15 @@ def plot_DFsingles(options,args):
     elif options.type.lower() == 'rhodm':
         vmin, vmax= 0.00, 0.02
         zlabel=r'$\rho_{\mathrm{DM}}(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
+    elif options.type.lower() == 'fd':
+        vmin, vmax= 0.00, 1.
+        zlabel=r'$V_{c,\mathrm{disk}} / V_c\,(R_0)$'
+    elif options.type.lower() == 'fh':
+        vmin, vmax= 0.00, 1.
+        zlabel=r'$V_{c,\mathrm{halo}} / V_c\,(R_0)$'
+    elif options.type.lower() == 'fb':
+        vmin, vmax= 0.00, 1.
+        zlabel=r'$V_{c,\mathrm{halo}} / V_c\,(R_0)$'
     elif options.type.lower() == 'rd':
         vmin, vmax= 0.2, 0.6
         zlabel=r'$R_d / R_0$'
