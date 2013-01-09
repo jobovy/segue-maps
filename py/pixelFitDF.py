@@ -56,6 +56,8 @@ _REFV0= 220. #km/s
 _VRSUN=-11.1 #km/s
 _VTSUN= 245. #km/s
 _VZSUN= 7.25 #km/s
+_GMBULGE= 17208.0 #kpc (km/s)^2
+_ABULGE= 0.6
 _NGR= 11
 _NFEH=11
 _DEGTORAD= math.pi/180.
@@ -249,7 +251,10 @@ def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
     if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         return logpotprior
     #Set up potential and actionAngle
-    pot= setup_potential(params,options,len(fehs))
+    try:
+        pot= setup_potential(params,options,len(fehs))
+    except RuntimeError: #if this set of parameters gives a nonsense potential
+        return -numpy.finfo(numpy.dtype(numpy.float64)).max
     aA= setup_aA(pot,options)
     out= logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff)
     returnThis= out+logroprior+logpotprior
@@ -436,6 +441,14 @@ def logprior_pot(params,options,npops):
         if potparams[2-(1-(options.fixvo is None))] < -5.1 or potparams[2-(1-(options.fixvo is None))] > 1.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if potparams[4] < 0.0 or potparams[4] > 0.1:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        return logprior_dlnvcdlnr(potparams[3],options)
+    elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+        if potparams[0] < -2.1 or potparams[0] > -0.3:#2.53:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if potparams[2-(1-(options.fixvo is None))] < -5.1 or potparams[2-(1-(options.fixvo is None))] > 1.4:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if potparams[4] < 0.0 or potparams[4] > 3.:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return logprior_dlnvcdlnr(potparams[3],options)
     return out
@@ -1426,10 +1439,32 @@ def setup_potential(params,options,npops):
         hp= potential.NFWPotential(a=4.5,normalize=1.)
         bp= potential.HernquistPotential(a=0.6/8,normalize=ampb)
         ampd, amph= fdfh_from_dlnvcdlnr(dlnvcdlnr,dp,bp,hp)
+        if ampd <= 0. or amph <= 0.:
+            raise RuntimeError
         dp= potential.MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
                                              b=numpy.exp(potparams[2])/ro,
                                              normalize=ampd)
         hp= potential.NFWPotential(a=4.5,normalize=amph)
+        return [dp,hp,bp]
+    elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+        ro= get_ro(params,options)
+        vo= get_vo(params,options,npops)
+        dlnvcdlnr= potparams[3]
+        ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
+        bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
+        #normalize to 1 for calculation of ampd and amph
+        dp= potential.MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
+                                             b=numpy.exp(potparams[2])/ro,
+                                             normalize=1.)
+        hp= potential.PowerSphericalPotential(alpha=potparams[4],normalize=1.)
+        ampd, amph= fdfh_from_dlnvcdlnr(dlnvcdlnr,dp,bp,hp)
+        if ampd <= 0. or amph <= 0.:
+            raise RuntimeError
+        dp= potential.MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
+                                             b=numpy.exp(potparams[2])/ro,
+                                             normalize=ampd)
+        hp= potential.PowerSphericalPotential(alpha=potparams[4],
+                                              normalize=amph)
         return [dp,hp,bp]
     elif options.potential.lower() == 'flatlogdisk':
         return [potential.LogarithmicHaloPotential(normalize=.5,q=potparams[0]),
@@ -1819,6 +1854,8 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
         p.extend([-1.,1.,-3.,0.5,0.95])
     elif options.potential.lower() == 'mwpotentialfixhaloflat':
         p.extend([-1.,1.,-3.,0.,0.05])
+    elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+        p.extend([-1.,1.,-3.,0.,2.])
     return p
 
 ##SETUP DOMAIN FOR MARKOVPY
@@ -1861,7 +1898,8 @@ def setup_domain(options,npops):
         domain.append([100./_REFV0,350./_REFV0])
     elif options.potential.lower() == 'mwpotentialsimplefit' \
             or options.potential.lower() == 'mwpotentialfixhalo' \
-            or options.potential.lower() == 'mwpotentialfixhaloflat':
+            or options.potential.lower() == 'mwpotentialfixhaloflat' \
+            or options.potential.lower() == 'mpdiskplhalofixbulgeflat':
         raise NotImplementedError("setup domain for sampling of mwpotentialsimplefit not setup")
     return (isDomainFinite,domain)
 
@@ -1893,7 +1931,8 @@ def setup_domain_indiv_potential(options,npops):
         domain.append([100./_REFV0,350./_REFV0])
     elif options.potential.lower() == 'mwpotentialsimplefit' \
             or options.potential.lower() == 'mwpotentialfixhalo' \
-            or options.potential.lower() == 'mwpotentialfixhaloflat':
+            or options.potential.lower() == 'mwpotentialfixhaloflat' \
+            or options.potential.lower() == 'mpdiskplhalofixbulgeflat':  
         raise NotImplementedError("setup domain for sampling of mwpotentialsimplefit not setup")
     return (isDomainFinite,domain)
 
@@ -1919,6 +1958,8 @@ def get_potparams(p,options,npops):
     elif options.potential.lower() == 'mwpotentialfixhalo' \
             or options.potential.lower() == 'mwpotentialfixhaloflat':
         return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4]) # hr, vo, hz,ampd+h, ampd/d+h
+    elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+        return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4]) # hr, vo, hz,dlnvcdlnr,power-law halo
 
 def get_vo(p,options,npops):
     """Function that returns the vo parameter for these options"""
@@ -1937,7 +1978,8 @@ def get_vo(p,options,npops):
     elif options.potential.lower() == 'mwpotentialsimplefit':
         return p[startindx+1]
     elif options.potential.lower() == 'mwpotentialfixhalo' \
-            or options.potential.lower() == 'mwpotentialfixhaloflat':
+            or options.potential.lower() == 'mwpotentialfixhaloflat' \
+            or options.potential.lower() == 'mpdiskplhalofixbulgeflat':
         return p[startindx+1]
 
 def get_outfrac(p,indx,options):
@@ -1971,7 +2013,8 @@ def set_potparams(p,params,options,npops):
         if options.fixvo is None:
             params[startindx+3]= p[3]
     elif options.potential.lower() == 'mwpotentialfixhalo' \
-            or options.potential.lower() == 'mwpotentialfixhaloflat':
+            or options.potential.lower() == 'mwpotentialfixhaloflat' \
+            or options.potential.lower() == 'mpdiskplhalofixbulgeflat':
         params[startindx]= p[0]
         params[startindx+1]= p[1]
         params[startindx+2]= p[2]
@@ -2034,7 +2077,8 @@ def get_npotparams(options):
         else:
             return 4
     elif options.potential.lower() == 'mwpotentialfixhalo' \
-            or options.potential.lower() == 'mwpotentialfixhaloflat':
+            or options.potential.lower() == 'mwpotentialfixhaloflat' \
+            or options.potential.lower() == 'mpdiskplhalofixbulgeflat':
         return 5
 
 def get_ro(p,options):
