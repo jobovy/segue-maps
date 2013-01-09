@@ -147,6 +147,8 @@ def plot_DFRotcurves(options,args):
             elif options.subtype.lower() == 'disk':
                 if 'mwpotential' in options.potential.lower():
                     diskpot= pot[0]
+                elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                    diskpot= pot[0]
                 potential.plotRotcurve(diskpot,Rrange=[0.001,2.],
                                        yrange=[0.,1.29],
                                        overplot=overplot,ls='-',
@@ -155,6 +157,8 @@ def plot_DFRotcurves(options,args):
                                        zorder=int(numpy.random.uniform()*100))
             elif options.subtype.lower() == 'halo':
                 if 'mwpotential' in options.potential.lower():
+                    halopot= pot[1]
+                elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                     halopot= pot[1]
                 potential.plotRotcurve(halopot,Rrange=[0.001,2.],
                                        overplot=overplot,ls='-',
@@ -165,6 +169,8 @@ def plot_DFRotcurves(options,args):
             elif options.subtype.lower() == 'bulge':
                 if 'mwpotential' in options.potential.lower():
                     bulgepot= pot[2]
+                elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                    bulgepot= pot[2]
                 potential.plotRotcurve(bulgepot,Rrange=[0.001,2.],
                                        overplot=overplot,ls='-',
                                        ylabel= r"$V_c(R)/V_c(R_0)$",
@@ -173,6 +179,10 @@ def plot_DFRotcurves(options,args):
                                        zorder=int(numpy.random.uniform()*100))
             elif options.subtype.lower() == 'median':
                 if 'mwpotential' in options.potential.lower():
+                    diskpot= pot[0]
+                    halopot= pot[1]
+                    bulgepot= pot[2]
+                elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                     diskpot= pot[0]
                     halopot= pot[1]
                     bulgepot= pot[2]
