@@ -1855,7 +1855,7 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
     elif options.potential.lower() == 'mwpotentialfixhaloflat':
         p.extend([-1.,1.,-3.,0.,0.05])
     elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
-        p.extend([-1.,1.,-3.,0.,2.])
+        p.extend([-1.,1.,-3.,0.,1.35])
     return p
 
 ##SETUP DOMAIN FOR MARKOVPY
