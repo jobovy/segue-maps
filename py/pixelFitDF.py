@@ -440,11 +440,11 @@ def logprior_pot(params,options,npops):
         return logprior_dlnvcdlnr(potparams[3],options)
     return out
 
-def logprior_dlnvcdlnr(dlnvcdlnr,options,npops):
+def logprior_dlnvcdlnr(dlnvcdlnr,options):
     if options.nodlnvcdlnrprior: return 0.
     if True:
         sb= 0.04
-        if dlnvcdlnr > sb:
+        if dlnvcdlnr > sb or dlnvcdlnr < -0.5:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return numpy.log((sb-dlnvcdlnr)/sb)-(sb-dlnvcdlnr)/sb
 
@@ -1430,7 +1430,7 @@ def setup_potential(params,options,npops):
                                              b=numpy.exp(potparams[2])/ro,
                                              normalize=ampd)
         hp= potential.NFWPotential(a=4.5,normalize=amph)
-        return [mp,hp,bp]
+        return [dp,hp,bp]
     elif options.potential.lower() == 'flatlogdisk':
         return [potential.LogarithmicHaloPotential(normalize=.5,q=potparams[0]),
                 potential.MiyamotoNagaiPotential(normalize=.5,a=0.5,b=0.1)]
