@@ -193,6 +193,15 @@ def plot_DFsingles(options,args):
                 ro= get_ro(sols[solindx],options)
                 if 'mwpotential' in options.potential.lower():
                     plotthis[ii,jj]= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+                elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                    plotthis[ii,jj]= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+            elif options.type.lower() == 'plhalo':
+                #Setup potential
+                pot= setup_potential(sols[solindx],options,1)
+                vo= get_vo(sols[solindx],options,1)
+                ro= get_ro(sols[solindx],options)
+                if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                    plotthis[ii,jj]= pot[1].alpha
             elif options.type.lower() == 'dlnvcdlnr':
                 #Setup potential
                 pot= setup_potential(sols[solindx],options,1)
@@ -232,6 +241,71 @@ def plot_DFsingles(options,args):
                         thisq/= options.flatten
                     thisvc= s[1]
                     thisplot.extend([thisq,thisvc])
+                elif options.subtype.lower() == 'rdzh':
+                    s= get_potparams(sols[solindx],options,1)
+                    thisrd= numpy.exp(s[0])
+                    thiszh= numpy.exp(s[2-(1-(options.fixvo is None))])
+                    thisplot.extend([thisrd,thiszh])
+                elif options.subtype.lower() == 'rdplhalo':
+                    s= get_potparams(sols[solindx],options,1)
+                    thisrd= numpy.exp(s[0])
+                    #Setup potential
+                    pot= setup_potential(sols[solindx],options,1)
+                    vo= get_vo(sols[solindx],options,1)
+                    ro= get_ro(sols[solindx],options)
+                    if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                        thisplhalo= pot[1].alpha
+                    thisplot.extend([thisrd,thisplhalo])
+                elif options.subtype.lower() == 'zhplhalo':
+                    s= get_potparams(sols[solindx],options,1)
+                    thiszh= numpy.exp(s[2-(1-(options.fixvo is None))])
+                    #Setup potential
+                    pot= setup_potential(sols[solindx],options,1)
+                    vo= get_vo(sols[solindx],options,1)
+                    ro= get_ro(sols[solindx],options)
+                    if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                        thisplhalo= pot[1].alpha
+                    thisplot.extend([thiszh,thisplhalo])
+                elif options.subtype.lower() == 'rhodmzh':
+                    s= get_potparams(sols[solindx],options,1)
+                    thisrd= numpy.exp(s[0])
+                    #Setup potential
+                    pot= setup_potential(sols[solindx],options,1)
+                    vo= get_vo(sols[solindx],options,1)
+                    ro= get_ro(sols[solindx],options)
+                    thiszh= numpy.exp(s[2-(1-(options.fixvo is None))])
+                    if 'mwpotential' in options.potential.lower():
+                        thisrhodm= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+                    elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                        thisrhodm= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+                    thisplot.extend([thisrhodm,thiszh])
+                elif options.subtype.lower() == 'rhodmrd':
+                    s= get_potparams(sols[solindx],options,1)
+                    thisrd= numpy.exp(s[0])
+                    #Setup potential
+                    pot= setup_potential(sols[solindx],options,1)
+                    vo= get_vo(sols[solindx],options,1)
+                    ro= get_ro(sols[solindx],options)
+                    thisrdh= numpy.exp(s[0])
+                    if 'mwpotential' in options.potential.lower():
+                        thisrhodm= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+                    elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                        thisrhodm= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+                    thisplot.extend([thisrhodm,thisrd])
+                elif options.subtype.lower() == 'rhodmplhalo':
+                    s= get_potparams(sols[solindx],options,1)
+                    thisrd= numpy.exp(s[0])
+                    #Setup potential
+                    pot= setup_potential(sols[solindx],options,1)
+                    vo= get_vo(sols[solindx],options,1)
+                    ro= get_ro(sols[solindx],options)
+                    if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                        thisplhalo= pot[1].alpha
+                    if 'mwpotential' in options.potential.lower():
+                        thisrhodm= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+                    elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                        thisrhodm= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+                    thisplot.extend([thisrhodm,thisplhalo])
                 plotthis.append(thisplot)
     #Set up plot
     if options.type.lower() == 'q':
@@ -274,6 +348,9 @@ def plot_DFsingles(options,args):
     elif options.type.lower() == 'zh':
         vmin, vmax= 0.0125, 0.075
         zlabel=r'$z_h / R_0$'
+    elif options.type.lower() == 'plhalo':
+        vmin, vmax= 0.0, 2.
+        zlabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
     elif options.type.lower() == 'kz':
         vmin, vmax= 0.5, 1.5
         zlabel=r'$K_z / K_z^{\mathrm{true}}$'
@@ -388,6 +465,37 @@ def plot_DFsingles(options,args):
                 medianvc= numpy.median(y[numpy.isfinite(y)])
                 y/= medianvc
                 ylabel=r'$V_c / %i\ \mathrm{km\,s}^{-1}$' % int(_REFV0*medianvc)
+        elif options.subtype.lower() == 'rdzh':
+            yrange= [0.0125,0.1]
+            xrange= [0.2,0.8]
+            xlabel=r'$R_d / R_0$'
+            ylabel=r'$z_h / R_0$'
+        elif options.subtype.lower() == 'rdplhalo':
+            yrange= [0.,2.]
+            xrange= [0.2,0.8]
+            xlabel=r'$R_d / R_0$'
+            ylabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
+        elif options.subtype.lower() == 'zhplhalo':
+            yrange= [0.,2.]
+            xrange= [0.0125,0.1]
+
+            ylabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
+            xlabel=r'$z_h / R_0$'
+        elif options.subtype.lower() == 'rhodmplhalo':
+            yrange= [0.,2.]
+            xrange= [0.,0.02]
+            ylabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
+            xlabel=r'$\rho_{\mathrm{DM}}(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
+        elif options.subtype.lower() == 'rhodmzh':
+            yrange= [0.0125,0.1]
+            xrange= [0.,0.02]
+            ylabel=r'$z_h / R_0$'
+            xlabel=r'$\rho_{\mathrm{DM}}(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
+        elif options.subtype.lower() == 'rhodmrd':
+            yrange= [0.2,0.8]
+            xrange= [0.,0.02]
+            ylabel=r'$R_d / R_0$'
+            xlabel=r'$\rho_{\mathrm{DM}}(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         bovy_plot.bovy_plot(x,y,
                             s=ndata,c=plotc,
@@ -413,7 +521,8 @@ def plot_DFsingles(options,args):
                 or options.relative or options.type.lower() == 'rd' \
                 or options.type.lower() == 'fd' \
                 or options.type.lower() == 'fh' \
-                or options.type.lower() == 'fb':
+                or options.type.lower() == 'fb' \
+                or options.type.lower() == 'plhalo':
             bovy_plot.bovy_text(r'$\mathrm{median} = %.2f \pm %.2f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
                                                                         1.4826*numpy.median(numpy.fabs(plotthis[numpy.isfinite(plotthis)]-numpy.median(plotthis[numpy.isfinite(plotthis)])))),
                                 bottom_left=True,size=14.)
