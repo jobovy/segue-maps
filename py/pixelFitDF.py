@@ -12,7 +12,6 @@
 #   - add sigmar to monoAbundanceMW
 #
 # ADDING NEW POTENTIAL MODEL:
-#    Make sure first parameter is vo==vc(ro)
 #    edit: - logprior_pot
 #          - get_potparams
 #          - set_potparams
@@ -139,14 +138,16 @@ def pixelFitDF(options,args):
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
-    if not options.init is None:
+    if not options.init is None and os.path.exists(options.init):
         #Load initial parameters from file
+        print "Loading parameters for file "+options.init
         savefile= open(options.init,'rb')
         params= pickle.load(savefile)
         savefile.close()
     else:
         if options.mcsample:
-            print "WARNNG: *not* initializing from file ..."
+            print "WARNNG: NOT RUNNING BECAUSE INITIALIZATION IS NOT SET ..."
+            return None
         params= initialize(options,fehs,afes)
     if not options.mcsample:
         if options.justdf:
@@ -1896,10 +1897,20 @@ def setup_domain(options,npops):
             domain.append([0.0,0.])
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
+    elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+        domain.append([-2.1,-0.3])
+        isDomainFinite.append([True,True])
+        domain.append([100./_REFV0,350./_REFV0])
+        isDomainFinite.append([True,True])
+        domain.append([-5.1,1.4])
+        isDomainFinite.append([True,True])
+        domain.append([-0.5,0.04])
+        isDomainFinite.append([True,True])
+        domain.append([0.,3.])
+        isDomainFinite.append([True,True])
     elif options.potential.lower() == 'mwpotentialsimplefit' \
             or options.potential.lower() == 'mwpotentialfixhalo' \
-            or options.potential.lower() == 'mwpotentialfixhaloflat' \
-            or options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+            or options.potential.lower() == 'mwpotentialfixhaloflat':
         raise NotImplementedError("setup domain for sampling of mwpotentialsimplefit not setup")
     return (isDomainFinite,domain)
 
@@ -1929,10 +1940,20 @@ def setup_domain_indiv_potential(options,npops):
             domain.append([0.0,0.])
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
+    elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+        domain.append([-2.1,-0.3])
+        isDomainFinite.append([True,True])
+        domain.append([100./_REFV0,350./_REFV0])
+        isDomainFinite.append([True,True])
+        domain.append([-5.1,1.4])
+        isDomainFinite.append([True,True])
+        domain.append([-0.5,0.04])
+        isDomainFinite.append([True,True])
+        domain.append([0.,3.])
+        isDomainFinite.append([True,True])
     elif options.potential.lower() == 'mwpotentialsimplefit' \
             or options.potential.lower() == 'mwpotentialfixhalo' \
-            or options.potential.lower() == 'mwpotentialfixhaloflat' \
-            or options.potential.lower() == 'mpdiskplhalofixbulgeflat':  
+            or options.potential.lower() == 'mwpotentialfixhaloflat':
         raise NotImplementedError("setup domain for sampling of mwpotentialsimplefit not setup")
     return (isDomainFinite,domain)
 
