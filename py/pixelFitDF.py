@@ -430,7 +430,23 @@ def logprior_pot(params,options,npops):
 #                         or (potparams[3]+potparams[4] > 1.) \
 #                         or (potparams[3]+potparams[4] < .9)):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
+    elif options.potential.lower() == 'mwpotentialfixhaloflat':
+        if potparams[0] < -2.1 or potparams[0] > -0.3:#2.53:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if potparams[2-(1-(options.fixvo is None))] < -5.1 or potparams[2-(1-(options.fixvo is None))] > 1.4:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if potparams[4] < 0.0 or potparams[4] > 0.1:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        return logprior_dlnvcdlnr(potparams[3],options)
     return out
+
+def logprior_dlnvcdlnr(dlnvcdlnr,options,npops):
+    if options.nodlnvcdlnrprior: return 0.
+    if True:
+        sb= 0.04
+        if dlnvcdlnr > sb:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        return numpy.log((sb-dlnvcdlnr)/sb)-(sb-dlnvcdlnr)/sb
 
 ##SETUP AND CALCULATE THE NORMALIZATION INTEGRAL
 def calc_normint(qdf,indx,normintstuff,params,npops,options,logoutfrac):
@@ -1399,9 +1415,37 @@ def setup_potential(params,options,npops):
                                                  normalize=ampd),
                 potential.NFWPotential(a=4.5,normalize=amph),
                 potential.HernquistPotential(a=0.6/8,normalize=ampb)]
+    elif options.potential.lower() == 'mwpotentialfixhaloflat':
+        ro= get_ro(params,options)
+        dlnvcdlnr= potparams[3]
+        ampb= potparams[4] 
+        #normalize to 1 for calculation of ampd and amph
+        dp= potential.MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
+                                             b=numpy.exp(potparams[2])/ro,
+                                             normalize=1.)
+        hp= potential.NFWPotential(a=4.5,normalize=1.)
+        bp= potential.HernquistPotential(a=0.6/8,normalize=ampb)
+        ampd, amph= fdfh_from_dlnvcdlnr(dlnvcdlnr,dp,bp,hp)
+        dp= potential.MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
+                                             b=numpy.exp(potparams[2])/ro,
+                                             normalize=ampd)
+        hp= potential.NFWPotential(a=4.5,normalize=amph)
+        return [mp,hp,bp]
     elif options.potential.lower() == 'flatlogdisk':
         return [potential.LogarithmicHaloPotential(normalize=.5,q=potparams[0]),
                 potential.MiyamotoNagaiPotential(normalize=.5,a=0.5,b=0.1)]
+
+def fdfh_from_dlnvcdlnr(dlnvcdlnr,diskpot,bulgepot,halopot):
+    """Calculate the halo amplitude corresponding to this rotation curve derivative"""
+    #Make sure that diskpot and diskhalo are normalized!!
+    #First calculate the derivatives dvc^2/dR of disk, halo, and bulge
+    dvcdr_disk= -potential.evaluateRforces(1.,0.,diskpot)+potential.evaluateR2derivs(1.,0.,diskpot)
+    dvcdr_halo= -potential.evaluateRforces(1.,0.,halopot)+potential.evaluateR2derivs(1.,0.,halopot)
+    dvcdr_bulge= -potential.evaluateRforces(1.,0.,bulgepot)+potential.evaluateR2derivs(1.,0.,bulgepot)
+    #calculate fd,fh
+    oneminusvcb2= 1.-potential.vcirc(bulgepot,1.)**2.
+    return ((oneminusvcb2*dvcdr_halo-(dlnvcdlnr-dvcdr_bulge))/(dvcdr_halo-dvcdr_disk),
+            (dlnvcdlnr-dvcdr_bulge-dvcdr_disk*oneminusvcb2)/(dvcdr_halo-dvcdr_disk))
 
 ##FULL OPTIMIZER
 def full_optimize(params,fehs,afes,binned,options,normintstuff,errstuff):
@@ -2223,6 +2267,10 @@ def get_options():
                       dest="bovy12voprior",
                       default=False,
                       help="If set, apply the Bovy, et al. 2012 prior")
+    parser.add_option("--nodlnvcdlnrprior",action="store_true",
+                      dest="nodlnvcdlnrprior",
+                      default=False,
+                      help="If set, do not apply a prior on the logarithmic derivative of the rotation curve")
     #Sample?
     parser.add_option("--mcsample",action="store_true", dest="mcsample",
                       default=False,
