@@ -190,7 +190,7 @@ def pixelFitDF(options,args):
                                         (fehs,afes,binned,options,normintstuff,
                                          errstuff),
                                         nsamples=options.nsamples,
-                                        nwalkers=4*len(params))
+                                        nwalkers=2*len(params))
         #Save
         save_pickles(args[0],samples,len(fehs))
         print_samples_qa(samples,options,len(fehs))
@@ -1882,13 +1882,18 @@ def setup_domain(options,npops):
         domain.append([0.,0.])
     for ii in range(npops):
         if options.dfmodel.lower() == 'qdf':
-            ndfparams= get_ndfparams(options)
-            for jj in range(ndfparams-1):
-                isDomainFinite.append([False,False])
-                domain.append([0.,0.])
-            #Outlier fraction
-            isDomainFinite.append([True,True])
+            domain.append([-2.77,2.53])
+            domain.append([-3.1,-0.4])
+            domain.append([-3.1,-0.4])
+            domain.append([-2.77,2.53])
+            domain.append([-2.77,2.53])
             domain.append([0.,1.])
+            isDomainFinite.append([True,True])
+            isDomainFinite.append([True,True])
+            isDomainFinite.append([True,True])
+            isDomainFinite.append([True,True])
+            isDomainFinite.append([True,True])
+            isDomainFinite.append([True,True])
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         isDomainFinite.append([True,False])
         if not options.noqprior:
@@ -1916,6 +1921,7 @@ def setup_domain(options,npops):
 
 def setup_domain_indiv_df(options,npops):
     """Setup isDomainFinite, domain for markovpy"""
+    raise NotImplementedError("setup_domain_indiv_df needs to be edited for new priors")
     isDomainFinite= []
     domain= []
     if options.dfmodel.lower() == 'qdf':
@@ -1930,6 +1936,7 @@ def setup_domain_indiv_df(options,npops):
 
 def setup_domain_indiv_potential(options,npops):
     """Setup isDomainFinite, domain for markovpy for sampling the potential"""
+    raise NotImplementedError("setup_domain_indiv_potential needs to be edited for new priors")
     isDomainFinite= []
     domain= []
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
