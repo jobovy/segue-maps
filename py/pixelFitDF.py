@@ -302,7 +302,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     logoutfrac+= numpy.log(qdf.surfacemass_z(1.,ngl=options.ngl))
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned,errstuff,
-                                      options)
+                                      options,len(fehs))
     ndata= R.shape[0]
     data_lndf= numpy.zeros((ndata,2*options.nmcerr))
     srhalo= _SRHALO/vo/_REFV0
@@ -1264,8 +1264,9 @@ def run_abundance_singles_single(options,args,fehs,afes,ii,savename,initname,
     pixelFitDF(options,args)
 
 ##COORDINATE TRANSFORMATIONS AND RO/VO NORMALIZATION
-def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options):
-    vo= get_vo(params,options,len(fehs))
+def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options,
+                        npops):
+    vo= get_vo(params,options,npops)
     ro= get_ro(params,options)
     vsun= get_vsun(params,options)
     data= copy.copy(binned(fehs[indx],afes[indx]))
