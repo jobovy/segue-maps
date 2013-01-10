@@ -204,6 +204,13 @@ def plot_DFsingles(options,args):
                 vo= get_vo(sols[solindx],options,1)
                 ro= get_ro(sols[solindx],options)
                 plotthis[ii,jj]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
+            elif options.type.lower() == 'surfzdisk':
+                #Setup potential
+                pot= setup_potential(sols[solindx],options,1)
+                vo= get_vo(sols[solindx],options,1)
+                ro= get_ro(sols[solindx],options)
+                if 'mpdisk' in options.potential.lower() or 'mwpotential' in options.potential.lower():
+                    plotthis[ii,jj]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot[0])),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
             elif options.type.lower() == 'kz':
                 #Setup potential
                 pot= setup_potential(sols[solindx],options,1)
@@ -416,6 +423,9 @@ def plot_DFsingles(options,args):
     elif options.type.lower() == 'surfz':
         vmin, vmax= 50.,120.
         zlabel=r'$\Sigma(%.1f\,\mathrm{kpc};R_0)\ [M_\odot\,\mathrm{pc}^{-2}]$' % options.height
+    elif options.type.lower() == 'surfzdisk':
+        vmin, vmax= 20.,80.
+        zlabel=r'$\Sigma_{\mathrm{disk}}(%.1f\,\mathrm{kpc};R_0)\ [M_\odot\,\mathrm{pc}^{-2}]$' % options.height
     elif options.type.lower() == 'kz':
         vmin, vmax= 50.,120.
         zlabel=r'$K_Z(%.1f\,\mathrm{kpc};R_0)\ [M_\odot\,\mathrm{pc}^{-2}]$' % options.height
@@ -645,6 +655,7 @@ def plot_DFsingles(options,args):
                 or options.type.lower() == 'fb' \
                 or options.type.lower() == 'plhalo' \
                 or options.type.lower() == 'surfz' \
+                or options.type.lower() == 'surfzdisk' \
                 or options.type.lower() == 'rhoo' \
                 or options.type.lower() == 'kz':
             bovy_plot.bovy_text(r'$\mathrm{median} = %.2f \pm %.2f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
