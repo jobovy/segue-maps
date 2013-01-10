@@ -2406,6 +2406,9 @@ def get_options():
                       help="Use the median potential of all the bins")
     parser.add_option("--nv",dest='nv',default=201,type='int',
                       help="Number of vs for v pdf")
+    parser.add_option("--height",dest='height',type='float',
+                      default=1.1,
+                      help="A 'height' (e.g., to compute the surface density at")
     return parser
   
 if __name__ == '__main__':
