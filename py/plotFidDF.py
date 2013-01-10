@@ -27,6 +27,7 @@ from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
 from pixelFitDF import _REFR0, _REFV0
+from matplotlib import pyplot
 def plotFidDF(options,args):
     #Load potential parameters
     if not options.init is None and os.path.exists(options.init):
@@ -44,9 +45,13 @@ def plotFidDF(options,args):
         raise
     ro= get_ro(params,options)
     vo= get_vo(params,options,1)
+    options.aAmethod='adiabatic'
     aA= setup_aA(pot,options)
+    options.aAmethod='staeckel'
+    aAS= setup_aA(pot,options)
     #Setup DF
-    qdf= quasiisothermaldf(3./8.,0.19,0.125,0.875,0.875,aA=aA,pot=pot,cutcounter=True)
+    qdf= quasiisothermaldf(3./8.,0.19,0.125,0.875,0.875,aA=aAS,pot=pot,cutcounter=True)
+    qdfa= quasiisothermaldf(3./8.,0.19,0.125,0.875,0.875,aA=aA,pot=pot,cutcounter=True)
     if options.type.lower() == 'lzjr':
         njs= 201
         jrs= numpy.linspace(0.,500.,njs)/ro/vo/_REFR0/_REFV0
@@ -81,8 +86,24 @@ def plotFidDF(options,args):
                               interpolation='nearest',
                               cntrmass=True,contours=True,
                               levels= special.erf(0.5*numpy.arange(1,4)))
+    elif options.type.lower() == 'tilt':
+        zs= numpy.linspace(0.,4.,21)
+        tilt= numpy.array([qdf.tilt(1.,z/ro/_REFR0,gl=True) for z in zs])
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_plot(zs,tilt,'k-',
+                            xlabel=r'$Z\ [\mathrm{kpc}$',
+                            ylabel=r'$\mathrm{tilt\ of\ the\ velocity\ ellipsoid}\ [\mathrm{deg}]$',
+                            xrange=[0.,4.],
+                            yrange=[0.,30.])
+        bovy_plot.bovy_plot(zs,numpy.arctan(zs/ro/_REFR0)/numpy.pi*180.,
+                            '-',color='0.65',
+                            overplot=True)
+        pyplot.errorbar(numpy.array([1.]),
+                        numpy.array([7.3]),
+                        yerr=numpy.array([1.8,1.8]).reshape((2,1)),
+                        color='k',fmt='o',ms=8)
+    bovy_plot.bovy_text(.61,7.7,r'$\mathrm{S08}$',fontsize=14.)
     bovy_plot.bovy_end_print(options.outfilename)
-
 
 if __name__ == '__main__':
     (options,args)= get_options().parse_args()
