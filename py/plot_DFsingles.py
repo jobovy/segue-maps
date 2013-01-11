@@ -273,6 +273,11 @@ def plot_DFsingles(options,args):
                     thiszh= numpy.exp(s[2-(1-(options.fixvo is None))])
                     thisvc= s[1]*_REFV0
                     thisplot.extend([thiszh,thisvc])
+                elif options.subtype.lower() == 'dlnvcdlnrvc':
+                    s= get_potparams(sols[solindx],options,1)
+                    thisslope= s[3-(1-(options.fixvo is None))]
+                    thisvc= s[1]*_REFV0
+                    thisplot.extend([thisslope,thisvc])
                 elif options.subtype.lower() == 'rdvc':
                     s= get_potparams(sols[solindx],options,1)
                     thisrd= numpy.exp(s[0])
@@ -424,7 +429,7 @@ def plot_DFsingles(options,args):
         vmin, vmax= 50.,120.
         zlabel=r'$\Sigma(%.1f\,\mathrm{kpc};R_0)\ [M_\odot\,\mathrm{pc}^{-2}]$' % options.height
     elif options.type.lower() == 'surfzdisk':
-        vmin, vmax= 20.,80.
+        vmin, vmax= 20.,90.
         zlabel=r'$\Sigma_{\mathrm{disk}}(%.1f\,\mathrm{kpc};R_0)\ [M_\odot\,\mathrm{pc}^{-2}]$' % options.height
     elif options.type.lower() == 'kz':
         vmin, vmax= 50.,120.
@@ -543,6 +548,7 @@ def plot_DFsingles(options,args):
                 for jj in range(len(feh)):
                     if afe[jj] == tightbinned.afe(ii):
                         plotc[jj]= feh[jj]-medianfeh
+        onedhists=False
         if options.subtype.lower() == 'qvc':
             if not options.flatten is None:
                 xrange= [0.9,1.1]
@@ -617,6 +623,12 @@ def plot_DFsingles(options,args):
             xrange= [0.0125,0.1]
             xlabel=r'$z_h / R_0$'
             ylabel=r'$V_c\ \mathrm{km\,s}^{-1}$'
+        elif options.subtype.lower() == 'dlnvcdlnrvc':
+            yrange= [210.,250.]
+            xrange= [-0.2,0.07]
+            xlabel=r'$\mathrm{d}\ln V_c / \mathrm{d}\ln R\, (R_0)$'
+            ylabel=r'$V_c\ \mathrm{km\,s}^{-1}$'
+            onedhists=True
         elif options.subtype.lower() == 'rhodmvc':
             yrange= [210.,250.]
             xrange= [0.,0.02]
@@ -628,7 +640,7 @@ def plot_DFsingles(options,args):
             xlabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
             ylabel=r'$V_c\ \mathrm{km\,s}^{-1}$'
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
-        bovy_plot.bovy_plot(x,y,
+        axS, axx, axy= bovy_plot.bovy_plot(x,y,
                             s=ndata,c=plotc,
                             cmap='jet',
                             xlabel=xlabel,ylabel=ylabel,
@@ -636,7 +648,21 @@ def plot_DFsingles(options,args):
                             xrange=xrange,yrange=yrange,
                             vmin=vmin,vmax=vmax,
                             scatter=True,edgecolors='none',
-                            colorbar=True)       
+                            colorbar=True-onedhists,
+                            onedhists=onedhists,
+                            onedhistxnormed=True,
+                            onedhistynormed=True,
+                            bins=15)
+        if options.subtype.lower() == 'dlnvcdlnrvc':
+            #Plot prior on one-d axes
+            sb= numpy.linspace(-0.2,0.0399,1001)
+            fsb= numpy.exp(numpy.log((0.04-sb)/0.04)-(0.04-sb)/0.04)
+            fsb/= numpy.sum(fsb)*(sb[1]-sb[0])
+            axx.plot(sb,fsb,'-',color='0.65')
+            tvc= numpy.linspace(150.,350.,1001)
+            fvc= numpy.exp(-(tvc-225.)**2./2./15.**2.)
+            fvc/= numpy.sum(fvc)*(tvc[1]-tvc[0])
+            axy.plot(fvc,tvc,'-',color='0.65')
     else:
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='jet',
