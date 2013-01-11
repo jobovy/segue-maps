@@ -87,13 +87,13 @@ def plotFidDF(options,args):
                               cntrmass=True,contours=True,
                               levels= special.erf(0.5*numpy.arange(1,4)))
     elif options.type.lower() == 'tilt':
-        zs= numpy.linspace(0.,4.,21)
+        zs= numpy.linspace(0.,5.,101)
         tilt= numpy.array([qdf.tilt(1.,z/ro/_REFR0,gl=True) for z in zs])
         bovy_plot.bovy_print()
         bovy_plot.bovy_plot(zs,tilt,'k-',
-                            xlabel=r'$Z\ [\mathrm{kpc}$',
+                            xlabel=r'$Z\ [\mathrm{kpc}]$',
                             ylabel=r'$\mathrm{tilt\ of\ the\ velocity\ ellipsoid}\ [\mathrm{deg}]$',
-                            xrange=[0.,4.],
+                            xrange=[0.,5.],
                             yrange=[0.,30.])
         bovy_plot.bovy_plot(zs,numpy.arctan(zs/ro/_REFR0)/numpy.pi*180.,
                             '-',color='0.65',
@@ -102,7 +102,46 @@ def plotFidDF(options,args):
                         numpy.array([7.3]),
                         yerr=numpy.array([1.8,1.8]).reshape((2,1)),
                         color='k',fmt='o',ms=8)
-    bovy_plot.bovy_text(.61,7.7,r'$\mathrm{S08}$',fontsize=14.)
+        bovy_plot.bovy_text(.55,7.7,r'$\mathrm{S08}$',fontsize=14.)
+    elif options.type.lower() == 'densz':
+        zs= numpy.linspace(0.,5.,101)
+        densz= numpy.array([qdf.surfacemass(1.,z/ro/_REFR0,gl=True) for z in zs])
+        densza= numpy.array([qdfa.surfacemass(1.,z/ro/_REFR0,gl=True) for z in zs])
+        bovy_plot.bovy_print()
+        line1= bovy_plot.bovy_plot(zs,densz/densz[0],'k-',
+                                   xlabel=r'$Z\ [\mathrm{kpc}]$',
+                                   ylabel=r'$\nu_*(R_0,Z)/\nu_*(R_0,0)$',
+                                   xrange=[0.,5.],
+                                   semilogy=True)
+        line2= bovy_plot.bovy_plot(zs,densza/densza[0],'k--',overplot=True)
+        pyplot.legend((line1[0],line2[0]),
+                      (r'$\mathrm{St\ddot{a}ckel\ actions}$',
+                       r'$\mathrm{Adiabatic\ actions}$'),
+                      loc='lower left',#bbox_to_anchor=(.91,.375),
+                      numpoints=2,
+                      prop={'size':16},
+                      frameon=False)
+    elif options.type.lower() == 'densr':
+        rs= numpy.linspace(4.,15.,101)
+        densr= numpy.array([qdf.surfacemass(r/ro/_REFR0,1./ro/_REFR0,gl=True) for r in rs])
+        densra= numpy.array([qdfa.surfacemass(r/ro/_REFR0,1./ro/_REFR0,gl=True) for r in rs])
+        bovy_plot.bovy_print()
+        line1= bovy_plot.bovy_plot(rs,densr/densr[numpy.argmin((rs-8.)**2.)],'k-',
+                                   xlabel=r'$R\ [\mathrm{kpc}]$',
+                                   ylabel=r'$\nu_*(R,1\,\mathrm{kpc})/\nu_*(R_0,1\,\mathrm{kpc})$',
+                                   xrange=[4.,15.],
+                                   semilogy=True)
+        line2= bovy_plot.bovy_plot(rs,densra/densra[numpy.argmin((rs-8.)**2.)],'k--',overplot=True)
+        line3= bovy_plot.bovy_plot(rs,numpy.exp(-(rs-8.)/3.),'-',
+                                   overplot=True,
+                                   color='0.65') 
+        pyplot.legend((line1[0],line2[0]),
+                      (r'$\mathrm{St\ddot{a}ckel\ actions}$',
+                       r'$\mathrm{Adiabatic\ actions}$'),
+                      loc='lower left',#bbox_to_anchor=(.91,.375),
+                      numpoints=2,
+                      prop={'size':16},
+                      frameon=False)
     bovy_plot.bovy_end_print(options.outfilename)
 
 if __name__ == '__main__':
