@@ -192,6 +192,8 @@ def plot_DFsingles(options,args):
                     plotthis[ii,jj]= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
                 elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                     plotthis[ii,jj]= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+                elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
+                    plotthis[ii,jj]= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
             elif options.type.lower() == 'rhoo':
                 #Setup potential
                 pot= setup_potential(sols[solindx],options,1)
@@ -224,6 +226,11 @@ def plot_DFsingles(options,args):
                 ro= get_ro(sols[solindx],options)
                 if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                     plotthis[ii,jj]= pot[1].alpha
+            elif options.type.lower() == 'qhalo':
+                #Setup potential
+                s= get_potparams(sols[solindx],options,1)
+                if options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
+                    plotthis[ii,jj]= s[4]
             elif options.type.lower() == 'dlnvcdlnr':
                 #Setup potential
                 pot= setup_potential(sols[solindx],options,1)
@@ -455,6 +462,9 @@ def plot_DFsingles(options,args):
     elif options.type.lower() == 'plhalo':
         vmin, vmax= 0.0, 2.
         zlabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
+    elif options.type.lower() == 'qhalo':
+        vmin, vmax= 0.4, 1.15
+        zlabel=r'$q_\Phi^{\mathrm{halo}}$'
     elif options.type.lower() == 'ndata':
         vmin, vmax= numpy.nanmin(plotthis), numpy.nanmax(plotthis)
         zlabel=r'$N_\mathrm{data}$'
@@ -640,7 +650,7 @@ def plot_DFsingles(options,args):
             xlabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
             ylabel=r'$V_c\ \mathrm{km\,s}^{-1}$'
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
-        axS, axx, axy= bovy_plot.bovy_plot(x,y,
+        ax= bovy_plot.bovy_plot(x,y,
                             s=ndata,c=plotc,
                             cmap='jet',
                             xlabel=xlabel,ylabel=ylabel,
@@ -650,9 +660,11 @@ def plot_DFsingles(options,args):
                             scatter=True,edgecolors='none',
                             colorbar=True-onedhists,
                             onedhists=onedhists,
-                            onedhistxnormed=True,
-                            onedhistynormed=True,
+                            onedhistxnormed=onedhists,
+                            onedhistynormed=onedhists,
                             bins=15)
+        if onedhists:
+            axS, axx, axy= ax
         if options.subtype.lower() == 'dlnvcdlnrvc':
             #Plot prior on one-d axes
             sb= numpy.linspace(-0.2,0.0399,1001)
@@ -683,6 +695,7 @@ def plot_DFsingles(options,args):
                 or options.type.lower() == 'surfz' \
                 or options.type.lower() == 'surfzdisk' \
                 or options.type.lower() == 'rhoo' \
+                or options.type.lower() == 'qhalo' \
                 or options.type.lower() == 'kz':
             bovy_plot.bovy_text(r'$\mathrm{median} = %.2f \pm %.2f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)]),
                                                                         1.4826*numpy.median(numpy.fabs(plotthis[numpy.isfinite(plotthis)]-numpy.median(plotthis[numpy.isfinite(plotthis)])))),
