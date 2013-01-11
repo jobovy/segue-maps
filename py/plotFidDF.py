@@ -90,11 +90,19 @@ def plotFidDF(options,args):
         zs= numpy.linspace(0.,5.,101)
         tilt= numpy.array([qdf.tilt(1.,z/ro/_REFR0,gl=True) for z in zs])
         bovy_plot.bovy_print()
-        bovy_plot.bovy_plot(zs,tilt,'k-',
-                            xlabel=r'$Z\ [\mathrm{kpc}]$',
-                            ylabel=r'$\mathrm{tilt\ of\ the\ velocity\ ellipsoid}\ [\mathrm{deg}]$',
-                            xrange=[0.,5.],
-                            yrange=[0.,30.])
+        line1= bovy_plot.bovy_plot(zs,tilt,'k-',
+                                   xlabel=r'$Z\ [\mathrm{kpc}]$',
+                                   ylabel=r'$\mathrm{tilt\ of\ the\ velocity\ ellipsoid}\ [\mathrm{deg}]$',
+                                   xrange=[0.,5.],
+                                   yrange=[-5.,30.])
+        line2= bovy_plot.bovy_plot(zs,zs*0.,'k--',overplot=True)
+        pyplot.legend((line1[0],line2[0]),
+                      (r'$\mathrm{St\ddot{a}ckel\ actions}$',
+                       r'$\mathrm{Adiabatic\ actions}$'),
+                      loc='upper left',#bbox_to_anchor=(.91,.375),
+                      numpoints=2,
+                      prop={'size':16},
+                      frameon=False)
         bovy_plot.bovy_plot(zs,numpy.arctan(zs/ro/_REFR0)/numpy.pi*180.,
                             '-',color='0.65',
                             overplot=True)
@@ -102,7 +110,26 @@ def plotFidDF(options,args):
                         numpy.array([7.3]),
                         yerr=numpy.array([1.8,1.8]).reshape((2,1)),
                         color='k',fmt='o',ms=8)
-        bovy_plot.bovy_text(.55,7.7,r'$\mathrm{S08}$',fontsize=14.)
+        bovy_plot.bovy_text(.55,8.2,r'$\mathrm{S08}$',fontsize=14.)
+    elif options.type.lower() == 'sigz':
+        zs= numpy.linspace(0.,5.,101)
+        sigz2= numpy.array([qdf.sigmaz2(1.,z/ro/_REFR0,gl=True) for z in zs])
+        sigz2a= numpy.array([qdfa.sigmaz2(1.,z/ro/_REFR0,gl=True) for z in zs])
+        bovy_plot.bovy_print()
+        line1= bovy_plot.bovy_plot(zs,numpy.sqrt(sigz2)*vo*_REFV0,'k-',
+                                   xlabel=r'$Z\ [\mathrm{kpc}]$',
+                                   ylabel=r'$\sigma_Z(Z)\ [\mathrm{km\,s}^{-1}]$',
+                                   xrange=[0.,5.],
+                                   yrange=[0.,60.])
+        line2= bovy_plot.bovy_plot(zs,numpy.sqrt(sigz2a)*vo*_REFV0,
+                                   'k--',overplot=True)
+        #pyplot.legend((line1[0],line2[0]),
+        #              (r'$\mathrm{St\ddot{a}ckel\ actions}$',
+        #               r'$\mathrm{Adiabatic\ actions}$'),
+        #              loc='lower left',#bbox_to_anchor=(.91,.375),
+        #              numpoints=2,
+        #              prop={'size':16},
+        #              frameon=False)
     elif options.type.lower() == 'densz':
         zs= numpy.linspace(0.,5.,101)
         densz= numpy.array([qdf.surfacemass(1.,z/ro/_REFR0,gl=True) for z in zs])
@@ -135,13 +162,13 @@ def plotFidDF(options,args):
         line3= bovy_plot.bovy_plot(rs,numpy.exp(-(rs-8.)/3.),'-',
                                    overplot=True,
                                    color='0.65') 
-        pyplot.legend((line1[0],line2[0]),
-                      (r'$\mathrm{St\ddot{a}ckel\ actions}$',
-                       r'$\mathrm{Adiabatic\ actions}$'),
-                      loc='lower left',#bbox_to_anchor=(.91,.375),
-                      numpoints=2,
-                      prop={'size':16},
-                      frameon=False)
+        #pyplot.legend((line1[0],line2[0]),
+        #              (r'$\mathrm{St\ddot{a}ckel\ actions}$',
+        #               r'$\mathrm{Adiabatic\ actions}$'),
+        #              loc='lower left',#bbox_to_anchor=(.91,.375),
+        #              numpoints=2,
+        #              prop={'size':16},
+        #              frameon=False)
     bovy_plot.bovy_end_print(options.outfilename)
 
 if __name__ == '__main__':
