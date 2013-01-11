@@ -1652,6 +1652,9 @@ def setup_err_mc(data,options):
         dsamples= ivezic_dist_gr(numpy.tile(data.dered_g-data.dered_r,(options.nmcerr,1)).T+rsamples,
                                  rsamples,
                                  numpy.tile(data.feh,(options.nmcerr,1)).T)[0]
+        if not options.fixdm is None:
+            distfac= 10.**(options.fixdm/5.)
+            dsamples*= distfac
         #dsamples[(dsamples > 15.)]= 15. #to make sure samples don't go nuts
         #Transform to XYZ
         lb= bovy_coords.radec_to_lb(data.ra,data.dec,degree=True)
@@ -1661,6 +1664,9 @@ def setup_err_mc(data,options):
     else: #if nmcerr=1, just use data point
         dsamples= ivezic_dist_gr(data.dered_g,data.dered_r,
                                  data.feh)[0]
+        if not options.fixdm is None:
+            distfac= 10.**(options.fixdm/5.)
+            dsamples*= distfac
         #Transform to XYZ
         lb= bovy_coords.radec_to_lb(data.ra,data.dec,degree=True)
         XYZ= bovy_coords.lbd_to_XYZ(lb[:,0],
@@ -2339,6 +2345,9 @@ def get_options():
     parser.add_option("--fitdm",action="store_true", dest="fitdm",
                       default=False,
                       help="If set, fit for a distance modulus offset")
+    parser.add_option("--fixdm",dest="fixdm",type='float',
+                      default=None,
+                      help="If set, fix a distance modulus offset")
     #Errors
     parser.add_option("--nmcerr",dest='nmcerr',default=30,type='int',
                       help="Number of MC samples to use for Monte Carlo integration over error distribution")
