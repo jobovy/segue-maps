@@ -54,6 +54,7 @@ _REFR0= 8. #kpc
 _REFV0= 220. #km/s
 _VRSUN=-11.1 #km/s
 _VTSUN= 245. #km/s
+_PMSGRA= 30.24 #km/s/kpc
 _VZSUN= 7.25 #km/s
 _GMBULGE= 17208.0 #kpc (km/s)^2
 _ABULGE= 0.6
@@ -330,10 +331,14 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     #Normalize
     normalization= calc_normint(qdf,indx,normintstuff,params,npops,options,
                                 logoutfrac)
+    out= numpy.sum(data_lndf)\
+        -ndata*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
     if _DEBUG:
         print fehs[indx], afes[indx], params, numpy.sum(data_lndf)-ndata*numpy.log(options.nmcerr),ndata*numpy.log(normalization), numpy.log(normalization), numpy.sum(data_lndf)-ndata*(numpy.log(normalization)+numpy.log(options.nmcerr))
-    return numpy.sum(data_lndf)\
-        -ndata*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
+    else:
+        pass
+#        print -out, params
+    return out
 
 def indiv_optimize_df_loglike(*args,**kwargs):
     return -indiv_optimize_df_mloglike(*args,**kwargs)
@@ -596,6 +601,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
             compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0)-x/ro/_REFR0/ehr-numpy.fabs(y)/ehz/ro/_REFR0)+outfrac*halodens
         else:
             compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0))+outfrac*halodens
+        distfac= 10.**(get_dm(params,options)/5.)
         n= comparernumberPlate(compare_func,
                                None,sf,
                                colordist,fehdist,None,
@@ -605,7 +611,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                fehmin=fehmin,
                                fehmax=fehmax,
                                feh=feh,
-                               noplot=True,nodata=True)
+                               noplot=True,nodata=True,distfac=distfac)
         vo= get_vo(params,options,npops)
         return numpy.sum(n)*vo**3.
     for ii in range(len(plates)):
@@ -1260,6 +1266,7 @@ def run_abundance_singles_single(options,args,fehs,afes,ii,savename,initname,
         options.savenorm= newname
     options.singlefeh= fehs[ii]
     options.singleafe= afes[ii]
+    options.multi=1
     #Now run
     pixelFitDF(options,args)
 
@@ -1348,7 +1355,7 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options,
                                                  y.flatten(),
                                                  z.flatten(),
                                                  XYZ=True,
-                                                 degree=True)/vo/_REFV0
+                                                 degree=False)/vo/_REFV0
         #Apply solar motion
         vxvyvz[:,0]-= vsun[0]/vo
         vxvyvz[:,1]+= vsun[1]/vo
@@ -1361,7 +1368,7 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options,
         vz= numpy.reshape(vxvyvz[:,2],x.shape)
         vR= numpy.reshape(vR,x.shape)
         vT= numpy.reshape(vT,x.shape)
-        return (R,vR,vT,z+_ZSUN,vz)
+        return (R,vR,vT,(z+_ZSUN)/ro/_REFR0,vz)
     XYZ= numpy.zeros((len(data),3,options.nmcerr))
     vxvyvz= numpy.zeros((len(data),3,options.nmcerr))
     for ii in range(len(data)):
@@ -1522,7 +1529,8 @@ def full_optimize(params,fehs,afes,binned,options,normintstuff,errstuff):
                                 args=(fehs,afes,binned,options,normintstuff,
                                       errstuff),
                                 callback=cb,
-                                ftol=ftol,xtol=10.**-3.)
+                                ftol=ftol,xtol=10.**-3.,
+                                maxfun=5000)#Cut off long fits
 
 ##INDIVIDUAL OPTIMIZATIONS
 def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff,errstuff):
@@ -1809,7 +1817,8 @@ def setup_err_mc(data,options):
             errstuff.append(thiserrstuff)
     elif not (options.fitvsun or options.fitvtsun) and options.fitro \
             and not options.fitdm:
-        vsun = [_VRSUN,_VTSUN,_VZSUN]
+        raise NotImplementedError("fitro needs work")
+        vsun = [_VRSUN,_PMSGRA*_REFR0,_VZSUN]
         #Do coordinate transformations
         outvxvyvz[:,0,:]-= vsun[0]
         outvxvyvz[:,1,:]+= vsun[1]
@@ -1879,7 +1888,7 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
                       numpy.log(monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaZ
                       numpy.log(7./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
             #Outlier fraction
-            p.append(0.0000000000000000000000001) #BOVY: UPDATE FIRST GUESS
+            p.append(0.05)
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         p.extend([.7,1.])
     elif options.potential.lower() == 'mwpotentialsimplefit':
@@ -1892,7 +1901,7 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
     elif options.potential.lower() == 'mwpotentialfixhaloflat':
         p.extend([-1.,1.,-3.,0.,0.05])
     elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
-        p.extend([-1.,1.,-3.,0.,1.35])
+        p.extend([-1.,1.,-3.,-0.03,1.35])
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         p.extend([-1.,1.,-3.,0.,1.])
     return p
@@ -2165,20 +2174,23 @@ def get_dm(p,options):
     """Function that returns the change in distance modulus these options"""
     if options.fitdm:
         return p[0]
+    elif not options.fixdm is None:
+        return options.fixdm
     else:
         return 0.
 
 def get_vsun(p,options):
     """Function to return motion of the Sun in the Galactocentric reference frame"""
+    ro= get_ro(p,options)
     startindx= 0
     if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun:
         return (p[startindx],p[startindx+1],p[startindx+2])
-    elif options.fitvsun:
+    elif options.fitvtsun:
         return p[startindx]
     else:
-        return (_VRSUN/_REFV0,_VTSUN/_REFV0,_VZSUN/_REFV0) #BOVY:ADJUST?
+        return (_VRSUN/_REFV0,_PMSGRA*ro*_REFR0/_REFV0,_VZSUN/_REFV0)
 
 ##FIDUCIAL DENSITIES FOR MC NORMALIZATION INTEGRATION
 def fidDens(R,z,hr,hz,dummy):

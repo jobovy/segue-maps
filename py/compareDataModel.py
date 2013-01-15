@@ -781,7 +781,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                         vsx='|sinb|',
                         xrange=None,yrange=None,
                         overplot=False,color='k',marker='v',cumul=False,
-                        runavg=0,noplot=False,nodata=False):
+                        runavg=0,noplot=False,nodata=False,distfac=1.):
     """
     NAME:
        comparernumberPlate
@@ -859,8 +859,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
             fehs[ii,:]= numpy.linspace(fehmin,fehmax,_NFEH)
     for ii in range(_NFEH):
         grs[:,ii]= numpy.linspace(grmin,grmax,_NGR)
-    dmin= numpy.amin(_ivezic_dist(grs,thisrmin,fehs))
-    dmax= numpy.amax(_ivezic_dist(grs,thisrmax,fehs))
+    dmin= numpy.amin(_ivezic_dist(grs,thisrmin,fehs))*distfac
+    dmax= numpy.amax(_ivezic_dist(grs,thisrmax,fehs))*distfac
     if zmax is None:
         zmax= dmax*numpy.sin(bmax*_DEGTORAD)
 #        zmax+= 2.*_ZSUN #Just to be sure we have the North covered
@@ -913,7 +913,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                             platel,
                                             plateb,grmin,grmax,
                                             fehmin,fehmax,
-                                            feh,colordist,fehdist,sf,p)
+                                            feh,colordist,fehdist,sf,p,distfac)
             numbers[ii]= numpy.nansum(thiszdist)
             """
             thisrdist= _predict_rdist_plate(rs,densfunc,params,rmin,rmax,
@@ -1430,7 +1430,7 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
 
 def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
                          fehmin,fehmax,
-                         feh,colordist,fehdist,sf,plate):
+                         feh,colordist,fehdist,sf,plate,distfac=1.):
     """Predict the Z distribution for a plate"""
     #BOVY: APPROXIMATELY INTEGRATE OVER GR
     ngr, nfeh= 11, 11
@@ -1442,7 +1442,7 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     else:
         ds= (zs+_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
     norm= 0.
-    logds= 5.*numpy.log10(ds)+10.
+    logds= 5.*numpy.log10(ds/distfac)+10.
     for kk in range(nfeh):
         for jj in range(ngr):
             #What rs do these zs correspond to

@@ -300,6 +300,26 @@ def plot_DFsingles(options,args):
                     if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                         thisplhalo= pot[1].alpha
                     thisplot.extend([thisrd,thisplhalo])
+                elif options.subtype.lower() == 'dlnvcdlnrplhalo':
+                    s= get_potparams(sols[solindx],options,1)
+                    thisslope= s[3-(1-(options.fixvo is None))]
+                    #Setup potential
+                    pot= setup_potential(sols[solindx],options,1)
+                    vo= get_vo(sols[solindx],options,1)
+                    ro= get_ro(sols[solindx],options)
+                    if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                        thisplhalo= pot[1].alpha
+                    thisplot.extend([thisslope,thisplhalo])
+                elif options.subtype.lower() == 'vc14plhalo':
+                    s= get_potparams(sols[solindx],options,1)
+                    #Setup potential
+                    pot= setup_potential(sols[solindx],options,1)
+                    vo= get_vo(sols[solindx],options,1)
+                    ro= get_ro(sols[solindx],options)
+                    if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                        thisplhalo= pot[1].alpha
+                    thisvc14= potential.vcirc(pot,14./_REFR0/ro)*_REFV0*vo
+                    thisplot.extend([thisplhalo,thisvc14])
                 elif options.subtype.lower() == 'plhalovc':
                     s= get_potparams(sols[solindx],options,1)
                     thisvc= s[1]*_REFV0
@@ -587,6 +607,11 @@ def plot_DFsingles(options,args):
             xrange= [0.2,0.8]
             xlabel=r'$R_d / R_0$'
             ylabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
+        elif options.subtype.lower() == 'vc14plhalo':
+            yrange= [210.,280.]
+            xrange= [0.,2.]
+            xlabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
+            ylabel=r'$V_c (R=14\,\mathrm{kpc})\ [\mathrm{km\,s}^{-1}$]'
         elif options.subtype.lower() == 'zhplhalo':
             yrange= [0.,2.]
             xrange= [0.0125,0.1]
@@ -594,8 +619,8 @@ def plot_DFsingles(options,args):
             ylabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
             xlabel=r'$z_h / R_0$'
         elif options.subtype.lower() == 'rhodmplhalo':
-            yrange= [0.,2.]
             xrange= [0.,0.02]
+            yrange= [0.,2.]
             ylabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
             xlabel=r'$\rho_{\mathrm{DM}}(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
         elif options.subtype.lower() == 'rhodmzh':
@@ -627,28 +652,33 @@ def plot_DFsingles(options,args):
             yrange= [210.,250.]
             xrange= [0.2,0.8]
             xlabel=r'$R_d / R_0$'
-            ylabel=r'$V_c\ \mathrm{km\,s}^{-1}$'
+            ylabel=r'$V_c\ [\mathrm{km\,s}^{-1}]$'
         elif options.subtype.lower() == 'zhvc':
             yrange= [210.,250.]
             xrange= [0.0125,0.1]
             xlabel=r'$z_h / R_0$'
-            ylabel=r'$V_c\ \mathrm{km\,s}^{-1}$'
+            ylabel=r'$V_c\ [\mathrm{km\,s}^{-1}]$'
         elif options.subtype.lower() == 'dlnvcdlnrvc':
             yrange= [210.,250.]
             xrange= [-0.2,0.07]
             xlabel=r'$\mathrm{d}\ln V_c / \mathrm{d}\ln R\, (R_0)$'
-            ylabel=r'$V_c\ \mathrm{km\,s}^{-1}$'
+            ylabel=r'$V_c\ [\mathrm{km\,s}^{-1}]$'
             onedhists=True
+        elif options.subtype.lower() == 'dlnvcdlnrplhalo':
+            yrange= [0.,2.]
+            ylabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
+            xrange= [-0.2,0.07]
+            xlabel=r'$\mathrm{d}\ln V_c / \mathrm{d}\ln R\, (R_0)$'
         elif options.subtype.lower() == 'rhodmvc':
             yrange= [210.,250.]
             xrange= [0.,0.02]
-            ylabel=r'$V_c\ \mathrm{km\,s}^{-1}$'
+            ylabel=r'$V_c\ [\mathrm{km\,s}^{-1}]$'
             xlabel=r'$\rho_{\mathrm{DM}}(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
         elif options.subtype.lower() == 'plhalovc':
             yrange= [210.,250.]
             xrange= [0.,2.]
             xlabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
-            ylabel=r'$V_c\ \mathrm{km\,s}^{-1}$'
+            ylabel=r'$V_c\ [\mathrm{km\,s}^{-1}$]'
         bovy_plot.bovy_print(fig_height=3.87,fig_width=5.)
         ax= bovy_plot.bovy_plot(x,y,
                             s=ndata,c=plotc,
