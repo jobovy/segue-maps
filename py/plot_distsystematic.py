@@ -126,10 +126,10 @@ def plot_distsystematic(options,args):
                 ii+= 1
             if jj == 0: #this means we've reset the counter 
                 break
+    #print plotthis
     #Set up plot
     if options.type.lower() == 'meanu':
         vmin, vmax= -20.,20.
-        print plotthis
         zlabel=r'$\mathrm{mean}\ U$'
     elif options.type.lower() == 'meanw':
         vmin, vmax= -20.,20.
@@ -153,7 +153,7 @@ def plot_distsystematic(options,args):
                           vmin=vmin,vmax=vmax,
                           contours=False,
                           colorbar=True,shrink=0.78)
-    bovy_plot.bovy_text(r'$\mathrm{median} = %.1f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)])),
+    bovy_plot.bovy_text(r'$\mathrm{median} = %.2f$' % (numpy.median(plotthis[numpy.isfinite(plotthis)])),
                         bottom_left=True,size=14.)
     bovy_plot.bovy_end_print(options.outfilename)
     return None
