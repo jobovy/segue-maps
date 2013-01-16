@@ -68,6 +68,7 @@ _PRECALCVSAMPLES= False
 _SURFSUBTRACTEXPON= True
 _SURFNRS= 16
 _SURFNZS= 16
+_BFGS= False
 def pixelFitDF(options,args):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
@@ -170,10 +171,12 @@ def pixelFitDF(options,args):
                                                  normintstuff,errstuff)
                 save_pickles(args[0],params)
             #Optimize full model
-            params= full_optimize(params,fehs,afes,binned,options,normintstuff,
+            optout= full_optimize(params,fehs,afes,binned,options,normintstuff,
                                   errstuff)
+            params= optout[0]
+            mloglikemax= optout[1]
         #Save
-        save_pickles(args[0],params)
+        save_pickles(args[0],params,mloglikemax)
     else:
         #Sample
         if options.justdf:
@@ -1524,14 +1527,22 @@ def fdfh_from_dlnvcdlnr(dlnvcdlnr,diskpot,bulgepot,halopot):
 ##FULL OPTIMIZER
 def full_optimize(params,fehs,afes,binned,options,normintstuff,errstuff):
     """Function for optimizing the full set of parameters"""
-    typf= mloglike(params,fehs,afes,binned,options,normintstuff,errstuff)
-    ftol= .1/numpy.fabs(typf)#should be plenty, assuming we're not too far off to start
-    return optimize.fmin_powell(mloglike,params,
-                                args=(fehs,afes,binned,options,normintstuff,
-                                      errstuff),
-                                callback=cb,
-                                ftol=ftol,xtol=10.**-3.,
-                                maxfun=5000)#Cut off long fits
+    if _BFGS:
+        return optimize.fmin_bfgs(mloglike,params,
+                                  args=(fehs,afes,binned,options,normintstuff,
+                                        errstuff),
+                                  callback=cb,
+                                  full_output=True)
+    else:
+        typf= mloglike(params,fehs,afes,binned,options,normintstuff,errstuff)
+        ftol= .1/numpy.fabs(typf)#should be plenty, assuming we're not too far off to start
+        return optimize.fmin_powell(mloglike,params,
+                                    args=(fehs,afes,binned,options,normintstuff,
+                                          errstuff),
+                                    callback=cb,
+                                    ftol=ftol,xtol=10.**-3.,
+                                    full_output=True,
+                                    maxfun=5000)#Cut off long fits
 
 ##INDIVIDUAL OPTIMIZATIONS
 def indiv_optimize_df(params,fehs,afes,binned,options,normintstuff,errstuff):

@@ -310,6 +310,11 @@ def plot_DFsingles(options,args):
                     if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                         thisplhalo= pot[1].alpha
                     thisplot.extend([thisslope,thisplhalo])
+                elif options.subtype.lower() == 'dlnvcdlnrzh':
+                    s= get_potparams(sols[solindx],options,1)
+                    thisslope= s[3-(1-(options.fixvo is None))]
+                    thiszh= numpy.exp(s[2-(1-(options.fixvo is None))])
+                    thisplot.extend([thisslope,thiszh])
                 elif options.subtype.lower() == 'vc14plhalo':
                     s= get_potparams(sols[solindx],options,1)
                     #Setup potential
@@ -667,6 +672,11 @@ def plot_DFsingles(options,args):
         elif options.subtype.lower() == 'dlnvcdlnrplhalo':
             yrange= [0.,2.]
             ylabel=r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
+            xrange= [-0.2,0.07]
+            xlabel=r'$\mathrm{d}\ln V_c / \mathrm{d}\ln R\, (R_0)$'
+        elif options.subtype.lower() == 'dlnvcdlnrzh':
+            yrange= [0.0125,0.1]
+            ylabel=r'$z_h / R_0$'
             xrange= [-0.2,0.07]
             xlabel=r'$\mathrm{d}\ln V_c / \mathrm{d}\ln R\, (R_0)$'
         elif options.subtype.lower() == 'rhodmvc':
