@@ -282,7 +282,7 @@ def plot_DFsingles(options,args):
                     thisplot.extend([thiszh,thisvc])
                 elif options.subtype.lower() == 'dlnvcdlnrvc':
                     s= get_potparams(sols[solindx],options,1)
-                    thisslope= s[3-(1-(options.fixvo is None))]
+                    thisslope= s[3-(1-(options.fixvo is None))]/30.
                     thisvc= s[1]*_REFV0
                     thisplot.extend([thisslope,thisvc])
                 elif options.subtype.lower() == 'rdvc':
@@ -302,7 +302,7 @@ def plot_DFsingles(options,args):
                     thisplot.extend([thisrd,thisplhalo])
                 elif options.subtype.lower() == 'dlnvcdlnrplhalo':
                     s= get_potparams(sols[solindx],options,1)
-                    thisslope= s[3-(1-(options.fixvo is None))]
+                    thisslope= s[3-(1-(options.fixvo is None))]/30.
                     #Setup potential
                     pot= setup_potential(sols[solindx],options,1)
                     vo= get_vo(sols[solindx],options,1)
@@ -312,7 +312,7 @@ def plot_DFsingles(options,args):
                     thisplot.extend([thisslope,thisplhalo])
                 elif options.subtype.lower() == 'dlnvcdlnrzh':
                     s= get_potparams(sols[solindx],options,1)
-                    thisslope= s[3-(1-(options.fixvo is None))]
+                    thisslope= s[3-(1-(options.fixvo is None))]/30.
                     thiszh= numpy.exp(s[2-(1-(options.fixvo is None))])
                     thisplot.extend([thisslope,thiszh])
                 elif options.subtype.lower() == 'vc14plhalo':

@@ -474,7 +474,7 @@ def logprior_dlnvcdlnr(dlnvcdlnr,options):
     if options.nodlnvcdlnrprior: return 0.
     if True:
         sb= 0.04
-        if dlnvcdlnr > sb or dlnvcdlnr < -0.5:
+        if dlnvcdlnr/30. > sb or dlnvcdlnr/30. < -0.5:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return numpy.log((sb-dlnvcdlnr)/sb)-(sb-dlnvcdlnr)/sb
 
@@ -1451,7 +1451,7 @@ def setup_potential(params,options,npops):
                 potential.HernquistPotential(a=0.6/8,normalize=ampb)]
     elif options.potential.lower() == 'mwpotentialfixhaloflat':
         ro= get_ro(params,options)
-        dlnvcdlnr= potparams[3]
+        dlnvcdlnr= potparams[3]/30.
         ampb= potparams[4] 
         #normalize to 1 for calculation of ampd and amph
         dp= potential.MiyamotoNagaiPotential(a=numpy.exp(potparams[0])/ro,
@@ -1470,7 +1470,7 @@ def setup_potential(params,options,npops):
     elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
         ro= get_ro(params,options)
         vo= get_vo(params,options,npops)
-        dlnvcdlnr= potparams[3]
+        dlnvcdlnr= potparams[3]/30.
         ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
         bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
         #normalize to 1 for calculation of ampd and amph
@@ -1490,7 +1490,7 @@ def setup_potential(params,options,npops):
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         ro= get_ro(params,options)
         vo= get_vo(params,options,npops)
-        dlnvcdlnr= potparams[3]
+        dlnvcdlnr= potparams[3]/30.
         ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
         bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
         #normalize to 1 for calculation of ampd and amph
@@ -1925,7 +1925,7 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
     elif options.potential.lower() == 'mwpotentialfixhaloflat':
         p.extend([-1.,1.,-3.,0.,0.05])
     elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
-        p.extend([-1.,1.,-3.,-0.03,1.35])
+        p.extend([-1.,1.,-3.,-1.,1.35])
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         p.extend([-1.,1.,-3.,0.,1.])
     return p
