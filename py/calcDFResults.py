@@ -133,6 +133,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     surfzdisks= []
     rhoos= []
     rhodms= []
+    vcdvcros= []
     vcdvcs= []
     for ii in range(tightbinned.npixfeh()):
         for jj in range(tightbinned.npixafe()):
@@ -210,7 +211,8 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             #dlnvcdlnr
             dlnvcdlnrs.append(potential.dvcircdR(pot,1.))
             #vcdvc
-            vcdvcs.append(pot[0].vcirc(1.)/potential.vcirc(pot,1.))
+            vcdvcros.append(pot[0].vcirc(1.)/potential.vcirc(pot,1.))
+            vcdvcs.append(pot[0].vcirc(numpy.sqrt(2.)*(rds[-1]+zhs[-1]))/potential.vcirc(pot,numpy.sqrt(2.)*(rds[-1]+zhs[-1])))
     #Gather
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
@@ -232,7 +234,9 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     surfzdisks= numpy.array(surfzdisks)
     rhoos= numpy.array(rhoos)
     rhodms= numpy.array(rhodms)
+    vcdvcros= numpy.array(vcdvcros)
     vcdvcs= numpy.array(vcdvcs)
+    rexps= numpy.sqrt(2.)*(rds+zhs)/2.2
     #Load into dictionary
     out= {}
     out['feh']= fehs
@@ -254,6 +258,8 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     out['rhoo']= rhoos
     out['rhodm']= rhodms
     out['vcdvc']= vcdvcs
+    out['vcdvcro']= vcdvcros
+    out['rexp']= rexps
     if nomedian: return out
     else: return add_median(out,boot=boot)
 
