@@ -35,9 +35,25 @@ def setup_options(options):
     options.ngl= 20
     options.singles= True
     return options
-def calcDFResults(options,args,boot=False):
+def calcDFResults(options,args,boot=True,nomedian=False):
     if len(args) == 2 and options.sample == 'gk':
-        raise NotImplementedError("Combining G and K estimates not implemented yet")
+        options.sample= 'g'
+        options.select= 'all'
+        outg= calcDFResults(options,[args[0]],boot=boot,nomedian=True)
+        options.sample= 'k'
+        options.select= 'program'
+        outk= calcDFResults(options,[args[1]],boot=boot,nomedian=True)
+        #Combine
+        out= {}
+        for k in outg.keys():
+            valg= outg[k]
+            valk= outk[k]
+            val= numpy.zeros(len(valg)+len(valk))
+            val[0:len(valg)]= valg
+            val[len(valg):len(valg)+len(valk)]= valk
+            out[k]= val
+        if nomedian: return out
+        else: return add_median(out,boot=boot)
     raw= read_rawdata(options)
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
@@ -238,7 +254,8 @@ def calcDFResults(options,args,boot=False):
     out['rhoo']= rhoos
     out['rhodm']= rhodms
     out['vcdvc']= vcdvcs
-    return add_median(out,boot=boot)
+    if nomedian: return out
+    else: return add_median(out,boot=boot)
 
 def add_median(out,boot=False):
     for key in out.keys():
