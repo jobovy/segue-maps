@@ -476,7 +476,7 @@ def logprior_dlnvcdlnr(dlnvcdlnr,options):
         sb= 0.04
         if dlnvcdlnr/30. > sb or dlnvcdlnr/30. < -0.5:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        return numpy.log((sb-dlnvcdlnr)/sb)-(sb-dlnvcdlnr)/sb
+        return numpy.log((sb-dlnvcdlnr/30.)/sb)-(sb-dlnvcdlnr/30.)/sb
 
 ##SETUP AND CALCULATE THE NORMALIZATION INTEGRAL
 def calc_normint(qdf,indx,normintstuff,params,npops,options,logoutfrac):
