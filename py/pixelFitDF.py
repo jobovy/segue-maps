@@ -401,15 +401,15 @@ def logprior_dfparams(p,ii,options):
         if dm < -0.4 or dm > 0.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max   
     if options.dfmodel.lower() == 'qdf':
-        if theseparams[0] < -2.85 or theseparams[0] > 2.60:
+        if theseparams[0] < -2.77 or theseparams[0] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if theseparams[1] < -3.1 or theseparams[1] > -0.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if theseparams[2] < -3.1 or theseparams[2] > -0.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if theseparams[3] < -2.85 or theseparams[3] > 2.60:
+        if theseparams[3] < -2.77 or theseparams[3] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if theseparams[4] < -2.85 or theseparams[4] > 2.60:
+        if theseparams[4] < -2.77 or theseparams[4] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return 0.
 
@@ -1907,10 +1907,10 @@ def initialize(options,fehs,afes):
             #Find nearest mono-abundance bin that has a measurement
             abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                                      +(afes[ii]-mapafes)**2./0.0025)
-            p.extend([numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0/ro), #hR
+            p.extend([numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
 numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaR
                       numpy.log(monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaZ
-                      numpy.log(7./_REFR0/ro),numpy.log(7./_REFR0/ro)]) #hsigR, hsigZ
+                      numpy.log(7./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
             #Outlier fraction
             p.append(0.05)
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
