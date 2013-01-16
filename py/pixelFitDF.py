@@ -398,15 +398,15 @@ def logprior_dfparams(p,ii,options):
         if dm < -0.4 or dm > 0.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max   
     if options.dfmodel.lower() == 'qdf':
-        if theseparams[0] < -2.77 or theseparams[0] > 2.53:
+        if theseparams[0] < -2.85 or theseparams[0] > 2.60:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if theseparams[1] < -3.1 or theseparams[1] > -0.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if theseparams[2] < -3.1 or theseparams[2] > -0.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if theseparams[3] < -2.77 or theseparams[3] > 2.53:
+        if theseparams[3] < -2.85 or theseparams[3] > 2.60:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if theseparams[4] < -2.77 or theseparams[4] > 2.53:
+        if theseparams[4] < -2.85 or theseparams[4] > 2.60:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return 0.
 
@@ -611,7 +611,8 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                fehmin=fehmin,
                                fehmax=fehmax,
                                feh=feh,
-                               noplot=True,nodata=True,distfac=distfac)
+                               noplot=True,nodata=True,distfac=distfac,
+                               R0=_REFR0*ro)
         vo= get_vo(params,options,npops)
         return numpy.sum(n)*vo**3.
     for ii in range(len(plates)):
@@ -1774,15 +1775,19 @@ def setup_err_mc(data,options):
          """
     if not options.fitro and not options.fitvsun and not options.fitvtsun \
             and not options.fitdm:
+        if not options.fixro is None:
+            ro= options.fixro
+        else:
+            ro= 1.
         vsun = [_VRSUN,_VTSUN,_VZSUN]
         #Do coordinate transformations
         outvxvyvz[:,0,:]-= vsun[0]
         outvxvyvz[:,1,:]+= vsun[1]
         outvxvyvz[:,2,:]+= vsun[2]
-        R= ((_REFR0-XYZ[:,:,0])**2.+(XYZ[:,:,1])**2.)**0.5 
+        R= ((_REFR0*ro-XYZ[:,:,0])**2.+(XYZ[:,:,1])**2.)**0.5 
         z= XYZ[:,:,2]+_ZSUN
         #Rotate to Galactocentric frame
-        cosphi= (_REFR0-XYZ[:,:,0])/R
+        cosphi= (_REFR0*ro-XYZ[:,:,0])/R
         sinphi= XYZ[:,:,1]/R
         vR= -outvxvyvz[:,0,:]*cosphi.T+outvxvyvz[:,1,:]*sinphi.T
         vT= outvxvyvz[:,0,:]*sinphi.T+outvxvyvz[:,1,:]*cosphi.T
@@ -1798,10 +1803,14 @@ def setup_err_mc(data,options):
             errstuff.append(thiserrstuff)
     elif (options.fitvsun or options.fitvtsun) and not options.fitro \
             and not options.fitdm:
-        R= ((_REFR0-XYZ[:,:,0])**2.+(XYZ[:,:,1])**2.)**0.5 
+        if not options.fixro is None:
+            ro= options.fixro
+        else:
+            ro= 1.
+        R= ((_REFR0*ro-XYZ[:,:,0])**2.+(XYZ[:,:,1])**2.)**0.5 
         z= XYZ[:,:,2]+_ZSUN
         #Rotate to Galactocentric frame
-        cosphi= (_REFR0-XYZ[:,:,0])/R
+        cosphi= (_REFR0*ro-XYZ[:,:,0])/R
         sinphi= XYZ[:,:,1]/R
         #Load into structure
         errstuff= []
@@ -1873,6 +1882,10 @@ def initialize(options,fehs,afes):
         p.extend([0.,1.1,0.])
     elif options.fitvtsun:
         p.append(1.1)
+    if not options.fixro is None:
+        ro= options.fixro
+    else:
+        ro= 1.
     mapfehs= monoAbundanceMW.fehs()
     mapafes= monoAbundanceMW.afes()
     indx= (mapfehs != -0.45)*(mapafes != 0.075) #Pop this one, bc sz is crazy
@@ -1883,10 +1896,10 @@ def initialize(options,fehs,afes):
             #Find nearest mono-abundance bin that has a measurement
             abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                                      +(afes[ii]-mapafes)**2./0.0025)
-            p.extend([numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
+            p.extend([numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0/ro), #hR
 numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaR
                       numpy.log(monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaZ
-                      numpy.log(7./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
+                      numpy.log(7./_REFR0/ro),numpy.log(7./_REFR0/ro)]) #hsigR, hsigZ
             #Outlier fraction
             p.append(0.05)
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
@@ -2167,6 +2180,8 @@ def get_ro(p,options):
     """Function that returns R0 for these options"""
     if options.fitro:
         return p[options.fitdm]
+    elif not options.fixro is None:
+        return options.fixro
     else:
         return 1.
 
@@ -2396,6 +2411,9 @@ def get_options():
     parser.add_option("--fixvo",dest="fixvo",type='float',
                       default=None,
                       help="If set, fix vo=V_c/220 to this value and do not fit for it")
+    parser.add_option("--fixro",dest="fixro",type='float',
+                      default=None,
+                      help="If set, fix ro=R_0/8 kpc to this value")
     parser.add_option("--noqprior",action="store_true", dest="noqprior",
                       default=False,
                       help="If set, do not apply a q prior (default: q > 0.53)")

@@ -781,7 +781,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                         vsx='|sinb|',
                         xrange=None,yrange=None,
                         overplot=False,color='k',marker='v',cumul=False,
-                        runavg=0,noplot=False,nodata=False,distfac=1.):
+                        runavg=0,noplot=False,nodata=False,distfac=1.,
+                        R0=8.):
     """
     NAME:
        comparernumberPlate
@@ -913,7 +914,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                             platel,
                                             plateb,grmin,grmax,
                                             fehmin,fehmax,
-                                            feh,colordist,fehdist,sf,p,distfac)
+                                            feh,colordist,fehdist,sf,p,distfac,
+                                            R0)
             numbers[ii]= numpy.nansum(thiszdist)
             """
             thisrdist= _predict_rdist_plate(rs,densfunc,params,rmin,rmax,
@@ -1430,7 +1432,7 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
 
 def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
                          fehmin,fehmax,
-                         feh,colordist,fehdist,sf,plate,distfac=1.):
+                         feh,colordist,fehdist,sf,plate,distfac=1.,R0=8.):
     """Predict the Z distribution for a plate"""
     #BOVY: APPROXIMATELY INTEGRATE OVER GR
     ngr, nfeh= 11, 11
@@ -1458,7 +1460,7 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
     XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
                                 numpy.array([b for ii in range(len(ds))]),
                                 ds,degree=True)
-    R= ((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+    R= ((R0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
     XYZ[:,2]+= _ZSUN
     out*= ds**2.*densfunc(R,XYZ[:,2],params)/numpy.fabs(numpy.sin(b*_DEGTORAD))
     return out
