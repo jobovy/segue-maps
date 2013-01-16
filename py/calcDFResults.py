@@ -37,12 +37,13 @@ def setup_options(options):
     return options
 def calcDFResults(options,args,boot=True,nomedian=False):
     if len(args) == 2 and options.sample == 'gk':
-        options.sample= 'g'
-        options.select= 'all'
-        outg= calcDFResults(options,[args[0]],boot=boot,nomedian=True)
-        options.sample= 'k'
-        options.select= 'program'
-        outk= calcDFResults(options,[args[1]],boot=boot,nomedian=True)
+        toptions= copy.copy(options)
+        toptions.sample= 'g'
+        toptions.select= 'all'
+        outg= calcDFResults(toptions,[args[0]],boot=boot,nomedian=True)
+        toptions.sample= 'k'
+        toptions.select= 'program'
+        outk= calcDFResults(toptions,[args[1]],boot=boot,nomedian=True)
         #Combine
         out= {}
         for k in outg.keys():
