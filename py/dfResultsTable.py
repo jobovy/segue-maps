@@ -25,17 +25,19 @@ def dfResultsTable(args):
             '$z_h\ (\mathrm{pc})$',
             '$V_{c,\mathrm{disk}}/V_c\,(R_0)$',
             '$V_{c,\mathrm{disk}}/V_c\,(2.2\,R_d)$',
-            '$\\Sigma_{\mathrm{disk}}\ (\mathrm{M_{\odot}\ pc}^{-2})$',
+            '$\\Sigma_{\mathrm{disk}}\ (M_{\odot}\,\mathrm{pc}^{-2})$',
+            '$M_{\mathrm{disk}}\ (10^{10}\,M_{\odot})$',
             '$\\alpha_{h}$',
-            '$\\rho_{\mathrm{DM}}\,(R_0,0)\ (\mathrm{M_{\odot}\ pc}^{-3})$',
+            '$\\rho_{\mathrm{DM}}\,(R_0,0)\ (M_{\odot}\,\mathrm{pc}^{-3})$',
             '$V_c(R_0)\ [\mathrm{km\ s}^{-1}]$',
             '$\\frac{\mathrm{d}\ln V_c}{\mathrm{d}\ln R}\,(R_0)$',
-            '$\\rho_{\mathrm{total}}\,(R_0,0)\ (\mathrm{M_{\odot}\ pc}^{-3})$',
-            '$\\Sigma(R_0,|Z|\leq 0.8\,\mathrm{kpc})\ (\mathrm{M_{\odot}\ pc}^{-2})$',
-            '$\\Sigma(R_0,|Z|\leq 1.1\,\mathrm{kpc})\ (\mathrm{M_{\odot}\ pc}^{-2})$']
-    skip= [0,0,0,0,1,0,1,0,0,0,0,0] #1 if line skip after this parameter
-    scale= [_REFR0,_REFR0*1000.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]
-    key= ['rdexp','zhexp','vcdvcro','vcdvc','surfzdisk','plhalo','rhodm',
+            '$\\rho_{\mathrm{total}}\,(R_0,0)\ (M_{\odot}\,\mathrm{pc}^{-3})$',
+            '$\\Sigma(R_0,|Z|\leq 0.8\,\mathrm{kpc})\ (M_{\odot}\,\mathrm{pc}^{-2})$',
+            '$\\Sigma(R_0,|Z|\leq 1.1\,\mathrm{kpc})\ (M_{\odot}\,\mathrm{pc}^{-2})$']
+    skip= [0,0,0,0,0,1,0,1,0,0,0,0,0] #1 if line skip after this parameter
+    scale= [_REFR0,_REFR0*1000.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]
+    key= ['rdexp','zhexp','vcdvcro','vcdvc','surfzdisk','massdisk',
+          'plhalo','rhodm',
           'vc','dlnvcdlnr','rhooalt','surfz800','surfz']
     #Make table
     outfile= open(args,'w')

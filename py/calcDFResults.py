@@ -136,6 +136,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     surfzs= []
     surfz800s= []
     surfzdisks= []
+    massdisks= []
     rhoos= []
     rhooalts= []
     rhodms= []
@@ -233,6 +234,9 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             #rhooalt
             if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                 rhooalts.append(rhoos[-1]-pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.+surfzdiskzm/2./zhexps[-1]/ro/_REFR0/1000./(1.-numpy.exp(-tz/zhexps[-1])))
+            #massdisk
+            rhod= surfzdiskzm/2./zhexps[-1]/ro/_REFR0/1000./(1.-numpy.exp(-tz/zhexps[-1]))
+            massdisks.append(rhod*2.*zhexps[-1]*numpy.exp(1./rdexps[-1])*rdexps[-1]**2.*2.*numpy.pi*(ro*_REFR0)**3./10.)
             #plhalo
             if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                 plhalos.append(pot[1].alpha)
@@ -264,6 +268,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     surfzs= numpy.array(surfzs)
     surfz800s= numpy.array(surfz800s)
     surfzdisks= numpy.array(surfzdisks)
+    massdisks= numpy.array(massdisks)
     rhoos= numpy.array(rhoos)
     rhooalts= numpy.array(rhooalts)
     rhodms= numpy.array(rhodms)
@@ -292,6 +297,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     out['surfz']= surfzs
     out['surfz800']= surfz800s
     out['surfzdisk']= surfzdisks
+    out['massdisk']= massdisks
     out['rhoo']= rhoos
     out['rhooalt']= rhooalts
     out['rhodm']= rhodms
