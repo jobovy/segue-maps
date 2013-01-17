@@ -28,6 +28,7 @@ from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
 from pixelFitDF import _REFR0, _REFV0
 from matplotlib import pyplot
+from matplotlib.ticker import NullFormatter
 def plotFidDF(options,args):
     #Load potential parameters
     if not options.init is None and os.path.exists(options.init):
@@ -144,9 +145,27 @@ def plotFidDF(options,args):
         pyplot.legend((line1[0],line2[0]),
                       (r'$\mathrm{St\ddot{a}ckel\ actions}$',
                        r'$\mathrm{Adiabatic\ actions}$'),
-                      loc='lower left',#bbox_to_anchor=(.91,.375),
+                      loc='upper right',#bbox_to_anchor=(.91,.375),
                       numpoints=2,
                       prop={'size':16},
+                      frameon=False)
+        #Create inset with profile at different R
+        denszr12= numpy.array([qdf.surfacemass(11./8.,z/ro/_REFR0,gl=True) for z in zs])
+        denszr4= numpy.array([qdf.surfacemass(5./8.,z/ro/_REFR0,gl=True) for z in zs])
+        insetAxes= pyplot.axes([0.15,0.12,0.3,0.4])
+        line1= insetAxes.semilogy(zs,densz/densz[0],'k-')
+        line2= insetAxes.semilogy(zs,denszr12/denszr12[0],'k:')
+        line3= insetAxes.semilogy(zs,denszr4/denszr4[0],'k--')
+        nullfmt   = NullFormatter()         # no labels
+        insetAxes.xaxis.set_major_formatter(nullfmt)
+        insetAxes.yaxis.set_major_formatter(nullfmt)
+        pyplot.legend((line3[0],line1[0],line2[0]),
+                      (r'$R = 5\,\mathrm{kpc}$',
+                       r'$R = 8\,\mathrm{kpc}$',
+                       r'$R = 11\,\mathrm{kpc}$'),
+                      loc='lower left',#bbox_to_anchor=(.91,.375),
+                      numpoints=2,
+                      prop={'size':10},
                       frameon=False)
     elif options.type.lower() == 'densr':
         rs= numpy.linspace(4.,15.,101)
