@@ -6,8 +6,8 @@ import cPickle as pickle
 from optparse import OptionParser
 from pixelFitDF import _REFV0, _REFR0
 from calcDFResults import calcDFResults, setup_options
-_GFIT= '../realDF_b4final/realDFFit_dfeh0.1_dafe0.05_mpdiskplhalofixbulgeflat_staeckelg_singles.sav'
-_KFIT= '../realDF_b4final/realDFFitK_dfeh0.1_dafe0.05_mpdiskplhalofixbulgeflat_staeckelg_singles.sav'
+_GFIT= '../realDF/realDFFit_dfeh0.1_dafe0.05_mpdiskplhalofixbulgeflat_staeckelg_singles.sav'
+_KFIT= '../realDF/realDFFitK_dfeh0.1_dafe0.05_mpdiskplhalofixbulgeflat_staeckelg_singles.sav'
 def dfResultsTable(args):
     cmdline= '%python dfResultsTable.py '+args
     #Load g, k, and combined fits
@@ -31,11 +31,12 @@ def dfResultsTable(args):
             '$V_c(R_0)\ [\mathrm{km\ s}^{-1}]$',
             '$\\frac{\mathrm{d}\ln V_c}{\mathrm{d}\ln R}\,(R_0)$',
             '$\\rho_{\mathrm{total}}\,(R_0,0)\ (\mathrm{M_{\odot}\ pc}^{-3})$',
+            '$\\Sigma(R_0,|Z|\leq 0.8\,\mathrm{kpc})\ (\mathrm{M_{\odot}\ pc}^{-2})$',
             '$\\Sigma(R_0,|Z|\leq 1.1\,\mathrm{kpc})\ (\mathrm{M_{\odot}\ pc}^{-2})$']
-    skip= [0,0,0,0,1,0,1,0,0,0,0] #1 if line skip after this parameter
-    scale= [_REFR0,_REFR0*1000.,1.,1.,1.,1.,1.,1.,1.,1.,1.]
-    key= ['rexp','zh','vcdvcro','vcdvc','surfzdisk','plhalo','rhodm',
-               'vc','dlnvcdlnr','rhoo','surfz']
+    skip= [0,0,0,0,1,0,1,0,0,0,0,0] #1 if line skip after this parameter
+    scale= [_REFR0,_REFR0*1000.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]
+    key= ['rdexp','zhexp','vcdvcro','vcdvc','surfzdisk','plhalo','rhodm',
+          'vc','dlnvcdlnr','rhooalt','surfz800','surfz']
     #Make table
     outfile= open(args,'w')
     for ii in range(len(names)):

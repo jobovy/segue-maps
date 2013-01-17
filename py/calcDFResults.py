@@ -117,6 +117,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     fehs= []
     afes= []
     ndatas= []
+    zmedians= []
     #Basic parameters
     hrs= []
     srs= []
@@ -125,14 +126,18 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     hszs= []
     outfracs= []
     rds= []
+    rdexps= []
     vcs= []
     zhs= []
+    zhexps= []
     dlnvcdlnrs= []
     plhalos= []
     #derived parameters
     surfzs= []
+    surfz800s= []
     surfzdisks= []
     rhoos= []
+    rhooalts= []
     rhodms= []
     vcdvcros= []
     vcdvcs= []
@@ -151,8 +156,10 @@ def calcDFResults(options,args,boot=True,nomedian=False):
                 continue
             fehs.append(tightbinned.feh(ii))
             afes.append(tightbinned.afe(jj))
+            zmedians.append(numpy.median(numpy.fabs(data.zc+_ZSUN)))
             #vc
             s= get_potparams(sols[solindx],options,1)
+            ro= get_ro(sols[solindx],options)
             if options.fixvo:
                 vcs.append(options.fixvo*_REFV0)
             else:
@@ -161,6 +168,21 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             rds.append(numpy.exp(s[0]))
             #zh
             zhs.append(numpy.exp(s[2-(1-(options.fixvo is None))]))
+            #rdexp & zhexp
+            if 'mpdisk' in options.potential.lower() or 'mwpotential' in options.potential.lower():
+                mp= potential.MiyamotoNagaiPotential(a=rds[-1],b=zhs[-1])
+                #rdexp
+                f= mp.dens(1.,0.125)
+                dr= 10.**-3.
+                df= (mp.dens(1.+dr/2.,0.125)-mp.dens(1.-dr/2.,0.125))/dr
+                rdexps.append(-f/df)
+                #zhexp
+                if options.sample == 'g': tz= 1.1/_REFR0/ro
+                elif options.sample == 'k': tz= 0.84/_REFR0/ro
+                f= mp.dens(1.,tz)
+                dz= 10.**-3.
+                df= (mp.dens(1.,tz+dz/2.)-mp.dens(1.,tz-dz/2.))/dz
+                zhexps.append(-f/df)
             #ndata
             ndatas.append(len(data))
             #hr
@@ -192,7 +214,6 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             #Setup potential
             pot= setup_potential(sols[solindx],options,1)
             vo= get_vo(sols[solindx],options,1)
-            ro= get_ro(sols[solindx],options)
             if 'mwpotential' in options.potential.lower():
                 rhodms.append(pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.)
             elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
@@ -203,9 +224,15 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             rhoos.append(potential.evaluateDensities(1.,0.,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.)
             #surfz
             surfzs.append(2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro)
+            #surfz800
+            surfz800s.append(2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,0.8/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro)
             #surzdisk
             if 'mpdisk' in options.potential.lower() or 'mwpotential' in options.potential.lower():
                 surfzdisks.append(2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot[0])),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro)
+                surfzdiskzm= 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot[0])),0.,tz)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
+            #rhooalt
+            if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                rhooalts.append(rhoos[-1]-pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.+surfzdiskzm/2./zhexps[-1]/ro/_REFR0/1000./(1.-numpy.exp(-tz/zhexps[-1])))
             #plhalo
             if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                 plhalos.append(pot[1].alpha)
@@ -213,10 +240,11 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             dlnvcdlnrs.append(potential.dvcircdR(pot,1.))
             #vcdvc
             vcdvcros.append(pot[0].vcirc(1.)/potential.vcirc(pot,1.))
-            vcdvcs.append(pot[0].vcirc(numpy.sqrt(2.)*(rds[-1]+zhs[-1]))/potential.vcirc(pot,numpy.sqrt(2.)*(rds[-1]+zhs[-1])))
+            vcdvcs.append(pot[0].vcirc(2.2*rdexps[-1])/potential.vcirc(pot,2.2*rdexps[-1]))
     #Gather
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
+    zmedians= numpy.array(zmedians)
     ndatas= numpy.array(ndatas)
     #Basic parameters
     hrs= numpy.array(hrs)
@@ -225,15 +253,19 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     hsrs= numpy.array(hsrs)
     hszs= numpy.array(hszs)
     outfracs= numpy.array(outfracs)
-    rds= numpy.array(rds)
     vcs= numpy.array(vcs)
+    rds= numpy.array(rds)
     zhs= numpy.array(zhs)
+    rdexps= numpy.array(rdexps)
+    zhexps= numpy.array(zhexps)
     dlnvcdlnrs= numpy.array(dlnvcdlnrs)
     plhalos= numpy.array(plhalos)
     #derived parameters
     surfzs= numpy.array(surfzs)
+    surfz800s= numpy.array(surfz800s)
     surfzdisks= numpy.array(surfzdisks)
     rhoos= numpy.array(rhoos)
+    rhooalts= numpy.array(rhooalts)
     rhodms= numpy.array(rhodms)
     vcdvcros= numpy.array(vcdvcros)
     vcdvcs= numpy.array(vcdvcs)
@@ -242,6 +274,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     out= {}
     out['feh']= fehs
     out['afe']= afes
+    out['zmedian']= zmedians
     out['ndata']= ndatas
     out['hr']= hrs
     out['sr']= srs
@@ -249,14 +282,18 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     out['hsr']= hsrs
     out['hsz']= hszs
     out['outfrac']= outfracs
-    out['rd']= rds
     out['vc']= vcs
+    out['rd']= rds
     out['zh']= zhs
+    out['rdexp']= rdexps
+    out['zhexp']= zhexps
     out['dlnvcdlnr']= dlnvcdlnrs
     out['plhalo']= plhalos
     out['surfz']= surfzs
+    out['surfz800']= surfz800s
     out['surfzdisk']= surfzdisks
     out['rhoo']= rhoos
+    out['rhooalt']= rhooalts
     out['rhodm']= rhodms
     out['vcdvc']= vcdvcs
     out['vcdvcro']= vcdvcros
