@@ -25,7 +25,7 @@ def dfResultsTable(args):
             '$z_h\ (\mathrm{pc})$',
             '$V_{c,\mathrm{disk}}/V_c\,(R_0)$',
             '$V_{c,\mathrm{disk}}/V_c\,(2.2\,R_d)$',
-            '$\\Sigma_{\mathrm{disk}}\ (M_{\odot}\,\mathrm{pc}^{-2})$',
+            '$\\Sigma_{\mathrm{disk}}(R_0)\ (M_{\odot}\,\mathrm{pc}^{-2})$',
             '$M_{\mathrm{disk}}\ (10^{10}\,M_{\odot})$',
             '$\\alpha_{h}$',
             '$\\rho_{\mathrm{DM}}\,(R_0,0)\ (M_{\odot}\,\mathrm{pc}^{-3})$',
