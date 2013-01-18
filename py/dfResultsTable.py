@@ -29,7 +29,7 @@ def dfResultsTable(args):
             '$M_{\mathrm{disk}}\ (10^{10}\,M_{\odot})$',
             '$\\alpha_{h}$',
             '$\\rho_{\mathrm{DM}}\,(R_0,0)\ (M_{\odot}\,\mathrm{pc}^{-3})$',
-            '$V_c(R_0)\ [\mathrm{km\ s}^{-1}]$',
+            '$V_c(R_0)\ (\mathrm{km\ s}^{-1})$',
             '$\\frac{\mathrm{d}\ln V_c}{\mathrm{d}\ln R}\,(R_0)$',
             '$\\rho_{\mathrm{total}}\,(R_0,0)\ (M_{\odot}\,\mathrm{pc}^{-3})$',
             '$\\Sigma(R_0,|Z|\leq 0.8\,\mathrm{kpc})\ (M_{\odot}\,\mathrm{pc}^{-2})$',
