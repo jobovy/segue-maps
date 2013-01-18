@@ -79,6 +79,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     afes= numpy.array(afes)
     #Load each of the solutions
     sols= []
+    chi2s= []
     savename= args[0]
     initname= options.init
     for ii in range(nabundancebins):
@@ -96,8 +97,10 @@ def calcDFResults(options,args,boot=True,nomedian=False):
         except IOError:
             print "WARNING: MISSING ABUNDANCE BIN"
             sols.append(None)
+            chi2s.append(None)
         else:
             sols.append(pickle.load(savefile))
+            chi2s.append(pickle.load(savefile))
             savefile.close()
         #Load samples as well
         if options.mcsample:
@@ -142,6 +145,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     rhodms= []
     vcdvcros= []
     vcdvcs= []
+    mloglikemins= []
     for ii in range(tightbinned.npixfeh()):
         for jj in range(tightbinned.npixafe()):
             data= binned(tightbinned.feh(ii),tightbinned.afe(jj))
@@ -245,6 +249,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             #vcdvc
             vcdvcros.append(pot[0].vcirc(1.)/potential.vcirc(pot,1.))
             vcdvcs.append(pot[0].vcirc(2.2*rdexps[-1])/potential.vcirc(pot,2.2*rdexps[-1]))
+            mloglikemins.append(chi2s[solindx])
     #Gather
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
@@ -275,6 +280,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     vcdvcros= numpy.array(vcdvcros)
     vcdvcs= numpy.array(vcdvcs)
     rexps= numpy.sqrt(2.)*(rds+zhs)/2.2
+    mloglikemins= numpy.array(mloglikemins)
     #Load into dictionary
     out= {}
     out['feh']= fehs
@@ -304,6 +310,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     out['vcdvc']= vcdvcs
     out['vcdvcro']= vcdvcros
     out['rexp']= rexps
+    out['mloglikemin']= mloglikemins
     if nomedian: return out
     else: return add_median(out,boot=boot)
 
