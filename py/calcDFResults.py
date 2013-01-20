@@ -39,11 +39,11 @@ def resultsToInit(options,args,boot=True):
     #First calcDFResults
     out= calcDFResults(options,args,boot=boot)
     #Then store
-    sol= numpy.array([0.,0.,0.,0.,0.,0., #DF params are not used
-                      out['rd_m'],
+    sol= numpy.array([0.,0.,0.,0.,0.,0., #DF params need to be included!!
+                      numpy.log(out['rd_m']),
                       out['vc_m']/_REFV0,
-                      out['zh_m'],
-                      out['dlnvcdlnr_m'],
+                      numpy.log(out['zh_m']),
+                      out['dlnvcdlnr_m']*30.,
                       out['plhalo_m']])
     #Save
     save_pickles(options.init,sol)

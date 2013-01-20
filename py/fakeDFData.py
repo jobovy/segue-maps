@@ -6,6 +6,7 @@
 #
 import sys
 import os, os.path
+import cPickle as pickle
 import copy
 import numpy
 from scipy.maxentropy import logsumexp
@@ -128,8 +129,13 @@ def generate_fakeDFData(options,args):
         savefile= open(options.init,'rb')
         params= pickle.load(savefile)
         savefile.close()
+        if 'singles' in options.init:
+            ndf= 1
+        else:
+            ndf= len(fehs)
     else:
         params= initialize(options,fehs,afes)
+        ndf= len(fehs)
     #Setup potential
     if (options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk') \
             and not options.flatten is None:
@@ -137,7 +143,7 @@ def generate_fakeDFData(options,args):
         potparams= list(get_potparams(params,options,len(fehs)))
         potparams[0]= options.flatten
         params= set_potparams(potparams,params,options,len(fehs))
-    pot= setup_potential(params,options,len(fehs))
+    pot= setup_potential(params,options,ndf)
     aA= setup_aA(pot,options)
     if not options.multi is None:
         binned= fakeDFData_abundance_singles(binned,options,args,fehs,afes)
