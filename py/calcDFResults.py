@@ -35,6 +35,19 @@ def setup_options(options):
     options.ngl= 20
     options.singles= True
     return options
+def resultsToInit(options,args,boot=True):
+    #First calcDFResults
+    out= calcDFResults(options,args,boot=boot)
+    #Then store
+    sol= numpy.array([0.,0.,0.,0.,0.,0., #DF params are not used
+                      out['rd_m'],
+                      out['vc_m']/_REFV0,
+                      out['zh_m'],
+                      out['dlnvcdlnr_m'],
+                      out['plhalo_m']])
+    #Save
+    save_pickles(options.init,sol)
+    return None                      
 def calcDFResults(options,args,boot=True,nomedian=False):
     if len(args) == 2 and options.sample == 'gk':
         toptions= copy.copy(options)
