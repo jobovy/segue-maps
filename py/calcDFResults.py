@@ -36,7 +36,7 @@ def setup_options(options):
     options.singles= True
     return options
 def resultsToInit(options,args,boot=True):
-    #First calcDFResults
+    #calcDFResults
     out= calcDFResults(options,args,boot=boot)
     #Then store
     sol= numpy.array([0.,0.,0.,0.,0.,0., #DF params need to be included!!
