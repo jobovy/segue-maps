@@ -2492,6 +2492,9 @@ def get_options():
     parser.add_option("--height",dest='height',type='float',
                       default=1.1,
                       help="A 'height' (e.g., to compute the surface density at")
+    parser.add_option("--index",dest='index',type='int',
+                      default=0,
+                      help="An index")
     return parser
   
 if __name__ == '__main__':

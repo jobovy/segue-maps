@@ -18,7 +18,8 @@ from galpy.util import bovy_coords, bovy_plot
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import monoAbundanceMW
 from segueSelect import _ERASESTR, read_gdwarfs, read_kdwarfs, segueSelect, \
-    ivezic_dist_gr, _load_fits
+    ivezic_dist_gr, _load_fits, \
+    _GDWARFFILE, _KDWARFFILE
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import get_options,fidDens, get_dfparams, get_ro, get_vo, \
     _REFR0, _REFV0, setup_potential, setup_aA, initialize, \
@@ -127,15 +128,14 @@ def generate_fakeDFData(options,args):
     if not options.init is None:
         #Load initial parameters from file
         savefile= open(options.init,'rb')
-        params= pickle.load(savefile)
+        tparams= pickle.load(savefile)
         savefile.close()
-        if 'singles' in options.init:
-            ndf= 1
-        else:
-            ndf= len(fehs)
+        #Setup the correct form
+        params= initialize(options,fehs,afes)
+        params[0:6]= get_dfparams(tparams,options.index,options,log=True)
+        params[6:11]= tparams[-5:len(tparams)]
     else:
         params= initialize(options,fehs,afes)
-        ndf= len(fehs)
     #Setup potential
     if (options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk') \
             and not options.flatten is None:
@@ -143,7 +143,7 @@ def generate_fakeDFData(options,args):
         potparams= list(get_potparams(params,options,len(fehs)))
         potparams[0]= options.flatten
         params= set_potparams(potparams,params,options,len(fehs))
-    pot= setup_potential(params,options,ndf)
+    pot= setup_potential(params,options,len(fehs))
     aA= setup_aA(pot,options)
     if not options.multi is None:
         binned= fakeDFData_abundance_singles(binned,options,args,fehs,afes)
@@ -775,6 +775,7 @@ def fakeDFData_abundance_singles_single(options,args,fehs,afes,ii,savename):
     #Now run
     toptions= copy.copy(options)
     toptions.multi= None
+    toptions.index= ii
     generate_fakeDFData(toptions,args)
 
 if __name__ == '__main__':

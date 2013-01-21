@@ -35,16 +35,23 @@ def setup_options(options):
     options.ngl= 20
     options.singles= True
     return options
-def resultsToInit(options,args,boot=True):
-    #calcDFResults
+def resultsToInit(options,args,boot=True):    
+    #First calcDFResults
     out= calcDFResults(options,args,boot=boot)
     #Then store
-    sol= numpy.array([0.,0.,0.,0.,0.,0., #DF params need to be included!!
-                      numpy.log(out['rd_m']),
-                      out['vc_m']/_REFV0,
-                      numpy.log(out['zh_m']),
-                      out['dlnvcdlnr_m']*30.,
-                      out['plhalo_m']])
+    sol= []
+    for ii in range(len(out['feh'])):
+        sol.extend([numpy.log(out['hr'][ii]/_REFR0),
+                    numpy.log(out['sr'][ii]/_REFV0),
+                    numpy.log(out['sz'][ii]/_REFV0),
+                    numpy.log(out['hsr'][ii]/_REFR0),
+                    numpy.log(out['hsz'][ii]/_REFR0),
+                    out['outfrac'][ii]])
+    sol.extend([numpy.log(out['rd_m']),
+                out['vc_m']/_REFV0,
+                numpy.log(out['zh_m']),
+                out['dlnvcdlnr_m']*30.,
+                out['plhalo_m']])
     #Save
     save_pickles(options.init,sol)
     return None                      
