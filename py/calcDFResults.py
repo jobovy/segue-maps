@@ -165,6 +165,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     rhodms= []
     vcdvcros= []
     vcdvcs= []
+    vescs= []
     mloglikemins= []
     for ii in range(tightbinned.npixfeh()):
         for jj in range(tightbinned.npixafe()):
@@ -269,7 +270,10 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             #vcdvc
             vcdvcros.append(pot[0].vcirc(1.)/potential.vcirc(pot,1.))
             vcdvcs.append(pot[0].vcirc(2.2*rdexps[-1])/potential.vcirc(pot,2.2*rdexps[-1]))
+            #mloglike
             mloglikemins.append(chi2s[solindx])
+            #escape velocity
+            vescs.append(potential.vesc(pot,1.)*_REFV0)
     #Gather
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
@@ -301,6 +305,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     vcdvcs= numpy.array(vcdvcs)
     rexps= numpy.sqrt(2.)*(rds+zhs)/2.2
     mloglikemins= numpy.array(mloglikemins)
+    vescs= numpy.array(vescs)
     #Load into dictionary
     out= {}
     out['feh']= fehs
@@ -331,6 +336,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     out['vcdvcro']= vcdvcros
     out['rexp']= rexps
     out['mloglikemin']= mloglikemins
+    out['vesc']= vescs
     if nomedian: return out
     else: return add_median(out,boot=boot)
 
