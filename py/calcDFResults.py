@@ -180,6 +180,11 @@ def calcDFResults(options,args,boot=True,nomedian=False):
                                          +(tightbinned.afe(jj)-mapafes)**2./0.0025)
             if sols[solindx] is None:
                 continue
+            try:
+                pot= setup_potential(sols[solindx],options,1)
+            except RuntimeError:
+                print "A bin has an unphysical potential ..."
+                continue
             fehs.append(tightbinned.feh(ii))
             afes.append(tightbinned.afe(jj))
             zmedians.append(numpy.median(numpy.fabs(data.zc+_ZSUN)))
@@ -238,7 +243,6 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             outfracs.append(dfparams[5])
             #rhodm
             #Setup potential
-            pot= setup_potential(sols[solindx],options,1)
             vo= get_vo(sols[solindx],options,1)
             if 'mwpotential' in options.potential.lower():
                 rhodms.append(pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.)
