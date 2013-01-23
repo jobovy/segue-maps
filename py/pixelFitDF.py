@@ -303,6 +303,9 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned,errstuff,
                                       options,len(fehs))
+    if options.fitdvt:
+        dvt= get_dvt(params,options)
+        vT+= dvt*vo
     ndata= R.shape[0]
     data_lndf= numpy.zeros((ndata,2*options.nmcerr))
     srhalo= _SRHALO/vo/_REFV0
@@ -413,6 +416,8 @@ def logprior_pot(params,options,npops):
     """Prior on the potential"""
     vo= get_vo(params,options,npops)
     if vo < 100./_REFV0 or vo > 350./_REFV0: return -numpy.finfo(numpy.dtype(numpy.float64)).max #don't allow crazy vo
+    dvt= get_dvt(params,options)
+    if dvt < -0.5 or dvt > 0.5: return -numpy.finfo(numpy.dtype(numpy.float64)).max #don't allow crazy dvt
     out= 0.
     if options.novoprior: pass
     else:
@@ -1881,6 +1886,8 @@ class errstuffClass:
 def initialize(options,fehs,afes):
     """Function to initialize the fit; uses fehs and afes to initialize using MAPS"""
     p= []
+    if options.fitdvt:
+        p.append(0.)
     if options.fitdm:
         p.append(0.)
     if options.fitro:
@@ -1931,6 +1938,9 @@ def setup_domain(options,npops):
     """Setup isDomainFinite, domain for markovpy"""
     isDomainFinite= []
     domain= []
+    if options.fitdvt:
+        isDomainFinite.append([True,True])
+        domain.append([-0.5,0.5])
     if options.fitdm:
         isDomainFinite.append([True,True])
         domain.append([-0.5,0.5])
@@ -2037,6 +2047,7 @@ def setup_domain_indiv_potential(options,npops):
 def get_potparams(p,options,npops):
     """Function that returns the set of potential parameters for these options"""
     startindx= 0
+    if options.fitdvt: startindx+= 1
     if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
@@ -2064,6 +2075,7 @@ def get_vo(p,options,npops):
     """Function that returns the vo parameter for these options"""
     if not options.fixvo is None: return options.fixvo
     startindx= 0
+    if options.fitdvt: startindx+= 1
     if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
@@ -2085,6 +2097,7 @@ def get_vo(p,options,npops):
 def get_outfrac(p,indx,options):
     """Function that returns the outlier fraction for these options"""
     startindx= 0
+    if options.fitdvt: startindx+= 1
     if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
@@ -2097,6 +2110,7 @@ def get_outfrac(p,indx,options):
 def set_potparams(p,params,options,npops):
     """Function that sets the set of potential parameters for these options"""
     startindx= 0
+    if options.fitdvt: startindx+= 1
     if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
@@ -2127,6 +2141,7 @@ def get_dfparams(p,indx,options,log=False):
     """Function that returns the set of DF parameters for population indx for these options,
     Returns them as a set such that they can be given to the initialization"""
     startindx= 0
+    if options.fitdvt: startindx+= 1
     if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
@@ -2152,6 +2167,7 @@ def get_dfparams(p,indx,options,log=False):
 def set_dfparams(p,params,indx,options):
     """Function that sets the set of DF parameters for population indx for these options"""
     startindx= 0
+    if options.fitdvt: startindx+= 1
     if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun: startindx+= 3
@@ -2186,7 +2202,7 @@ def get_npotparams(options):
 def get_ro(p,options):
     """Function that returns R0 for these options"""
     if options.fitro:
-        return p[options.fitdm]
+        return p[options.fitdm+options.fitdvt]
     elif not options.fixro is None:
         return options.fixro
     else:
@@ -2195,9 +2211,16 @@ def get_ro(p,options):
 def get_dm(p,options):
     """Function that returns the change in distance modulus these options"""
     if options.fitdm:
-        return p[0]
+        return p[options.fitdvt]
     elif not options.fixdm is None:
         return options.fixdm
+    else:
+        return 0.
+
+def get_dvt(p,options):
+    """Function that returns the change in distance modulus these options"""
+    if options.fitdvt:
+        return p[0]
     else:
         return 0.
 
@@ -2205,6 +2228,7 @@ def get_vsun(p,options):
     """Function to return motion of the Sun in the Galactocentric reference frame"""
     ro= get_ro(p,options)
     startindx= 0
+    if options.fitdvt: startindx+= 1
     if options.fitdm: startindx+= 1
     if options.fitro: startindx+= 1
     if options.fitvsun:
@@ -2382,6 +2406,9 @@ def get_options():
     parser.add_option("--fixdm",dest="fixdm",type='float',
                       default=None,
                       help="If set, fix a distance modulus offset")
+    parser.add_option("--fitdvt",action="store_true", dest="fitdvt",
+                      default=False,
+                      help="If set, fit for a vT offset")
     #Errors
     parser.add_option("--nmcerr",dest='nmcerr',default=30,type='int',
                       help="Number of MC samples to use for Monte Carlo integration over error distribution")
