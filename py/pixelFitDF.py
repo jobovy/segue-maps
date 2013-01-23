@@ -204,7 +204,9 @@ def read_rawdata(options):
         else:
             raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
     elif options.sample.lower() == 'k':
-        if options.select.lower() == 'program':
+        if not options.fakedata is None:
+            raw= read_kdwarfs(options.fakedata,logg=True,ebv=True,sn=options.snmin,nosolar=True,norcut=True)
+        elif options.select.lower() == 'program':
             raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
         else:
             raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)

@@ -1352,7 +1352,8 @@ def read_gdwarfs(datafile=_GDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     return raw
 
 def read_kdwarfs(datafile=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
-                 ebv=True,nocoords=False,distfac=None,nosolar=False):
+                 ebv=True,nocoords=False,distfac=None,nosolar=False,
+                 norcut=False):
     """
     NAME:
        read_kdwarfs
@@ -1367,6 +1368,7 @@ def read_kdwarfs(datafile=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
        nocoords= if True, don't calculate distances or transform coordinates
        distfac= if set, apply this distance factor
        nosolar= if True, don't correct for the Solar motion
+       norcut= if True, don't cut on r (useful for fake data)
     OUTPUT:
        cut data, returns numpy.recarray
     HISTORY:
@@ -1374,8 +1376,9 @@ def read_kdwarfs(datafile=_KDWARFALLFILE,logg=False,ug=False,ri=False,sn=True,
     """
     raw= _load_fits(datafile)
     #First cut on r
-    indx= (raw.field('dered_r') < 19.)*(raw.field('dered_r') > 14.5)
-    raw= raw[indx]
+    if not norcut:
+        indx= (raw.field('dered_r') < 19.)*(raw.field('dered_r') > 14.5)
+        raw= raw[indx]
     #Then cut on g-r
     indx= ((raw.field('dered_g')-raw.field('dered_r')) < 0.75)\
         *((raw.field('dered_g')-raw.field('dered_r')) > .55)
