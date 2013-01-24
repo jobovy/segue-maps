@@ -303,7 +303,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned,errstuff,
                                       options,len(fehs))
-    if options.fitdvt:
+    if options.fitdvt or not options.fixdvt is None:
         dvt= get_dvt(params,options)
         vT+= dvt*vo
     ndata= R.shape[0]
@@ -2249,6 +2249,8 @@ def get_dvt(p,options):
     """Function that returns the change in distance modulus these options"""
     if options.fitdvt:
         return p[0]
+    elif not options.fixdvt is None:
+        return options.fixdvt
     else:
         return 0.
 
@@ -2437,6 +2439,9 @@ def get_options():
     parser.add_option("--fitdvt",action="store_true", dest="fitdvt",
                       default=False,
                       help="If set, fit for a vT offset")
+    parser.add_option("--fixdvt",dest="fixdvt",type='float',
+                      default=None,
+                      help="If set, fix a vT offset")
     #Errors
     parser.add_option("--nmcerr",dest='nmcerr',default=30,type='int',
                       help="Number of MC samples to use for Monte Carlo integration over error distribution")

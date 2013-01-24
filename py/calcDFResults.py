@@ -155,6 +155,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     zhexps= []
     dlnvcdlnrs= []
     plhalos= []
+    dvts= []
     #derived parameters
     surfzs= []
     surfz800s= []
@@ -278,6 +279,8 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             mloglikemins.append(chi2s[solindx])
             #escape velocity
             vescs.append(potential.vesc(pot,1.)*_REFV0)
+            if options.fitdvt:
+                dvts.append(sols[solindx][0])
     #Gather
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
@@ -297,6 +300,8 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     zhexps= numpy.array(zhexps)
     dlnvcdlnrs= numpy.array(dlnvcdlnrs)
     plhalos= numpy.array(plhalos)
+    if options.fitdvt:
+        dvts= numpy.array(dvts)
     #derived parameters
     surfzs= numpy.array(surfzs)
     surfz800s= numpy.array(surfz800s)
@@ -341,6 +346,8 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     out['rexp']= rexps
     out['mloglikemin']= mloglikemins
     out['vesc']= vescs
+    if options.fitdvt:
+        out['dvt']= dvts
     if nomedian: return out
     else: return add_median(out,boot=boot)
 
