@@ -48,7 +48,7 @@ def plotMNDblExp(options,args):
                                 overplot=overplot)
             overplot= True
     elif options.type.lower() == 'rd':
-        aas= numpy.linspace(.5/8.,8/8.,16)
+        aas= numpy.linspace(1./8.,8/8.,15)
         rs= numpy.linspace(0.5,1.5,1001)
         bovy_plot.bovy_print()
         overplot=False
@@ -61,15 +61,16 @@ def plotMNDblExp(options,args):
                 ylabel=r'$R_d / a$'
                 yrange= [0.,2.]
             else:
-                y= -f/df
+                y= -f/df*8.
                 ylabel=r'$R_d$'
-                yrange= [0.,1.0]
+                yrange= [0.,8.0]
             bovy_plot.bovy_plot(rs*8.,y,
                                 '-',color='%f' % (float(ii)/(len(aas)-1)*0.8),
                                 xlabel=r'$R\ [\mathrm{kpc}]$',
                                 ylabel=ylabel,
                                 yrange=yrange,
                                 overplot=overplot)
+            bovy_plot.bovy_plot(rs*8.,rs*8./3.,'k--',overplot=True)
             overplot= True
     bovy_plot.bovy_end_print(options.outfilename)
     return None
