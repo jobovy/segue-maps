@@ -20,9 +20,11 @@ from pixelFitDF import *
 from pixelFitDF import _REFR0, _REFV0
 from matplotlib import pyplot
 from matplotlib.ticker import NullFormatter
+def mn_zhexp(mp,z,dz):
+    return dz/(numpy.log(mp.dens(1.,z-dz/2.))-numpy.log(mp.dens(1.,z+dz/2.)))
 def plotMNDblExp(options,args):
     if options.type.lower() == 'zh':
-        bs= numpy.linspace(0.2/8.,0.6/8.,9)
+        bs= numpy.linspace(0.1/8.,1.1/8.,11)
         zs= numpy.linspace(0.,2./8.,1001)
         bovy_plot.bovy_print()
         overplot=False
@@ -30,15 +32,23 @@ def plotMNDblExp(options,args):
             mp= potential.MiyamotoNagaiPotential(a=0.4,b=bs[ii])
             f= mp.dens(1.,zs)
             df= (f-numpy.roll(f,1))/(zs[1]-zs[0])
-            bovy_plot.bovy_plot(zs*8.,-f/df/bs[ii],
+            if not options.relative:
+                y= -f/df/bs[ii]
+                ylabel=r'$z_h / b$'
+                yrange= [0.,2.]
+            else:
+                y= mn_zhexp(mp,zs,dz=1./8.)#-f/df
+                ylabel=r'$z_h$'
+                yrange= [0.,.1]
+            bovy_plot.bovy_plot(zs*8.,y,
                                 '-',color='%f' % (float(ii)/(len(bs)-1)*0.8),
                                 xlabel=r'$Z\ [\mathrm{kpc}]$',
-                                ylabel=r'$z_h / b$',
-                                yrange=[0.,2.],
+                                ylabel=ylabel,
+                                yrange=yrange,
                                 overplot=overplot)
             overplot= True
     elif options.type.lower() == 'rd':
-        aas= numpy.linspace(2./8.,4/8.,9)
+        aas= numpy.linspace(.5/8.,8/8.,16)
         rs= numpy.linspace(0.5,1.5,1001)
         bovy_plot.bovy_print()
         overplot=False
@@ -46,11 +56,19 @@ def plotMNDblExp(options,args):
             mp= potential.MiyamotoNagaiPotential(a=aas[ii],b=0.05)
             f= mp.dens(rs,1./8.)
             df= (f-numpy.roll(f,1))/(rs[1]-rs[0])
-            bovy_plot.bovy_plot(rs*8.,-f/df/aas[ii],
+            if not options.relative:
+                y= -f/df/aas[ii] 
+                ylabel=r'$R_d / a$'
+                yrange= [0.,2.]
+            else:
+                y= -f/df
+                ylabel=r'$R_d$'
+                yrange= [0.,1.0]
+            bovy_plot.bovy_plot(rs*8.,y,
                                 '-',color='%f' % (float(ii)/(len(aas)-1)*0.8),
                                 xlabel=r'$R\ [\mathrm{kpc}]$',
-                                ylabel=r'$R_d / a$',
-                                yrange=[0.,2.],
+                                ylabel=ylabel,
+                                yrange=yrange,
                                 overplot=overplot)
             overplot= True
     bovy_plot.bovy_end_print(options.outfilename)
