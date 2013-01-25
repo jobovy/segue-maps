@@ -1509,7 +1509,7 @@ def setup_potential(params,options,npops):
         hp= potential.PowerSphericalPotential(alpha=potparams[4],
                                               normalize=amph)
         #Use an interpolated version for speed
-        return potential.interpRZPotential(RZPot=[dp,hp,bp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,use_c=True,enable_c=True,interpPot=True)       
+        return potential.interpRZPotential(RZPot=[dp,hp,bp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True)       
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         ro= get_ro(params,options)
         vo= get_vo(params,options,npops)
