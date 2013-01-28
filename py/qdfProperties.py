@@ -45,9 +45,7 @@ def plot_hrhrvshr(options,args):
                 qdf= quasiisothermaldf(hrs[ii,jj]/8.,srs[ii,jj]/220.,
                                        srs[ii,jj]/2./220.,7./8.,7./8.,
                                        pot=pot,aA=aA)
-                plotthis[ii,jj]= qdf.estimate_hr(1.,z=None,nR=101,nmc=100,
-                                                 dR=numpy.amin([6./8.,
-                                                                3./8.*hrs[ii,jj]]))/hrs[ii,jj]*8.
+                plotthis[ii,jj]= qdf.estimate_hr(1.,z=None)/hrs[ii,jj]*8.
                 print ii*options.nsr+jj+1, options.nsr*options.nhr, \
                     hrs[ii,jj], srs[ii,jj], plotthis[ii,jj]
         #Save
@@ -124,7 +122,7 @@ def plot_hzszq(options,args):
                 qdf= quasiisothermaldf(options.hr/8.,2.*szs[jj]/220.,
                                        szs[jj]/220.,7./8.,7./8.,pot=lp,
                                        aA=aA,cutcounter=True)    
-                hzs[ii,jj]= qdf.estimate_hz(1.)
+                hzs[ii,jj]= qdf.estimate_hz(1.,z=0.125)
         #Save
         save_pickles(args[0],hzs,szs,qs)
     #Re-sample

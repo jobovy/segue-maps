@@ -206,8 +206,8 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         ro= get_ro(params,options)
     if vo is None:
         vo= get_vo(params,options,len(fehs))
-    thishr= qdf.estimate_hr(1.)*_REFR0*ro #qdf._hr*_REFR0*ro
-    thishz= qdf.estimate_hz(1.,zmin=0.1,zmax=0.3,nz=11)*_REFR0*ro
+    thishr= qdf.estimate_hr(1.,z=0.125)*_REFR0*ro #qdf._hr*_REFR0*ro
+    thishz= qdf.estimate_hz(1.,z=0.125)*_REFR0*ro
     if thishr < 0.: thishr= 10. #Probably close to flat
     if thishz  < 0.1: thishz= 0.2
     thissr= qdf._sr*_REFV0*vo
@@ -284,9 +284,9 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
         if _SURFSUBTRACTEXPON:
             Rs= numpy.tile(Rgrid,(nzs,1)).T
             Zs= numpy.tile(zgrid,(nrs,1))
-            ehr= qdf.estimate_hr(1.)
+            ehr= qdf.estimate_hr(1.,z=0.125)
 #            ehz= qdf.estimate_hz(1.,zmin=0.5,zmax=0.7)#Get large z behavior right
-            ehz= qdf.estimate_hz(1.)
+            ehz= qdf.estimate_hz(1.,z=0.125)
             surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
                                                         numpy.log(surfgrid)
                                                         +Rs/ehr+numpy.fabs(Zs)/ehz,
