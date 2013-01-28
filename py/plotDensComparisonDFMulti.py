@@ -365,7 +365,7 @@ def calc_model(params,options,pop,_retsurfz=False):
     surfgrid= numpy.empty((nrs,nzs))
     for ii in range(nrs):
         for jj in range(nzs):
-            surfgrid[ii,jj]= qdf.surfacemass(Rgrid[ii],zgrid[jj],
+            surfgrid[ii,jj]= qdf.density(Rgrid[ii],zgrid[jj],
                                              nmc=options.nmcv,
                                              ngl=options.ngl)
         surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,

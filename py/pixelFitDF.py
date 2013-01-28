@@ -571,17 +571,17 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
         for ii in range(nrs):
             for jj in range(nzs):
                 if _PRECALCVSAMPLES:
-                    surfgrid[ii,jj]= qdf.surfacemass(surfRgrid[ii],
-                                                     surfzgrid[jj],
-                                                     _vrs=surfvrs[jj+ii*surfnzs],
-                                                     _vts=surfvts[jj+ii*surfnzs],
-                                                     _vzs=surfvzs[jj+ii*surfnzs],
-                                                     nmc=options.nmcv,
-                                                     _rawgausssamples=True)
+                    surfgrid[ii,jj]= qdf.density(surfRgrid[ii],
+                                                 surfzgrid[jj],
+                                                 _vrs=surfvrs[jj+ii*surfnzs],
+                                                 _vts=surfvts[jj+ii*surfnzs],
+                                                 _vzs=surfvzs[jj+ii*surfnzs],
+                                                 nmc=options.nmcv,
+                                                 _rawgausssamples=True)
                 else:
-                    surfgrid[ii,jj]= qdf.surfacemass(Rgrid[ii],zgrid[jj],
-                                                     ngl=options.ngl,
-                                                     nmc=options.nmcv)
+                    surfgrid[ii,jj]= qdf.density(Rgrid[ii],zgrid[jj],
+                                                 ngl=options.ngl,
+                                                 nmc=options.nmcv)
         if _SURFSUBTRACTEXPON:
             Rs= numpy.tile(Rgrid,(nzs,1)).T
             Zs= numpy.tile(zgrid,(nrs,1))
@@ -679,7 +679,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
             zgrid= XYZgrid[:,2]/ro/_REFR0       
             surfgrid= numpy.zeros(ndsgrid)
             for kk in range(ndsgrid):
-                surfgrid[kk]= qdf.surfacemass(Rgrid[kk],zgrid[kk],nmc=options.nmcv)
+                surfgrid[kk]= qdf.density(Rgrid[kk],zgrid[kk],nmc=options.nmcv)
 #            print kk, dsgrid[kk], Rgrid[kk], zgrid[kk], surfgrid[kk]
         #Interpolate
 #        surfinterpolate= interpolate.InterpolatedUnivariateSpline(dsgrid/ro/_REFR0,
@@ -1130,7 +1130,7 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
             vzs= []
             for jj in range(nrs):
                 for kk in range(nzs):
-                    dummy, thisvrs, thisvts, thisvzs= normintqdf.vmomentsurfacemass(Rgrid[jj],zgrid[kk],0.,0.,0.,
+                    dummy, thisvrs, thisvts, thisvzs= normintqdf.vmomentdensity(Rgrid[jj],zgrid[kk],0.,0.,0.,
                                                                              nmc=options.nmcv,
                                                                              _returnmc=True,_rawgausssamples=True)
                     vrs.append(thisvrs)

@@ -133,8 +133,8 @@ def plotFidDF(options,args):
         #              frameon=False)
     elif options.type.lower() == 'densz':
         zs= numpy.linspace(0.,5.,101)
-        densz= numpy.array([qdf.surfacemass(1.,z/ro/_REFR0,gl=True) for z in zs])
-        densza= numpy.array([qdfa.surfacemass(1.,z/ro/_REFR0,gl=True) for z in zs])
+        densz= numpy.array([qdf.density(1.,z/ro/_REFR0,gl=True) for z in zs])
+        densza= numpy.array([qdfa.density(1.,z/ro/_REFR0,gl=True) for z in zs])
         bovy_plot.bovy_print()
         line1= bovy_plot.bovy_plot(zs,densz/densz[0],'k-',
                                    xlabel=r'$Z\ [\mathrm{kpc}]$',
@@ -150,8 +150,8 @@ def plotFidDF(options,args):
                       prop={'size':16},
                       frameon=False)
         #Create inset with profile at different R
-        denszr12= numpy.array([qdf.surfacemass(11./8.,z/ro/_REFR0,gl=True) for z in zs])
-        denszr4= numpy.array([qdf.surfacemass(5./8.,z/ro/_REFR0,gl=True) for z in zs])
+        denszr12= numpy.array([qdf.density(11./8.,z/ro/_REFR0,gl=True) for z in zs])
+        denszr4= numpy.array([qdf.density(5./8.,z/ro/_REFR0,gl=True) for z in zs])
         insetAxes= pyplot.axes([0.15,0.12,0.3,0.4])
         line1= insetAxes.semilogy(zs,densz/densz[0],'k-')
         line2= insetAxes.semilogy(zs,denszr12/denszr12[0],'k:')
@@ -169,8 +169,8 @@ def plotFidDF(options,args):
                       frameon=False)
     elif options.type.lower() == 'densr':
         rs= numpy.linspace(4.,15.,101)
-        densr= numpy.array([qdf.surfacemass(r/ro/_REFR0,1./ro/_REFR0,gl=True) for r in rs])
-        densra= numpy.array([qdfa.surfacemass(r/ro/_REFR0,1./ro/_REFR0,gl=True) for r in rs])
+        densr= numpy.array([qdf.density(r/ro/_REFR0,1./ro/_REFR0,gl=True) for r in rs])
+        densra= numpy.array([qdfa.density(r/ro/_REFR0,1./ro/_REFR0,gl=True) for r in rs])
         bovy_plot.bovy_print()
         line1= bovy_plot.bovy_plot(rs,densr/densr[numpy.argmin((rs-8.)**2.)],'k-',
                                    xlabel=r'$R\ [\mathrm{kpc}]$',

@@ -276,9 +276,9 @@ def fakeDFData(binned,qdf,ii,params,fehs,afes,options,
             for jj in range(nzs):
                 sys.stdout.write('\r'+"Working on grid-point %i/%i" % (jj+ll*nzs+1,nzs*nrs))
                 sys.stdout.flush()
-                surfgrid[ll,jj]= qdf.surfacemass(Rgrid[ll],zgrid[jj],
-                                                 nmc=options.nmcv,
-                                                 ngl=options.ngl)
+                surfgrid[ll,jj]= qdf.density(Rgrid[ll],zgrid[jj],
+                                             nmc=options.nmcv,
+                                             ngl=options.ngl)
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         if _SURFSUBTRACTEXPON:
