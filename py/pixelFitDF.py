@@ -1424,7 +1424,9 @@ def setup_aA(pot,options):
                                        nE=options.staeckelnE,
                                        npsi=options.staeckelnpsi)
     
-def setup_potential(params,options,npops):
+def setup_potential(params,options,npops,
+                    interpDens=False,interpdvcircdr=False,
+                    returnrawpot=False):
     """Function for setting up the potential"""
     potparams= get_potparams(params,options,npops)
     if options.potential.lower() == 'flatlog':
@@ -1509,7 +1511,10 @@ def setup_potential(params,options,npops):
         hp= potential.PowerSphericalPotential(alpha=potparams[4],
                                               normalize=amph)
         #Use an interpolated version for speed
-        return potential.interpRZPotential(RZPot=[dp,hp,bp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True)       
+        if returnrawpot:
+            return [dp,hp,bp]
+        else:
+            return potential.interpRZPotential(RZPot=[dp,hp,bp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True,interpDens=interpDens,interpdvcircdr=interpdvcircdr)
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         ro= get_ro(params,options)
         vo= get_vo(params,options,npops)
