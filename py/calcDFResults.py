@@ -155,6 +155,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     zhexps= []
     dlnvcdlnrs= []
     plhalos= []
+    rorss= []
     dvts= []
     #derived parameters
     surfzs= []
@@ -183,7 +184,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
                 continue
             try:
                 pot= setup_potential(sols[solindx],options,1,interpDens=True,
-                                     interpdvcircdr=True,returnrawpot=True)
+                                     interpdvcircdr=True)
             except RuntimeError:
                 print "A bin has an unphysical potential ..."
                 continue
@@ -209,6 +210,8 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             #zh
             zhs.append(numpy.exp(s[2-(1-(options.fixvo is None))]))
             #rdexp & zhexp
+            if options.sample == 'g': tz= 1.1/_REFR0/ro
+            elif options.sample == 'k': tz= 0.84/_REFR0/ro
             if 'mpdisk' in options.potential.lower() or 'mwpotential' in options.potential.lower():
                 mp= potential.MiyamotoNagaiPotential(a=rds[-1],b=zhs[-1])
                 #rdexp
@@ -217,8 +220,6 @@ def calcDFResults(options,args,boot=True,nomedian=False):
                 df= (mp.dens(1.+dr/2.,0.125)-mp.dens(1.-dr/2.,0.125))/dr
                 rdexps.append(-f/df)
                 #zhexp
-                if options.sample == 'g': tz= 1.1/_REFR0/ro
-                elif options.sample == 'k': tz= 0.84/_REFR0/ro
                 f= mp.dens(1.,tz)
                 dz= 10.**-3.
                 df= (mp.dens(1.,tz+dz/2.)-mp.dens(1.,tz-dz/2.))/dz
@@ -275,8 +276,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
                 surfzdisks.append(2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot[0])),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro)
                 surfzdiskzm= 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot[0])),0.,tz)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
             elif 'dpdisk' in options.potential.lower():
-                surfzdisks.append(2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,rawpot[0])),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro)
-                surfzdiskzm= 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,rawpot[0])),0.,tz)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
+                surfzdisks.append(2.*rawpot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*zhexps[-1]*ro*_REFR0*1000.)
             #rhooalt
             if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                 rhooalts.append(rhoos[-1]-pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.+surfzdiskzm/2./zhexps[-1]/ro/_REFR0/1000./(1.-numpy.exp(-tz/zhexps[-1])))
@@ -284,19 +284,29 @@ def calcDFResults(options,args,boot=True,nomedian=False):
                 rhooalts.append(rhoos[-1])
             #massdisk
             if options.potential.lower() == 'dpdiskplhalofixbulgeflat':
-                rhod= rawpot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.)
+                rhod= rawpot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
             else:
                 rhod= surfzdiskzm/2./zhexps[-1]/ro/_REFR0/1000./(1.-numpy.exp(-tz/zhexps[-1]))
             massdisks.append(rhod*2.*zhexps[-1]*numpy.exp(1./rdexps[-1])*rdexps[-1]**2.*2.*numpy.pi*(ro*_REFR0)**3./10.)
             #plhalo
-            if options.potential.lower() == 'mpdiskplhalofixbulgeflat' \
-                    or options.potential.lower() == 'dpdiskplhalofixbulgeflat':
+            if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                 plhalos.append(pot[1].alpha)
+                plhalos.append((1.-pot[1].alpha)/(pot[1].alpha-3.))
+            elif options.potential.lower() == 'dpdiskplhalofixbulgeflat':
+                plhalos.append(rawpot[1].alpha)
+                rorss.append((1.-rawpot[1].alpha)/(rawpot[1].alpha-3.))
             #dlnvcdlnr
-            dlnvcdlnrs.append(potential.dvcircdR(pot,1.))
+            if options.potential.lower() == 'dpdiskplhalofixbulgeflat':
+                dlnvcdlnrs.append(potential.dvcircdR(rawpot,1.))
+            else:
+                dlnvcdlnrs.append(potential.dvcircdR(pot,1.))
             #vcdvc
-            vcdvcros.append(pot[0].vcirc(1.)/potential.vcirc(pot,1.))
-            vcdvcs.append(pot[0].vcirc(2.2*rdexps[-1])/potential.vcirc(pot,2.2*rdexps[-1]))
+            if options.potential.lower() == 'dpdiskplhalofixbulgeflat':
+                vcdvcros.append(rawpot[0].vcirc(1.)/potential.vcirc(pot,1.))
+                vcdvcs.append(rawpot[0].vcirc(2.2*rdexps[-1])/potential.vcirc(pot,2.2*rdexps[-1]))
+            else:
+                vcdvcros.append(pot[0].vcirc(1.)/potential.vcirc(pot,1.))
+                vcdvcs.append(pot[0].vcirc(2.2*rdexps[-1])/potential.vcirc(pot,2.2*rdexps[-1]))
             #mloglike
             mloglikemins.append(chi2s[solindx])
             #escape velocity
@@ -322,6 +332,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     zhexps= numpy.array(zhexps)
     dlnvcdlnrs= numpy.array(dlnvcdlnrs)
     plhalos= numpy.array(plhalos)
+    rorss= numpy.array(rorss)
     if options.fitdvt:
         dvts= numpy.array(dvts)
     #derived parameters
@@ -356,6 +367,7 @@ def calcDFResults(options,args,boot=True,nomedian=False):
     out['zhexp']= zhexps
     out['dlnvcdlnr']= dlnvcdlnrs
     out['plhalo']= plhalos
+    out['rors']= rorss
     out['surfz']= surfzs
     out['surfz800']= surfz800s
     out['surfzdisk']= surfzdisks
