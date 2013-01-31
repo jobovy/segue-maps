@@ -1497,12 +1497,20 @@ def setup_potential(params,options,npops,
         dlnvcdlnr= potparams[3]/30.
         ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
         bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
+        #Also add 13 Msol/pc^2 with a scale height of 130 pc, and a scale length of ?
+        gp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
+                                                     hz=0.130/ro/_REFR0,
+                                                     normalize=1.)
+        gassurfdens= 2.*gp.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*gp._hz*ro*_REFR0*1000.
+        gp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
+                                                     hz=0.130/ro/_REFR0,
+                                                     normalize=13./gassurfdens)
         #normalize to 1 for calculation of ampd and amph
         dp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
                                                      hz=numpy.exp(potparams[2])/ro,
                                                      normalize=1.)
         hp= potential.PowerSphericalPotential(alpha=potparams[4],normalize=1.)
-        ampd, amph= fdfh_from_dlnvcdlnr(dlnvcdlnr,dp,bp,hp)
+        ampd, amph= fdfh_from_dlnvcdlnr(dlnvcdlnr,dp,[bp,gp],hp)
         if ampd <= 0. or amph <= 0.:
             raise RuntimeError
         dp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
@@ -1512,9 +1520,9 @@ def setup_potential(params,options,npops,
                                               normalize=amph)
         #Use an interpolated version for speed
         if returnrawpot:
-            return [dp,hp,bp]
+            return [dp,hp,bp,gp]
         else:
-            return potential.interpRZPotential(RZPot=[dp,hp,bp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True,interpDens=interpDens,interpdvcircdr=interpdvcircdr)
+            return potential.interpRZPotential(RZPot=[dp,hp,bp,gp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True,interpDens=interpDens,interpdvcircdr=interpdvcircdr)
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         ro= get_ro(params,options)
         vo= get_vo(params,options,npops)
