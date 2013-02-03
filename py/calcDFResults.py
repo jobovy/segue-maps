@@ -263,7 +263,8 @@ def calcDFResults(options,args,boot=True,nomedian=False):
                 rhodms.append(pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.)
             elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
                 rhodms.append(pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.)
-            elif options.potential.lower() == 'dpdiskplhalofixbulgeflat':
+            elif options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
+                    or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
                 rhodms.append(pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.)
             #rhoo
             rhoos.append(potential.evaluateDensities(1.,0.,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.)
@@ -280,10 +281,12 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             #rhooalt
             if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                 rhooalts.append(rhoos[-1]-pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.+surfzdiskzm/2./zhexps[-1]/ro/_REFR0/1000./(1.-numpy.exp(-tz/zhexps[-1])))
-            elif options.potential.lower() == 'dpdiskplhalofixbulgeflat':
+            elif options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
+                    or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
                 rhooalts.append(rhoos[-1])
             #massdisk
-            if options.potential.lower() == 'dpdiskplhalofixbulgeflat':
+            if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
+                    or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
                 rhod= pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
             else:
                 rhod= surfzdiskzm/2./zhexps[-1]/ro/_REFR0/1000./(1.-numpy.exp(-tz/zhexps[-1]))
@@ -292,16 +295,19 @@ def calcDFResults(options,args,boot=True,nomedian=False):
             if options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                 plhalos.append(pot[1].alpha)
                 plhalos.append((1.-pot[1].alpha)/(pot[1].alpha-3.))
-            elif options.potential.lower() == 'dpdiskplhalofixbulgeflat':
+            elif options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
+                    or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
                 plhalos.append(pot[1].alpha)
                 rorss.append((1.-pot[1].alpha)/(pot[1].alpha-3.))
             #dlnvcdlnr
-            if options.potential.lower() == 'dpdiskplhalofixbulgeflat':
+            if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
+                    or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
                 dlnvcdlnrs.append(potential.dvcircdR(pot,1.))
             else:
                 dlnvcdlnrs.append(potential.dvcircdR(pot,1.))
             #vcdvc
-            if options.potential.lower() == 'dpdiskplhalofixbulgeflat':
+            if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
+                    or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
                 vcdvcros.append(pot[0].vcirc(1.)/potential.vcirc(pot,1.))
                 vcdvcs.append(pot[0].vcirc(2.2*rdexps[-1])/potential.vcirc(pot,2.2*rdexps[-1]))
             else:
