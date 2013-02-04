@@ -1523,11 +1523,11 @@ def setup_potential(params,options,npops,
         ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
         bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
         #Also add 13 Msol/pc^2 with a scale height of 130 pc, and a scale length of ?
-        gp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
+        gp= potential.DoubleExponentialDiskPotential(hr=10./8.,
                                                      hz=0.130/ro/_REFR0,
                                                      normalize=1.)
         gassurfdens= 2.*gp.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*gp._hz*ro*_REFR0*1000.
-        gp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
+        gp= potential.DoubleExponentialDiskPotential(hr=10./8.,
                                                      hz=0.130/ro/_REFR0,
                                                      normalize=13./gassurfdens)
         #normalize to 1 for calculation of ampd and amph
@@ -1543,6 +1543,7 @@ def setup_potential(params,options,npops,
                                              normalize=ampd)
         hp= potential.PowerSphericalPotential(alpha=potparams[4],
                                               normalize=amph)
+        #print ampb, 13./gassurfdens, ampd, amph, dp(1.,0.), hp(1.,0.)
         #Use an interpolated version for speed
         if returnrawpot:
             return [dp,hp,bp,gp]
@@ -1990,8 +1991,8 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
     elif options.potential.lower() == 'mpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
-        #p.extend([-1.,1.,-3.,-1.,1.35])
-        p.extend([-1.39,1.,-3.,-1.,0.])
+        #p.extend([-1.,1.,-3.,0.,1.35])
+        p.extend([-1.39,1.,-3.,0.,1.35])
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         p.extend([-1.,1.,-3.,0.,1.])
     return p
