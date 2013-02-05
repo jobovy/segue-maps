@@ -10,7 +10,7 @@ import time
 import math as m
 import numpy
 from scipy import ndimage
-from galpy.util import bovy_coords, bovy_plot
+from galpy.util import bovy_coords, bovy_plot, multi
 import matplotlib
 from fitDensz import _ivezic_dist, _ZSUN, _DEGTORAD, _gi_gr, _mr_gi
 from segueSelect import _ERASESTR, _SEGUESELECTDIR, _load_fits
@@ -782,7 +782,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                         xrange=None,yrange=None,
                         overplot=False,color='k',marker='v',cumul=False,
                         runavg=0,noplot=False,nodata=False,distfac=1.,
-                        R0=8.):
+                        R0=8.,numcores=None):
     """
     NAME:
        comparernumberPlate
@@ -805,6 +805,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
        marker= marker
        cumul= if True, plot cumulative distribution
        runavg= if > 0, also plot a running average (only for cumul=False)
+       numcores= if set to an integer, use this number of cores
     OUTPUT:
        plot to output
        return numbers, data_numbers, xs
@@ -902,33 +903,34 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
     else: #single value
         numbers= numpy.zeros(len(plate))
         platels, platebs= [], []
-        for ii in range(len(plate)):
-            p= plate[ii]
-            #l and b?
-            pindx= (sf.plates == p)
-            platel= platelb[pindx,0][0]
-            plateb= platelb[pindx,1][0]
-            platels.append(platel)
-            platebs.append(plateb)
-            thiszdist= _predict_zdist_plate(zs,densfunc,params,rmin,rmax,
-                                            platel,
-                                            plateb,grmin,grmax,
-                                            fehmin,fehmax,
-                                            feh,colordist,fehdist,sf,p,distfac,
-                                            R0)
-            numbers[ii]= numpy.nansum(thiszdist)
-            """
-            thisrdist= _predict_rdist_plate(rs,densfunc,params,rmin,rmax,
-                                            platel,
-                                            plateb,grmin,grmax,
-                                            fehmin,fehmax,
-                                            feh,colordist,fehdist,sf,p)
-            if 'faint' in sf.platestr[pindx].programname[0]:
-                thisrdist[(rs < 17.8)]= 0.
-            else:
-                thisrdist[(rs > 17.8)]= 0.
-            numbers[ii]= numpy.nansum(thisrdist)
-            """
+        if not numcores is None:
+            numbers= multi.parallel_map((lambda x: _calc_numbers(plate[x],
+                                                                 platelb,
+                                                                 densfunc,
+                                                                 params,
+                                                                 rmin,rmax,
+                                                                 grmin,grmax,
+                                                                 fehmin,fehmax,
+                                                                 feh,colordist,
+                                                                 fehdist,sf,
+                                                                 distfac,R0)),
+                                        range(len(plate)),numcores=numcores)
+        else:
+            for ii in range(len(plate)):
+                p= plate[ii]
+                #l and b?
+                pindx= (sf.plates == p)
+                platel= platelb[pindx,0][0]
+                plateb= platelb[pindx,1][0]
+                platels.append(platel)
+                platebs.append(plateb)
+                thiszdist= _predict_zdist_plate(zs,densfunc,params,rmin,rmax,
+                                                platel,
+                                                plateb,grmin,grmax,
+                                                fehmin,fehmax,
+                                                feh,colordist,fehdist,sf,p,distfac,
+                                                R0)
+                numbers[ii]= numpy.nansum(thiszdist)
 #        norm= numpy.nansum(numbers)
 #        numbers/= norm
         numbers*= (zs[1]-zs[0])/(20.2-14.5)*1000 #backward compatibility
@@ -1020,7 +1022,23 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                 lbstr,top_left=True,
                                 size=_legendsize)
         return (numbers, data_numbers, xs)
-    
+
+#For multi evaluation of previous    
+def _calc_numbers(p,platelb,densfunc,params,rmin,rmax,
+                  grmin,grmax,fehmin,fehmax,
+                  feh,colordist,fehdist,sf,distfac,R0):
+    #l and b?
+    pindx= (sf.plates == p)
+    platel= platelb[pindx,0][0]
+    plateb= platelb[pindx,1][0]
+    thiszdist= _predict_zdist_plate(zs,densfunc,params,rmin,rmax,
+                                    platel,
+                                    plateb,grmin,grmax,
+                                    fehmin,fehmax,
+                                    feh,colordist,fehdist,sf,p,distfac,
+                                    R0)
+    return numpy.nansum(thiszdist)
+
 def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                            rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
                            fehmin=-0.4,fehmax=0.5,feh=-0.15,
