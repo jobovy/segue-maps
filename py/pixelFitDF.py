@@ -14,10 +14,12 @@
 #          functions for setting up the domain
 #
 import os, os.path
+import shutil
 import sys
 import copy
 import tempfile
 import time
+import subprocess
 import math
 import numpy
 from scipy import optimize, interpolate, linalg
@@ -43,7 +45,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from compareDataModel import _predict_rdist_plate, comparernumberPlate
 from pixelFitDens import pixelAfeFeh
-_DEBUG= False
+_DEBUG= True
 _REFR0= 8. #kpc
 _REFV0= 220. #km/s
 _VRSUN=-11.1 #km/s
@@ -268,7 +270,7 @@ def logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff):
     logl= numpy.zeros(len(fehs))
     #Evaluate individual DFs
     args= (pot,aA,fehs,afes,binned,normintstuff,len(fehs),errstuff,options)
-    if not options.multi is None:
+    if False:#not options.multi is None:
         logl= multi.parallel_map((lambda x: indiv_logdf(params,x,
                                                         *args)),
                                  range(len(fehs)),
@@ -618,7 +620,8 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                fehmax=fehmax,
                                feh=feh,
                                noplot=True,nodata=True,distfac=distfac,
-                               R0=_REFR0*ro)
+                               R0=_REFR0*ro,
+                               numcores=options.multi)
         vo= get_vo(params,options,npops)
         return numpy.sum(n)*vo**3.
     for ii in range(len(plates)):
@@ -1227,7 +1230,12 @@ def run_abundance_singles(options,args,fehs,afes):
     savename= args[0]
     initname= options.init
     normname= options.savenorm
-    if not options.multi is None:
+    if options.cluster:
+        options.cluster= False
+        for ii in range(len(fehs)):
+            run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,
+                                                   savename,initname,normname)
+    elif not options.multi is None:
         dummy= multi.parallel_map((lambda x: run_abundance_singles_single(options,args,fehs,afes,x,
                                                                           savename,initname,normname)),
                                   range(len(fehs)),
@@ -1239,6 +1247,79 @@ def run_abundance_singles(options,args,fehs,afes):
             run_abundance_singles_single(options,args,fehs,afes,ii,
                                          savename,initname,normname)
     return None
+
+def unparse_cmd(options,args):
+    out= ""
+    for arg in args:
+        out+= " "+arg
+    parser= get_options()
+    for opt in parser._long_opt.keys():
+        if opt == '--help': continue
+        dest= parser._long_opt[opt].dest
+        opttype= parser._long_opt[opt].type
+        action= parser._long_opt[opt].action
+        if action.lower() == 'store_true' and options.__dict__[dest]:
+            out+= " "+opt
+        elif action.lower() == 'store_false' and not options.__dict__[dest]:
+            out+= " "+opt
+        elif action.lower() == 'store':
+            if options.__dict__[dest] is None:
+                continue
+            elif opttype == 'int':
+                out+= " "+opt+"=%i" % options.__dict__[dest]
+            elif opttype == 'float':
+                out+= " "+opt+"=%f" % options.__dict__[dest]
+            elif opttype == 'string':
+                out+= " "+opt+"=" + options.__dict__[dest]
+    return out
+
+def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
+                                           initname,
+                                           normname):
+    #Prepare args and options
+    spl= savename.split('.')
+    newname= ''
+    for jj in range(len(spl)-1):
+        newname+= spl[jj]
+        if not jj == len(spl)-2: newname+= '.'
+    newname+= '_%i.' % ii
+    newname+= spl[-1]
+    args[0]= newname
+    if options.mcsample:
+        #Do the same for init
+        spl= initname.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        options.init= newname
+    if not normname is None:
+        #Do the same for init
+        spl= normname.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        options.savenorm= newname
+    options.singlefeh= fehs[ii]
+    options.singleafe= afes[ii]
+    #Now run
+    cmd= unparse_cmd(options,args)
+    print cmd
+    cmd= "mpirun -x PYTHONPATH /home/bovy/local/bin/python pixelFitDF.py"+cmd
+    #Create file that will submit the job
+    cmdfilename='../cmds/'+os.path.basename(args[0])+'.sh'
+    shutil.copyfile('submit_template.txt',cmdfilename)
+    cmdfile= open(cmdfilename,'a')
+    cmdfile.write(cmd)
+    cmdfile.close()
+    #Now submit
+    subprocess.call(["qsub","-w","n","-l","exclusive=true","-l","h_rt=24:00:00",cmdfilename])
+    return None    
 
 def run_abundance_singles_single(options,args,fehs,afes,ii,savename,initname,
                                  normname):
@@ -1523,11 +1604,11 @@ def setup_potential(params,options,npops,
         ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
         bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
         #Also add 13 Msol/pc^2 with a scale height of 130 pc, and a scale length of ?
-        gp= potential.DoubleExponentialDiskPotential(hr=10./8.,
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*numpy.exp(potparams[0])/ro,
                                                      hz=0.130/ro/_REFR0,
                                                      normalize=1.)
         gassurfdens= 2.*gp.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*gp._hz*ro*_REFR0*1000.
-        gp= potential.DoubleExponentialDiskPotential(hr=10./8.,
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*numpy.exp(potparams[0])/ro,
                                                      hz=0.130/ro/_REFR0,
                                                      normalize=13./gassurfdens)
         #normalize to 1 for calculation of ampd and amph
@@ -2391,7 +2472,7 @@ def get_options():
                       help="[a/Fe] when considering a single afe (can be for loo)")   
     parser.add_option("--minndata",dest='minndata',default=100,type='int',
                       help="Minimum number of objects in a bin to perform a fit")   
-    parser.add_option("-f",dest='fakedata',default=None,
+    parser.add_option("-f","--fakedata",dest='fakedata',default=None,
                       help="Name of the fake data filename")
     parser.add_option("--loo",action="store_true", dest="loo",
                       default=False,
@@ -2554,6 +2635,9 @@ def get_options():
                       help="Initial parameters file")
     parser.add_option("-m","--multi",dest='multi',default=None,type='int',
                       help="number of cpus to use")
+    parser.add_option("--cluster",action="store_true", dest="cluster",
+                      default=False,
+                      help="If set, fit each bin on a separate node on the cluster (for --singles)")
     #Type of fit
     parser.add_option("--justdf",action="store_true", dest="justdf",
                       default=False,
@@ -2577,7 +2661,7 @@ def get_options():
     parser.add_option("-q","--flatten",dest='flatten',default=None,
                       type='float',
                       help="Shortcut to set fake flattening")
-    parser.add_option("-o",dest='outfilename',default=None,
+    parser.add_option("-o","--outfilename",dest='outfilename',default=None,
                       help="Name for an output file")
     parser.add_option("--ext",dest='ext',default='png',
                       help="Extension for output file")

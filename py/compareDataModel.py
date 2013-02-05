@@ -904,8 +904,9 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
         numbers= numpy.zeros(len(plate))
         platels, platebs= [], []
         if not numcores is None:
-            numbers= multi.parallel_map((lambda x: _calc_numbers(plate[x],
+            numbers= numpy.array(multi.parallel_map((lambda x: _calc_numbers(plate[x],
                                                                  platelb,
+                                                                 zs,
                                                                  densfunc,
                                                                  params,
                                                                  rmin,rmax,
@@ -914,7 +915,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                                                  feh,colordist,
                                                                  fehdist,sf,
                                                                  distfac,R0)),
-                                        range(len(plate)),numcores=numcores)
+                                        range(len(plate)),numcores=numcores))
         else:
             for ii in range(len(plate)):
                 p= plate[ii]
@@ -1024,7 +1025,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
         return (numbers, data_numbers, xs)
 
 #For multi evaluation of previous    
-def _calc_numbers(p,platelb,densfunc,params,rmin,rmax,
+def _calc_numbers(p,platelb,zs,densfunc,params,rmin,rmax,
                   grmin,grmax,fehmin,fehmax,
                   feh,colordist,fehdist,sf,distfac,R0):
     #l and b?
