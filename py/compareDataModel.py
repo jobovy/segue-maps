@@ -1202,11 +1202,12 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
         for jj in range(M):
             for p in plate:
                 data_z.extend(numpy.fabs(data[jj][(data[jj].plate == p)].zc))
-        hist= bovy_plot.bovy_hist(data_z,
-                                  normed=True,bins=bins,ec='k',
-                                  histtype='step',
-                                  overplot=True,
-                                  range=[numpy.amin(zmin),numpy.amax(zmax)])
+        if len(data_z) > 0:
+            hist= bovy_plot.bovy_hist(data_z,
+                                      normed=True,bins=bins,ec='k',
+                                      histtype='step',
+                                      overplot=True,
+                                      range=[numpy.amin(zmin),numpy.amax(zmax)])
         if not right_legend is None:
             bovy_plot.bovy_text(right_legend,top_right=True,size=_legendsize)
         if len(plate) > 1 and len(plate) < 9:
@@ -1320,7 +1321,10 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
             bovy_plot.bovy_text(rx-0.25*xfac,ry+3./4.*dz/2.,r'$Z$')
         if not left_legend is None:
             bovy_plot.bovy_text(left_legend,top_left=True,size=_legendsize)
-        return (zdist, hist[0], hist[1])
+        if len(data_z) > 0:
+            return (zdist, hist[0], hist[1])
+        else:
+            return (zdist, None,None)
 
 ###############################################################################
 #   Good sets of plates to run comparerdistPlate for

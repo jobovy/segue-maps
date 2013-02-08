@@ -255,7 +255,11 @@ def calc_model(params,options,data,vs):
                                               numpy.sqrt(cov_vxvyvz[ii,0,0])/(vs[1]-vs[0]),
                                               output=thisp)
         elif options.type.lower() == 'vt':
-            thisp= numpy.array([qdf.pvT(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
+            if options.fitdvt:
+                dvt= get_dvt(params,options)
+            else:
+                dvt= 0.
+            thisp= numpy.array([qdf.pvT(v/_REFV0/vo+dvt/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
             ndimage.filters.gaussian_filter1d(thisp,
                                               numpy.sqrt(cov_vxvyvz[ii,1,1])/(vs[1]-vs[0]),
                                               output=thisp)

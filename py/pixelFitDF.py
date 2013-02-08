@@ -480,7 +480,7 @@ def logprior_pot(params,options,npops):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if potparams[4] < 0.4 or potparams[4] > 1.15: #rough prior from Evans 94
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if potparams[5] < -1.0 or potparams[5] > 2.0:
+        if potparams[5] < -2.0 or potparams[5] > 1.0:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return logprior_dlnvcdlnr(potparams[3],options)
     return out
@@ -2121,7 +2121,7 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
         #p.extend([-1.,1.,-3.,0.,1.35])
         p.extend([-.69,1.07,-3.,0.,2.2])
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
-        p.extend([-.69,1.,-3.,0.,1.,-0.8])
+        p.extend([-1.,1.,-3.,0.,1.,-0.8])
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         p.extend([-1.,1.,-3.,0.,1.])
     return p
@@ -2751,6 +2751,12 @@ def get_options():
     parser.add_option("--index",dest='index',type='int',
                       default=0,
                       help="An index")
+    parser.add_option("--allgroups",action="store_true", dest="allgroups",
+                      default=False,
+                      help="Make plots for all groups")
+    parser.add_option("--justvel",action="store_true", dest="justvel",
+                      default=False,
+                      help="Make plots just for the velocities")
     return parser
   
 if __name__ == '__main__':

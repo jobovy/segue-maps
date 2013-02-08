@@ -13,36 +13,66 @@ from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
 def getMultiComparisonBins(options):
-    if options.group == 'aenhanced':
-        gfehs= [-0.85,-0.75,-0.65,-0.55, #-0.95
-                 -0.85,-0.75,-0.65,-0.55,-0.45, #-0.95
-                 -0.85,-0.75,-0.65,-0.55] #-0.95
-        gafes= [0.425,0.425,0.425,0.425, #0.425
-                0.375,0.375,0.375,0.375,0.375, #0.375
-                0.325,0.325,0.325,0.325] #0.325
-        left_legend= r'$\alpha\!-\!\mathrm{old\ populations}$'
-    elif options.group == 'apoor':
-        gafes= [0.125,0.075,0.075,0.025,0.025,0.025,0.025]
-        gfehs= [-0.05,-0.05,0.05,-0.05,0.05,0.15,0.25]
-        left_legend= r'$\alpha\!-\!\mathrm{young}$'+'\n'+r'$\mathrm{populations}$'
-    elif options.group == 'apoorfpoor':
-        gafes= [0.025,0.075,0.075,0.075,0.075,
-                0.125,0.125,0.125,0.125,0.125,0.125,
-                0.175,0.175,0.175,0.175,
-                0.225,0.225,0.225]
-        gfehs= [-0.15,-0.15,-0.25,-0.35,-0.45,
-                 -0.15,-0.25,-0.35,-0.45,-0.55,-0.65,
-                 -0.35,-0.45,-0.55,-0.65,
-                 -0.55,-0.65,-0.75]
-        left_legend= r'$\alpha\!-\!\mathrm{young},$'+'\n'+r'$\mathrm{[Fe/H]\!-\!poor}$'+'\n'+r'$\mathrm{populations}$'
-    elif options.group == 'aintermediate':
-        gafes= [0.275,0.275,0.275,0.275,0.275,0.275,
-                0.225,0.225,0.225,
-                0.175,0.175]
-        gfehs= [-0.75,-0.65,-0.55,-0.45,-0.35,-0.25,
-                 -0.45,-0.35,-0.25,
-                 -0.25,-0.15]
-        left_legend= r'$\alpha\!-\!\mathrm{intermediate}$'+'\n'+r'$\mathrm{populations}$'
+    if options.sample.lower() == 'g':
+        if options.group == 'aenhanced':
+            gfehs= [-0.85,-0.75,-0.65,-0.55, #-0.95
+                     -0.85,-0.75,-0.65,-0.55,-0.45, #-0.95
+                     -0.85,-0.75,-0.65,-0.55] #-0.95
+            gafes= [0.425,0.425,0.425,0.425, #0.425
+                    0.375,0.375,0.375,0.375,0.375, #0.375
+                    0.325,0.325,0.325,0.325] #0.325
+            left_legend= r'$\alpha\!-\!\mathrm{old\ populations}$'
+        elif options.group == 'apoor':
+            gafes= [0.125,0.075,0.075,0.025,0.025,0.025,0.025]
+            gfehs= [-0.05,-0.05,0.05,-0.05,0.05,0.15,0.25]
+            left_legend= r'$\alpha\!-\!\mathrm{young}$'+'\n'+r'$\mathrm{populations}$'
+        elif options.group == 'apoorfpoor':
+            gafes= [0.025,0.075,0.075,0.075,0.075,
+                    0.125,0.125,0.125,0.125,0.125,0.125,
+                    0.175,0.175,0.175,0.175,
+                    0.225,0.225,0.225]
+            gfehs= [-0.15,-0.15,-0.25,-0.35,-0.45,
+                     -0.15,-0.25,-0.35,-0.45,-0.55,-0.65,
+                     -0.35,-0.45,-0.55,-0.65,
+                     -0.55,-0.65,-0.75]
+            left_legend= r'$\alpha\!-\!\mathrm{young},$'+'\n'+r'$\mathrm{[Fe/H]\!-\!poor}$'+'\n'+r'$\mathrm{populations}$'
+        elif options.group == 'aintermediate':
+            gafes= [0.275,0.275,0.275,0.275,0.275,0.275,
+                    0.225,0.225,0.225,
+                    0.175,0.175]
+            gfehs= [-0.75,-0.65,-0.55,-0.45,-0.35,-0.25,
+                     -0.45,-0.35,-0.25,
+                     -0.25,-0.15]
+            left_legend= r'$\alpha\!-\!\mathrm{intermediate}$'+'\n'+r'$\mathrm{populations}$'
+    elif options.sample.lower() == 'k':
+        if options.group == 'aenhanced':
+            gfehs= [-0.85,
+                     -0.95,-0.85,-0.75,
+                     -0.85,-0.75,-0.65,-0.55] #-0.95
+            gafes= [0.425,
+                    0.375,0.375,0.375,
+                    0.325,0.325,0.325,0.325] #0.325
+            left_legend= r'$\alpha\!-\!\mathrm{old\ populations}$'
+        elif options.group == 'apoor':
+            gafes= [0.075,0.125]
+            gfehs= [-0.05,-0.15]
+            left_legend= r'$\alpha\!-\!\mathrm{young}$'+'\n'+r'$\mathrm{populations}$'
+        elif options.group == 'apoorfpoor':
+            gafes= [0.025,0.075,0.075,0.075,0.075,
+                    0.125,0.125,0.125,0.125,
+                    0.175,0.175,0.175,0.175,
+                    0.225,0.225]
+            gfehs= [-0.15,-0.15,-0.25,-0.35,-0.45,
+                     -0.25,-0.35,-0.45,-0.55,
+                     -0.35,-0.45,-0.55,-0.65,
+                     -0.65,-0.55]
+            left_legend= r'$\alpha\!-\!\mathrm{young},$'+'\n'+r'$\mathrm{[Fe/H]\!-\!poor}$'+'\n'+r'$\mathrm{populations}$'
+        elif options.group == 'aintermediate':
+            gafes= [0.275,0.275,0.275,0.275,
+                    0.225]
+            gfehs= [-0.75,-0.65,-0.55,-0.45,
+                     -0.45]
+            left_legend= r'$\alpha\!-\!\mathrm{intermediate}$'+'\n'+r'$\mathrm{populations}$'
     return (gafes,gfehs,left_legend)
 def plotDensComparisonDFMulti(options,args):
     #Read data etc.
