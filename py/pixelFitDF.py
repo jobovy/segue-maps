@@ -307,7 +307,7 @@ def indiv_logdf(params,indx,pot,aA,fehs,afes,binned,normintstuff,npops,
                                       options,len(fehs))
     if options.fitdvt or not options.fixdvt is None:
         dvt= get_dvt(params,options)
-        vT+= dvt*vo
+        vT+= dvt/vo
     ndata= R.shape[0]
     data_lndf= numpy.zeros((ndata,2*options.nmcerr))
     srhalo= _SRHALO/vo/_REFV0
@@ -471,6 +471,16 @@ def logprior_pot(params,options,npops):
         if potparams[2-(1-(options.fixvo is None))] < -5.1 or potparams[2-(1-(options.fixvo is None))] > 1.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if potparams[4] < 0.4 or potparams[4] > 1.15: #rough prior from Evans 94
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        return logprior_dlnvcdlnr(potparams[3],options)
+    elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
+        if potparams[0] < -2.1 or potparams[0] > -0.3:#2.53:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if potparams[2-(1-(options.fixvo is None))] < -5.1 or potparams[2-(1-(options.fixvo is None))] > 1.4:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if potparams[4] < 0.4 or potparams[4] > 1.15: #rough prior from Evans 94
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if potparams[5] < -1.0 or potparams[5] > 2.0:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return logprior_dlnvcdlnr(potparams[3],options)
     return out
@@ -1318,7 +1328,7 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
     cmdfile.write(cmd)
     cmdfile.close()
     #Now submit
-    subprocess.call(["qsub","-w","n","-l","exclusive=true","-l","h_rt=24:00:00",cmdfilename])
+    subprocess.call(["qsub","-w","n","-l","exclusive=true","-l","h_rt=36:00:00",cmdfilename])
     return None    
 
 def run_abundance_singles_single(options,args,fehs,afes,ii,savename,initname,
@@ -1623,6 +1633,42 @@ def setup_potential(params,options,npops,
                                                      hz=numpy.exp(potparams[2])/ro,
                                              normalize=ampd)
         hp= potential.PowerSphericalPotential(alpha=potparams[4],
+                                              normalize=amph)
+        #print ampb, 13./gassurfdens, ampd, amph, dp(1.,0.), hp(1.,0.)
+        #Use an interpolated version for speed
+        if returnrawpot:
+            return [dp,hp,bp,gp]
+        else:
+            return potential.interpRZPotential(RZPot=[dp,hp,bp,gp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True,interpDens=interpDens,interpdvcircdr=interpdvcircdr)
+    elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
+        ro= get_ro(params,options)
+        vo= get_vo(params,options,npops)
+        dlnvcdlnr= potparams[3]/30.
+        ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
+        bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
+        #Also add 13 Msol/pc^2 with a scale height of 130 pc, and a scale length of ?
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*numpy.exp(potparams[0])/ro,
+                                                     hz=0.130/ro/_REFR0,
+                                                     normalize=1.)
+        gassurfdens= 2.*gp.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*gp._hz*ro*_REFR0*1000.
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*numpy.exp(potparams[0])/ro,
+                                                     hz=0.130/ro/_REFR0,
+                                                     normalize=13./gassurfdens)
+        #normalize to 1 for calculation of ampd and amph
+        dp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
+                                                     hz=numpy.exp(potparams[2])/ro,
+                                                     normalize=1.)
+        hp= potential.FlattenedPowerPotential(alpha=potparams[5],
+                                              q=potparams[4],
+                                              normalize=1.)
+        ampd, amph= fdfh_from_dlnvcdlnr(dlnvcdlnr,dp,[bp,gp],hp)
+        if ampd <= 0. or amph <= 0.:
+            raise RuntimeError
+        dp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
+                                                     hz=numpy.exp(potparams[2])/ro,
+                                             normalize=ampd)
+        hp= potential.FlattenedPowerPotential(alpha=potparams[5],
+                                              q=potparams[4],
                                               normalize=amph)
         #print ampb, 13./gassurfdens, ampd, amph, dp(1.,0.), hp(1.,0.)
         #Use an interpolated version for speed
@@ -2073,7 +2119,9 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
         #p.extend([-1.,1.,-3.,0.,1.35])
-        p.extend([-1.39,1.,-3.,0.,1.35])
+        p.extend([-.69,1.07,-3.,0.,2.2])
+    elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
+        p.extend([-.69,1.,-3.,0.,1.,-0.8])
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         p.extend([-1.,1.,-3.,0.,1.])
     return p
@@ -2140,6 +2188,7 @@ def setup_domain(options,npops):
     elif options.potential.lower() == 'mwpotentialsimplefit' \
             or options.potential.lower() == 'mwpotentialfixhalo' \
             or options.potential.lower() == 'mwpotentialfixhaloflat' \
+            or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas' \
             or options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         raise NotImplementedError("setup domain for sampling of mwpotentialsimplefit not setup")
     return (isDomainFinite,domain)
@@ -2188,6 +2237,7 @@ def setup_domain_indiv_potential(options,npops):
     elif options.potential.lower() == 'mwpotentialsimplefit' \
             or options.potential.lower() == 'mwpotentialfixhalo' \
             or options.potential.lower() == 'mwpotentialfixhaloflat' \
+            or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas' \
             or options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         raise NotImplementedError("setup domain for sampling of mwpotentialsimplefit not setup")
     return (isDomainFinite,domain)
@@ -2219,6 +2269,8 @@ def get_potparams(p,options,npops):
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
         return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4]) # hr, vo, hz,dlnvcdlnr,power-law halo
+    elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
+        return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4],p[startindx+5]) # hr, vo, hz,dlnvcdlnr,flattening, power-law halo
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4]) # hr, vo, hz,dlnvcdlnr,halo flattening
 
@@ -2243,6 +2295,7 @@ def get_vo(p,options,npops):
             or options.potential.lower() == 'mwpotentialfixhaloflat' \
             or options.potential.lower() == 'mpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
+            or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
             or options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         return p[startindx+1]
@@ -2290,6 +2343,13 @@ def set_potparams(p,params,options,npops):
         params[startindx+2]= p[2]
         params[startindx+3]= p[3]
         params[startindx+4]= p[4]
+    elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
+        params[startindx]= p[0]
+        params[startindx+1]= p[1]
+        params[startindx+2]= p[2]
+        params[startindx+3]= p[3]
+        params[startindx+4]= p[4]
+        params[startindx+5]= p[5]
     return params
 
 def get_dfparams(p,indx,options,log=False):
@@ -2355,6 +2415,8 @@ def get_npotparams(options):
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
             or options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         return 5
+    elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
+        return 6
 
 def get_ro(p,options):
     """Function that returns R0 for these options"""
