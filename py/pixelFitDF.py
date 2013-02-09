@@ -2118,8 +2118,8 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
     elif options.potential.lower() == 'mpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
-        #p.extend([-1.,1.,-3.,0.,1.35])
-        p.extend([-.69,1.07,-3.,0.,2.2])
+        p.extend([-1.,1.,-3.,0.,1.35])
+        #p.extend([-.69,1.07,-3.,0.,2.2])
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
         p.extend([-1.,1.,-3.,0.,1.,-0.8])
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
