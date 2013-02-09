@@ -129,7 +129,7 @@ def plot_DFRotcurves(options,args):
                     continue
             s= get_potparams(sols[solindx],options,1)
             #Setup potential
-            pot= setup_potential(sols[solindx],options,1)
+            pot= setup_potential(sols[solindx],options,1,returnrawpot=True)
             vo= get_vo(sols[solindx],options,1)
             ro= get_ro(sols[solindx],options)
             if options.type.lower() == 'afe':
@@ -147,7 +147,11 @@ def plot_DFRotcurves(options,args):
             elif options.subtype.lower() == 'disk':
                 if 'mwpotential' in options.potential.lower():
                     diskpot= pot[0]
+                elif 'wgas' in options.potential.lower():
+                    diskpot= [pot[0],pot[-1]]
                 elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
+                    diskpot= pot[0]
+                elif 'dpdisk' in options.potential.lower():
                     diskpot= pot[0]
                 potential.plotRotcurve(diskpot,Rrange=[0.001,2.],
                                        yrange=[0.,1.29],
@@ -156,10 +160,7 @@ def plot_DFRotcurves(options,args):
                                        ylabel= r"$V_c(R)/V_c(R_0)$",
                                        zorder=int(numpy.random.uniform()*100))
             elif options.subtype.lower() == 'halo':
-                if 'mwpotential' in options.potential.lower():
-                    halopot= pot[1]
-                elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
-                    halopot= pot[1]
+                halopot= pot[1]
                 potential.plotRotcurve(halopot,Rrange=[0.001,2.],
                                        overplot=overplot,ls='-',
                                        yrange=[0.,1.29],
@@ -167,10 +168,7 @@ def plot_DFRotcurves(options,args):
                                        color=colormap(_squeeze(plotc,vmin,vmax)),
                                        zorder=int(numpy.random.uniform()*100))
             elif options.subtype.lower() == 'bulge':
-                if 'mwpotential' in options.potential.lower():
-                    bulgepot= pot[2]
-                elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
-                    bulgepot= pot[2]
+                bulgepot= pot[2]
                 potential.plotRotcurve(bulgepot,Rrange=[0.001,2.],
                                        overplot=overplot,ls='-',
                                        ylabel= r"$V_c(R)/V_c(R_0)$",
@@ -180,12 +178,14 @@ def plot_DFRotcurves(options,args):
             elif options.subtype.lower() == 'median':
                 if 'mwpotential' in options.potential.lower():
                     diskpot= pot[0]
-                    halopot= pot[1]
-                    bulgepot= pot[2]
+                elif 'wgas' in options.potential.lower():
+                    diskpot= [pot[0],pot[-1]]
                 elif options.potential.lower() == 'mpdiskplhalofixbulgeflat':
                     diskpot= pot[0]
-                    halopot= pot[1]
-                    bulgepot= pot[2]
+                elif 'dpdisk' in options.potential.lower():
+                    diskpot= pot[0]
+                halopot= pot[1]
+                bulgepot= pot[2]
                 vo= get_vo(sols[solindx],options,1)
                 medianvc.append(vo*potential.calcRotcurve(pot,medianrs))
                 medianvc_disk.append(vo*potential.calcRotcurve(diskpot,medianrs))
