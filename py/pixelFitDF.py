@@ -64,7 +64,7 @@ _PRECALCVSAMPLES= False
 _SURFSUBTRACTEXPON= True
 _SURFNRS= 16
 _SURFNZS= 16
-_BFGS= False
+_BFGS= True
 def pixelFitDF(options,args):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
