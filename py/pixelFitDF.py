@@ -144,8 +144,7 @@ def pixelFitDF(options,args):
         savefile.close()
     else:
         if options.mcsample:
-            print "WARNNG: NOT RUNNING BECAUSE INITIALIZATION IS NOT SET ..."
-            return None
+            print "WARNING: USING DEFAULT INITIALIZATION BECAUSE INITIALIZATION IS NOT SET ..."
         params= initialize(options,fehs,afes)
     if not options.mcsample:
         if options.justdf:
@@ -183,16 +182,23 @@ def pixelFitDF(options,args):
                                             normintstuff,errstuff)
         else:
             #Setup everything necessary for sampling
-            isDomainFinite, domain= setup_domain(options,len(fehs))
-            samples= bovy_mcmc.markovpy(params,
-                                        0.01,
-                                        loglike,
-                                        (fehs,afes,binned,options,normintstuff,
-                                         errstuff),
-                                        nsamples=options.nsamples,
-                                        nwalkers=2*len(params))
+            isDomainFinite, domain, step, create_method= setup_domain(options,len(fehs))
+            samples, lnps= bovy_mcmc.markovpy(params,
+                                              step,
+                                              loglike,
+                                              (fehs,afes,binned,options,normintstuff,
+                                               errstuff),
+                                              nsamples=options.nsamples,
+                                              nwalkers=len(params)+2,
+                                              sliceinit=False,
+                                              skip=1,
+                                              create_method=create_method,
+                                              returnLnprob=True)
+            indxMax= numpy.argmax(lnps)
+            params= samples[indxMax]
+            mloglikemax= -lnps[indxMax]
         #Save
-        save_pickles(args[0],samples,len(fehs))
+        save_pickles(args[0],params,mloglikemax,samples,len(fehs))
         print_samples_qa(samples,options,len(fehs))
     return None
 
@@ -238,6 +244,8 @@ def mloglike(*args,**kwargs):
 
 def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
     """log likelihood"""
+    if numpy.any(numpy.isnan(params)):
+        return -numpy.finfo(numpy.dtype(numpy.float64)).max
     #Priors
     for ii in range(len(fehs)):
         logoutfracprior= logprior_outfrac(get_outfrac(params,ii,options),
@@ -254,6 +262,8 @@ def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
     if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         return logpotprior
     #Set up potential and actionAngle
+    if _DEBUG:
+        print params
     try:
         pot= setup_potential(params,options,len(fehs))
     except RuntimeError: #if this set of parameters gives a nonsense potential
@@ -1295,7 +1305,7 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
     newname+= '_%i.' % ii
     newname+= spl[-1]
     args[0]= newname
-    if options.mcsample:
+    if options.mcsample and not initname is None:
         #Do the same for init
         spl= initname.split('.')
         newname= ''
@@ -1342,7 +1352,7 @@ def run_abundance_singles_single(options,args,fehs,afes,ii,savename,initname,
     newname+= '_%i.' % ii
     newname+= spl[-1]
     args[0]= newname
-    if options.mcsample:
+    if options.mcsample and not initname is None:
         #Do the same for init
         spl= initname.split('.')
         newname= ''
@@ -2118,38 +2128,55 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
     elif options.potential.lower() == 'mpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
-        p.extend([-1.,1.,-3.,0.,1.35])
+        p.extend([-1.39,1.,-3.,0.,1.15])
+        #p.extend([-1.,1.,-3.,0.,1.35])
         #p.extend([-.69,1.07,-3.,0.,2.2])
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
         p.extend([-1.,1.,-3.,0.,1.,-0.8])
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         p.extend([-1.,1.,-3.,0.,1.])
-    return p
+    return numpy.array(p)
 
 ##SETUP DOMAIN FOR MARKOVPY
 def setup_domain(options,npops):
     """Setup isDomainFinite, domain for markovpy"""
     isDomainFinite= []
     domain= []
+    step= []
+    create_method= []
     if options.fitdvt:
         isDomainFinite.append([True,True])
         domain.append([-0.5,0.5])
+        step.append(0.2)
+        create_method.append('whole')
     if options.fitdm:
         isDomainFinite.append([True,True])
         domain.append([-0.5,0.5])
+        step.append(0.2)
+        create_method.append('whole')
     if options.fitro:
         isDomainFinite.append([True,True])
         domain.append([5./_REFR0,11./_REFR0])
+        step.append(0.2)
+        create_method.append('whole')
     if options.fitvsun:
         isDomainFinite.append([False,False])
         domain.append([0.,0.])
+        step.append(0.2)
+        create_method.append('step_out')
         isDomainFinite.append([False,False])
         domain.append([0.,0.])
+        step.append(0.2)
+        create_method.append('step_out')
         isDomainFinite.append([False,False])
         domain.append([0.,0.])
+        step.append(0.2)
+        create_method.append('step_out')
     elif options.fitvsun:
         isDomainFinite.append([False,False])
         domain.append([0.,0.])
+        step.append(0.2)
+        create_method.append('step_out')
     for ii in range(npops):
         if options.dfmodel.lower() == 'qdf':
             domain.append([-2.77,2.53])
@@ -2164,34 +2191,60 @@ def setup_domain(options,npops):
             isDomainFinite.append([True,True])
             isDomainFinite.append([True,True])
             isDomainFinite.append([True,True])
+            step.append(0.2)
+            step.append(0.2)
+            step.append(0.2)
+            step.append(0.2)
+            step.append(0.2)
+            step.append(0.2)
+            create_method.append('whole')
+            create_method.append('whole')
+            create_method.append('whole')
+            create_method.append('whole')
+            create_method.append('whole')
+            create_method.append('whole')
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
         isDomainFinite.append([True,False])
         if not options.noqprior:
             domain.append([0.53,0.])
         else:
             domain.append([0.0,0.])
+        step.append(0.2)
+        create_method.append('step_out')
         isDomainFinite.append([True,True])
         domain.append([100./_REFV0,350./_REFV0])
+        step.append(0.2)
+        create_method.append('whole')
     elif options.potential.lower() == 'mpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
         domain.append([-2.1,-0.3])
         isDomainFinite.append([True,True])
+        step.append(0.2)
+        create_method.append('whole')
         domain.append([100./_REFV0,350./_REFV0])
         isDomainFinite.append([True,True])
+        step.append(0.2)
+        create_method.append('whole')
         domain.append([-5.1,1.4])
         isDomainFinite.append([True,True])
+        step.append(0.2)
+        create_method.append('whole')
         domain.append([-0.5,0.04])
         isDomainFinite.append([True,True])
+        step.append(0.2)
+        create_method.append('whole')
         domain.append([0.,3.])
         isDomainFinite.append([True,True])
+        step.append(0.2)
+        create_method.append('whole')
     elif options.potential.lower() == 'mwpotentialsimplefit' \
             or options.potential.lower() == 'mwpotentialfixhalo' \
             or options.potential.lower() == 'mwpotentialfixhaloflat' \
             or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas' \
             or options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         raise NotImplementedError("setup domain for sampling of mwpotentialsimplefit not setup")
-    return (isDomainFinite,domain)
+    return (isDomainFinite,domain,step,create_method)
 
 def setup_domain_indiv_df(options,npops):
     """Setup isDomainFinite, domain for markovpy"""
