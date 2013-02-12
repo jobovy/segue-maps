@@ -162,9 +162,13 @@ class potPDFs:
                 #zh
                 zhs.append(numpy.exp(s[2])*_REFR0*ro)
                 #dlnvcdlnrs
-                dlnvcdlnrs.append(s[3]/30.)
-                #plhalos
-                plhalos.append(s[4])
+                if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
+                    dlnvcdlnrs.append(s[4]/30.)
+                    plhalos.append(s[3]) #BOVY:FIX THIS
+                else:
+                    dlnvcdlnrs.append(s[3]/30.)
+                    #plhalos
+                    plhalos.append(s[4])
                 rorss.append((1.-plhalos[-1])/(plhalos[-1]-3.))
                 #dvt
                 if options.fitdvt:
@@ -172,6 +176,7 @@ class potPDFs:
                 #rhodm
                 if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
                     or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
+                    or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt' \
                     or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
                     rhodms.append(pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.)
                 #rhoo
@@ -186,6 +191,7 @@ class potPDFs:
                 #massdisk
                 if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
                         or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
+                        or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt' \
                         or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
                     rhod= pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
                 massdisks.append(rhod*2.*zhs[-1]*numpy.exp(ro*_REFR0/rds[-1])*rds[-1]**2.*2.*numpy.pi/10.)
@@ -194,6 +200,7 @@ class potPDFs:
                     vcdvcros.append(pot[0].vcirc(1.)/potential.vcirc(pot,1.))
                     vcdvcs.append(pot[0].vcirc(2.2*rds[-1]/ro/_REFR0)/potential.vcirc(pot,2.2*rds[-1]/ro/_REFR0))
                 elif options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
+                        or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt' \
                         or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
                     vcdvcros.append(potential.vcirc([pot[0],pot[3]],1.)/potential.vcirc(pot,1.))
                     vcdvcs.append(potential.vcirc([pot[0],pot[3]],2.2*rds[-1]/ro/_REFR0)/potential.vcirc(pot,2.2*rds[-1]/ro/_REFR0))
@@ -231,10 +238,16 @@ class potPDFs:
                         thisvc_samples.append(s[1]*_REFV0)
                     thisrd_samples.append(numpy.exp(s[0])*_REFR0)
                     thiszh_samples.append(numpy.exp(s[2])*_REFR0)
-                    #dlnvcdlnrs
-                    thisdlnvcdlnr_samples.append(s[3]/30.)
-                    #plhalos
-                    thisplhalo_samples.append(s[4])
+                    if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
+                        #dlnvcdlnrs
+                        thisdlnvcdlnr_samples.append(s[4]/30.)
+                        #plhalos
+                        thisplhalo_samples.append(s[3])
+                    else:
+                        #dlnvcdlnrs
+                        thisdlnvcdlnr_samples.append(s[3]/30.)
+                        #plhalos
+                        thisplhalo_samples.append(s[4])
                     thisrors_samples.append((1.-thisplhalo_samples[-1])/(thisplhalo_samples[-1]-3.))
                     #dvt
                     if options.fitdvt:
@@ -243,6 +256,7 @@ class potPDFs:
                         #rhodm
                         if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
                                 or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
+                                or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt' \
                                 or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
                             thisrhodm_samples.append(pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.)
                         #rhoo
@@ -257,6 +271,7 @@ class potPDFs:
                         #massdisk
                         if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
                                 or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
+                                or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt' \
                                 or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
                             rhod= pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
                         thismassdisk_samples.append(rhod*2.*thiszh_samples[-1]*numpy.exp(ro*_REFR0/thisrd_samples[-1])*thisrd_samples[-1]**2.*2.*numpy.pi/10.)
@@ -265,6 +280,7 @@ class potPDFs:
                             thisvcdvcro_samples.append(pot[0].vcirc(1.)/potential.vcirc(pot,1.))
                             thisvcdvc_samples.append(pot[0].vcirc(2.2*rds[-1]/ro/_REFR0)/potential.vcirc(pot,2.2*rds[-1]/ro/_REFR0))
                         elif options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
+                                or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt' \
                                 or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
                             thisvcdvcro_samples.append(potential.vcirc([pot[0],pot[3]],1.)/potential.vcirc(pot,1.))
                             thisvcdvc_samples.append(potential.vcirc([pot[0],pot[3]],2.2*rds[-1]/ro/_REFR0)/potential.vcirc(pot,2.2*rds[-1]/ro/_REFR0))
