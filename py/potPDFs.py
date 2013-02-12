@@ -1,7 +1,7 @@
 import os, os.path
 import math
 import numpy
-from scipy import integrate
+from scipy import integrate, special
 from scipy.stats import gaussian_kde
 import cPickle as pickle
 import monoAbundanceMW
@@ -25,12 +25,12 @@ _labeldict['rd']= r'$R_d\ (\mathrm{kpc})$'
 _labeldict['zh']= r'$z_h\ (\mathrm{kpc})$'
 _labeldict['plhalo']= r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
 _labeldict['dlnvcdlnr']= r'$\mathrm{d}\ln V_c / \mathrm{d}\ln R\, (R_0)$'
-_labeldict['surfzdisk']= r'$\Sigma_{\mathrm{disk}}(R_0)\ [M_\odot\,\mathrm{pc}^{-2}]$'
-_labeldict['massdisk']= r'$\M_{\mathrm{disk}}\ [10^{10}\,M_\odot]$'
-_labeldict['surfz']= r'$\Sigma_{\mathrm{disk}}(%.1f\,\mathrm{kpc};R_0)\ [M_\odot\,\mathrm{pc}^{-2}]$' % 1.1
-_labeldict['surfz800']= r'$\Sigma_{\mathrm{disk}}(%.1f\,\mathrm{kpc};R_0)\ [M_\odot\,\mathrm{pc}^{-2}]$' % 0.8
-_labeldict['rhodm']= r'$\rho_{\mathrm{DM}}(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
-_labeldict['rhoo']= r'$\rho(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
+_labeldict['surfzdisk']= r'$\Sigma_{\mathrm{disk}}(R_0)\ (M_\odot\,\mathrm{pc}^{-2})$'
+_labeldict['massdisk']= r'$\M_{\mathrm{disk}}\ (10^{10}\,M_\odot)$'
+_labeldict['surfz']= r'$\Sigma_{\mathrm{disk}}(%.1f\,\mathrm{kpc};R_0)\ (M_\odot\,\mathrm{pc}^{-2})$' % 1.1
+_labeldict['surfz800']= r'$\Sigma_{\mathrm{disk}}(%.1f\,\mathrm{kpc};R_0)\ (M_\odot\,\mathrm{pc}^{-2})$' % 0.8
+_labeldict['rhodm']= r'$\rho_{\mathrm{DM}}(R_0,0)\ (M_\odot\,\mathrm{pc}^{-3})$'
+_labeldict['rhoo']= r'$\rho(R_0,0)\ (M_\odot\,\mathrm{pc}^{-3})$'
 _labeldict['vcdvc']= '$V_{c,\mathrm{disk}}/V_c\,(R_0)$'
 _labeldict['vcdvcro']= r'$V_{c,\mathrm{disk}}/V_c\,(2.2\,R_d)$'
 _labeldict['rors']= r'$R_0/r_s$'
@@ -350,7 +350,6 @@ class potPDFs:
             kwargs.pop('overplot')
         else:
             overplot=False
-        hists= []
         colormap = cm.jet
         vmin, vmax= 0.0,.5
         if not self.__dict__.has_key('_%s_kde' % param):
@@ -380,6 +379,66 @@ class potPDFs:
         #ys/= numpy.sum(ys)*(xs[1]-xs[0])*7.
         ys*= maxy/numpy.amax(ys)
         bovy_plot.bovy_plot(xs,ys,'k-',lw=2.,overplot=True)
+        return None
+
+    def kde2d(self,param1,param2,nx=51,ny=51,*args,**kwargs):
+        """param = string with parameter name"""
+        if not kwargs.has_key('xrange'):
+            raise RuntimeError('xrange needs to be set')
+        if not kwargs.has_key('yrange'):
+            raise RuntimeError('yrange needs to be set')
+        if kwargs.has_key('overplot'):
+            overplot= kwargs['overplot']
+            kwargs.pop('overplot')
+        else:
+            overplot=False
+        if kwargs.has_key('indiv'):
+            indiv= kwargs['indiv']
+            kwargs.pop('indiv')
+        else:
+            indiv=False
+        colormap = cm.jet
+        vmin, vmax= 0.0,.5
+        if not self.__dict__.has_key('_%s_%s_kde' % (param1,param2)):
+            kde_list= []
+            for ii in range(len(self._rds)):
+                #Calculate KDE
+                tdata= numpy.zeros((2,len(self.__dict__['_%s_samples' % param1][ii])))
+                tdata[0,:]= self.__dict__['_%s_samples' % param1][ii]
+                tdata[1,:]= self.__dict__['_%s_samples' % param2][ii]
+                kde_list.append(gaussian_kde(tdata))
+            self.__dict__['_%s_%s_kde' % (param1,param2)]= kde_list
+        kde_est= kde_mult(self.__dict__['_%s_%s_kde' % (param1,param2)])
+        xs, ys= numpy.mgrid[kwargs['xrange'][0]:kwargs['xrange'][1]:nx*1j,
+                            kwargs['yrange'][0]:kwargs['yrange'][1]:ny*1j]
+        positions = numpy.vstack([xs.ravel(), ys.ravel()])
+        xs= numpy.linspace(kwargs['xrange'][0],kwargs['xrange'][1],nx)
+        ys= numpy.linspace(kwargs['yrange'][0],kwargs['yrange'][1],ny)
+        if indiv:
+            for ii in range(len(self._rds)):
+                zs= self.__dict__['_%s_%s_kde' % (param1,param2)][ii](positions).T.reshape((nx,ny))
+                zs/= numpy.sum(zs)*(xs[1]-xs[0])*(ys[1]-ys[0])
+                bovy_plot.bovy_dens2d(zs.T,origin='lower',cmap='gist_yarg',
+                                      levels=[special.erf(0.5)],
+                                      xlabel=_labeldict[param1],
+                                      ylabel=_labeldict[param2],
+                                      overplot=overplot,
+                                      cntrcolors=[colormap(_squeeze(self._afes[ii],vmin,vmax))],
+                                      cntrmass=True,justcontours=True,cntrlw=2.,
+                                      **kwargs)
+                overplot= True 
+        zs= numpy.zeros((nx,ny))
+        for ii in range(len(xs)):
+            for jj in range(len(ys)):
+                zs[ii,jj]= kde_est([xs[ii],ys[jj]])
+        zs/= numpy.sum(zs)*(xs[1]-xs[0])*(ys[1]-ys[0])
+        bovy_plot.bovy_dens2d(zs.T,origin='lower',cmap='gist_yarg',
+                              levels=special.erf(0.5*numpy.arange(1,4)),
+                              xlabel=_labeldict[param1],
+                              ylabel=_labeldict[param2],
+                              cntrmass=True,justcontours=True,cntrlw=2.,
+                              overplot=overplot,
+                              **kwargs)
         return None
 
     def scatterplot(self,param1,param2,indx,*args,**kwargs):
