@@ -475,6 +475,14 @@ def logprior_pot(params,options,npops):
         if potparams[4] < 0.0 or potparams[4] > 3.:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return logprior_dlnvcdlnr(potparams[3],options)
+    elif options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
+        if potparams[0] < -2.1 or potparams[0] > -0.3:#2.53:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if potparams[2-(1-(options.fixvo is None))] < -5.1 or potparams[2-(1-(options.fixvo is None))] > 1.4:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if potparams[3] < 0.0 or potparams[3] > 1.:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        return logprior_dlnvcdlnr(potparams[4],options)
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         if potparams[0] < -2.1 or potparams[0] > -0.3:#2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -1650,6 +1658,37 @@ def setup_potential(params,options,npops,
             return [dp,hp,bp,gp]
         else:
             return potential.interpRZPotential(RZPot=[dp,hp,bp,gp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True,interpDens=interpDens,interpdvcircdr=interpdvcircdr)
+    elif options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
+        ro= get_ro(params,options)
+        vo= get_vo(params,options,npops)
+        dlnvcdlnr= potparams[3]/30.
+        ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
+        bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
+        #Also add 13 Msol/pc^2 with a scale height of 130 pc, and a scale length of ?
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*numpy.exp(potparams[0])/ro,
+                                                     hz=0.130/ro/_REFR0,
+                                                     normalize=1.)
+        gassurfdens= 2.*gp.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*gp._hz*ro*_REFR0*1000.
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*numpy.exp(potparams[0])/ro,
+                                                     hz=0.130/ro/_REFR0,
+                                                     normalize=13./gassurfdens)
+        fdfh= 1.-13./gassurfdens-ampb
+        fd= (1.-potparams[3])*fdfh
+        fh= fdfh- fd
+        dp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
+                                                     hz=numpy.exp(potparams[2])/ro,
+                                                     normalize=fd)
+        plhalo= plhalo_from_dlnvcdlnr(potparams[4],dp,[bp,gp],options)
+        if plhalo < 0. or plhalo > 3:
+            raise RuntimeError
+        hp= potential.PowerSphericalPotential(alpha=plhalo,
+                                              normalize=fh)
+kk        #print ampb, 13./gassurfdens, ampd, amph, dp(1.,0.), hp(1.,0.)
+        #Use an interpolated version for speed
+        if returnrawpot:
+            return [dp,hp,bp,gp]
+        else:
+            return potential.interpRZPotential(RZPot=[dp,hp,bp,gp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True,interpDens=interpDens,interpdvcircdr=interpdvcircdr)
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
         ro= get_ro(params,options)
         vo= get_vo(params,options,npops)
@@ -1720,8 +1759,16 @@ def fdfh_from_dlnvcdlnr(dlnvcdlnr,diskpot,bulgepot,halopot):
     dvcdr_bulge= -potential.evaluateRforces(1.,0.,bulgepot)+potential.evaluateR2derivs(1.,0.,bulgepot)
     #calculate fd,fh
     oneminusvcb2= 1.-potential.vcirc(bulgepot,1.)**2.
-    return ((oneminusvcb2*dvcdr_halo-(dlnvcdlnr-dvcdr_bulge))/(dvcdr_halo-dvcdr_disk),
-            (dlnvcdlnr-dvcdr_bulge-dvcdr_disk*oneminusvcb2)/(dvcdr_halo-dvcdr_disk))
+    return ((oneminusvcb2*dvcdr_halo-(2.*dlnvcdlnr-dvcdr_bulge))/(dvcdr_halo-dvcdr_disk),
+            (2.*dlnvcdlnr-dvcdr_bulge-dvcdr_disk*oneminusvcb2)/(dvcdr_halo-dvcdr_disk))
+
+def plhalo_from_dlnvcdlnr(dlnvcdlnr,diskpot,bulgepot,options):
+    """Calculate the halo's shape corresponding to this rotation curve derivative"""
+    #First calculate the derivatives dvc^2/dR of disk and bulge
+    dvcdr_disk= -potential.evaluateRforces(1.,0.,diskpot)+potential.evaluateR2derivs(1.,0.,diskpot)
+    dvcdr_bulge= -potential.evaluateRforces(1.,0.,bulgepot)+potential.evaluateR2derivs(1.,0.,bulgepot)
+    if 'plhalo' in options.potential.lower():
+        return 2.-(2.*dlnvcdlnr-dvcdr_disk-dvcdr_bulge)
 
 ##FULL OPTIMIZER
 def full_optimize(params,fehs,afes,binned,options,normintstuff,errstuff):
@@ -2131,6 +2178,10 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
         p.extend([-1.39,1.,-3.,0.,1.15])
         #p.extend([-1.,1.,-3.,0.,1.35])
         #p.extend([-.69,1.07,-3.,0.,2.2])
+    elif options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
+        p.extend([-1.39,1.,-3.,0.3,-0.05])
+        #p.extend([-1.,1.,-3.,0.5,0.])
+        #p.extend([-.69,1.07,-3.,0.7,0.02])
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
         p.extend([-1.,1.,-3.,0.,1.,-0.8])
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
@@ -2238,6 +2289,27 @@ def setup_domain(options,npops):
         isDomainFinite.append([True,True])
         step.append(0.2)
         create_method.append('whole')
+    elif options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
+        domain.append([-2.1,-0.3])
+        isDomainFinite.append([True,True])
+        step.append(0.5)
+        create_method.append('whole')
+        domain.append([100./_REFV0,350./_REFV0])
+        isDomainFinite.append([True,True])
+        step.append(0.5)
+        create_method.append('whole')
+        domain.append([-5.1,1.4])
+        isDomainFinite.append([True,True])
+        step.append(0.5)
+        create_method.append('whole')
+        domain.append([0.,1.])
+        isDomainFinite.append([True,True])
+        step.append(0.5)
+        create_method.append('whole')
+        domain.append([-0.5,0.04])
+        isDomainFinite.append([True,True])
+        step.append(0.2)
+        create_method.append('whole')
     elif options.potential.lower() == 'mwpotentialsimplefit' \
             or options.potential.lower() == 'mwpotentialfixhalo' \
             or options.potential.lower() == 'mwpotentialfixhaloflat' \
@@ -2320,7 +2392,8 @@ def get_potparams(p,options,npops):
         return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4]) # hr, vo, hz,ampd+h, ampd/d+h
     elif options.potential.lower() == 'mpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
-            or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas':
+            or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
+            or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4]) # hr, vo, hz,dlnvcdlnr,power-law halo
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
         return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4],p[startindx+5]) # hr, vo, hz,dlnvcdlnr,flattening, power-law halo
@@ -2349,6 +2422,7 @@ def get_vo(p,options,npops):
             or options.potential.lower() == 'mpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas' \
+            or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
             or options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         return p[startindx+1]
@@ -2390,6 +2464,7 @@ def set_potparams(p,params,options,npops):
             or options.potential.lower() == 'mpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
+            or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt' \
             or options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         params[startindx]= p[0]
         params[startindx+1]= p[1]
@@ -2466,6 +2541,7 @@ def get_npotparams(options):
             or options.potential.lower() == 'mpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
+            or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt' \
             or options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         return 5
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
