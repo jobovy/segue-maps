@@ -265,6 +265,9 @@ class potPDFs:
                 vcdvcro_samples.append(vcdvcro_samples)
                 rhoo_samples.append(rhoo_samples)
                 rhodm_samples.append(rhodm_samples)
+        self._fehs= fehs
+        self._afes= afes
+        self._ndatas= ndatas
         self._vcs= vcs
         self._vc_samples= vc_samples
         self._rds= rds
@@ -312,4 +315,11 @@ class potPDFs:
         bovy_plot.bovy_plot(xs,tothist,'k-',lw=2.,overplot=True)
         return (xs,tothist)
 
-
+    def scatterplot(self,param1,param2,indx,*args,**kwargs):
+        """param = string with parameter name, index=index of bin"""
+        bovy_plot.scatterplot(numpy.array(self.__dict__['_%s_samples' % param1][indx]),
+                              numpy.array(self.__dict__['_%s_samples' % param2][indx]),
+                              *args,
+                              **kwargs)
+        bovy_plot.bovy_text(r'$[\mathrm{Fe/H}] = %.2f$' % self._fehs[indx] +'\n'+r'$[\alpha/\mathrm{Fe}] = %.3f$' % self._afes[indx],top_right=True)
+        bovy_plot.bovy_text(r'$\mathrm{correlation} = %.2f$' % (numpy.corrcoef(numpy.array(self.__dict__['_%s_samples' % param1][indx]),numpy.array(self.__dict__['_%s_samples' % param2][indx]))[0,1]),bottom_left=True)
