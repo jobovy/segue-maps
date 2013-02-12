@@ -1678,12 +1678,12 @@ def setup_potential(params,options,npops,
         dp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
                                                      hz=numpy.exp(potparams[2])/ro,
                                                      normalize=fd)
-        plhalo= plhalo_from_dlnvcdlnr(potparams[4],dp,[bp,gp],options)
+        plhalo= plhalo_from_dlnvcdlnr(dlnvcdlnr,dp,[bp,gp],options)
         if plhalo < 0. or plhalo > 3:
             raise RuntimeError
         hp= potential.PowerSphericalPotential(alpha=plhalo,
                                               normalize=fh)
-kk        #print ampb, 13./gassurfdens, ampd, amph, dp(1.,0.), hp(1.,0.)
+        #print ampb, 13./gassurfdens, ampd, amph, dp(1.,0.), hp(1.,0.)
         #Use an interpolated version for speed
         if returnrawpot:
             return [dp,hp,bp,gp]
@@ -2179,9 +2179,9 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
         #p.extend([-1.,1.,-3.,0.,1.35])
         #p.extend([-.69,1.07,-3.,0.,2.2])
     elif options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
-        p.extend([-1.39,1.,-3.,0.3,-0.05])
+        #p.extend([-1.39,1.,-3.,0.3,-0.05])
         #p.extend([-1.,1.,-3.,0.5,0.])
-        #p.extend([-.69,1.07,-3.,0.7,0.02])
+        p.extend([-.69,1.07,-3.,0.7,0.02])
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
         p.extend([-1.,1.,-3.,0.,1.,-0.8])
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
@@ -2281,7 +2281,7 @@ def setup_domain(options,npops):
         isDomainFinite.append([True,True])
         step.append(0.2)
         create_method.append('whole')
-        domain.append([-0.5,0.04])
+        domain.append([-0.5*30.,0.04*30.])
         isDomainFinite.append([True,True])
         step.append(0.2)
         create_method.append('whole')
@@ -2306,7 +2306,7 @@ def setup_domain(options,npops):
         isDomainFinite.append([True,True])
         step.append(0.5)
         create_method.append('whole')
-        domain.append([-0.5,0.04])
+        domain.append([-0.5*30.,0.04*30.])
         isDomainFinite.append([True,True])
         step.append(0.2)
         create_method.append('whole')
