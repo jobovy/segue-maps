@@ -2,6 +2,7 @@ import os, os.path
 import math
 import numpy
 from scipy import integrate
+from scipy.stats import gaussian_kde
 import cPickle as pickle
 import monoAbundanceMW
 from galpy.util import bovy_plot
@@ -10,11 +11,20 @@ from galpy.df import quasiisothermaldf
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
     segueSelect, _mr_gi, _gi_gr, _ERASESTR, _append_field_recarray, \
     ivezic_dist_gr
+from selectFigs import _squeeze
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from pixelFitDens import pixelAfeFeh
+from matplotlib import cm
+from plotsz2hz import kde_mult
 from pixelFitDF import _REFV0, get_options, read_rawdata, get_potparams, \
     get_dfparams, _REFR0, get_vo, get_ro, setup_potential, setup_aA, \
     get_dvt
+_labeldict= {}
+_labeldict['vc']= r'$V_c\ (\mathrm{km\,s}^{-1})$'
+_labeldict['rd']= r'$R_d\ (\mathrm{kpc})$'
+_labeldict['zh']= r'$z_h\ (\mathrm{kpc})$'
+_labeldict['plhalo']= r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
+_labeldict['dlnvcdlnr']= r'$\mathrm{d}\ln V_c / \mathrm{d}\ln R\, (R_0)$'
 class potPDFs:
     """Class for representing potential PDFs"""
     def __init__(self,options,args,basic=True):
@@ -302,11 +312,18 @@ class potPDFs:
 
     def hist1d(self,param,*args,**kwargs):
         """param = string with parameter name"""
-        overplot=False
+        if kwargs.has_key('overplot'):
+            overplot= kwargs['overplot']
+            kwargs.pop('overplot')
+        else:
+            overplot=False
         hists= []
+        colormap = cm.jet
+        vmin, vmax= 0.0,.5
         for ii in range(len(self._rds)):
             hists.append(bovy_plot.bovy_hist(self.__dict__['_%s_samples' % param][ii],
                                              *args,overplot=overplot,
+                                             color=colormap(_squeeze(self._afes[ii],vmin,vmax)),                                             
                                              **kwargs))
             overplot= True
         tothist= [numpy.prod(numpy.array([h[0][ii] for h in hists],dtype='float')) for ii in range(len(hists[0][0]))]
@@ -315,11 +332,50 @@ class potPDFs:
         bovy_plot.bovy_plot(xs,tothist,'k-',lw=2.,overplot=True)
         return (xs,tothist)
 
+    def kde1d(self,param,*args,**kwargs):
+        """param = string with parameter name"""
+        if not kwargs.has_key('xrange'):
+            raise RuntimeError('xrange needs to be set')
+        if kwargs.has_key('overplot'):
+            overplot= kwargs['overplot']
+            kwargs.pop('overplot')
+        else:
+            overplot=False
+        hists= []
+        colormap = cm.jet
+        vmin, vmax= 0.0,.5
+        if not self.__dict__.has_key('_%s_kde' % param):
+            kde_list= []
+            for ii in range(len(self._rds)):
+                #Calculate KDE
+                kde_list.append(gaussian_kde(numpy.array(self.__dict__['_%s_samples' % param][ii]).reshape((1,len(self.__dict__['_%s_samples' % param][ii])))))
+            self.__dict__['_%s_kde' % param]= kde_list
+        nx= 101
+        xs= numpy.linspace(kwargs['xrange'][0],kwargs['xrange'][1],nx)
+        kde_est= kde_mult(self.__dict__['_%s_kde' % param])
+        for ii in range(len(self._rds)):
+            ys= self.__dict__['_%s_kde' % param][ii](xs)
+            ys/= numpy.sum(ys)*(xs[1]-xs[0])
+            bovy_plot.bovy_plot(xs,ys,
+                                *args,overplot=overplot,
+                                color=colormap(_squeeze(self._afes[ii],vmin,vmax)),                                             
+                                xlabel=_labeldict[param],
+                                **kwargs)
+            overplot= True 
+        ys= numpy.zeros_like(xs)
+        for ii in range(len(xs)):
+            ys[ii]= kde_est(xs[ii])
+        ys/= numpy.sum(ys)*(xs[1]-xs[0])*7.
+        bovy_plot.bovy_plot(xs,ys,'k-',lw=2.,overplot=True)
+        return None
+
     def scatterplot(self,param1,param2,indx,*args,**kwargs):
         """param = string with parameter name, index=index of bin"""
         bovy_plot.scatterplot(numpy.array(self.__dict__['_%s_samples' % param1][indx]),
                               numpy.array(self.__dict__['_%s_samples' % param2][indx]),
                               *args,
+                              xlabel=_labeldict[param1],
+                              ylabel=_labeldict[param2],
                               **kwargs)
         bovy_plot.bovy_text(r'$[\mathrm{Fe/H}] = %.2f$' % self._fehs[indx] +'\n'+r'$[\alpha/\mathrm{Fe}] = %.3f$' % self._afes[indx],top_right=True)
         bovy_plot.bovy_text(r'$\mathrm{correlation} = %.2f$' % (numpy.corrcoef(numpy.array(self.__dict__['_%s_samples' % param1][indx]),numpy.array(self.__dict__['_%s_samples' % param2][indx]))[0,1]),bottom_left=True)
