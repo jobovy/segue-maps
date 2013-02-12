@@ -25,6 +25,15 @@ _labeldict['rd']= r'$R_d\ (\mathrm{kpc})$'
 _labeldict['zh']= r'$z_h\ (\mathrm{kpc})$'
 _labeldict['plhalo']= r'$\alpha\ \mathrm{in}\ \rho_{\mathrm{halo}} \propto 1/r^\alpha$'
 _labeldict['dlnvcdlnr']= r'$\mathrm{d}\ln V_c / \mathrm{d}\ln R\, (R_0)$'
+_labeldict['surfzdisk']= r'$\Sigma_{\mathrm{disk}}(R_0)\ [M_\odot\,\mathrm{pc}^{-2}]$'
+_labeldict['massdisk']= r'$\M_{\mathrm{disk}}\ [10^{10}\,M_\odot]$'
+_labeldict['surfz']= r'$\Sigma_{\mathrm{disk}}(%.1f\,\mathrm{kpc};R_0)\ [M_\odot\,\mathrm{pc}^{-2}]$' % 1.1
+_labeldict['surfz800']= r'$\Sigma_{\mathrm{disk}}(%.1f\,\mathrm{kpc};R_0)\ [M_\odot\,\mathrm{pc}^{-2}]$' % 0.8
+_labeldict['rhodm']= r'$\rho_{\mathrm{DM}}(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
+_labeldict['rhoo']= r'$\rho(R_0,0)\ [M_\odot\,\mathrm{pc}^{-3}]$'
+_labeldict['vcdvc']= '$V_{c,\mathrm{disk}}/V_c\,(R_0)$'
+_labeldict['vcdvcro']= r'$V_{c,\mathrm{disk}}/V_c\,(2.2\,R_d)$'
+_labeldict['rors']= r'$R_0/r_s$'
 class potPDFs:
     """Class for representing potential PDFs"""
     def __init__(self,options,args,basic=True):
@@ -271,10 +280,10 @@ class potPDFs:
                 surfz800_samples.append(thissurfz800_samples)
                 surfzdisk_samples.append(thissurfzdisk_samples)
                 massdisk_samples.append(thismassdisk_samples)
-                vcdvc_samples.append(vcdvc_samples)
-                vcdvcro_samples.append(vcdvcro_samples)
-                rhoo_samples.append(rhoo_samples)
-                rhodm_samples.append(rhodm_samples)
+                vcdvc_samples.append(thisvcdvc_samples)
+                vcdvcro_samples.append(thisvcdvcro_samples)
+                rhoo_samples.append(thisrhoo_samples)
+                rhodm_samples.append(thisrhodm_samples)
         self._fehs= fehs
         self._afes= afes
         self._ndatas= ndatas
@@ -350,12 +359,15 @@ class potPDFs:
                 #Calculate KDE
                 kde_list.append(gaussian_kde(numpy.array(self.__dict__['_%s_samples' % param][ii]).reshape((1,len(self.__dict__['_%s_samples' % param][ii])))))
             self.__dict__['_%s_kde' % param]= kde_list
-        nx= 101
+        nx= 201
         xs= numpy.linspace(kwargs['xrange'][0],kwargs['xrange'][1],nx)
         kde_est= kde_mult(self.__dict__['_%s_kde' % param])
+        maxy= 0.
         for ii in range(len(self._rds)):
             ys= self.__dict__['_%s_kde' % param][ii](xs)
             ys/= numpy.sum(ys)*(xs[1]-xs[0])
+            tmaxy= numpy.amax(ys)
+            if tmaxy > maxy: maxy= tmaxy
             bovy_plot.bovy_plot(xs,ys,
                                 *args,overplot=overplot,
                                 color=colormap(_squeeze(self._afes[ii],vmin,vmax)),                                             
@@ -365,7 +377,8 @@ class potPDFs:
         ys= numpy.zeros_like(xs)
         for ii in range(len(xs)):
             ys[ii]= kde_est(xs[ii])
-        ys/= numpy.sum(ys)*(xs[1]-xs[0])*7.
+        #ys/= numpy.sum(ys)*(xs[1]-xs[0])*7.
+        ys*= maxy/numpy.amax(ys)
         bovy_plot.bovy_plot(xs,ys,'k-',lw=2.,overplot=True)
         return None
 
