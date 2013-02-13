@@ -36,6 +36,7 @@ from galpy.actionAngle import actionAngleStaeckel
 from galpy.actionAngle import actionAngleStaeckelGrid
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import bovy_mcmc
+import markovpy as mpy
 import acor
 from galpy.util import save_pickles
 import monoAbundanceMW
@@ -65,6 +66,7 @@ _SURFSUBTRACTEXPON= True
 _SURFNRS= 16
 _SURFNZS= 16
 _BFGS= True
+_CUSTOMSAMPLING= True
 def pixelFitDF(options,args):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
@@ -183,22 +185,41 @@ def pixelFitDF(options,args):
         else:
             #Setup everything necessary for sampling
             isDomainFinite, domain, step, create_method= setup_domain(options,len(fehs))
-            samples, lnps= bovy_mcmc.markovpy(params,
-                                              step,
-                                              loglike,
-                                              (fehs,afes,binned,options,normintstuff,
-                                               errstuff),
-                                              nsamples=options.nsamples,
-                                              nwalkers=len(params)+2,
-                                              sliceinit=False,
-                                              skip=1,
-                                              create_method=create_method,
-                                              returnLnprob=True)
+            if _CUSTOMSAMPLING:
+                samples, lnps, pos,prob,state= custom_markovpy(options,len(fehs),params,
+                                               step,
+                                               loglike,
+                                               (fehs,afes,binned,options,normintstuff,
+                                                errstuff),
+                                               nsamples=options.nsamples,
+                                               nwalkers=len(params)+2,
+                                               sliceinit=False,
+                                               skip=1,
+                                               create_method=create_method,
+                                               starthigh=options.starthigh,
+                                               returnLnprob=True)
+            else:
+                samples, lnps= bovy_mcmc.markovpy(params,
+                                                  step,
+                                                  loglike,
+                                                  (fehs,afes,binned,options,normintstuff,
+                                                   errstuff),
+                                                  nsamples=options.nsamples,
+                                                  nwalkers=len(params)+2,
+                                                  sliceinit=False,
+                                                  skip=1,
+                                                  create_method=create_method,
+                                                  returnLnprob=True)
+                
+                pos= None
+                prob= None
+                state= None
             indxMax= numpy.argmax(lnps)
             params= samples[indxMax]
             mloglikemax= -lnps[indxMax]
         #Save
-        save_pickles(args[0],params,mloglikemax,samples,len(fehs))
+        save_pickles(args[0],params,mloglikemax,samples,len(fehs),
+                     pos,prob,state)
         print_samples_qa(samples,options,len(fehs))
     return None
 
@@ -1899,6 +1920,114 @@ def indiv_sample_potential(params,fehs,afes,binned,options,normintstuff,
     #For now, don't merge pot samples with fixed DF
     return samples
 
+def custom_markovpy(options,npops,initial_theta,step,lnpdf,pdf_params,
+                    isDomainFinite=[False,False],domain=[0.,0.],
+                    nsamples=1,nwalkers=None,threads=None,
+                    sliceinit=False,skip=0,create_method='step_out',
+                    returnLnprob=False):
+    try:
+        ndim = len(initial_theta)
+    except TypeError:
+        ndim= 1
+        if not sliceinit:
+            initial_theta= numpy.array([initial_theta])
+            isDomainFinite= [isDomainFinite]
+            domain= [domain]
+            step= [step]
+    if not isinstance(isDomainFinite,numpy.ndarray):
+        isDomainFinite= numpy.array(isDomainFinite)
+    if not isinstance(domain,numpy.ndarray):
+        domain= numpy.array(domain)
+    if isinstance(step,list): step= numpy.array(step)
+    if isinstance(step,(int,float)) or len(step) == 1:
+        step= numpy.ones(ndim)*step
+    if len(isDomainFinite.shape) == 1 and ndim > 1 and not sliceinit:
+        dFinite= []
+        for ii in range(ndim):
+            dFinite.append(isDomainFinite)
+        isDomainFinite= dFinite
+    if len(domain.shape) == 1 and ndim > 1 and not sliceinit:
+        dDomain= []
+        for ii in range(ndim):
+            dDomain.append(domain)
+        domain= dDomain
+    if ndim == 1: lambdafunc= lambda x: lnpdf(x[0],*pdf_params)
+    else: lambdafunc= lambda x: lnpdf(x,*pdf_params)
+    #Set-up walkers
+    if nwalkers is None:
+        nwalkers = numpy.amax([5,2*ndim])
+    if threads is None:
+        threads= 1
+    nmarkovsamples= int(numpy.ceil(float(nsamples)/nwalkers))
+    #Set up initial position
+    initial_position= []
+    initial_position1= []
+    lnprobs= []
+    for ww in range(nwalkers):
+        thisparams= []
+        for pp in range(ndim):
+            prop= initial_theta[pp]+numpy.random.normal()*step[pp]
+            if (isDomainFinite[pp][0] and prop < domain[pp][0]):
+                prop= domain[pp][0]
+            elif (isDomainFinite[pp][1] and prop > domain[pp][1]):
+                prop= domain[pp][1]
+            thisparams.append(prop)
+        initial_position1.append(numpy.array(thisparams))
+    ##CUSTOM##INTIALIZATION##OF##RD##AND##FH
+    for ww in range(nwalkers):
+        tlnp= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        while tlnp == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+            thisparams= initial_position1[ww]
+            if options.starthigh:
+                newrd= numpy.log(numpy.random.beta(1.5,1.)*3.+1.5)
+                newfh= numpy.log(numpy.random.beta(1.5,1.))
+            else:
+                newrd= numpy.log(numpy.random.beta(1.,1.5)*3.+1.5)
+                newfh= numpy.log(numpy.random.beta(1.,1.5))
+            tpotparams= get_potparams(thisparams,options,npops)
+            if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
+                tpotparams[0]= newrd
+                tpotparams[3]= newfh
+            else:
+                raise NotImplementedError("custom markovpy not implemented for this potential")
+            thisparams= set_potparams(tpotparams,thisparams,
+                                      options,npops)
+            tlnp= lambdafunc(numpy.array(thisparams))
+        lnprobs.append(tlnp)
+        initial_position.append(numpy.array(thisparams))
+    if not lnprobs is None: lnprobs= numpy.array(lnprobs)
+    #Set up sampler
+    sampler = mpy.EnsembleSampler(nwalkers,ndim,
+                                  lambdafunc,
+                                  threads=threads)
+    #Sample
+    pos, prob, state= sampler.run_mcmc(initial_position,
+                                       numpy.random.mtrand.RandomState().get_state(),
+                                       nmarkovsamples,
+                                       lnprobinit=lnprobs)
+    #Get chain
+    chain= sampler.get_chain()
+    if returnLnprob:
+        lnp= sampler.get_lnprobability()
+        lnps= []
+    samples= []
+    for ss in range(nmarkovsamples):
+        for ww in range(nwalkers):
+            thisparams= []
+            for pp in range(ndim):
+                thisparams.append(chain[ww,pp,ss])
+            samples.append(numpy.array(thisparams))
+            if returnLnprob:
+                lnps.append(lnp[ww,ss])
+    if len(samples) > nsamples:
+        if returnLnprob:
+            lnps= lnps[-nsamples:len(samples)]
+        samples= samples[-nsamples:len(samples)]
+    if returnLnprob:
+        return (samples,lnps,pos,prob,state)
+    else:
+        return (samples,pos,prob,state)
+
 ##SETUP ERROR INTEGRATION
 def setup_err_mc(data,options):
     #First sample distances, then sample velocities 
@@ -2762,6 +2891,9 @@ def get_options():
     parser.add_option("--fixdvt",dest="fixdvt",type='float',
                       default=None,
                       help="If set, fix a vT offset")
+    parser.add_option("--starthigh",action="store_true", dest="starthigh",
+                      default=False,
+                      help="Start with a high value for RD")
     #Errors
     parser.add_option("--nmcerr",dest='nmcerr',default=30,type='int',
                       help="Number of MC samples to use for Monte Carlo integration over error distribution")
