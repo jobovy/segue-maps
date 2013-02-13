@@ -184,7 +184,23 @@ def pixelFitDF(options,args):
                                             normintstuff,errstuff)
         else:
             #Setup everything necessary for sampling
-            isDomainFinite, domain, step, create_method= setup_domain(options,len(fehs))
+            isDomainFinite, domain, step, create_method= setup_domain(options,len(fehs)) 
+            if not options.restart is None and os.path.exists(options.restart):
+                #Load previous state from file
+                print "Loading state from file "+options.result
+                savefile= open(options.result,'rb')
+                params= pickle.load(savefile)
+                mloglikemax= pickle.load(savefile)
+                samples= pickle.load(savefile)
+                dumm= pickle.load(savefile)
+                pos= pickle.load(savefile)
+                prob= pickle.load(savefile)
+                state= pickle.load(savefile)
+                savefile.close()
+            else:
+                pos= None
+                prob= None
+                state= None
             if _CUSTOMSAMPLING:
                 samples, lnps, pos,prob,state= custom_markovpy(options,len(fehs),params,
                                                step,
@@ -196,8 +212,10 @@ def pixelFitDF(options,args):
                                                sliceinit=False,
                                                skip=1,
                                                create_method=create_method,
-                                               starthigh=options.starthigh,
-                                               returnLnprob=True)
+                                               returnLnprob=True,
+                                                               pos=pos,
+                                                               prob=prob,
+                                                               state=state)
             else:
                 samples, lnps= bovy_mcmc.markovpy(params,
                                                   step,
@@ -1924,7 +1942,8 @@ def custom_markovpy(options,npops,initial_theta,step,lnpdf,pdf_params,
                     isDomainFinite=[False,False],domain=[0.,0.],
                     nsamples=1,nwalkers=None,threads=None,
                     sliceinit=False,skip=0,create_method='step_out',
-                    returnLnprob=False):
+                    returnLnprob=False,
+                    pos=None,prob=None,state=None):
     try:
         ndim = len(initial_theta)
     except TypeError:
@@ -1959,52 +1978,55 @@ def custom_markovpy(options,npops,initial_theta,step,lnpdf,pdf_params,
     if threads is None:
         threads= 1
     nmarkovsamples= int(numpy.ceil(float(nsamples)/nwalkers))
-    #Set up initial position
-    initial_position= []
-    initial_position1= []
-    lnprobs= []
-    for ww in range(nwalkers):
-        thisparams= []
-        for pp in range(ndim):
-            prop= initial_theta[pp]+numpy.random.normal()*step[pp]
-            if (isDomainFinite[pp][0] and prop < domain[pp][0]):
-                prop= domain[pp][0]
-            elif (isDomainFinite[pp][1] and prop > domain[pp][1]):
-                prop= domain[pp][1]
-            thisparams.append(prop)
-        initial_position1.append(numpy.array(thisparams))
-    ##CUSTOM##INTIALIZATION##OF##RD##AND##FH
-    for ww in range(nwalkers):
-        tlnp= -numpy.finfo(numpy.dtype(numpy.float64)).max
-        while tlnp == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-            thisparams= initial_position1[ww]
-            if options.starthigh:
-                newrd= numpy.log(numpy.random.beta(1.5,1.)*3.+1.5)
-                newfh= numpy.log(numpy.random.beta(1.5,1.))
-            else:
-                newrd= numpy.log(numpy.random.beta(1.,1.5)*3.+1.5)
-                newfh= numpy.log(numpy.random.beta(1.,1.5))
-            tpotparams= get_potparams(thisparams,options,npops)
-            if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
-                tpotparams[0]= newrd
-                tpotparams[3]= newfh
-            else:
-                raise NotImplementedError("custom markovpy not implemented for this potential")
-            thisparams= set_potparams(tpotparams,thisparams,
-                                      options,npops)
-            tlnp= lambdafunc(numpy.array(thisparams))
-        lnprobs.append(tlnp)
-        initial_position.append(numpy.array(thisparams))
-    if not lnprobs is None: lnprobs= numpy.array(lnprobs)
+    if pos is None:
+        #Set up initial position
+        initial_position= []
+        lnprobs= []
+        for ww in range(nwalkers):
+            tlnp= -numpy.finfo(numpy.dtype(numpy.float64)).max
+            while tlnp == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+                thisparams= []
+                for pp in range(ndim):
+                    prop= initial_theta[pp]+numpy.random.normal()*step[pp]
+                    if (isDomainFinite[pp][0] and prop < domain[pp][0]):
+                        prop= domain[pp][0]
+                    elif (isDomainFinite[pp][1] and prop > domain[pp][1]):
+                        prop= domain[pp][1]
+                    thisparams.append(prop)
+                ##CUSTOM##INTIALIZATION##OF##RD##AND##FH
+                if options.starthigh:
+                    newrd= numpy.log((numpy.random.beta(1.5,1.)*3.+1.5)/_REFR0)
+                    newfh= numpy.random.beta(1.5,1.)
+                else:
+                    newrd= numpy.log((numpy.random.beta(1.,1.5)*3.+1.5)/_REFR0)
+                    newfh= numpy.random.beta(1.,1.5)
+                tpotparams= numpy.array(get_potparams(thisparams,options,npops))
+                if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
+                    tpotparams[0]= newrd
+                    tpotparams[3]= newfh
+                else:
+                    raise NotImplementedError("custom markovpy not implemented for this potential")
+                thisparams= set_potparams(tpotparams,thisparams,
+                                          options,npops)
+                print thisparams
+                tlnp= lambdafunc(numpy.array(thisparams))
+            lnprobs.append(tlnp)
+            initial_position.append(numpy.array(thisparams))
+        if not lnprobs is None: lnprobs= numpy.array(lnprobs)
     #Set up sampler
     sampler = mpy.EnsembleSampler(nwalkers,ndim,
                                   lambdafunc,
                                   threads=threads)
     #Sample
-    pos, prob, state= sampler.run_mcmc(initial_position,
-                                       numpy.random.mtrand.RandomState().get_state(),
-                                       nmarkovsamples,
-                                       lnprobinit=lnprobs)
+    if pos is None:
+        pos, prob, state= sampler.run_mcmc(initial_position,
+                                           numpy.random.mtrand.RandomState().get_state(),
+                                           nmarkovsamples,
+                                           lnprobinit=lnprobs)
+    else:
+        pos, prob, state= sampler.run_mcmc(pos,state,
+                                           nmarkovsamples,
+                                           lnprobinit=prob)
     #Get chain
     chain= sampler.get_chain()
     if returnLnprob:
@@ -2956,6 +2978,8 @@ def get_options():
                       help="Number of MCMC samples to obtain")
     parser.add_option("--init",dest='init',default=None,
                       help="Initial parameters file")
+    parser.add_option("--restart",dest='restart',default=None,
+                      help="File that contains previous MCMC samples' output state for restarting the chain")
     parser.add_option("-m","--multi",dest='multi',default=None,type='int',
                       help="number of cpus to use")
     parser.add_option("--cluster",action="store_true", dest="cluster",
