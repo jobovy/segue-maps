@@ -34,6 +34,7 @@ _labeldict['rhoo']= r'$\rho(R_0,0)\ (M_\odot\,\mathrm{pc}^{-3})$'
 _labeldict['vcdvc']= '$V_{c,\mathrm{disk}}/V_c\,(R_0)$'
 _labeldict['vcdvcro']= r'$V_{c,\mathrm{disk}}/V_c\,(2.2\,R_d)$'
 _labeldict['rors']= r'$R_0/r_s$'
+_labeldict['dvt']= r'$\Delta \bar{V}_T\ (\mathrm{km\,s}^{-1})$'
 class potPDFs:
     """Class for representing potential PDFs"""
     def __init__(self,options,args,basic=True):
@@ -172,7 +173,7 @@ class potPDFs:
                 rorss.append((1.-plhalos[-1])/(plhalos[-1]-3.))
                 #dvt
                 if options.fitdvt:
-                    dvts.append(get_dvt(sols[solindx],options))
+                    dvts.append(get_dvt(sols[solindx],options)*_REFV0*vo)
                 #rhodm
                 if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
                     or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
@@ -251,7 +252,7 @@ class potPDFs:
                     thisrors_samples.append((1.-thisplhalo_samples[-1])/(thisplhalo_samples[-1]-3.))
                     #dvt
                     if options.fitdvt:
-                        thisdvt_samples.append(get_dvt(samples[solindx],options))
+                        thisdvt_samples.append(get_dvt(samples[solindx][kk],options)*_REFV0*vo)
                     if not basic:
                         #rhodm
                         if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
