@@ -251,7 +251,7 @@ class potPDFs:
                     thisrors_samples.append((1.-thisplhalo_samples[-1])/(thisplhalo_samples[-1]-3.))
                     #dvt
                     if options.fitdvt:
-                        thisdvt_samples.append(get_dvt(sols[solindx],options))
+                        thisdvt_samples.append(get_dvt(samples[solindx],options))
                     if not basic:
                         #rhodm
                         if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
