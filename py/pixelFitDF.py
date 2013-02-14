@@ -37,8 +37,12 @@ from galpy.actionAngle import actionAngleStaeckelGrid
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import bovy_mcmc
 import markovpy as mpy
+import emcee
+try:
+    from emcee.utils import MPIPool
+except ImportError:
+    print "Warning: could not import MPIPool"
 import acor
-from galpy.util import save_pickles
 import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
     segueSelect, _mr_gi, _gi_gr, _ERASESTR, _append_field_recarray, \
@@ -67,7 +71,7 @@ _SURFNRS= 16
 _SURFNZS= 16
 _BFGS= True
 _CUSTOMSAMPLING= True
-def pixelFitDF(options,args):
+def pixelFitDF(options,args,pool):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
     #Check whether the savefile already exists
@@ -202,20 +206,26 @@ def pixelFitDF(options,args):
                 prob= None
                 state= None
             if _CUSTOMSAMPLING:
+                if options.mpi:
+                    nwalkers= 40
+                else:
+                    nwalkers= 14
                 samples, lnps, pos,prob,state= custom_markovpy(options,len(fehs),params,
                                                step,
                                                loglike,
                                                (fehs,afes,binned,options,normintstuff,
                                                 errstuff),
                                                nsamples=options.nsamples,
-                                               nwalkers=len(params)+2,
+                                               nwalkers=nwalkers,
                                                sliceinit=False,
                                                skip=1,
                                                create_method=create_method,
                                                returnLnprob=True,
                                                                pos=pos,
                                                                prob=prob,
-                                                               state=state)
+                                                               state=state,
+                                                               use_emcee=options.mpi,
+                                                               pool=pool)
             else:
                 samples, lnps= bovy_mcmc.markovpy(params,
                                                   step,
@@ -281,7 +291,8 @@ def mloglike(*args,**kwargs):
     """minus log likelihood"""
     return -loglike(*args,**kwargs)
 
-def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
+def loglike(params,fehs,afes,binned,options,normintstuff,errstuff,
+            testgood=False):
     """log likelihood"""
     if numpy.any(numpy.isnan(params)):
         return -numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -304,9 +315,10 @@ def loglike(params,fehs,afes,binned,options,normintstuff,errstuff):
     if _DEBUG:
         print params
     try:
-        pot= setup_potential(params,options,len(fehs))
+        pot= setup_potential(params,options,len(fehs),returnrawpot=testgood)
     except RuntimeError: #if this set of parameters gives a nonsense potential
         return -numpy.finfo(numpy.dtype(numpy.float64)).max
+    if testgood: return 0.
     aA= setup_aA(pot,options)
     out= logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff)
     returnThis= out+logroprior+logpotprior
@@ -1943,7 +1955,8 @@ def custom_markovpy(options,npops,initial_theta,step,lnpdf,pdf_params,
                     nsamples=1,nwalkers=None,threads=None,
                     sliceinit=False,skip=0,create_method='step_out',
                     returnLnprob=False,
-                    pos=None,prob=None,state=None):
+                    pos=None,prob=None,state=None,
+                    use_emcee=False,pool=None):
     try:
         ndim = len(initial_theta)
     except TypeError:
@@ -1974,10 +1987,14 @@ def custom_markovpy(options,npops,initial_theta,step,lnpdf,pdf_params,
     else: lambdafunc= lambda x: lnpdf(x,*pdf_params)
     #Set-up walkers
     if nwalkers is None:
-        nwalkers = numpy.amax([5,2*ndim])
+        if use_emcee:
+            nwalkers= numpy.amax([6,2*ndim+2])
+        else:
+            nwalkers = numpy.amax([5,2*ndim])
     if threads is None:
         threads= 1
     nmarkovsamples= int(numpy.ceil(float(nsamples)/nwalkers))
+    print nwalkers
     if pos is None:
         #Set up initial position
         initial_position= []
@@ -1995,14 +2012,14 @@ def custom_markovpy(options,npops,initial_theta,step,lnpdf,pdf_params,
                     thisparams.append(prop)
                 ##CUSTOM##INTIALIZATION##OF##RD##AND##FH
                 if options.starthigh:
-                    newrd= numpy.log((numpy.random.beta(1.5,1.)*3.+1.5)/_REFR0)
+                    newrd= numpy.log((numpy.random.beta(1.5,1.)*1.5+2.)/_REFR0)
                     #newfh= numpy.random.beta(1.5,1.)
                 else:
-                    newrd= numpy.log((numpy.random.beta(1.,1.5)*3.+1.5)/_REFR0)
+                    newrd= numpy.log((numpy.random.beta(1.,1.5)*1.5+2.)/_REFR0)
                     #newfh= numpy.random.beta(1.,1.5)
                 trd= numpy.exp(newrd)*_REFR0
-                texp= numpy.fabs((newrd-3.))/1.5*1.+1.
-                if trd > 3.:
+                texp= numpy.fabs((newrd-2.75))/0.75*1.+1.
+                if trd > 2.75:
                     newfh= numpy.random.beta(texp,1.)
                 else:
                     newfh= numpy.random.beta(1.,texp)
@@ -2015,35 +2032,61 @@ def custom_markovpy(options,npops,initial_theta,step,lnpdf,pdf_params,
                 thisparams= set_potparams(tpotparams,thisparams,
                                           options,npops)
                 print thisparams
-                tlnp= lambdafunc(numpy.array(thisparams))
+                tlnp= lnpdf(thisparams,*pdf_params,testgood=True)
             lnprobs.append(tlnp)
             initial_position.append(numpy.array(thisparams))
+        lnprobs= None
         if not lnprobs is None: lnprobs= numpy.array(lnprobs)
     #Set up sampler
-    sampler = mpy.EnsembleSampler(nwalkers,ndim,
-                                  lambdafunc,
-                                  threads=threads)
-    #Sample
-    if pos is None:
-        pos, prob, state= sampler.run_mcmc(initial_position,
-                                           numpy.random.mtrand.RandomState().get_state(),
-                                           nmarkovsamples,
-                                           lnprobinit=lnprobs)
+    if use_emcee:
+        sampler = emcee.EnsembleSampler(nwalkers,ndim,
+                                        lambdafunc,
+                                        threads=threads,
+                                        pool=pool)
+        #Sample
+        if pos is None:
+            pos, prob, state= sampler.run_mcmc(initial_position,nmarkovsamples,
+                                               rstate0=numpy.random.mtrand.RandomState().get_state(),
+                                               
+                                               lnprob0=lnprobs)
+        else:
+            pos, prob, state= sampler.run_mcmc(pos,
+                                               nmarkovsamples,
+                                               rstate0=state,
+                                               lnprob0=prob)
+        #Get chain
+        chain= sampler.chain
     else:
-        pos, prob, state= sampler.run_mcmc(pos,state,
-                                           nmarkovsamples,
-                                           lnprobinit=prob)
-    #Get chain
-    chain= sampler.get_chain()
+        sampler = mpy.EnsembleSampler(nwalkers,ndim,
+                                      lambdafunc,
+                                      threads=threads)
+        #Sample
+        if pos is None:
+            pos, prob, state= sampler.run_mcmc(initial_position,
+                                               numpy.random.mtrand.RandomState().get_state(),
+                                               nmarkovsamples,
+                                               lnprobinit=lnprobs)
+        else:
+            pos, prob, state= sampler.run_mcmc(pos,state,
+                                               nmarkovsamples,
+                                               lnprobinit=prob)
+        #Get chain
+        chain= sampler.get_chain()
     if returnLnprob:
-        lnp= sampler.get_lnprobability()
+        if use_emcee:
+            lnp= sampler.lnprobability()
+        else:
+            lnp= sampler.get_lnprobability()
         lnps= []
     samples= []
     for ss in range(nmarkovsamples):
         for ww in range(nwalkers):
             thisparams= []
             for pp in range(ndim):
-                thisparams.append(chain[ww,pp,ss])
+                if use_emcee:
+                    thisparams.append(chain[ww,ss,pp])
+                else:
+                    thisparams.append(chain[ww,pp,ss])
             samples.append(numpy.array(thisparams))
             if returnLnprob:
                 lnps.append(lnp[ww,ss])
@@ -2991,6 +3034,9 @@ def get_options():
     parser.add_option("--cluster",action="store_true", dest="cluster",
                       default=False,
                       help="If set, fit each bin on a separate node on the cluster (for --singles)")
+    parser.add_option("--mpi",action="store_true", dest="mpi",
+                      default=False,
+                      help="If set, fit a single bin on the cluster in parallel using emcee")
     #Type of fit
     parser.add_option("--justdf",action="store_true", dest="justdf",
                       default=False,
@@ -3054,5 +3100,12 @@ if __name__ == '__main__':
     parser= get_options()
     options,args= parser.parse_args()
     numpy.random.seed(options.seed)
-    pixelFitDF(options,args)
+    if options.mpi:
+        pool= MPIPool()
+        if not pool.is_master():
+            pool.wait()
+            sys.exit(0)
+    else:
+        pool= None
+    pixelFitDF(options,args,pool)
 
