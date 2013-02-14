@@ -173,7 +173,7 @@ class potPDFs:
                 rorss.append((1.-plhalos[-1])/(plhalos[-1]-3.))
                 #dvt
                 if options.fitdvt:
-                    dvts.append(get_dvt(sols[solindx],options)*_REFV0*vo)
+                    dvts.append(get_dvt(sols[solindx],options)*_REFV0)
                 #rhodm
                 if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
                     or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
@@ -252,7 +252,7 @@ class potPDFs:
                     thisrors_samples.append((1.-thisplhalo_samples[-1])/(thisplhalo_samples[-1]-3.))
                     #dvt
                     if options.fitdvt:
-                        thisdvt_samples.append(get_dvt(samples[solindx][kk],options)*_REFV0*vo)
+                        thisdvt_samples.append(get_dvt(samples[solindx][kk],options)*_REFV0)
                     if not basic:
                         #rhodm
                         if options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
