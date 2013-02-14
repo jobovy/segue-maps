@@ -1996,10 +1996,16 @@ def custom_markovpy(options,npops,initial_theta,step,lnpdf,pdf_params,
                 ##CUSTOM##INTIALIZATION##OF##RD##AND##FH
                 if options.starthigh:
                     newrd= numpy.log((numpy.random.beta(1.5,1.)*3.+1.5)/_REFR0)
-                    newfh= numpy.random.beta(1.5,1.)
+                    #newfh= numpy.random.beta(1.5,1.)
                 else:
                     newrd= numpy.log((numpy.random.beta(1.,1.5)*3.+1.5)/_REFR0)
-                    newfh= numpy.random.beta(1.,1.5)
+                    #newfh= numpy.random.beta(1.,1.5)
+                trd= numpy.exp(newrd)*_REFR0
+                texp= numpy.fabs((newrd-3.))/1.5*1.+1.
+                if trd > 3.:
+                    newfh= numpy.random.beta(texp,1.)
+                else:
+                    newfh= numpy.random.beta(1.,texp)
                 tpotparams= numpy.array(get_potparams(thisparams,options,npops))
                 if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
                     tpotparams[0]= newrd
@@ -2283,7 +2289,7 @@ def initialize(options,fehs,afes):
     """Function to initialize the fit; uses fehs and afes to initialize using MAPS"""
     p= []
     if options.fitdvt:
-        p.append(0.)
+        p.append(-0.1)
     if options.fitdm:
         p.append(0.)
     if options.fitro:
@@ -2447,15 +2453,15 @@ def setup_domain(options,npops):
         create_method.append('whole')
         domain.append([100./_REFV0,350./_REFV0])
         isDomainFinite.append([True,True])
-        step.append(0.5)
+        step.append(0.1)
         create_method.append('whole')
         domain.append([-5.1,1.4])
         isDomainFinite.append([True,True])
-        step.append(0.5)
+        step.append(0.2)
         create_method.append('whole')
         domain.append([0.,1.])
         isDomainFinite.append([True,True])
-        step.append(0.5)
+        step.append(0.2)
         create_method.append('whole')
         domain.append([-0.5*30.,0.04*30.])
         isDomainFinite.append([True,True])
