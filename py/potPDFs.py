@@ -221,7 +221,7 @@ class potPDFs:
                 thisvcdvc_samples= []
                 thisvcdvcro_samples= []
                 thisrors_samples= []
-                for kk in range(len(samples[0])):
+                for kk in range(len(samples[solindx])):
                     if not basic:
                         try:
                             pot= setup_potential(samples[solindx][kk],options,1,
