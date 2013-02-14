@@ -191,8 +191,8 @@ def pixelFitDF(options,args,pool):
             isDomainFinite, domain, step, create_method= setup_domain(options,len(fehs)) 
             if not options.restart is None and os.path.exists(options.restart):
                 #Load previous state from file
-                print "Loading state from file "+options.result
-                savefile= open(options.result,'rb')
+                print "Loading state from file "+options.restart
+                savefile= open(options.restart,'rb')
                 params= pickle.load(savefile)
                 mloglikemax= pickle.load(savefile)
                 samples= pickle.load(savefile)
