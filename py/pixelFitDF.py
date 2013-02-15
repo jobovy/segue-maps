@@ -69,7 +69,7 @@ _PRECALCVSAMPLES= False
 _SURFSUBTRACTEXPON= True
 _SURFNRS= 16
 _SURFNZS= 16
-_BFGS= True
+_BFGS= False
 _CUSTOMSAMPLING= True
 def pixelFitDF(options,args,pool):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
@@ -639,6 +639,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     outfrac= numpy.exp(logoutfrac)
     halodens= ro*outDens(1.,0.,None)
     globalInterp= True
+    start= time.time()
     if globalInterp:
         nrs, nzs= _SURFNRS, _SURFNZS
         thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
@@ -689,6 +690,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
         else:
             compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0))+outfrac*halodens
         distfac= 10.**(get_dm(params,options)/5.)
+        mid= time.time()
         n= comparernumberPlate(compare_func,
                                None,sf,
                                colordist,fehdist,None,
@@ -702,6 +704,10 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                R0=_REFR0*ro,
                                numcores=options.multi)
         vo= get_vo(params,options,npops)
+        end= time.time()
+        print "Times: %f, %f, %f" % ((mid-start)/(end-start),
+                                     (end-mid)/(end-start),
+                                     end-start)
         return numpy.sum(n)*vo**3.
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
@@ -2381,7 +2387,10 @@ numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #s
     elif options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         #p.extend([-1.39,1.,-3.,0.3,-0.05])
         #p.extend([-1.,1.,-3.,0.5,0.])
-        p.extend([-.69,1.07,-3.,0.7,0.02])
+        if options.starthigh:
+            p.extend([-.69,1.07,-3.,0.7,0.02])
+        else:
+            p.extend([-1.39,1.,-3.,0.3,-0.05])
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
         p.extend([-1.,1.,-3.,0.,1.,-0.8])
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
