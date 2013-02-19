@@ -630,9 +630,9 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
     thisnormintstuff= normintstuff[indx]
     if _PRECALCVSAMPLES:
-        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac,normR, normZ,surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
     else:
-        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac, normR, normZ= unpack_normintstuff(thisnormintstuff,options)
     out= 0.
     ro= get_ro(params,options)
 #    outfrac= get_outfrac(params,indx,options)
@@ -702,6 +702,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                feh=feh,
                                noplot=True,nodata=True,distfac=distfac,
                                R0=_REFR0*ro,
+                               colorfehfac=colorfehfac,normR=normR,normZ=normZ,
                                numcores=options.multi)
         vo= get_vo(params,options,npops)
         end= time.time()
@@ -1113,24 +1114,47 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         #determine dmin and dmax
         allbright, allfaint= True, True
         #dmin and dmax for this rmin, rmax
+        if not options.fixro is None:
+            ro= options.fixro
+        else:
+            ro= 1.
+        colorfehfac= numpy.zeros((len(sf.plates),_NDS))
+        normR= numpy.zeros((len(sf.plates),_NDS))
+        normZ= numpy.zeros((len(sf.plates),_NDS))
+        #Zmin and Zmax for this rmin, rmax
+        bs= []
+        allbright, allfaint= False, False
         for p in sf.plates:
-            #l and b?
+           #l and b?
             pindx= (sf.plates == p)
             plateb= platelb[pindx,1][0]
+            bs.append(plateb)
             if 'faint' in sf.platestr[pindx].programname[0]:
                 allbright= False
             else:
                 allfaint= False
-        if not (options.sample.lower() == 'k' \
-                    and options.indiv_brightlims):
-            if allbright:
-                thisrmin, thisrmax= rmin, 17.8
-            elif allfaint:
-                thisrmin, thisrmax= 17.8, rmax
-            else:
-                thisrmin, thisrmax= rmin, rmax
+        bs= numpy.array(bs)
+        bmin, bmax= numpy.amin(numpy.fabs(bs)),numpy.amax(numpy.fabs(bs))
+        if allbright:
+            thisrmin, thisrmax= rmin, 17.8
+        elif allfaint:
+            thisrmin, thisrmax= 17.8, rmax
         else:
             thisrmin, thisrmax= rmin, rmax
+        _THISNGR, _THISNFEH= 51, 51
+        tgrs= numpy.zeros((_THISNGR,_THISNFEH))
+        tfehs= numpy.zeros((_THISNGR,_THISNFEH))
+        for kk in range(_THISNGR):
+            tfehs[kk,:]= numpy.linspace(fehrange[0],fehrange[1],_THISNFEH)
+        for kk in range(_THISNFEH):
+            tgrs[:,kk]= numpy.linspace(grmin,grmax,_THISNGR)
+        dmin= numpy.amin(_ivezic_dist(tgrs,thisrmin,tfehs))
+        dmax= numpy.amax(_ivezic_dist(tgrs,thisrmax,tfehs))
+        if options.zmax is None:
+            zmax= dmax*numpy.sin(bmax*_DEGTORAD)
+        zmin= dmin*numpy.sin(bmin*_DEGTORAD)
+        zmin-= 2.*_ZSUN #Just to be sure we have the South covered
+        zs= numpy.linspace(zmin,zmax,_NDS)
         _THISNGR, _THISNFEH= 51, 51
         thisgrs= numpy.zeros((_THISNGR,_THISNFEH))
         thisfehs= numpy.zeros((_THISNGR,_THISNFEH))
@@ -1138,9 +1162,42 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
             thisfehs[kk,:]= numpy.linspace(fehrange[0],fehrange[1],_THISNFEH)
         for kk in range(_THISNFEH):
             thisgrs[:,kk]= numpy.linspace(grmin,grmax,_THISNGR)
-        dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))
-        dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))
-        ds= numpy.linspace(dmin,dmax,_NDS)
+        if not options.fixdm is None:
+            distfac= 10.**(options.fixdm/5.)
+        else:
+            distfac= 1.
+        dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))*distfac
+        dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))*distfac
+        ds= numpy.linspace(dmin,dmax,_NDS)     
+        grs= numpy.linspace(grmin,grmax,_NGR)
+        tfehs= fehsgrid
+        for pindx in range(len(plates)):
+            tmpout= numpy.zeros(len(zs))
+            l= platelb[pindx,0]
+            b= platelb[pindx,1]
+            if b > 0.:
+                tds= (zs-_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
+            else:
+                tds= (zs+_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
+            norm= 0.
+            logds= 5.*numpy.log10(tds/distfac)+10.
+            for kk in range(len(tfehs)):
+                for jj in range(len(grs)):
+                    #What rs do these zs correspond to
+                    gi= _gi_gr(grs[jj])
+                    mr= _mr_gi(gi,tfehs[kk])
+                    rs= logds+mr
+                    select= numpy.array(sf(sf.plates[pindx],r=rs))
+                    tmpout+= colordist(grs[jj])*fehdist(tfehs[kk])\
+                        *select
+                    norm+= colordist(grs[jj])*fehdist(tfehs[kk])
+            colorfehfac[pindx,:]= tmpout/norm
+            #Calculate (R,z)s
+            XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for kk in range(len(ds))]),
+                                        numpy.array([b for kk in range(len(ds))]),
+                                        tds,degree=True)
+            normR[pindx,:]= ((_REFR0*ro-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+            normZ[pindx,:]= XYZ[:,2]+_ZSUN
         #Determine scale over which the surface-mass density changes for this plate
         #Find nearest mono-abundance bin that has a measurement
         abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
@@ -1189,6 +1246,9 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         thisnormintstuff.surfscale= surfscale
         thisnormintstuff.hr= thishr
         thisnormintstuff.hz= thishz
+        thisnormintstuff.colorfehfac= colorfehfac
+        thisnormintstuff.normR= normR
+        thisnormintstuff.normZ= normZ
         if _PRECALCVSAMPLES:
             normintparams= initialize(options,fehs,afes)
             normintpot= setup_potential(normintparams,options,len(fehs))
@@ -1270,6 +1330,9 @@ def unpack_normintstuff(normintstuff,options):
                     normintstuff.surfscale,
                     normintstuff.hr,
                     normintstuff.hz,
+                    normintstuff.colorfehfac,
+                    normintstuff.normR,
+                    normintstuff.normZ,
                     normintstuff.surfnrs,
                     normintstuff.surfnzs,
                     normintstuff.surfRgrid,
@@ -1302,7 +1365,10 @@ def unpack_normintstuff(normintstuff,options):
                     normintstuff.ds,
                     normintstuff.surfscale,
                     normintstuff.hr,
-                    normintstuff.hz)
+                    normintstuff.hz,
+                    normintstuff.colorfehfac,
+                    normintstuff.normR,
+                    normintstuff.normZ)
         
 class normintstuffClass:
     """Empty class to hold normalization integral necessities"""

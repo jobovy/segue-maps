@@ -782,7 +782,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                         xrange=None,yrange=None,
                         overplot=False,color='k',marker='v',cumul=False,
                         runavg=0,noplot=False,nodata=False,distfac=1.,
-                        R0=8.,numcores=None):
+                        R0=8.,numcores=None,
+                        colorfehfac=None,normR=None,normZ=None):
     """
     NAME:
        comparernumberPlate
@@ -806,13 +807,14 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
        cumul= if True, plot cumulative distribution
        runavg= if > 0, also plot a running average (only for cumul=False)
        numcores= if set to an integer, use this number of cores
+       colorfehfac= the summation of color and FeH for each plate [plates,nzs]
+       normR=, normZ= radii and heights for the integral
     OUTPUT:
        plot to output
        return numbers, data_numbers, xs
     HISTORY:
        2011-07-18 - Written - Bovy (NYU)
     """
-    rs= numpy.linspace(rmin,rmax,_NRS)
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                      degree=True)
     allplates, faintplates, brightplates = False, False, False
@@ -869,35 +871,36 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
     zmin= dmin*numpy.sin(bmin*_DEGTORAD)
     zmin-= 2.*_ZSUN #Just to be sure we have the South covered
     zs= numpy.linspace(zmin,zmax,_NZS)
-    #Set up x
-    if vsx.lower() == 'b' or vsx.lower() == 'l' or vsx.lower() == '|b|' \
-            or vsx.lower() == '|sinb|':
-        platels, platebs= [], []
-        for ii in range(len(plate)):
-            p= plate[ii]
-            #l and b?
-            pindx= (sf.plates == p)
-            platel= platelb[pindx,0][0]
-            plateb= platelb[pindx,1][0]
-            platels.append(platel)
-            platebs.append(plateb)
-        if vsx.lower() == 'b':
-            xs= numpy.array(platebs)
-            xlabel= r'$b\ [\mathrm{deg}]$'
-        elif vsx.lower() == '|b|':
-            xs= numpy.fabs(numpy.array(platebs))
-            xlabel= r'$|b|\ [\mathrm{deg}]$'
-        elif vsx.lower() == '|sinb|':
-            xs= numpy.fabs(numpy.sin(numpy.array(platebs)))
-            xlabel= r'$\sin |b|$'
-        else:
-            xs= numpy.array(platels)
-            xlabel= r'$l\ [\mathrm{deg}]$'
-        addx= 0.1
-    elif vsx.lower() == 'plate':
-        xs= numpy.array(plate)
-        addx= 100
-        xlabel= r'$\mathrm{plate}$'
+    if not noplot:
+        #Set up x
+        if vsx.lower() == 'b' or vsx.lower() == 'l' or vsx.lower() == '|b|' \
+                or vsx.lower() == '|sinb|':
+            platels, platebs= [], []
+            for ii in range(len(plate)):
+                p= plate[ii]
+                #l and b?
+                pindx= (sf.plates == p)
+                platel= platelb[pindx,0][0]
+                plateb= platelb[pindx,1][0]
+                platels.append(platel)
+                platebs.append(plateb)
+            if vsx.lower() == 'b':
+                xs= numpy.array(platebs)
+                xlabel= r'$b\ [\mathrm{deg}]$'
+            elif vsx.lower() == '|b|':
+                xs= numpy.fabs(numpy.array(platebs))
+                xlabel= r'$|b|\ [\mathrm{deg}]$'
+            elif vsx.lower() == '|sinb|':
+                xs= numpy.fabs(numpy.sin(numpy.array(platebs)))
+                xlabel= r'$\sin |b|$'
+            else:
+                xs= numpy.array(platels)
+                xlabel= r'$l\ [\mathrm{deg}]$'
+            addx= 0.1
+        elif vsx.lower() == 'plate':
+            xs= numpy.array(plate)
+            addx= 100
+            xlabel= r'$\mathrm{plate}$'
     if isinstance(params,list): #list of samples
         pass
     else: #single value
@@ -914,7 +917,8 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                                                  fehmin,fehmax,
                                                                  feh,colordist,
                                                                  fehdist,sf,
-                                                                 distfac,R0)),
+                                                                 distfac,R0,
+                                                                             colorfehfac,normR,normZ)),
                                         range(len(plate)),numcores=numcores))
         else:
             for ii in range(len(plate)):
@@ -1027,7 +1031,7 @@ def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
 #For multi evaluation of previous    
 def _calc_numbers(p,platelb,zs,densfunc,params,rmin,rmax,
                   grmin,grmax,fehmin,fehmax,
-                  feh,colordist,fehdist,sf,distfac,R0):
+                  feh,colordist,fehdist,sf,distfac,R0,colorfehfac,R,Z):
     #l and b?
     pindx= (sf.plates == p)
     platel= platelb[pindx,0][0]
@@ -1037,7 +1041,8 @@ def _calc_numbers(p,platelb,zs,densfunc,params,rmin,rmax,
                                     plateb,grmin,grmax,
                                     fehmin,fehmax,
                                     feh,colordist,fehdist,sf,p,distfac,
-                                    R0)
+                                    R0,colorfehfac[pindx,:],
+                                    R[pindx,:],Z[pindx,:])
     return numpy.nansum(thiszdist)
 
 def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
@@ -1455,37 +1460,42 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
 
 def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
                          fehmin,fehmax,
-                         feh,colordist,fehdist,sf,plate,distfac=1.,R0=8.):
+                         feh,colordist,fehdist,sf,plate,distfac=1.,R0=8.,
+                         colorfehfac=None,R=None,Z=None):
     """Predict the Z distribution for a plate"""
-    #BOVY: APPROXIMATELY INTEGRATE OVER GR
-    ngr, nfeh= 11, 11
-    grs= numpy.linspace(grmin,grmax,ngr)
-    fehs= numpy.linspace(fehmin,fehmax,nfeh)
-    out= numpy.zeros(len(zs))
     if b > 0.:
         ds= (zs-_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
     else:
         ds= (zs+_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
-    norm= 0.
-    logds= 5.*numpy.log10(ds/distfac)+10.
-    for kk in range(nfeh):
-        for jj in range(ngr):
+    if colorfehfac is None:
+        #BOVY: APPROXIMATELY INTEGRATE OVER GR
+        ngr, nfeh= 11, 11
+        grs= numpy.linspace(grmin,grmax,ngr)
+        fehs= numpy.linspace(fehmin,fehmax,nfeh)
+        out= numpy.zeros(len(zs))
+        norm= 0.
+        logds= 5.*numpy.log10(ds/distfac)+10.
+        for kk in range(nfeh):
+            for jj in range(ngr):
             #What rs do these zs correspond to
-            gi= _gi_gr(grs[jj])
-            mr= _mr_gi(gi,fehs[kk])
-            rs= logds+mr
-            select= numpy.array(sf(plate,r=rs))
-            out+= colordist(grs[jj])*fehdist(fehs[kk])\
-                *select
-            norm+= colordist(grs[jj])*fehdist(fehs[kk])
-    out/= norm
+                gi= _gi_gr(grs[jj])
+                mr= _mr_gi(gi,fehs[kk])
+                rs= logds+mr
+                select= numpy.array(sf(plate,r=rs))
+                out+= colordist(grs[jj])*fehdist(fehs[kk])\
+                    *select
+                norm+= colordist(grs[jj])*fehdist(fehs[kk])
+        out/= norm
+    else:
+        out= colorfehfac
     #Calculate (R,z)s
-    XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
-                                numpy.array([b for ii in range(len(ds))]),
-                                ds,degree=True)
-    R= ((R0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
-    XYZ[:,2]+= _ZSUN
-    out*= ds**2.*densfunc(R,XYZ[:,2],params)/numpy.fabs(numpy.sin(b*_DEGTORAD))
+    if R is None:
+        XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for ii in range(len(ds))]),
+                                    numpy.array([b for ii in range(len(ds))]),
+                                    ds,degree=True)
+        R= ((R0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
+        Z= XYZ[:,2]+_ZSUN
+    out*= ds**2.*densfunc(R,Z,params)/numpy.fabs(numpy.sin(b*_DEGTORAD))
     return out
 
 def _predict_Rdist_plate(Rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
