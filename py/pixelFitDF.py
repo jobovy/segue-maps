@@ -50,7 +50,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from compareDataModel import _predict_rdist_plate, comparernumberPlate
 from pixelFitDens import pixelAfeFeh
-_DEBUG= True
+_DEBUG= False
 _REFR0= 8. #kpc
 _REFV0= 220. #km/s
 _VRSUN=-11.1 #km/s
@@ -179,9 +179,9 @@ def pixelFitDF(options,args,pool):
         #Save
         save_pickles(args[0],params,mloglikemax)
     elif options.grid:
-        gridLike(fehs,afes,binned,options,normintstuff,
+        gridOut= gridLike(fehs,afes,binned,options,normintstuff,
                  errstuff)
-        save_pickles()
+        save_pickles(args[0],*gridOut)
     else:
         #Sample
         if options.justdf:
@@ -450,8 +450,14 @@ def gridLike(fehs,afes,binned,options,normintstuff,errstuff):
     #Set up the grid
     vcs= numpy.array([200./_REFV0,220./_REFV0,240./_REFV0])
     zhs= numpy.array([300./1000./_REFR0,400./1000./_REFR0,500./1000./_REFR0])
+    print "BOVY: ADJUST VC AND ZH"
+    vcs= numpy.array([220./_REFV0])
+    zhs= numpy.array([400./1000./_REFR0])
     rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
     fhs= numpy.linspace(0.,1.,options.nfhs)
+    #print "BOVY: ADJUST RDS AND FHS"
+    #rds= numpy.array([3.])/_REFR0
+    #fhs= numpy.array([0.5])
     rds= numpy.log(rds)
     zhs= numpy.log(zhs)
     out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs)))
@@ -459,7 +465,8 @@ def gridLike(fehs,afes,binned,options,normintstuff,errstuff):
         for jj in range(len(vcs)):
             for kk in range(len(zhs)):
                 for ll in range(len(fhs)):
-                    out[ii,jj,kk,ll]= loglike_optdf([rds[ii],vcs[jj],zhs[kk],fhs[ll]])
+                    print "Working on %i,%i,%i,%i" % (ii,jj,kk,ll)
+                    out[ii,jj,kk,ll]= loglike_optdf([rds[ii],vcs[jj],zhs[kk],fhs[ll]],fehs,afes,binned,options,normintstuff,errstuff)
     return (out,rds,vcs,zhs,fhs)
 
 def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
@@ -468,23 +475,23 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
         potparams= numpy.array([params[0],params[1],params[2],params[3],options.dlnvcdlnr])
     tparams= initialize(options,fehs,afes)    
     tparams= set_potparams(potparams,tparams,options,len(fehs))
-    if numpy.any(numpy.isnan(params)):
+    if numpy.any(numpy.isnan(tparams)):
         return -numpy.finfo(numpy.dtype(numpy.float64)).max
-    logpotprior= logprior_pot(params,options,len(fehs))
+    logpotprior= logprior_pot(tparams,options,len(fehs))
     if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         return logpotprior
     #Set up potential and actionAngle
     if _DEBUG:
-        print params
+        print tparams
     try:
-        pot= setup_potential(params,options,len(fehs))
+        pot= setup_potential(tparams,options,len(fehs))
     except RuntimeError: #if this set of parameters gives a nonsense potential
         return -numpy.finfo(numpy.dtype(numpy.float64)).max
     aA= setup_aA(pot,options)
     #Set-up the fiducial DF
-    dfparams= get_dfparams(params,0,options,log=False)
-    vo= get_vo(params,options,len(fehs))
-    ro= get_ro(params,options)
+    dfparams= get_dfparams(tparams,0,options,log=False)
+    vo= get_vo(tparams,options,len(fehs))
+    ro= get_ro(tparams,options)
     if options.dfmodel.lower() == 'qdf':
         #Normalize
         hr= dfparams[0]/ro
@@ -496,7 +503,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
     #Pre-calculate all actions
     nrs, nzs= _SURFNRS, _SURFNZS
-    thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
+    thisRmin, thisRmax= 4./_REFR0, 16./_REFR0
     thiszmin, thiszmax= 0., .8
     Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
     zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
@@ -506,53 +513,81 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     jzs= numpy.empty((nrs,nzs,options.ngl**3))
     normsrs= numpy.empty((nrs,nzs))
     normszs= numpy.empty((nrs,nzs))
+    if not options.multi is None:
+        multOut= multi.parallel_map((lambda x: setup_optdf_actions(Rgrid[x],
+                                                                   zgrid,nzs,
+                                                                   options,qdf)),
+                                    range(nrs),
+                                    numcores=numpy.amin([nrs,
+                                                         multiprocessing.cpu_count(),
+                                                         options.multi]))
+        for ii in range(nrs):
+            jrs[ii,:,:]= multOut[ii][0,:,:]
+            lzs[ii,:,:]= multOut[ii][1,:,:]
+            jzs[ii,:,:]= multOut[ii][2,:,:]
+    else:
+        for ii in range(nrs):
+            for jj in range(nzs):
+                surfgrid[ii,jj], tjr, tlz, tjz= qdf.vmomentdensity(Rgrid[ii],zgrid[jj],
+                                                                   0.,0.,0.,
+                                                                   gl=True,
+                                                                   ngl=options.ngl,
+                                                                   _return_actions=True)
+                jrs[ii,jj,:]= tjr
+                lzs[ii,jj,:]= tlz
+                jzs[ii,jj,:]= tjz
     for ii in range(nrs):
-        for jj in range(nzs):
-            surfgrid[ii,jj], tjr, tlz, tjz= qdf.vmomentdensity(Rgrid[ii],zgrid[jj],
-                                                               0.,0.,0.,
-                                                               gl=True,
-                                                               ngl=options.ngl,
-                                                               _return_actions=True)
-            jrs[ii,jj,:]= tjr
-            lzs[ii,jj,:]= tlz
-            jzs[ii,jj,:]= tjz
-            normsrs[ii,jj]= qdf._sr*numpy.exp((1.-Rgrid[ii])/qdf._hsr)
-            normszs[ii,jj]= qdf._sz*numpy.exp((1.-Rgrid[ii])/qdf._hsz)
-
-    vo= get_vo(params,options,len(fehs))
-    ro= get_ro(params,options)
-
+        normsrs[ii,:]= qdf._sr*numpy.exp((1.-Rgrid[ii])/qdf._hsr)
+        normszs[ii,:]= qdf._sz*numpy.exp((1.-Rgrid[ii])/qdf._hsz)
+    #Initial parameters
+    dfparams= get_dfparams(tparams,0,options,log=True)
+    if options.fitdvt:
+        init_params= [-0.1]
+        init_params.extend(list(dfparams))
+    else:
+        init_params= dfparams
+    init_params= numpy.array(init_params)
     if _BFGS:
         optout= optimize.fmin_bfgs(mloglike_optdf_2optimize,
                                    init_params,
-                                   args=(params,fullparams,
+                                   args=(tparams,
                                            pot,aA,fehs,afes,binned,normintstuff,
                                            len(fehs),errstuff,options,vo,ro,
                                            jrs,lzs,jzs,normsrs,normszs),
                                    callback=cb,
+#                                   maxiter=2,
                                    full_output=True)
     else:
-        optout= optimize.fmin_powell(mloglike_optdf_2optimize,params,
-                                     args=(params,fullparams,
+        optout= optimize.fmin_powell(mloglike_optdf_2optimize,init_params,
+                                     args=(tparams,
                                            pot,aA,fehs,afes,binned,normintstuff,
                                            len(fehs),errstuff,options,vo,ro,
                                            jrs,lzs,jzs,normsrs,normszs),
                                      callback=cb,
                                      xtol=10.**-3.,
                                      full_output=True,
+                                     maxiter=2,
                                      maxfun=1000)
     final_params= optout[0]
     mloglikemax= optout[1]
-
-
-
-
-    out= logdf(params,pot,aA,fehs,afes,binned,normintstuff,errstuff)
-    returnThis= out+logroprior+logpotprior
-    if numpy.isnan(returnThis):
+    print params, mloglikemax
+    if numpy.isnan(mloglikemax):
         return -numpy.finfo(numpy.dtype(numpy.float64)).max
     else:
-        return returnThis
+        return -mloglikemax
+
+def setup_optdf_actions(R,zgrid,nzs,options,qdf):
+    js= numpy.zeros((3,nzs,options.ngl**3))
+    for jj in range(nzs):
+        dumm, tjr, tlz, tjz= qdf.vmomentdensity(R,zgrid[jj],
+                                                0.,0.,0.,
+                                                gl=True,
+                                                ngl=options.ngl,
+                                                _return_actions=True)
+        js[0,jj,:]= tjr
+        js[1,jj,:]= tlz
+        js[2,jj,:]= tjz
+    return js
 
 def mloglike_optdf_2optimize(params,fullparams,
                              pot,aA,fehs,afes,binned,normintstuff,
@@ -572,6 +607,8 @@ def mloglike_optdf_2optimize(params,fullparams,
         startindx= startindx+5
     tparams[0:startindx+1]= params
     #Priors
+    dvt= get_dvt(tparams,options)
+    if dvt < -0.15 or dvt > 0.15: return numpy.finfo(numpy.dtype(numpy.float64)).max #don't allow crazy dvt
     for ii in range(1):
         logoutfracprior= logprior_outfrac(get_outfrac(tparams,ii,options),
                                           options)
@@ -597,7 +634,8 @@ def mloglike_optdf_2optimize(params,fullparams,
         #Setup
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
     #Calculate surface(R=1.) for relative outlier normalization
-    print "BOVY: SURFACEMASS_Z NEEDS TO BE SPED UP"
+    #print "BOVY: SURFACEMASS_Z NEEDS TO BE SPED UP"
+    #logoutfrac+= numpy.log(qdf.surfacemass_z(1.,ngl=options.ngl))
     logoutfrac+= numpy.log(qdf.surfacemass_z(1.,ngl=options.ngl))
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(tparams,0,fehs,afes,binned,errstuff,
@@ -669,9 +707,11 @@ def logprior_dfparams(p,ii,options):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if theseparams[2] < -3.1 or theseparams[2] > -0.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if theseparams[3] < -2.77 or theseparams[3] > 2.53:
+        if theseparams[3] < -0.3 or theseparams[3] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if theseparams[4] < -2.77 or theseparams[4] > 2.53:
+        if theseparams[4] < -0.3 or theseparams[4] > 2.53:
+            return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if theseparams[1] < theseparams[2]-0.3: #don't let sr < sz/??
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return 0.
 
@@ -842,7 +882,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     start= time.time()
     if globalInterp:
         nrs, nzs= _SURFNRS, _SURFNZS
-        thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
+        thisRmin, thisRmax= 4./_REFR0, 16./_REFR0
         thiszmin, thiszmax= 0., .8
         Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
         zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
@@ -1020,24 +1060,35 @@ def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
     outfrac= numpy.exp(logoutfrac)
     halodens= ro*outDens(1.,0.,None)
     globalInterp= True
-    start= time.time()
+    #start= time.time()
     if globalInterp:
         nrs, nzs= _SURFNRS, _SURFNZS
-        thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
+        thisRmin, thisRmax= 4./_REFR0, 16./_REFR0
         thiszmin, thiszmax= 0., .8
         Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
         zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
         surfgrid= numpy.empty((nrs,nzs))
-        for ii in range(nrs):
-            for jj in range(nzs):
-                surfgrid[ii,jj]= qdf.density(Rgrid[ii],zgrid[jj],
-                                             ngl=options.ngl,
-                                             nmc=options.nmcv,
-                                             _jr=jrs[ii,jj,:],
-                                             _lz=lzs[ii,jj,:],
-                                             _jz=jzs[ii,jj,:],
-                                             _sigmaR1=normsrs[ii,jj],
-                                             _sigmaz1=normszs[ii,jj])
+        if not options.multi is None:
+            multOut= multi.parallel_map((lambda x: _calc_surfgrid_actions(Rgrid[x],
+                                                                       zgrid,nzs,
+                                                                       options,qdf,jrs[x,:,:],lzs[x,:,:],jzs[x,:,:],normsrs[x,:],normszs[x,:])),
+                                        range(nrs),
+                                        numcores=numpy.amin([nrs,
+                                                             multiprocessing.cpu_count(),
+                                                             options.multi]))
+            for ii in range(nrs):
+                surfgrid[ii,:]= multOut[ii]
+        else:
+            for ii in range(nrs):
+                for jj in range(nzs):
+                    surfgrid[ii,jj]= qdf.density(Rgrid[ii],zgrid[jj],
+                                                 ngl=options.ngl,
+                                                 nmc=options.nmcv,
+                                                 _jr=jrs[ii,jj,:],
+                                                 _lz=lzs[ii,jj,:],
+                                                 _jz=jzs[ii,jj,:],
+                                                 _sigmaR1=normsrs[ii,jj],
+                                                 _sigmaz1=normszs[ii,jj])
         if _SURFSUBTRACTEXPON:
             Rs= numpy.tile(Rgrid,(nzs,1)).T
             Zs= numpy.tile(zgrid,(nrs,1))
@@ -1063,7 +1114,7 @@ def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
         else:
             compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0))+outfrac*halodens
         distfac= 10.**(get_dm(params,options)/5.)
-        mid= time.time()
+        #mid= time.time()
         n= comparernumberPlate(compare_func,
                                None,sf,
                                colordist,fehdist,None,
@@ -1078,11 +1129,25 @@ def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
                                colorfehfac=colorfehfac,normR=normR,normZ=normZ,
                                numcores=options.multi)
         vo= get_vo(params,options,npops)
-        end= time.time()
-        print "Times: %f, %f, %f" % ((mid-start)/(end-start),
-                                     (end-mid)/(end-start),
-                                     end-start)
+        #end= time.time()
+        #print "Times: %f, %f, %f" % ((mid-start)/(end-start),
+        #                             (end-mid)/(end-start),
+        #                             end-start)
         return numpy.sum(n)*vo**3.
+
+def _calc_surfgrid_actions(R,zgrid,nzs,options,qdf,
+                           jrs,lzs,jzs,normsrs,normszs):
+    out= numpy.zeros(nzs)
+    for jj in range(nzs):
+        out[jj]= qdf.density(R,zgrid[jj],
+                             ngl=options.ngl,
+                             nmc=options.nmcv,
+                             _jr=jrs[jj,:],
+                             _lz=lzs[jj,:],
+                             _jz=jzs[jj,:],
+                             _sigmaR1=normsrs[jj],
+                             _sigmaz1=normszs[jj])
+    return out
 
 def setup_normintstuff(options,raw,binned,fehs,afes):
     """Gather everything necessary for calculating the normalization integral"""
@@ -1559,7 +1624,7 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
                                           pot=normintpot,aA=normintaA,
                                           cutcounter=True)
             nrs, nzs= _SURFNRS, _SURFNZS
-            thisrmin, thisrmax= 4./_REFR0, 15./_REFR0
+            thisrmin, thisrmax= 4./_REFR0, 16./_REFR0
             thiszmin, thiszmax= 0., .8
             Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
             zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
@@ -2717,7 +2782,7 @@ def initialize(options,fehs,afes):
             abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                                      +(afes[ii]-mapafes)**2./0.0025)
             p.extend([numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
-numpy.log(2.*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaR
+numpy.log(numpy.sqrt(2.)*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaR
                       numpy.log(monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaZ
                       numpy.log(7./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
             #Outlier fraction
