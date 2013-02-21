@@ -502,13 +502,13 @@ def gridLike(fehs,afes,binned,options,normintstuff,errstuff):
                     for ll in range(len(fhs)):
                         optout= multOut[ll]
                         out[ii,jj,kk,ll]= optout[0]
-                        dfparams[ii,jj,kk,ll,:]= optout[1]
+                        dfparams[ii,jj,kk,ll,:]= optout[1:len(optout)+1]
                 else:
                     for ll in range(len(fhs)):
                         print "Working on %i,%i,%i,%i" % (ii,jj,kk,ll)
                         optout= loglike_optdf([rds[ii],vcs[jj],zhs[kk],fhs[ll]],fehs,afes,binned,options,normintstuff,errstuff)                   
                         out[ii,jj,kk,ll]= optout[0]
-                        dfparams[ii,jj,kk,ll,:]= optout[1]
+                        dfparams[ii,jj,kk,ll,:]= optout[1:len(optout)+1]
                 kk+= 1
                 if not options.restart is None:
                     save_pickles(options.restart,
@@ -523,23 +523,32 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     """log likelihood, ASSUMES A SINGLE BIN"""
     if _MULTIWHOLEGRID and not options.multi is None:
         toptions= copy.copy(options)
-        toptions.multi= None #swith off multi here
+        toptions.multi= toptions.multi2 #Set multi to the second multi
+    if toptions.fitdvt:
+        out= numpy.empty(8)
+        out[1:8]= numpy.zeros(7)+numpy.nan
+    else:
+        out= numpy.empty(7)
+        out[1:7]= numpy.zeros(6)+numpy.nan
     if toptions.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         potparams= numpy.array([params[0],params[1],params[2],params[3],toptions.dlnvcdlnr])
     tparams= initialize(toptions,fehs,afes)    
     tparams= set_potparams(potparams,tparams,toptions,len(fehs))
     if numpy.any(numpy.isnan(tparams)):
-        return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        out[0]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        return out
     logpotprior= logprior_pot(tparams,toptions,len(fehs))
     if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-        return logpotprior
+        out[0]= logpotprior
+        return out
     #Set up potential and actionAngle
     if _DEBUG:
         print tparams
     try:
         pot= setup_potential(tparams,toptions,len(fehs))
     except RuntimeError: #if this set of parameters gives a nonsense potential
-        return -numpy.finfo(numpy.dtype(numpy.float64)).max
+        out[0]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        return out
     aA= setup_aA(pot,toptions)
     #Set-up the fiducial DF
     dfparams= get_dfparams(tparams,0,toptions,log=False)
@@ -598,7 +607,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
         init_params= [-0.1]
         init_params.extend(list(dfparams))
     else:
-        init_params= dfparams
+        init_params= list(dfparams)
     init_params= numpy.array(init_params)
     if _BFGS:
         optout= optimize.fmin_bfgs(mloglike_optdf_2optimize,
@@ -607,7 +616,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                                          pot,aA,fehs,afes,binned,normintstuff,
                                          len(fehs),errstuff,toptions,vo,ro,
                                          jrs,lzs,jzs,normsrs,normszs,
-                                         qdf._sr,qdf._sz),
+                                         qdf._sr*vo,qdf._sz*vo),
                                    callback=cb,
 #                                   maxiter=2,
                                    full_output=True)
@@ -617,7 +626,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                                            pot,aA,fehs,afes,binned,normintstuff,
                                            len(fehs),errstuff,toptions,vo,ro,
                                            jrs,lzs,jzs,normsrs,normszs,
-                                         qdf._sr,qdf._sz),
+                                         qdf._sr*vo,qdf._sz*vo),
                                      callback=cb,
                                      xtol=10.**-3.,
                                      full_output=True,
@@ -626,10 +635,13 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     final_params= optout[0]
     mloglikemax= optout[1]
     print params, mloglikemax
+    out= numpy.empty(len(final_params)+1)
     if numpy.isnan(mloglikemax):
-        return (-numpy.finfo(numpy.dtype(numpy.float64)).max,final_params)
+        out[0]= -numpy.finfo(numpy.dtype(numpy.float64)).max
     else:
-        return (-mloglikemax,final_params)
+        out[0]= -mloglikemax
+    out[1:len(final_params)+1]= final_params
+    return out
 
 def setup_optdf_actions(R,zgrid,nzs,options,qdf):
     js= numpy.zeros((3,nzs,options.ngl**3))
@@ -772,7 +784,7 @@ def logprior_dfparams(p,ii,options):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if theseparams[4] < -0.3 or theseparams[4] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
-        if theseparams[1] < theseparams[2]-0.3: #don't let sr < sz/??
+        if theseparams[1] < theseparams[2]-0.7: #don't let sr < sz/??
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return 0.
 
@@ -1007,9 +1019,9 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
                                numcores=options.multi)
         vo= get_vo(params,options,npops)
         end= time.time()
-        print "Times: %f, %f, %f" % ((mid-start)/(end-start),
-                                     (end-mid)/(end-start),
-                                     end-start)
+        #print "Times: %f, %f, %f" % ((mid-start)/(end-start),
+        #                             (end-mid)/(end-start),
+        #                             end-start)
         return numpy.sum(n)*vo**3.
     for ii in range(len(plates)):
         #if _DEBUG: print plates[ii], sf(plates[ii])
@@ -2212,7 +2224,7 @@ def setup_potential(params,options,npops,
     elif options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         ro= get_ro(params,options)
         vo= get_vo(params,options,npops)
-        dlnvcdlnr= potparams[3]/30.
+        dlnvcdlnr= potparams[4]/30.
         ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
         bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
         #Also add 13 Msol/pc^2 with a scale height of 130 pc, and a scale length of ?
@@ -2229,9 +2241,9 @@ def setup_potential(params,options,npops,
         dp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
                                                      hz=numpy.exp(potparams[2])/ro,
                                                      normalize=fd)
-        plhalo= plhalo_from_dlnvcdlnr(dlnvcdlnr,dp,[bp,gp],options)
+        plhalo= plhalo_from_dlnvcdlnr(dlnvcdlnr,dp,[bp,gp],options,fh)
         if plhalo < 0. or plhalo > 3:
-            raise RuntimeError
+            raise RuntimeError("plhalo=%f" % plhalo)
         hp= potential.PowerSphericalPotential(alpha=plhalo,
                                               normalize=fh)
         #print ampb, 13./gassurfdens, ampd, amph, dp(1.,0.), hp(1.,0.)
@@ -2313,13 +2325,13 @@ def fdfh_from_dlnvcdlnr(dlnvcdlnr,diskpot,bulgepot,halopot):
     return ((oneminusvcb2*dvcdr_halo-(2.*dlnvcdlnr-dvcdr_bulge))/(dvcdr_halo-dvcdr_disk),
             (2.*dlnvcdlnr-dvcdr_bulge-dvcdr_disk*oneminusvcb2)/(dvcdr_halo-dvcdr_disk))
 
-def plhalo_from_dlnvcdlnr(dlnvcdlnr,diskpot,bulgepot,options):
+def plhalo_from_dlnvcdlnr(dlnvcdlnr,diskpot,bulgepot,options,fh):
     """Calculate the halo's shape corresponding to this rotation curve derivative"""
     #First calculate the derivatives dvc^2/dR of disk and bulge
     dvcdr_disk= -potential.evaluateRforces(1.,0.,diskpot)+potential.evaluateR2derivs(1.,0.,diskpot)
     dvcdr_bulge= -potential.evaluateRforces(1.,0.,bulgepot)+potential.evaluateR2derivs(1.,0.,bulgepot)
     if 'plhalo' in options.potential.lower():
-        return 2.-(2.*dlnvcdlnr-dvcdr_disk-dvcdr_bulge)
+        return 2.-(2.*dlnvcdlnr-dvcdr_disk-dvcdr_bulge)/fh
 
 ##FULL OPTIMIZER
 def full_optimize(params,fehs,afes,binned,options,normintstuff,errstuff):
@@ -3534,6 +3546,8 @@ def get_options():
                       help="File that contains previous MCMC samples' output state for restarting the chain")
     parser.add_option("-m","--multi",dest='multi',default=None,type='int',
                       help="number of cpus to use")
+    parser.add_option("--multi2",dest='multi2',default=None,type='int',
+                      help="number of cpus to use (second one)")
     parser.add_option("--cluster",action="store_true", dest="cluster",
                       default=False,
                       help="If set, fit each bin on a separate node on the cluster (for --singles)")
