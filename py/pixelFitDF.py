@@ -72,7 +72,7 @@ _SURFNZS= 16
 _BFGS= False
 _CUSTOMSAMPLING= True
 _MULTIWHOLEGRID= True
-def pixelFitDF(options,args,pool):
+def pixelFitDF(options,args,pool=None):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
     #Check whether the savefile already exists
@@ -191,6 +191,8 @@ def pixelFitDF(options,args,pool):
             params.append(gridOut[4][indx[2]])
             params.append(gridOut[5][indx[3]])
             params.append(options.dlnvcdlnr)
+        elif options.potential.lower() == 'bt':
+            params.append(gridOut[2][indx[0]])
         params= numpy.array(params)
         save_pickles(args[0],params,-gridOut[0][indx],*gridOut)
     else:
@@ -459,65 +461,90 @@ def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
 #Grid-based approach
 def gridLike(fehs,afes,binned,options,normintstuff,errstuff):
     #Set up the grid
-    vcs= numpy.array([200./_REFV0,220./_REFV0,240./_REFV0])
-    zhs= numpy.array([300./1000./_REFR0,400./1000./_REFR0,500./1000./_REFR0])
-    print "BOVY: ADJUST VC AND ZH"
-    vcs= numpy.array([220./_REFV0])
-    zhs= numpy.array([400./1000./_REFR0])
-    rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
-    fhs= numpy.linspace(0.,1.,options.nfhs)
-    #print "BOVY: ADJUST RDS AND FHS"
-    #rds= numpy.array([3.])/_REFR0
-    #fhs= numpy.array([0.5])
-    rds= numpy.log(rds)
-    zhs= numpy.log(zhs)
-    if not options.restart is None and os.path.exists(options.restart):
-            #Load previous state from file
-        print "Loading state from file "+options.restart
-        savefile= open(options.restart,'rb')
-        out= pickle.load(savefile)
-        dfparams= pickle.load(savefile)
-        ii= pickle.load(savefile)
-        jj= pickle.load(savefile)
-        kk= pickle.load(savefile)
-        savefile.close()
-    else:
-        ii, jj, kk, ll= 0, 0, 0, 0 
-        out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs)))
-        if options.fitdvt:
-            ndfparams= 7
+    if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
+        vcs= numpy.array([200./_REFV0,220./_REFV0,240./_REFV0])
+        zhs= numpy.array([300./1000./_REFR0,400./1000./_REFR0,500./1000./_REFR0])
+        print "BOVY: ADJUST VC AND ZH"
+        vcs= numpy.array([220./_REFV0])
+        zhs= numpy.array([400./1000./_REFR0])
+        rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
+        fhs= numpy.linspace(0.,1.,options.nfhs)
+        #print "BOVY: ADJUST RDS AND FHS"
+        #rds= numpy.array([3.])/_REFR0
+        #fhs= numpy.array([0.5])
+        rds= numpy.log(rds)
+        zhs= numpy.log(zhs)
+        if not options.restart is None and os.path.exists(options.restart):
+                 #Load previous state from file
+            print "Loading state from file "+options.restart
+            savefile= open(options.restart,'rb')
+            out= pickle.load(savefile)
+            dfparams= pickle.load(savefile)
+            ii= pickle.load(savefile)
+            jj= pickle.load(savefile)
+            kk= pickle.load(savefile)
+            savefile.close()
         else:
-            ndfparams= 6
-        dfparams= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),ndfparams))
-    while ii < len(rds):
-        while jj < len(vcs):
-            while kk <len(zhs):
-                print "Working on %i,%i,%i" % (ii,jj,kk)
-                if _MULTIWHOLEGRID and not options.multi is None:
-                    multOut= multi.parallel_map((lambda x: loglike_optdf([rds[ii],vcs[jj],zhs[kk],fhs[x]],fehs,afes,binned,options,normintstuff,errstuff)),
+            ii, jj, kk, ll= 0, 0, 0, 0 
+            out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs)))
+            if options.fitdvt:
+                ndfparams= 7
+            else:
+                ndfparams= 6
+            dfparams= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),ndfparams))
+        while ii < len(rds):
+            while jj < len(vcs):
+                while kk <len(zhs):
+                    print "Working on %i,%i,%i" % (ii,jj,kk)
+                    if _MULTIWHOLEGRID and not options.multi is None:
+                        multOut= multi.parallel_map((lambda x: loglike_optdf([rds[ii],vcs[jj],zhs[kk],fhs[x]],fehs,afes,binned,options,normintstuff,errstuff)),
                                                 range(len(fhs)),
                                                 numcores=numpy.amin([len(fhs),
                                                                      multiprocessing.cpu_count(),
                                                                      options.multi]))
-                    for ll in range(len(fhs)):
-                        optout= multOut[ll]
-                        out[ii,jj,kk,ll]= optout[0]
-                        dfparams[ii,jj,kk,ll,:]= optout[1:len(optout)+1]
-                else:
-                    for ll in range(len(fhs)):
-                        print "Working on %i,%i,%i,%i" % (ii,jj,kk,ll)
-                        optout= loglike_optdf([rds[ii],vcs[jj],zhs[kk],fhs[ll]],fehs,afes,binned,options,normintstuff,errstuff)                   
-                        out[ii,jj,kk,ll]= optout[0]
-                        dfparams[ii,jj,kk,ll,:]= optout[1:len(optout)+1]
-                kk+= 1
-                if not options.restart is None:
-                    save_pickles(options.restart,
-                                 out,dfparams,ii,jj,kk)
-            kk= 0
-            jj+= 1
-        jj= 0
-        ii+= 1
-    return (out,dfparams,rds,vcs,zhs,fhs)
+                        for ll in range(len(fhs)):
+                            optout= multOut[ll]
+                            out[ii,jj,kk,ll]= optout[0]
+                            dfparams[ii,jj,kk,ll,:]= optout[1:len(optout)+1]
+                    else:
+                        for ll in range(len(fhs)):
+                            print "Working on %i,%i,%i,%i" % (ii,jj,kk,ll)
+                            optout= loglike_optdf([rds[ii],vcs[jj],zhs[kk],fhs[ll]],fehs,afes,binned,options,normintstuff,errstuff)                   
+                            out[ii,jj,kk,ll]= optout[0]
+                            dfparams[ii,jj,kk,ll,:]= optout[1:len(optout)+1]
+                    kk+= 1
+                    if not options.restart is None:
+                        save_pickles(options.restart,
+                                     out,dfparams,ii,jj,kk)
+                kk= 0
+                jj+= 1
+            jj= 0
+            ii+= 1          
+        return (out,dfparams,rds,vcs,zhs,fhs)
+    elif options.potential.lower() == 'bt':
+        types= [0,1]
+        out= numpy.zeros((len(types)))
+        if options.fitdvt:
+            ndfparams= 7
+        else:
+            ndfparams= 6
+        dfparams= numpy.zeros((len(types),ndfparams))
+        if _MULTIWHOLEGRID and not options.multi is None:
+            multOut= multi.parallel_map((lambda x: loglike_optdf([types[x]],fehs,afes,binned,options,normintstuff,errstuff)),
+                                                range(len(types)),
+                                                numcores=numpy.amin([len(types),
+                                                                     multiprocessing.cpu_count(),
+                                                                     options.multi]))
+            for ii in range(len(types)):
+                optout= multOut[ii]
+                out[ii]= optout[0]
+                dfparams[ii,:]= optout[1:len(optout)+1]
+        else:
+            for ii in range(len(types)):
+                optout= loglike_optdf([types[ii]],fehs,afes,binned,options,normintstuff,errstuff)                   
+                out[ii]= optout[0]
+                dfparams[ii,:]= optout[1:len(optout)+1]
+        return (out,dfparams,types)         
 
 def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     """log likelihood, ASSUMES A SINGLE BIN"""
@@ -532,6 +559,12 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
         out[1:7]= numpy.zeros(6)+numpy.nan
     if toptions.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         potparams= numpy.array([params[0],params[1],params[2],params[3],toptions.dlnvcdlnr])
+    if toptions.potential.lower() == 'bt':
+        potparams= numpy.array([])
+        if params[0] == 0:
+            toptions.potential = 'bti'
+        elif params[0] == 1:
+            toptions.potential = 'btii'
     tparams= initialize(toptions,fehs,afes)    
     tparams= set_potparams(potparams,tparams,toptions,len(fehs))
     if numpy.any(numpy.isnan(tparams)):
@@ -628,7 +661,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                                          pot,aA,fehs,afes,binned,normintstuff,
                                          len(fehs),errstuff,toptions,vo,ro,
                                          jrs,lzs,jzs,normsrs,normszs,
-                                         qdf._sr*vo,qdf._sz*vo,
+                                         qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
                                          rgs,kappas,nus,Omegas),
                                    callback=cb,
 #                                   maxiter=2,
@@ -639,7 +672,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                                            pot,aA,fehs,afes,binned,normintstuff,
                                            len(fehs),errstuff,toptions,vo,ro,
                                            jrs,lzs,jzs,normsrs,normszs,
-                                           qdf._sr*vo,qdf._sz*vo,
+                                           qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
                                            rgs,kappas,nus,Omegas),
                                      callback=cb,
                                      xtol=10.**-3.,
@@ -678,7 +711,7 @@ def setup_optdf_actions(R,zgrid,nzs,options,qdf):
 def mloglike_optdf_2optimize(params,fullparams,
                              pot,aA,fehs,afes,binned,normintstuff,
                              npops,errstuff,options,vo,ro,
-                             jrs,lzs,jzs,normsrs,normszs,initsr,initsz,
+                             jrs,lzs,jzs,normsrs,normszs,initsr,initsz,inithr,
                              rgs,kappas,nus,Omegas):
     """Actual minus loglikelihood to optimize, SINGLE POPULATION"""
     tparams= copy.copy(fullparams)
@@ -712,7 +745,8 @@ def mloglike_optdf_2optimize(params,fullparams,
     #More prior
     if options.dfmodel.lower() == 'qdf':
         if dfparams[1] > 2.*initsr or dfparams[1] < initsr/2. \
-                or dfparams[2] > 2.*initsz or dfparams[2] < initsz/2.:
+                or dfparams[2] > 2.*initsz or dfparams[2] < initsz/2. \
+                or dfparams[0] > 2.*inithr or dfparams[0] < inithr/2.:
             #Don't allow parameters too different from the initial parameters
             return numpy.finfo(numpy.dtype(numpy.float64)).max
     logoutfrac= numpy.log(get_outfrac(tparams,0,options))
@@ -794,7 +828,7 @@ def logprior_dfparams(p,ii,options):
         if dm < -0.4 or dm > 0.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max   
     if options.dfmodel.lower() == 'qdf':
-        if theseparams[0] < -2.77 or theseparams[0] > 2.53:
+        if theseparams[0] < -1.9 or theseparams[0] > 2.53:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         if theseparams[1] < -3.1 or theseparams[1] > -0.4:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -1844,11 +1878,13 @@ def run_abundance_singles(options,args,fehs,afes):
     savename= args[0]
     initname= options.init
     normname= options.savenorm
+    restartname= options.restart
     if options.cluster:
         options.cluster= False
         for ii in range(len(fehs)):
             run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,
-                                                   savename,initname,normname)
+                                                   savename,initname,normname,
+                                                   restartname)
     elif not options.multi is None:
         dummy= multi.parallel_map((lambda x: run_abundance_singles_single(options,args,fehs,afes,x,
                                                                           savename,initname,normname)),
@@ -1889,7 +1925,8 @@ def unparse_cmd(options,args):
 
 def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
                                            initname,
-                                           normname):
+                                           normname,
+                                           restartname):
     #Prepare args and options
     spl= savename.split('.')
     newname= ''
@@ -1921,7 +1958,7 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
         options.savenorm= newname
     if not options.restart is None:
         #Do the same for restart
-        spl= options.restart.split('.')
+        spl= restartname.split('.')
         newname= ''
         for jj in range(len(spl)-1):
             newname+= spl[jj]
@@ -1945,7 +1982,10 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
     cmdfile.write(cmd)
     cmdfile.close()
     #Now submit
-    subprocess.call(["qsub","-w","n","-l","exclusive=true","-l","h_rt=36:00:00",cmdfilename])
+    if options.grid:
+        subprocess.call(["qsub","-w","n","-l","h_rt=24:00:00",cmdfilename])
+    else:
+        subprocess.call(["qsub","-w","n","-l","exclusive=true","-l","h_rt=36:00:00",cmdfilename])
     return None    
 
 def run_abundance_singles_single(options,args,fehs,afes,ii,savename,initname,
@@ -3307,7 +3347,7 @@ def set_potparams(p,params,options,npops):
         params[startindx+5]= p[5]
     elif options.potential.lower() == 'bti' \
             or options.potential.lower() == 'btii':
-        return []
+        pass
     return params
 
 def get_dfparams(p,indx,options,log=False):
