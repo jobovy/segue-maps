@@ -573,6 +573,10 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     jrs= numpy.empty((nrs,nzs,toptions.ngl**3))
     lzs= numpy.empty((nrs,nzs,toptions.ngl**3))
     jzs= numpy.empty((nrs,nzs,toptions.ngl**3))
+    rgs= numpy.empty((nrs,nzs,toptions.ngl**3))
+    kappas= numpy.empty((nrs,nzs,toptions.ngl**3))
+    nus= numpy.empty((nrs,nzs,toptions.ngl**3))
+    Omegas= numpy.empty((nrs,nzs,toptions.ngl**3))
     normsrs= numpy.empty((nrs,nzs))
     normszs= numpy.empty((nrs,nzs))
     if not toptions.multi is None:
@@ -587,17 +591,25 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
             jrs[ii,:,:]= multOut[ii][0,:,:]
             lzs[ii,:,:]= multOut[ii][1,:,:]
             jzs[ii,:,:]= multOut[ii][2,:,:]
+            rgs[ii,:,:]= multOut[ii][3,:,:]
+            kappas[ii,:,:]= multOut[ii][4,:,:]
+            nus[ii,:,:]= multOut[ii][5,:,:]
+            Omegas[ii,:,:]= multOut[ii][6,:,:]
     else:
         for ii in range(nrs):
             for jj in range(nzs):
-                surfgrid[ii,jj], tjr, tlz, tjz= qdf.vmomentdensity(Rgrid[ii],zgrid[jj],
+                surfgrid[ii,jj], tjr, tlz, tjz, trg, tkappa, tnu, tOmega= qdf.vmomentdensity(Rgrid[ii],zgrid[jj],
                                                                    0.,0.,0.,
                                                                    gl=True,
                                                                    ngl=toptions.ngl,
-                                                                   _return_actions=True)
+                                                                   _return_actions=True,_return_freqs=True)
                 jrs[ii,jj,:]= tjr
                 lzs[ii,jj,:]= tlz
                 jzs[ii,jj,:]= tjz
+                rgs[ii,jj,:]= trg
+                kappas[ii,jj,:]= tkappa
+                nus[ii,jj,:]= tnu
+                Omegas[ii,jj,:]= tOmega
     for ii in range(nrs):
         normsrs[ii,:]= qdf._sr*numpy.exp((1.-Rgrid[ii])/qdf._hsr)
         normszs[ii,:]= qdf._sz*numpy.exp((1.-Rgrid[ii])/qdf._hsz)
@@ -616,7 +628,8 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                                          pot,aA,fehs,afes,binned,normintstuff,
                                          len(fehs),errstuff,toptions,vo,ro,
                                          jrs,lzs,jzs,normsrs,normszs,
-                                         qdf._sr*vo,qdf._sz*vo),
+                                         qdf._sr*vo,qdf._sz*vo,
+                                         rgs,kappas,nus,Omegas),
                                    callback=cb,
 #                                   maxiter=2,
                                    full_output=True)
@@ -626,11 +639,12 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                                            pot,aA,fehs,afes,binned,normintstuff,
                                            len(fehs),errstuff,toptions,vo,ro,
                                            jrs,lzs,jzs,normsrs,normszs,
-                                         qdf._sr*vo,qdf._sz*vo),
+                                           qdf._sr*vo,qdf._sz*vo,
+                                           rgs,kappas,nus,Omegas),
                                      callback=cb,
                                      xtol=10.**-3.,
                                      full_output=True,
-                                     maxiter=2,
+                                     maxiter=options.maxiter,
                                      maxfun=1000)
     final_params= optout[0]
     mloglikemax= optout[1]
@@ -644,22 +658,28 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     return out
 
 def setup_optdf_actions(R,zgrid,nzs,options,qdf):
-    js= numpy.zeros((3,nzs,options.ngl**3))
+    js= numpy.zeros((7,nzs,options.ngl**3))
     for jj in range(nzs):
-        dumm, tjr, tlz, tjz= qdf.vmomentdensity(R,zgrid[jj],
+        dumm, tjr, tlz, tjz, trg, tkappa, tnu, tOmega= qdf.vmomentdensity(R,zgrid[jj],
                                                 0.,0.,0.,
                                                 gl=True,
                                                 ngl=options.ngl,
-                                                _return_actions=True)
+                                                _return_actions=True,
+                                                _return_freqs=True)
         js[0,jj,:]= tjr
         js[1,jj,:]= tlz
         js[2,jj,:]= tjz
+        js[3,jj,:]= trg
+        js[4,jj,:]= tkappa
+        js[5,jj,:]= tnu
+        js[6,jj,:]= tOmega
     return js
 
 def mloglike_optdf_2optimize(params,fullparams,
                              pot,aA,fehs,afes,binned,normintstuff,
                              npops,errstuff,options,vo,ro,
-                             jrs,lzs,jzs,normsrs,normszs,initsr,initsz):
+                             jrs,lzs,jzs,normsrs,normszs,initsr,initsz,
+                             rgs,kappas,nus,Omegas):
     """Actual minus loglikelihood to optimize, SINGLE POPULATION"""
     tparams= copy.copy(fullparams)
     startindx= 0
@@ -742,7 +762,7 @@ def mloglike_optdf_2optimize(params,fullparams,
         data_lndf+= numpy.log(vo)
     #Normalize
     normalization= calc_normint_fixedpot(qdf,0,normintstuff,tparams,npops,options,
-                                         logoutfrac,jrs,lzs,jzs,normsrs,normszs)
+                                         logoutfrac,jrs,lzs,jzs,normsrs,normszs,rgs,kappas,nus,Omegas)
     out= numpy.sum(data_lndf)\
         -ndata*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
     if _DEBUG:
@@ -1109,7 +1129,8 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     return out*vo**3.
 
 def calc_normint_fixedpot(qdf,indx,normintstuff,params,npops,options,
-                          logoutfrac,jrs,lzs,jzs,normsrs,normszs):
+                          logoutfrac,jrs,lzs,jzs,normsrs,normszs,
+                          rgs,kappas,nus,Omegas):
     """Calculate the normalization integral"""
     if options.mcall or options.mcwdf: #evaluation is the same for these
         raise NotImplementedError("mcall and mcwdf not implemented for fixed potential")
@@ -1117,10 +1138,12 @@ def calc_normint_fixedpot(qdf,indx,normintstuff,params,npops,options,
         return calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,
                                          options,
                                          logoutfrac,
-                                         jrs,lzs,jzs,normsrs,normszs)
+                                         jrs,lzs,jzs,normsrs,normszs,
+                                         rgs,kappas,nus,Omegas)
 
 def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
-                              logoutfrac,jrs,lzs,jzs,normsrs,normszs):
+                              logoutfrac,jrs,lzs,jzs,normsrs,normszs,
+                              rgs,kappas,nus,Omegas):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
     thisnormintstuff= normintstuff[indx]
     if _PRECALCVSAMPLES:
@@ -1144,7 +1167,8 @@ def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
         if not options.multi is None:
             multOut= multi.parallel_map((lambda x: _calc_surfgrid_actions(Rgrid[x],
                                                                        zgrid,nzs,
-                                                                       options,qdf,jrs[x,:,:],lzs[x,:,:],jzs[x,:,:],normsrs[x,:],normszs[x,:])),
+                                                                       options,qdf,jrs[x,:,:],lzs[x,:,:],jzs[x,:,:],normsrs[x,:],normszs[x,:],
+                                                                          rgs[x,:,:],kappas[x,:,:],nus[x,:,:],Omegas[x,:,:])),
                                         range(nrs),
                                         numcores=numpy.amin([nrs,
                                                              multiprocessing.cpu_count(),
@@ -1160,6 +1184,10 @@ def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
                                                  _jr=jrs[ii,jj,:],
                                                  _lz=lzs[ii,jj,:],
                                                  _jz=jzs[ii,jj,:],
+                                                 _rg=rgs[ii,jj,:],
+                                                 _kappa=kappas[ii,jj,:],
+                                                 _nu=nus[ii,jj,:],
+                                                 _Omega=Omegas[ii,jj,:],
                                                  _sigmaR1=normsrs[ii,jj],
                                                  _sigmaz1=normszs[ii,jj])
         if _SURFSUBTRACTEXPON:
@@ -1209,7 +1237,8 @@ def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
         return numpy.sum(n)*vo**3.
 
 def _calc_surfgrid_actions(R,zgrid,nzs,options,qdf,
-                           jrs,lzs,jzs,normsrs,normszs):
+                           jrs,lzs,jzs,normsrs,normszs,
+                           rgs,kappas,nus,Omegas):
     out= numpy.zeros(nzs)
     for jj in range(nzs):
         out[jj]= qdf.density(R,zgrid[jj],
@@ -1218,6 +1247,10 @@ def _calc_surfgrid_actions(R,zgrid,nzs,options,qdf,
                              _jr=jrs[jj,:],
                              _lz=lzs[jj,:],
                              _jz=jzs[jj,:],
+                             _rg=rgs[jj,:],
+                             _kappa=kappas[jj,:],
+                             _nu=nus[jj,:],
+                             _Omega=Omegas[jj,:],
                              _sigmaR1=normsrs[jj],
                              _sigmaz1=normszs[jj])
     return out
@@ -3564,6 +3597,8 @@ def get_options():
                       help="Number of halo contributions to use in grid-based search")
     parser.add_option("--dlnvcdlnr",dest='dlnvcdlnr',default=0.,type='float',
                       help="dlnvcdlnr when it is fixed")
+    parser.add_option("--maxiter",dest='maxiter',default=8,type='int',
+                      help="Maximum number of iterations in DF optimization")
     #Type of fit
     parser.add_option("--justdf",action="store_true", dest="justdf",
                       default=False,
