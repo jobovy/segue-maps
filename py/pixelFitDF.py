@@ -885,6 +885,9 @@ def logprior_pot(params,options,npops):
         if potparams[5] < -2.0 or potparams[5] > 1.0:
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return logprior_dlnvcdlnr(potparams[3],options)
+    elif options.potential.lower() == 'bti' \
+            or options.potential.lower() == 'btii':
+        return 0.
     return out
 
 def logprior_dlnvcdlnr(dlnvcdlnr,options):
@@ -2345,6 +2348,79 @@ def setup_potential(params,options,npops,
     elif options.potential.lower() == 'flatlogdisk':
         return [potential.LogarithmicHaloPotential(normalize=.5,q=potparams[0]),
                 potential.MiyamotoNagaiPotential(normalize=.5,a=0.5,b=0.1)]
+    elif options.potential.lower() == 'bti': #model I from Binney & Tremaine (ish)
+        ro= get_ro(params,options)
+        vo= get_vo(params,options,npops)
+        #Bulge
+        ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
+        bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
+        #Halo
+        fh= 0.35/0.95*(1.-ampb)
+        hp= potential.PowerSphericalPotential(alpha=1.,
+                                              normalize=fh)
+        #Disks
+        rd= 2./8.
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*rd/ro,
+                                                     hz=0.080/ro/_REFR0,
+                                                     normalize=1.)
+        dp= potential.DoubleExponentialDiskPotential(hr=rd/ro,
+                                                     hz=0.350/_REFR0/ro,
+                                                     normalize=1.)
+        gassurfdens= 2.*gp.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*gp._hz*ro*_REFR0*1000.
+        stellarsurfdens= 2.*dp.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*dp._hz*ro*_REFR0*1000.
+        fgr= 1./3.*stellarsurfdens/gassurfdens
+        fdr= 1./(1.+fgr)
+        fgr= fgr/(1.+fgr)
+        fd= 0.6/0.95*(1.-ampb)*fdr
+        fg= 0.6/0.95*(1.-ampb)*fgr
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*rd/ro,
+                                                     hz=0.080/ro/_REFR0,
+                                                     normalize=fg)
+        dp= potential.DoubleExponentialDiskPotential(hr=rd/ro,
+                                                     hz=0.350/_REFR0/ro,
+                                                     normalize=fd)
+        #Use an interpolated version for speed
+        if returnrawpot:
+            return [dp,hp,bp,gp]
+        else:
+            return potential.interpRZPotential(RZPot=[dp,hp,bp,gp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True,interpDens=interpDens,interpdvcircdr=interpdvcircdr)
+
+    elif options.potential.lower() == 'btii': #model II from Binney & Tremaine (ish)
+        ro= get_ro(params,options)
+        vo= get_vo(params,options,npops)
+        #Bulge
+        ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
+        bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
+        #Halo
+        fh= 0.63/0.96*(1.-ampb)
+        hp= potential.PowerSphericalPotential(alpha=1.9,
+                                              normalize=fh)
+        #Disks
+        rd= 3.2/8.
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*rd/ro,
+                                                     hz=0.080/ro/_REFR0,
+                                                     normalize=1.)
+        dp= potential.DoubleExponentialDiskPotential(hr=rd/ro,
+                                                     hz=0.350/_REFR0/ro,
+                                                     normalize=1.)
+        gassurfdens= 2.*gp.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*gp._hz*ro*_REFR0*1000.
+        stellarsurfdens= 2.*dp.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*dp._hz*ro*_REFR0*1000.
+        fgr= 1./3.*stellarsurfdens/gassurfdens
+        fdr= 1./(1.+fgr)
+        fgr= fgr/(1.+fgr)
+        fd= 0.33/0.96*(1.-ampb)*fdr
+        fg= 0.33/0.96*(1.-ampb)*fgr
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*rd/ro,
+                                                     hz=0.080/ro/_REFR0,
+                                                     normalize=fg)
+        dp= potential.DoubleExponentialDiskPotential(hr=rd/ro,
+                                                     hz=0.350/_REFR0/ro,
+                                                     normalize=fd)
+        #Use an interpolated version for speed
+        if returnrawpot:
+            return [dp,hp,bp,gp]
+        else:
+            return potential.interpRZPotential(RZPot=[dp,hp,bp,gp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True,interpDens=interpDens,interpdvcircdr=interpdvcircdr)
 
 def fdfh_from_dlnvcdlnr(dlnvcdlnr,diskpot,bulgepot,halopot):
     """Calculate the halo amplitude corresponding to this rotation curve derivative"""
@@ -3174,6 +3250,9 @@ def get_vo(p,options,npops):
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
             or options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         return p[startindx+1]
+    elif options.potential.lower() == 'bti' \
+            or options.potential.lower() == 'btii':
+        return 1.
 
 def get_outfrac(p,indx,options):
     """Function that returns the outlier fraction for these options"""
@@ -3226,6 +3305,9 @@ def set_potparams(p,params,options,npops):
         params[startindx+3]= p[3]
         params[startindx+4]= p[4]
         params[startindx+5]= p[5]
+    elif options.potential.lower() == 'bti' \
+            or options.potential.lower() == 'btii':
+        return []
     return params
 
 def get_dfparams(p,indx,options,log=False):
@@ -3294,6 +3376,9 @@ def get_npotparams(options):
         return 5
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
         return 6
+    elif options.potential.lower() == 'bti' \
+            or options.potential.lower() == 'btii':
+        return 0
 
 def get_ro(p,options):
     """Function that returns R0 for these options"""
