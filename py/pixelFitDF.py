@@ -548,8 +548,8 @@ def gridLike(fehs,afes,binned,options,normintstuff,errstuff):
 
 def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     """log likelihood, ASSUMES A SINGLE BIN"""
-    if _MULTIWHOLEGRID and not options.multi is None:
-        toptions= copy.copy(options)
+    toptions= copy.copy(options)
+    if _MULTIWHOLEGRID:
         toptions.multi= toptions.multi2 #Set multi to the second multi
     if toptions.fitdvt:
         out= numpy.empty(8)
@@ -559,7 +559,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
         out[1:7]= numpy.zeros(6)+numpy.nan
     if toptions.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         potparams= numpy.array([params[0],params[1],params[2],params[3],toptions.dlnvcdlnr])
-    if toptions.potential.lower() == 'bt':
+    elif toptions.potential.lower() == 'bt':
         potparams= numpy.array([])
         if params[0] == 0:
             toptions.potential = 'bti'
@@ -598,7 +598,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
     #Pre-calculate all actions
     nrs, nzs= _SURFNRS, _SURFNZS
-    thisRmin, thisRmax= 4./_REFR0, 16./_REFR0
+    thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
     thiszmin, thiszmax= 0., .8
     Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
     zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
@@ -664,7 +664,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                                          qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
                                          rgs,kappas,nus,Omegas),
                                    callback=cb,
-#                                   maxiter=2,
+                                   maxiter=options.maxiter,
                                    full_output=True)
     else:
         optout= optimize.fmin_powell(mloglike_optdf_2optimize,init_params,
@@ -1012,7 +1012,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     start= time.time()
     if globalInterp:
         nrs, nzs= _SURFNRS, _SURFNZS
-        thisRmin, thisRmax= 4./_REFR0, 16./_REFR0
+        thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
         thiszmin, thiszmax= 0., .8
         Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
         zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
@@ -1196,7 +1196,7 @@ def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
     #start= time.time()
     if globalInterp:
         nrs, nzs= _SURFNRS, _SURFNZS
-        thisRmin, thisRmax= 4./_REFR0, 16./_REFR0
+        thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
         thiszmin, thiszmax= 0., .8
         Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
         zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
@@ -1767,7 +1767,7 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
                                           pot=normintpot,aA=normintaA,
                                           cutcounter=True)
             nrs, nzs= _SURFNRS, _SURFNZS
-            thisrmin, thisrmax= 4./_REFR0, 16./_REFR0
+            thisrmin, thisrmax= 4./_REFR0, 15./_REFR0
             thiszmin, thiszmax= 0., .8
             Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
             zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
@@ -1983,9 +1983,11 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
     cmdfile.close()
     #Now submit
     if options.grid:
-        subprocess.call(["qsub","-w","n","-l","h_rt=24:00:00",cmdfilename])
+        subprocess.call(["qsub","-w","n","-l","exclusive=true",
+                         "-l","h_rt=12:00:00",cmdfilename])
     else:
-        subprocess.call(["qsub","-w","n","-l","exclusive=true","-l","h_rt=36:00:00",cmdfilename])
+        subprocess.call(["qsub","-w","n","-l","exclusive=true",
+                         "-l","h_rt=36:00:00",cmdfilename])
     return None    
 
 def run_abundance_singles_single(options,args,fehs,afes,ii,savename,initname,
