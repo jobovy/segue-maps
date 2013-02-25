@@ -465,8 +465,8 @@ def gridLike(fehs,afes,binned,options,normintstuff,errstuff):
         vcs= numpy.array([200./_REFV0,220./_REFV0,240./_REFV0])
         zhs= numpy.array([300./1000./_REFR0,400./1000./_REFR0,500./1000./_REFR0])
         print "BOVY: ADJUST VC AND ZH"
-        vcs= numpy.array([220./_REFV0])
-        zhs= numpy.array([400./1000./_REFR0])
+        vcs= numpy.array([options.fixvc/_REFV0])
+        zhs= numpy.array([options.fixzh/1000./_REFR0])
         rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
         fhs= numpy.linspace(0.,1.,options.nfhs)
         #print "BOVY: ADJUST RDS AND FHS"
@@ -1881,7 +1881,13 @@ def run_abundance_singles(options,args,fehs,afes):
     restartname= options.restart
     if options.cluster:
         options.cluster= False
-        for ii in range(len(fehs)):
+        start= 0
+        stop= len(fehs)
+        if options.batch1:
+            stop= 31
+        elif options.batch2:
+            start= 31
+        for ii in range(start,stop):
             run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,
                                                    savename,initname,normname,
                                                    restartname)
@@ -1983,7 +1989,10 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
     cmdfile.close()
     #Now submit
     if options.grid:
+        #hold_jid created using qstat | grep bovy | awk '{print "-hold_jid "$1}'
         subprocess.call(["qsub","-w","n","-l","exclusive=true",
+                         "-N",options.clustername,
+                         "-hold_jid",options.clusterholdname,
                          "-l","h_rt=12:00:00",cmdfilename])
     else:
         subprocess.call(["qsub","-w","n","-l","exclusive=true",
@@ -3714,6 +3723,18 @@ def get_options():
     parser.add_option("--mpi",action="store_true", dest="mpi",
                       default=False,
                       help="If set, fit a single bin on the cluster in parallel using emcee")
+    parser.add_option("--clustername",dest="clustername",
+                      default='K',
+                      help="Name of the job on the cluster")
+    parser.add_option("--clusterholdname",dest="clusterholdname",
+                      default='XXX',
+                      help="Name of the job to wait until finish on the cluster")
+    parser.add_option("--batch1",action="store_true", dest="batch1",
+                      default=False,
+                      help="If set, submit the first 31 G dwarf bins")
+    parser.add_option("--batch2",action="store_true", dest="batch2",
+                      default=False,
+                      help="If set, submit the last 31 G dwarf bins")
     #Grid-based w/ DF optimization
     parser.add_option("--grid",action="store_true", dest="grid",
                       default=False,
@@ -3722,6 +3743,10 @@ def get_options():
                       help="Number of scale lengths to use in grid-based search")
     parser.add_option("--nfhs",dest='nfhs',default=11,type='int',
                       help="Number of halo contributions to use in grid-based search")
+    parser.add_option("--fixzh",dest='fixzh',default=0.,type='float',
+                      help="zh when it is fixed")
+    parser.add_option("--fixvc",dest='fixvc',default=0.,type='float',
+                      help="vc when it is fixed")
     parser.add_option("--dlnvcdlnr",dest='dlnvcdlnr',default=0.,type='float',
                       help="dlnvcdlnr when it is fixed")
     parser.add_option("--maxiter",dest='maxiter',default=8,type='int',
