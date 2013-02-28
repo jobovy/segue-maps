@@ -697,7 +697,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                                      maxfun=1000)
     final_params= optout[0]
     mloglikemax= optout[1]
-    print params, mloglikemax
+    print final_params, params, mloglikemax
     out= numpy.empty(len(final_params)+1)
     if numpy.isnan(mloglikemax):
         out[0]= -numpy.finfo(numpy.dtype(numpy.float64)).max
