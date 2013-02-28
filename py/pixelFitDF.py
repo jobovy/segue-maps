@@ -69,7 +69,7 @@ _PRECALCVSAMPLES= False
 _SURFSUBTRACTEXPON= True
 _SURFNRS= 16
 _SURFNZS= 16
-_BFGS= False
+_BFGS= True
 _CUSTOMSAMPLING= True
 _MULTIWHOLEGRID= True
 def pixelFitDF(options,args,pool=None):
@@ -651,21 +651,37 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     if toptions.fitdvt:
         init_params= [-0.1]
         init_params.extend(list(dfparams))
+        bounds= [(-0.15,0.15)]
+        bounds.extend([(numpy.amax([-1.9,numpy.log(qdf._hr*ro/2.)]),
+                        numpy.amin([2.53,numpy.log(qdf._hr*ro*2.)])),
+                       (numpy.amax([-3.1,numpy.log(qdf._sr*vo/2.)]),
+                        numpy.amin([-0.4,numpy.log(qdf._sr*vo*2.)])),
+                       (numpy.amax([-3.1,numpy.log(qdf._sz*vo/2.)]),
+                        numpy.amin([-0.4,numpy.log(qdf._sz*vo*2.)])),
+                       (-0.3,2.53),
+                       (-0.3,2.53),(0.,1.)])
     else:
         init_params= list(dfparams)
+        bounds= [(numpy.amax([-1.9,numpy.log(qdf._hr*ro/2.)]),
+                  numpy.amin([2.53,numpy.log(qdf._hr*ro*2.)])),
+                 (numpy.amax([-3.1,numpy.log(qdf._sr*vo/2.)]),
+                  numpy.amin([-0.4,numpy.log(qdf._sr*vo*2.)])),
+                 (numpy.amax([-3.1,numpy.log(qdf._sz*vo/2.)]),
+                  numpy.amin([-0.4,numpy.log(qdf._sz*vo*2.)])),
+                 (-0.3,2.53),
+                 (-0.3,2.53),(0.,1.)]
     init_params= numpy.array(init_params)
     if _BFGS:
-        optout= optimize.fmin_bfgs(mloglike_optdf_2optimize,
-                                   init_params,
-                                   args=(tparams,
+        optout= optimize.fmin_l_bfgs_b(mloglike_optdf_2optimize,
+                                       init_params,
+                                       args=(tparams,
                                          pot,aA,fehs,afes,binned,normintstuff,
                                          len(fehs),errstuff,toptions,vo,ro,
                                          jrs,lzs,jzs,normsrs,normszs,
                                          qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
                                          rgs,kappas,nus,Omegas),
-                                   callback=cb,
-                                   maxiter=options.maxiter,
-                                   full_output=True)
+                                   approx_grad=True,
+                                   bounds=bounds)
     else:
         optout= optimize.fmin_powell(mloglike_optdf_2optimize,init_params,
                                      args=(tparams,
@@ -728,27 +744,29 @@ def mloglike_optdf_2optimize(params,fullparams,
     tparams[0:startindx+1]= params
     #Priors
     dvt= get_dvt(tparams,options)
-    if dvt < -0.15 or dvt > 0.15: return numpy.finfo(numpy.dtype(numpy.float64)).max #don't allow crazy dvt
-    for ii in range(1):
-        logoutfracprior= logprior_outfrac(get_outfrac(tparams,ii,options),
-                                          options)
-        if logoutfracprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-            return -logoutfracprior
-        logdfprior= logprior_dfparams(tparams,ii,options)
-        if logdfprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-            return -logdfprior
+    if not _BFGS:
+        if dvt < -0.15 or dvt > 0.15: return numpy.finfo(numpy.dtype(numpy.float64)).max #don't allow crazy dvt
+        for ii in range(1):
+            logoutfracprior= logprior_outfrac(get_outfrac(tparams,ii,options),
+                                              options)
+            if logoutfracprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+                return -logoutfracprior
+            logdfprior= logprior_dfparams(tparams,ii,options)
+            if logdfprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+                return -logdfprior
     #logroprior= logprior_ro(get_ro(params,options),options)
     #if logroprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
     #    return -logroprior
     #Evaluate
     dfparams= get_dfparams(tparams,0,options,log=False)
     #More prior
-    if options.dfmodel.lower() == 'qdf':
-        if dfparams[1] > 2.*initsr or dfparams[1] < initsr/2. \
-                or dfparams[2] > 2.*initsz or dfparams[2] < initsz/2. \
-                or dfparams[0] > 2.*inithr or dfparams[0] < inithr/2.:
-            #Don't allow parameters too different from the initial parameters
-            return numpy.finfo(numpy.dtype(numpy.float64)).max
+    if not _BFGS:
+        if options.dfmodel.lower() == 'qdf':
+            if dfparams[1] > 2.*initsr or dfparams[1] < initsr/2. \
+                    or dfparams[2] > 2.*initsz or dfparams[2] < initsz/2. \
+                    or dfparams[0] > 2.*inithr or dfparams[0] < inithr/2.:
+                #Don't allow parameters too different from the initial parameters
+                return numpy.finfo(numpy.dtype(numpy.float64)).max
     logoutfrac= numpy.log(get_outfrac(tparams,0,options))
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
     if options.dfmodel.lower() == 'qdf':
@@ -3027,9 +3045,24 @@ def initialize(options,fehs,afes):
             #Find nearest mono-abundance bin that has a measurement
             abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                                      +(afes[ii]-mapafes)**2./0.0025)
+            #Smooth sz
+            feh, afe= mapfehs[abindx], mapafes[abindx]
+            up= monoAbundanceMW.sigmaz(feh+0.1,afe)
+            down= monoAbundanceMW.sigmaz(feh-0.1,afe)
+            left= monoAbundanceMW.sigmaz(feh,afe-0.05)
+            right= monoAbundanceMW.sigmaz(feh,afe+0.05)
+            here= monoAbundanceMW.sigmaz(feh,afe)
+            upright= monoAbundanceMW.sigmaz(feh+0.1,afe+0.05)
+            upleft= monoAbundanceMW.sigmaz(feh+0.1,afe-0.05)
+            downright= monoAbundanceMW.sigmaz(feh-0.1,afe+0.05)
+            downleft= monoAbundanceMW.sigmaz(feh-0.1,afe-0.05)
+            allsz= numpy.array([here,up,down,left,right,upright,upleft,downright,downleft])
+            indx= True-numpy.isnan(allsz)
+            thissz= numpy.mean(allsz[True-numpy.isnan(allsz)])
+            #Put everthing together
             p.extend([numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
-numpy.log(numpy.sqrt(2.)*monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaR
-                      numpy.log(monoAbundanceMW.sigmaz(mapfehs[abindx],mapafes[abindx])/_REFV0), #sigmaZ
+                      numpy.log(numpy.sqrt(2.)*thissz/_REFV0), #sigmaR
+                      numpy.log(thissz/_REFV0), #sigmaZ
                       numpy.log(7./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
             #Outlier fraction
             p.append(0.05)
@@ -3743,9 +3776,9 @@ def get_options():
                       help="Number of scale lengths to use in grid-based search")
     parser.add_option("--nfhs",dest='nfhs',default=11,type='int',
                       help="Number of halo contributions to use in grid-based search")
-    parser.add_option("--fixzh",dest='fixzh',default=0.,type='float',
+    parser.add_option("--fixzh",dest='fixzh',default=400.,type='float',
                       help="zh when it is fixed")
-    parser.add_option("--fixvc",dest='fixvc',default=0.,type='float',
+    parser.add_option("--fixvc",dest='fixvc',default=220.,type='float',
                       help="vc when it is fixed")
     parser.add_option("--dlnvcdlnr",dest='dlnvcdlnr',default=0.,type='float',
                       help="dlnvcdlnr when it is fixed")
