@@ -659,7 +659,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                        (numpy.amax([-3.1,numpy.log(qdf._sz*vo/2.)]),
                         numpy.amin([-0.4,numpy.log(qdf._sz*vo*2.)])),
                        (-0.3,2.53),
-                       (-0.3,2.53),(0.,1.)])
+                       (-0.3,2.53),(0.,.25)])
     else:
         init_params= list(dfparams)
         bounds= [(numpy.amax([-1.9,numpy.log(qdf._hr*ro/2.)]),
@@ -669,7 +669,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                  (numpy.amax([-3.1,numpy.log(qdf._sz*vo/2.)]),
                   numpy.amin([-0.4,numpy.log(qdf._sz*vo*2.)])),
                  (-0.3,2.53),
-                 (-0.3,2.53),(0.,1.)]
+                 (-0.3,2.53),(0.,.25)]
     init_params= numpy.array(init_params)
     if _BFGS:
         optout= optimize.fmin_l_bfgs_b(mloglike_optdf_2optimize,
@@ -767,7 +767,9 @@ def mloglike_optdf_2optimize(params,fullparams,
                     or dfparams[0] > 2.*inithr or dfparams[0] < inithr/2.:
                 #Don't allow parameters too different from the initial parameters
                 return numpy.finfo(numpy.dtype(numpy.float64)).max
-    logoutfrac= numpy.log(get_outfrac(tparams,0,options))
+    outfrac= get_outfrac(tparams,0,options)
+    out= logprior_outfrac(outfrac,options)
+    logoutfrac= numpy.log(outfrac)
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
     if options.dfmodel.lower() == 'qdf':
         #Normalize
@@ -815,7 +817,7 @@ def mloglike_optdf_2optimize(params,fullparams,
     #Normalize
     normalization= calc_normint_fixedpot(qdf,0,normintstuff,tparams,npops,options,
                                          logoutfrac,jrs,lzs,jzs,normsrs,normszs,rgs,kappas,nus,Omegas)
-    out= numpy.sum(data_lndf)\
+    out+= numpy.sum(data_lndf)\
         -ndata*(numpy.log(normalization)+numpy.log(options.nmcerr)) #latter so we can compare
     if _DEBUG:
         print fehs[0], afes[0], tparams, numpy.sum(data_lndf)-ndata*numpy.log(options.nmcerr),ndata*numpy.log(normalization), numpy.log(normalization), numpy.sum(data_lndf)-ndata*(numpy.log(normalization)+numpy.log(options.nmcerr))
