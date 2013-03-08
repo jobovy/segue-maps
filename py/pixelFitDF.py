@@ -73,6 +73,7 @@ _BFGS_CONSTRAINED= False
 _BFGS= True
 _CUSTOMSAMPLING= True
 _MULTIWHOLEGRID= True
+_SMOOTHDISPS= False
 def pixelFitDF(options,args,pool=None):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
@@ -3084,20 +3085,38 @@ def initialize(options,fehs,afes):
             #Find nearest mono-abundance bin that has a measurement
             abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                                      +(afes[ii]-mapafes)**2./0.0025)
-            #Smooth sz
-            feh, afe= mapfehs[abindx], mapafes[abindx]
-            up= monoAbundanceMW.sigmaz(feh+0.1,afe)
-            down= monoAbundanceMW.sigmaz(feh-0.1,afe)
-            left= monoAbundanceMW.sigmaz(feh,afe-0.05)
-            right= monoAbundanceMW.sigmaz(feh,afe+0.05)
-            here= monoAbundanceMW.sigmaz(feh,afe)
-            upright= monoAbundanceMW.sigmaz(feh+0.1,afe+0.05)
-            upleft= monoAbundanceMW.sigmaz(feh+0.1,afe-0.05)
-            downright= monoAbundanceMW.sigmaz(feh-0.1,afe+0.05)
-            downleft= monoAbundanceMW.sigmaz(feh-0.1,afe-0.05)
-            allsz= numpy.array([here,up,down,left,right,upright,upleft,downright,downleft])
-            indx= True-numpy.isnan(allsz)
-            thissz= numpy.mean(allsz[True-numpy.isnan(allsz)])
+            if _SMOOTHDISPS:
+                #Smooth sz
+                feh, afe= mapfehs[abindx], mapafes[abindx]
+                up= monoAbundanceMW.sigmaz(feh+0.1,afe)
+                down= monoAbundanceMW.sigmaz(feh-0.1,afe)
+                left= monoAbundanceMW.sigmaz(feh,afe-0.05)
+                right= monoAbundanceMW.sigmaz(feh,afe+0.05)
+                here= monoAbundanceMW.sigmaz(feh,afe)
+                upright= monoAbundanceMW.sigmaz(feh+0.1,afe+0.05)
+                upleft= monoAbundanceMW.sigmaz(feh+0.1,afe-0.05)
+                downright= monoAbundanceMW.sigmaz(feh-0.1,afe+0.05)
+                downleft= monoAbundanceMW.sigmaz(feh-0.1,afe-0.05)
+                allsz= numpy.array([here,up,down,left,right,upright,upleft,downright,downleft])
+                indx= True-numpy.isnan(allsz)
+                thissz= numpy.mean(allsz[True-numpy.isnan(allsz)])
+                #Smooth sr
+                feh, afe= mapfehs[abindx], mapafes[abindx]
+                up= monoAbundanceMW.sigmar(feh+0.1,afe)
+                down= monoAbundanceMW.sigmar(feh-0.1,afe)
+                left= monoAbundanceMW.sigmar(feh,afe-0.05)
+                right= monoAbundanceMW.sigmar(feh,afe+0.05)
+                here= monoAbundanceMW.sigmar(feh,afe)
+                upright= monoAbundanceMW.sigmar(feh+0.1,afe+0.05)
+                upleft= monoAbundanceMW.sigmar(feh+0.1,afe-0.05)
+                downright= monoAbundanceMW.sigmar(feh-0.1,afe+0.05)
+                downleft= monoAbundanceMW.sigmar(feh-0.1,afe-0.05)
+                allsr= numpy.array([here,up,down,left,right,upright,upleft,downright,downleft])
+                indx= True-numpy.isnan(allsr)
+                thissr= numpy.mean(allsr[True-numpy.isnan(allsr)])
+            else:
+                thissz= monoAbundanceMW.sigmaz(feh,afe)
+                thissr= monoAbundanceMW.sigmar(feh,afe)
             #Put everthing together
             p.extend([numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
                       numpy.log(numpy.sqrt(2.)*thissz/_REFV0), #sigmaR
