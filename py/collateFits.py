@@ -1,6 +1,6 @@
 #Grab all of the fits, output them as fits
 #Suggested use:
-#python collateFits.py -o ~/Repos/monoAbundanceMW/monoAbundanceMW/data/monoAbundanceResults.fits ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_DblExp_BigPix0.1_1000samples.sav ../fits/pixelFitG_Mass_DblExp_BigPix0.1_simpleage.sav ../fits/pixelFitG_Mass_DblExp_BigPix0.1_simpleage_100samples.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_10ksamples.sav
+#python collateFits.py -o ~/Repos/monoAbundanceMW/monoAbundanceMW/data/monoAbundanceResults.fits ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_DblExp_BigPix0.1_1000samples.sav ../fits/pixelFitG_Mass_DblExp_BigPix0.1_simpleage.sav ../fits/pixelFitG_Mass_DblExp_BigPix0.1_simpleage_100samples.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_10ksamples.sav ../fits/pixelFitG_VelR_HWR_BigPix0.1.sav ../fits/pixelFitG_VelR_HWR_BigPix0.1_10ksamples.sav
 import os, os.path
 import cPickle as pickle
 from optparse import OptionParser
@@ -60,6 +60,18 @@ def collateFits(options,args):
         savefile.close()
     else:
         raise IOError("vertical velocity samples  file not included")
+    if os.path.exists(args[6]):#Load density fits
+        savefile= open(args[6],'rb')
+        velrfits= pickle.load(savefile)
+        savefile.close()
+    else:
+        raise IOError("radial velocity file not included")
+    if os.path.exists(args[7]):#Load density fits
+        savefile= open(args[7],'rb')
+        velrsamples= pickle.load(savefile)
+        savefile.close()
+    else:
+        raise IOError("radial velocity samples  file not included")
     nrecs= len([r for r in densfits if not r is None])
     out= numpy.recarray(nrecs,dtype=[('feh',float),
                                      ('afe',float),
@@ -71,6 +83,8 @@ def collateFits(options,args):
                                      ('hsz',float),
                                      ('p1',float),
                                      ('p2',float),
+                                     ('sr',float),
+                                     ('hsr',float),
                                      ('zmin',float),
                                      ('zmax',float),
                                      ('zmedian',float),
@@ -86,7 +100,9 @@ def collateFits(options,args):
                                      ('szhsz_corr',float),
                                      ('p1hsz_corr',float),
                                      ('p2hsz_corr',float),
-                                     ('p1p2_corr',float)])
+                                     ('p1p2_corr',float),
+                                     ('sr_err',float)])
+                                     
     nout= 0
     #Start filling it up
     for ii in range(binned.npixfeh()):
@@ -102,6 +118,8 @@ def collateFits(options,args):
             #thismasssamples= masssamples[afeindx+fehindx*binned.npixafe()]
             thisvelfit= velfits[afeindx+fehindx*binned.npixafe()]
             thesevelsamples= velsamples[afeindx+fehindx*binned.npixafe()]
+            thisvelrfit= velrfits[afeindx+fehindx*binned.npixafe()]
+            thesevelrsamples= velrsamples[afeindx+fehindx*binned.npixafe()]
             if thisdensfit is None:
                 continue
             if len(data) < options.minndata:
@@ -133,6 +151,8 @@ def collateFits(options,args):
             if options.velmodel.lower() == 'hwr':
                 out[nout]['sz']= numpy.exp(thisvelfit[1])
                 out[nout]['hsz']= numpy.exp(thisvelfit[4])
+                out[nout]['sr']= numpy.exp(thisvelrfit[1])
+                out[nout]['hsr']= numpy.exp(thisvelrfit[4])
                 out[nout]['p1']= thisvelfit[2]
                 out[nout]['p2']= thisvelfit[3]
                 zsorted= sorted(numpy.fabs(data.zc+_ZSUN))
@@ -162,6 +182,8 @@ def collateFits(options,args):
                 out[nout]['p1hsz_corr']= numpy.corrcoef(xs,ys)[0,1]
                 ys= numpy.array([s[3] for s in thesevelsamples])
                 out[nout]['p2hsz_corr']= numpy.corrcoef(xs,ys)[0,1]
+                xs= numpy.array([s[1] for s in thesevelrsamples])
+                out[nout]['sr_err']= 0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs)))
             nout+= 1
     #Write output
     fitsio.write(options.outfile,out,clobber=True)

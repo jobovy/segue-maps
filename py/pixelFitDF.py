@@ -69,6 +69,7 @@ _PRECALCVSAMPLES= False
 _SURFSUBTRACTEXPON= True
 _SURFNRS= 16
 _SURFNZS= 16
+_BFGS_CONSTRAINED= False
 _BFGS= True
 _CUSTOMSAMPLING= True
 _MULTIWHOLEGRID= True
@@ -649,7 +650,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     #Initial parameters
     dfparams= get_dfparams(tparams,0,toptions,log=True)
     if toptions.fitdvt:
-        init_params= [-0.1]
+        init_params= [(toptions.fixvc-235.)/_REFV0]
         init_params.extend(list(dfparams))
         bounds= [(-0.15,0.15)]
         bounds.extend([(numpy.amax([-1.9,numpy.log(qdf._hr*ro/2.)]),
@@ -659,7 +660,7 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                        (numpy.amax([-3.1,numpy.log(qdf._sz*vo/2.)]),
                         numpy.amin([-0.4,numpy.log(qdf._sz*vo*2.)])),
                        (-0.3,2.53),
-                       (-0.3,2.53),(0.,.25)])
+                       (-0.3,2.53),(0.,.15)])
     else:
         init_params= list(dfparams)
         bounds= [(numpy.amax([-1.9,numpy.log(qdf._hr*ro/2.)]),
@@ -669,9 +670,9 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                  (numpy.amax([-3.1,numpy.log(qdf._sz*vo/2.)]),
                   numpy.amin([-0.4,numpy.log(qdf._sz*vo*2.)])),
                  (-0.3,2.53),
-                 (-0.3,2.53),(0.,.25)]
+                 (-0.3,2.53),(0.,.15)]
     init_params= numpy.array(init_params)
-    if _BFGS:
+    if _BFGS_CONSTRAINED:
         optout= optimize.fmin_l_bfgs_b(mloglike_optdf_2optimize,
                                        init_params,
                                        args=(tparams,
@@ -680,8 +681,31 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                                          jrs,lzs,jzs,normsrs,normszs,
                                          qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
                                          rgs,kappas,nus,Omegas),
-                                   approx_grad=True,
-                                   bounds=bounds)
+                                       approx_grad=True,
+                                       bounds=bounds)
+    elif _BFGS:
+        if toptions.fitdvt:
+            expec_off= (toptions.fixvc-235.)/_REFV0
+            if expec_off > 0.15: expec_off= 0.14
+            elif expec_off < -0.15: expec_off= -0.14
+            init_params= [logit((expec_off+0.15)/0.3)]
+        else:
+            init_params= []
+        for kk in range(len(dfparams)):
+            init_params.append(logit((dfparams[kk]-bounds[kk+1][0])/(bounds[kk+1][1]-bounds[kk+1][0])))
+        optout= optimize.fmin_bfgs(mloglike_optdf_2optimize,
+                                   init_params,
+                                   args=(tparams,
+                                         pot,aA,fehs,afes,binned,normintstuff,
+                                         len(fehs),errstuff,toptions,vo,ro,
+                                         jrs,lzs,jzs,normsrs,normszs,
+                                         qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
+                                         rgs,kappas,nus,Omegas,bounds),
+                                   full_output=True,
+                                   maxiter=options.maxiter)
+        #Post-process
+        for kk in range(len(optout[0])):
+            optout[0][kk]= ilogit(optout[0][kk])*(bounds[kk][1]-bounds[kk][0])+bounds[kk][0]        
     else:
         optout= optimize.fmin_powell(mloglike_optdf_2optimize,init_params,
                                      args=(tparams,
@@ -706,6 +730,12 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     out[1:len(final_params)+1]= final_params
     return out
 
+def logit(x):
+    return numpy.log(x/(1.-x))
+
+def ilogit(x):
+    return numpy.exp(x)/(1.+numpy.exp(x))
+
 def setup_optdf_actions(R,zgrid,nzs,options,qdf):
     js= numpy.zeros((7,nzs,options.ngl**3))
     for jj in range(nzs):
@@ -728,7 +758,7 @@ def mloglike_optdf_2optimize(params,fullparams,
                              pot,aA,fehs,afes,binned,normintstuff,
                              npops,errstuff,options,vo,ro,
                              jrs,lzs,jzs,normsrs,normszs,initsr,initsz,inithr,
-                             rgs,kappas,nus,Omegas):
+                             rgs,kappas,nus,Omegas,bounds=None):
     """Actual minus loglikelihood to optimize, SINGLE POPULATION"""
     tparams= copy.copy(fullparams)
     startindx= 0
@@ -741,10 +771,14 @@ def mloglike_optdf_2optimize(params,fullparams,
     startindx+= ndfparams*0
     if options.dfmodel.lower() == 'qdf':
         startindx= startindx+5
-    tparams[0:startindx+1]= params
+    if bounds is None:
+        tparams[0:startindx+1]= params
+    else: #use ilogit
+        for kk in range(len(params)):
+            tparams[kk]= ilogit(params[kk])*(bounds[kk][1]-bounds[kk][0])+bounds[kk][0]
     #Priors
     dvt= get_dvt(tparams,options)
-    if not _BFGS:
+    if not _BFGS_CONSTRAINED and not _BFGS:
         if dvt < -0.15 or dvt > 0.15: return numpy.finfo(numpy.dtype(numpy.float64)).max #don't allow crazy dvt
         for ii in range(1):
             logoutfracprior= logprior_outfrac(get_outfrac(tparams,ii,options),
@@ -760,15 +794,18 @@ def mloglike_optdf_2optimize(params,fullparams,
     #Evaluate
     dfparams= get_dfparams(tparams,0,options,log=False)
     #More prior
-    if not _BFGS:
+    if not _BFGS and not _BFGS_CONSTRAINED:
         if options.dfmodel.lower() == 'qdf':
             if dfparams[1] > 2.*initsr or dfparams[1] < initsr/2. \
                     or dfparams[2] > 2.*initsz or dfparams[2] < initsz/2. \
                     or dfparams[0] > 2.*inithr or dfparams[0] < inithr/2.:
                 #Don't allow parameters too different from the initial parameters
                 return numpy.finfo(numpy.dtype(numpy.float64)).max
-    outfrac= get_outfrac(tparams,0,options)
-    out= logprior_outfrac(outfrac,options)
+        outfrac= get_outfrac(tparams,0,options)
+        out= logprior_outfrac(outfrac,options)
+    else:
+        outfrac= get_outfrac(tparams,0,options)
+        out= 0.
     logoutfrac= numpy.log(outfrac)
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
     if options.dfmodel.lower() == 'qdf':
@@ -3024,7 +3061,7 @@ def initialize(options,fehs,afes):
     """Function to initialize the fit; uses fehs and afes to initialize using MAPS"""
     p= []
     if options.fitdvt:
-        p.append(-0.1)
+        p.append((options.fixvc-235.)/_REFV0)
     if options.fitdm:
         p.append(0.)
     if options.fitro:
