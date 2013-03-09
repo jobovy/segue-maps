@@ -70,10 +70,12 @@ _SURFSUBTRACTEXPON= True
 _SURFNRS= 16
 _SURFNZS= 16
 _BFGS_CONSTRAINED= False
-_BFGS= True
+_BFGS= False
 _CUSTOMSAMPLING= True
 _MULTIWHOLEGRID= True
-_SMOOTHDISPS= False
+_SMOOTHDISPS= True
+_SIMPLEOPTDF= True
+_JUSTSIMPLEOPTDF= False
 def pixelFitDF(options,args,pool=None):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
@@ -589,6 +591,21 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     dfparams= get_dfparams(tparams,0,toptions,log=False)
     vo= get_vo(tparams,toptions,len(fehs))
     ro= get_ro(tparams,toptions)
+    if _SIMPLEOPTDF:
+        print "Optimizing simple estimate ..."
+        dfparams= get_dfparams(tparams,0,toptions,log=True)[0:5]
+        optout= optimize.fmin_powell(chi2_simpleoptdf,dfparams,
+                                     args=(numpy.exp(copy.copy(dfparams)),
+                                           pot,aA,toptions,ro,vo),
+                                     xtol=10.**-3.,
+                                     ftol=0.0005,
+                                     full_output=True,
+                                     maxiter=options.maxiter,
+                                     maxfun=10000)
+        print "SIMPLEOPT: DFPARAMS=", optout[0], params
+        dfparams= list(numpy.exp(optout[0]))
+        dfparams.append(0.05) #Add outlier fraction
+        dfparams= numpy.array(dfparams)
     if toptions.dfmodel.lower() == 'qdf':
         #Normalize
         hr= dfparams[0]/ro
@@ -673,7 +690,21 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
                  (-0.3,2.53),
                  (-0.3,2.53),(0.,.15)]
     init_params= numpy.array(init_params)
-    if _BFGS_CONSTRAINED:
+    if _SIMPLEOPTDF and _JUSTSIMPLEOPTDF:
+        optout= []
+        expec_off= (toptions.fixvc-235.)/_REFV0
+        if expec_off > 0.15: expec_off= 0.14
+        elif expec_off < -0.15: expec_off= -0.14
+        optout.append([expec_off])
+        optout[0].extend(dfparams)
+        optout.append(mloglike_optdf_2optimize(optout[0],
+                                               tparams,
+                                               pot,aA,fehs,afes,binned,normintstuff,
+                                               len(fehs),errstuff,toptions,vo,ro,
+                                               jrs,lzs,jzs,normsrs,normszs,
+                                               qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
+                                               rgs,kappas,nus,Omegas))
+    elif _BFGS_CONSTRAINED:
         optout= optimize.fmin_l_bfgs_b(mloglike_optdf_2optimize,
                                        init_params,
                                        args=(tparams,
@@ -730,6 +761,37 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
         out[0]= -mloglikemax
     out[1:len(final_params)+1]= final_params
     return out
+
+def chi2_simpleoptdf(dfparams,goal_params,pot,aA,options,ro,vo):
+    #Setup DF
+    if options.dfmodel.lower() == 'qdf':
+        #Normalize
+        hr= numpy.exp(dfparams[0])/ro
+        sr= numpy.exp(dfparams[1])/vo
+        sz= numpy.exp(dfparams[2])/vo
+        hsr= numpy.exp(dfparams[3])/ro
+        hsz= numpy.exp(dfparams[4])/ro
+        if options.dfmodel.lower() == 'qdf':
+            if sr > 2.*goal_params[1] or sr < goal_params[1]/vo/2. \
+                    or sz > 2.*goal_params[2]/vo or sz < goal_params[2]/vo/2. \
+                    or hr > 2.*goal_params[0]/ro or hr < goal_params[0]/ro/2.:
+                #Don't allow parameters too different from the initial parameters
+                return numpy.finfo(numpy.dtype(numpy.float64)).max
+        #Setup
+        qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
+    #print numpy.exp(dfparams), goal_params
+    #Estimate scale lengths and dispersions
+    #this_hr= qdf.estimate_hr(1.,z=None,dR=0.33/ro,gl=True)
+    this_hr= qdf.estimate_hr(1.,z=0.8/8.,dR=0.33/ro,gl=True)
+    this_hsr= qdf.estimate_hsr(1.,z=0.8/8./ro,dR=0.33/ro,gl=True)
+    this_hsz= qdf.estimate_hsz(1.,z=0.8/8./ro,dR=0.33/ro,gl=True)
+    this_sr= numpy.sqrt(qdf.sigmaR2(1.,1./8./ro,gl=True))
+    this_sz= numpy.sqrt(qdf.sigmaz2(1.,1./8./ro,gl=True))
+    return 1.+(this_hr-goal_params[0]/ro)**2./goal_params[0]**2.*ro**2.\
+        +(this_hsr-goal_params[3]/ro)**2./goal_params[3]**2.*ro**2.\
+        +(this_hsz-goal_params[4]/ro)**2./goal_params[4]**2.*ro**2.\
+        +(this_sr-goal_params[1]/vo)**2./goal_params[1]**2.*vo**2.\
+        +(this_sz-goal_params[2]/vo)**2./goal_params[2]**2.*vo**2.
 
 def logit(x):
     return numpy.log(x/(1.-x))
@@ -3085,9 +3147,9 @@ def initialize(options,fehs,afes):
             #Find nearest mono-abundance bin that has a measurement
             abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                                      +(afes[ii]-mapafes)**2./0.0025)
+            feh, afe= mapfehs[abindx], mapafes[abindx]
             if _SMOOTHDISPS:
                 #Smooth sz
-                feh, afe= mapfehs[abindx], mapafes[abindx]
                 up= monoAbundanceMW.sigmaz(feh+0.1,afe)
                 down= monoAbundanceMW.sigmaz(feh-0.1,afe)
                 left= monoAbundanceMW.sigmaz(feh,afe-0.05)
@@ -3118,10 +3180,10 @@ def initialize(options,fehs,afes):
                 thissz= monoAbundanceMW.sigmaz(feh,afe)
                 thissr= monoAbundanceMW.sigmar(feh,afe)
             #Put everthing together
-            p.extend([numpy.log(monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
-                      numpy.log(numpy.sqrt(2.)*thissz/_REFV0), #sigmaR
+            p.extend([numpy.log(0.9*monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
+                      numpy.log(thissr/_REFV0), #sigmaR
                       numpy.log(thissz/_REFV0), #sigmaZ
-                      numpy.log(7./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
+                      numpy.log(8./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
             #Outlier fraction
             p.append(0.05)
     if options.potential.lower() == 'flatlog' or options.potential.lower() == 'flatlogdisk':
