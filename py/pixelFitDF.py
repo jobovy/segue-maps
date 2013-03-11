@@ -57,7 +57,7 @@ _VRSUN=-11.1 #km/s
 _VTSUN= 245. #km/s
 _PMSGRA= 30.24 #km/s/kpc
 _VZSUN= 7.25 #km/s
-_GMBULGE= 17208.0 #kpc (km/s)^2 = 1 x 10^10 Msolar
+_GMBULGE= 17208.0 #kpc (km/s)^2 = 4 x 10^9 Msolar
 _ABULGE= 0.6
 _NGR= 11
 _NFEH=11
@@ -2444,7 +2444,7 @@ def setup_potential(params,options,npops,
                                                      normalize=13./gassurfdens)
         fdfh= 1.-13./gassurfdens-ampb
         fd= (1.-potparams[3])*fdfh
-        fh= fdfh- fd
+        fh= fdfh-fd
         dp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
                                                      hz=numpy.exp(potparams[2])/ro,
                                                      normalize=fd)
