@@ -205,7 +205,7 @@ def pixelFitDF(options,args,pool=None):
         #Find best-fit
         hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
         srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
-        szs= numpy.log(numpy.linspace(15.,60.,options.nsrs)/_REFV0)
+        szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
         dvts= numpy.linspace(-0.1,0.1,options.ndvts)
         pouts= numpy.linspace(10.**-5.,.3,options.npouts)
         indx= numpy.unravel_index(numpy.argmax(gridOut[0]),gridOut[0].shape)
@@ -576,8 +576,12 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
     #Pre-calculate outlier normalization
     #Set up the grid
     if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
+        if not options.fixvo is None:
+            out_params= [0.,0.,0.,0.,0.,0.,0.,0.,options.fixvo/_REFV0,0.,0.]
+        else:
+            out_params= [0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.]
         normalization_out= calc_normint_fixedpot(None,0,normintstuff,
-                                                 [0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.],
+                                                 out_params,
                                                  1,
                                                  options,
                                                  0.,
@@ -956,7 +960,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     #IF YOU EDIT THIS, ALSO EDIT IT ABOVE
     hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
     srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
-    szs= numpy.log(numpy.linspace(15.,60.,options.nsrs)/_REFV0)
+    szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
     start= time.time()
     for ii in range(options.nhrs):
         print "Working on DF %i, dt= %f" % (ii,time.time()-start)
@@ -971,7 +975,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                         qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
                                                         rgs,kappas,nus,Omegas,
                                                         normalization_out)
-    return out
+    return -out
 
 def chi2_simpleoptdf(dfparams,goal_params,pot,aA,options,ro,vo):
     #Setup DF
@@ -1156,7 +1160,6 @@ def mloglike_gridall(fullparams,hr,sr,sz,
     #Setup out
     out= numpy.zeros((options.ndvts,options.npouts,1,1))
     #Setup everything for fast calculations
-    logoutfrac= 0. #Set outlier fraction equal to one for setup
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
     dfparams= get_dfparams(tparams,0,options,log=False)
     if options.dfmodel.lower() == 'qdf':
@@ -1169,7 +1172,7 @@ def mloglike_gridall(fullparams,hr,sr,sz,
         #Setup
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
     #Calculate surface(R=1.) for relative outlier normalization
-    logoutfrac+= numpy.log(qdf.surfacemass_z(1.,ngl=options.ngl))
+    logoutfrac= numpy.log(qdf.surfacemass_z(1.,ngl=options.ngl))
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(tparams,0,fehs,afes,binned,errstuff,
                                       options,npops)
