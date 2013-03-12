@@ -212,10 +212,10 @@ def pixelFitDF(options,args,pool=None):
         params= [dvts[indx[7]],hrs[indx[4]],srs[indx[5]],szs[indx[6]],
                  numpy.log(8./_REFR0),numpy.log(7./_REFR0),pouts[indx[8]]]
         if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
-            params.append(gridOut[2][indx[0]])
-            params.append(gridOut[3][indx[1]])
-            params.append(gridOut[4][indx[2]])
-            params.append(gridOut[5][indx[3]])
+            params.append(gridOut[1][indx[0]])
+            params.append(gridOut[2][indx[1]])
+            params.append(gridOut[3][indx[2]])
+            params.append(gridOut[4][indx[3]])
             params.append(options.dlnvcdlnr)
         elif options.potential.lower() == 'bt':
             params.append(gridOut[2][indx[0]])
