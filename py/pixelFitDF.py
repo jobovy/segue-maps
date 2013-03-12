@@ -2386,7 +2386,7 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
     cmd= "mpirun -x PYTHONPATH /home/bovy/local/bin/python pixelFitDF.py"+cmd
     #Create file that will submit the job
     cmdfilename='../cmds/'+os.path.basename(args[0])+'.sh'
-    if options.grid:
+    if options.grid or options.gridall:
         shutil.copyfile('submit_template_grid.txt',cmdfilename)
     else:
         shutil.copyfile('submit_template.txt',cmdfilename)
