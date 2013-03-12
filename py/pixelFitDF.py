@@ -1178,7 +1178,6 @@ def mloglike_gridall(fullparams,hr,sr,sz,
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
-    data_lndf= numpy.empty((ndata,2*options.nmcerr))
     #Evaluate outliers
     data_lndf[:,options.nmcerr:2*options.nmcerr]= logoutfrac+loghalodens\
         -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
@@ -1207,7 +1206,8 @@ def mloglike_gridall(fullparams,hr,sr,sz,
             sumdata_lndf= mylogsumexp(data_lndf,axis=1)
             out[ii,jj,0,0]= numpy.sum(sumdata_lndf)\
                 -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out)+numpy.log(options.nmcerr)) #latter so we can compare
-            data_lndf[:,options.nmcerr:2*options.nmcerr]-= numpy.log(pouts[jj]) #Reset
+            data_lndf[:,options.nmcerr:2*options.nmcerr]-= numpy.log(pouts[jj])
+ #Reset
     return -out
 
 ##PRIORS
