@@ -1167,7 +1167,6 @@ def mloglike_gridall(fullparams,hr,sr,sz,
                      jrs,lzs,jzs,normsrs,normszs,initsr,initsz,inithr,
                      rgs,kappas,nus,Omegas,normalization_out):
     """Actual minus loglikelihood to optimize, SINGLE POPULATION"""
-    print sz
     toptions= copy.copy(options)
     if _MULTIDFGRID:
         toptions.multi= toptions.multi2 #Set multi to the second multi
