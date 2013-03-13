@@ -72,7 +72,8 @@ _SURFNZS= 16
 _BFGS_CONSTRAINED= False
 _BFGS= False
 _CUSTOMSAMPLING= True
-_MULTIWHOLEGRID= True
+_MULTIWHOLEGRID= False
+_MULTIDFGRID= True
 _SMOOTHDISPS= True
 _SIMPLEOPTDF= True
 _JUSTSIMPLEOPTDF= False
@@ -880,6 +881,9 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
             toptions.potential = 'btii'
     tparams= initialize(toptions,fehs,afes)    
     tparams= set_potparams(potparams,tparams,toptions,len(fehs))
+    if numpy.any(numpy.isnan(tparams)):
+        out[:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        return out
     logpotprior= logprior_pot(tparams,toptions,len(fehs))
     if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
         out[:,:,:,:,:,:,:]= logpotprior
@@ -966,15 +970,31 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         print "Working on DF %i, dt= %f" % (ii,time.time()-start)
         start= time.time()
         for jj in range(options.nsrs):
-            for kk in range(options.nszs):
-                out[ii,kk,jj,:,:,:,:]= mloglike_gridall(tparams,
-                                                        hrs[ii],srs[jj],szs[kk],
-                                                        pot,aA,fehs,afes,binned,normintstuff,
-                                                        len(fehs),errstuff,toptions,vo,ro,
-                                                        jrs,lzs,jzs,normsrs,normszs,
-                                                        qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
-                                                        rgs,kappas,nus,Omegas,
-                                                        normalization_out)
+            if _MULTIDFGRID:
+                multOut= multi.parallel_map((lambda x: mloglike_gridall(tparams,
+                                                            hrs[ii],srs[jj],szs[x],
+                                                            pot,aA,fehs,afes,binned,normintstuff,
+                                                            len(fehs),errstuff,toptions,vo,ro,
+                                                            jrs,lzs,jzs,normsrs,normszs,
+                                                            qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
+                                                            rgs,kappas,nus,Omegas,
+                                                                        normalization_out)),
+                                            range(options.nszs),
+                                            numcores=numpy.amin([options.nszs,
+                                                                 multiprocessing.cpu_count(),
+                                                                 options.multi]))
+                for kk in range(options.nszs):
+                    out[ii,jj,kk,:,:,:,:]= multOut[kk]
+            else:
+                for kk in range(options.nszs):
+                    out[ii,jj,kk,:,:,:,:]= mloglike_gridall(tparams,
+                                                            hrs[ii],srs[jj],szs[kk],
+                                                            pot,aA,fehs,afes,binned,normintstuff,
+                                                            len(fehs),errstuff,toptions,vo,ro,
+                                                            jrs,lzs,jzs,normsrs,normszs,
+                                                            qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
+                                                            rgs,kappas,nus,Omegas,
+                                                            normalization_out)
     return -out
 
 def chi2_simpleoptdf(dfparams,goal_params,pot,aA,options,ro,vo):
@@ -1147,22 +1167,26 @@ def mloglike_gridall(fullparams,hr,sr,sz,
                      jrs,lzs,jzs,normsrs,normszs,initsr,initsz,inithr,
                      rgs,kappas,nus,Omegas,normalization_out):
     """Actual minus loglikelihood to optimize, SINGLE POPULATION"""
+    print sz
+    toptions= copy.copy(options)
+    if _MULTIDFGRID:
+        toptions.multi= toptions.multi2 #Set multi to the second multi
     tparams= copy.copy(fullparams)
     startindx= 0
-    if options.fitdvt: startindx+= 1
-    if options.fitdm: startindx+= 1
-    if options.fitro: startindx+= 1
-    if options.fitvsun: startindx+= 3
-    elif options.fitvsun: startindx+= 1
+    if toptions.fitdvt: startindx+= 1
+    if toptions.fitdm: startindx+= 1
+    if toptions.fitro: startindx+= 1
+    if toptions.fitvsun: startindx+= 3
+    elif toptions.fitvsun: startindx+= 1
     tparams[startindx]= hr
     tparams[startindx+1]= sr
     tparams[startindx+2]= sz
     #Setup out
-    out= numpy.zeros((options.ndvts,options.npouts,1,1))
+    out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1))
     #Setup everything for fast calculations
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
-    dfparams= get_dfparams(tparams,0,options,log=False)
-    if options.dfmodel.lower() == 'qdf':
+    dfparams= get_dfparams(tparams,0,toptions,log=False)
+    if toptions.dfmodel.lower() == 'qdf':
         #Normalize
         hr= dfparams[0]/ro
         sr= dfparams[1]/vo
@@ -1172,44 +1196,44 @@ def mloglike_gridall(fullparams,hr,sr,sz,
         #Setup
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
     #Calculate surface(R=1.) for relative outlier normalization
-    logoutfrac= numpy.log(qdf.surfacemass_z(1.,ngl=options.ngl))
+    logoutfrac= numpy.log(qdf.surfacemass_z(1.,ngl=toptions.ngl))
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(tparams,0,fehs,afes,binned,errstuff,
-                                      options,npops)
+                                      toptions,npops)
     ndata= R.shape[0]
-    data_lndf= numpy.zeros((ndata,2*options.nmcerr))
+    data_lndf= numpy.zeros((ndata,2*toptions.nmcerr))
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
     #Evaluate outliers
-    data_lndf[:,options.nmcerr:2*options.nmcerr]= logoutfrac+loghalodens\
+    data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]= logoutfrac+loghalodens\
         -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
         -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)\
         -1.5*numpy.log(2.*math.pi)
     #Calculate normalizations
     normalization_qdf= calc_normint_fixedpot(qdf,0,normintstuff,tparams,npops,
-                                             options,
+                                             toptions,
                                              -numpy.finfo(numpy.dtype(numpy.float64)).max,
                                              jrs,lzs,jzs,normsrs,normszs,
                                              rgs,kappas,nus,Omegas)
     tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
     #Run through the grid
-    dvts= numpy.linspace(-0.1,0.1,options.ndvts)
-    pouts= numpy.linspace(10.**-5.,.3,options.npouts)
-    for ii in range(options.ndvts):
+    dvts= numpy.linspace(-0.1,0.1,toptions.ndvts)
+    pouts= numpy.linspace(10.**-5.,.3,toptions.npouts)
+    for ii in range(toptions.ndvts):
         dvt= dvts[ii]
         tvT= vT+dvt/vo
-        data_lndf[:,0:options.nmcerr]= qdf(R.flatten(),vR.flatten(),
+        data_lndf[:,0:toptions.nmcerr]= qdf(R.flatten(),vR.flatten(),
                                            tvT.flatten(),
                                            z.flatten(),
-                                           vz.flatten(),log=True).reshape((ndata,options.nmcerr))
-        for jj in range(options.npouts):
+                                           vz.flatten(),log=True).reshape((ndata,toptions.nmcerr))
+        for jj in range(toptions.npouts):
             #Sum data and outlier df, for all MC samples
-            data_lndf[:,options.nmcerr:2*options.nmcerr]+= numpy.log(pouts[jj])
+            data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]+= numpy.log(pouts[jj])
             sumdata_lndf= mylogsumexp(data_lndf,axis=1)
             out[ii,jj,0,0]= numpy.sum(sumdata_lndf)\
-                -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out)+numpy.log(options.nmcerr)) #latter so we can compare
-            data_lndf[:,options.nmcerr:2*options.nmcerr]-= numpy.log(pouts[jj])
+                -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out)+numpy.log(toptions.nmcerr)) #latter so we can compare
+            data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(pouts[jj])
  #Reset
     return -out
 
