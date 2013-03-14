@@ -14,7 +14,7 @@ def generateHTML(options,args):
         npops= 62
     elif options.sample.lower() == 'k':
         npops= 30
-    types= ['rdfh','pout']
+    types= ['rdfh','srsz','pout','dvt']
     ntypes= len(types)
     for ii in range(npops):
         line= ''
