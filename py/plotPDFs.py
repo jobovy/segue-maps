@@ -23,19 +23,43 @@ def plotRdfh(options,args):
         newname+= '_%i.' % ii
         newname+= spl[-1]
         savefile= open(newname,'rb')
-        if not _NOTDONEYET:
-            params= pickle.load(savefile)
-            mlogl= pickle.load(savefile)
-        logl= pickle.load(savefile)
-        savefile.close()
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            continue
+        finally:
+            savefile.close()
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         marglogl= numpy.zeros((logl.shape[0],logl.shape[3]))
+        marglogldvt0= numpy.zeros((logl.shape[0],logl.shape[3]))
+        condfh= numpy.zeros((logl.shape[3]))
+        condlogp= numpy.zeros(logl.shape[0])
+        condfhdvt0= numpy.zeros((logl.shape[3]))
+        condlogpdvt0= numpy.zeros(logl.shape[0])
         if ii == 0:
             allmarglogl= numpy.zeros((logl.shape[0],logl.shape[3],npops))
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
-                marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,:,:,:,:].flatten())
+                indx= True-numpy.isnan(logl[jj,0,0,kk,:,:,:,:,:,:,:].flatten())
+                indxdvt0= True-numpy.isnan(logl[jj,0,0,kk,:,:,:,2,:,:,:].flatten())
+                if numpy.sum(indx) > 0:
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,:,:,:,:].flatten()[indx])
+                else:
+                    marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+                if numpy.sum(indxdvt0) > 0:
+                    marglogldvt0[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,2,:,:,:].flatten()[indxdvt0])
+                else:
+                    marglogldvt0[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+            condlogp[jj]= maxentropy.logsumexp(marglogl[jj,:])
+            condlogl= marglogl[jj,:]-maxentropy.logsumexp(marglogl[jj,:])
+            condfh[jj]= numpy.sum(numpy.exp(condlogl)*numpy.linspace(0.,1.,logl.shape[3]))/numpy.sum(numpy.exp(condlogl))
+            condlogpdvt0[jj]= maxentropy.logsumexp(marglogldvt0[jj,:])
+            condlogldvt0= marglogldvt0[jj,:]-maxentropy.logsumexp(marglogldvt0[jj,:])
+            condfhdvt0[jj]= numpy.sum(numpy.exp(condlogldvt0)*numpy.linspace(0.,1.,logl.shape[3]))/numpy.sum(numpy.exp(condlogldvt0))
         allmarglogl[:,:,ii]= marglogl
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
@@ -44,7 +68,40 @@ def plotRdfh(options,args):
                               origin='lower',cmap='gist_yarg',
                               interpolation='nearest',
                               xrange=[1.5,4.5],yrange=[0.,1.],
-                              xlabel='$R_d$',ylabel='$f_h$')
+                              xlabel=r'$R_d$',ylabel=r'$f_h$')
+        s= 2.*condlogp
+        s-= numpy.amax(s)
+        s+= 16.
+        s*= 3.
+        bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0]),
+                            condfh,color='0.75',ls='-',
+                            overplot=True,zorder=2)
+        bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0]),
+                            condfh,color='0.75',marker='o',
+                            s=s,scatter=True,overplot=True,zorder=10)
+        maxindx= numpy.argmax(s)
+        bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0])[maxindx],
+                            condfh[maxindx],color='blue',marker='o',
+                            ls='none',
+                            ms=8.,mec='none',
+                            overplot=True,zorder=13)
+        #dvt0
+        s= 2.*condlogpdvt0
+        s-= numpy.amax(s)
+        s+= 16.
+        s*= 3.
+        bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0]),
+                            condfhdvt0,color='0.25',ls='-',
+                            overplot=True,zorder=1)
+        bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0]),
+                            condfhdvt0,color='0.25',marker='o',
+                            s=s,scatter=True,overplot=True,zorder=11)
+        maxindx= numpy.argmax(s)
+        bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0])[maxindx],
+                            condfhdvt0[maxindx],color='red',marker='o',
+                            ls='none',
+                            ms=8.,mec='none',
+                            overplot=True,zorder=12)
         #Plotname
         spl= options.outfilename.split('.')
         newname= ''
@@ -62,7 +119,223 @@ def plotRdfh(options,args):
                               origin='lower',cmap='gist_yarg',
                               interpolation='nearest',
                               xrange=[1.5,4.5],yrange=[0.,1.],
-                              xlabel='$R_d$',ylabel='$f_h$')
+                              xlabel=r'$R_d$',ylabel=r'$f_h$')
+    bovy_plot.bovy_end_print(options.outfilename)
+
+def plotRdhr(options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    for ii in range(npops):
+        if _NOTDONEYET:
+            spl= options.restart.split('.')
+        else:
+            spl= args[0].split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        savefile= open(newname,'rb')
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            continue
+        finally:
+            savefile.close()
+        if _NOTDONEYET:
+            logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        marglogl= numpy.zeros((logl.shape[0],logl.shape[4]))
+        if ii == 0:
+            allmarglogl= numpy.zeros((logl.shape[0],logl.shape[4],npops))
+        for jj in range(marglogl.shape[0]):
+            for kk in range(marglogl.shape[1]):
+                indx= True-numpy.isnan(logl[jj,0,0,:,kk,:,:,:,:,:,:].flatten())
+                if numpy.sum(indx) > 0:
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,kk,:,:,:,:,:,:].flatten()[indx])
+                else:
+                    marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        allmarglogl[:,:,ii]= marglogl
+        #Normalize
+        alogl= marglogl-numpy.amax(marglogl)
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
+                              origin='lower',cmap='gist_yarg',
+                              interpolation='nearest',
+                              xrange=[1.5,4.5],
+                              yrange=[numpy.log(1.5/8.),numpy.log(5./8.)],
+                              xlabel=r'$R_d$',
+                              ylabel=r'$\ln h_R / 8\,\mathrm{kpc}$')
+        #Plotname
+        spl= options.outfilename.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        bovy_plot.bovy_end_print(newname)
+    #Now plot combined
+    alogl= numpy.sum(allmarglogl,axis=2)\
+        -numpy.amax(numpy.sum(allmarglogl,axis=2))
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
+                          origin='lower',cmap='gist_yarg',
+                          interpolation='nearest',
+                          xrange=[1.5,4.5],
+                          yrange=[numpy.log(1.5/8.),numpy.log(5./8.)],
+                          xlabel=r'$R_d$',
+                          ylabel=r'$\ln h_R / 8\,\mathrm{kpc}$')
+    bovy_plot.bovy_end_print(options.outfilename)
+
+def plotRdPout(options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    for ii in range(npops):
+        if _NOTDONEYET:
+            spl= options.restart.split('.')
+        else:
+            spl= args[0].split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        savefile= open(newname,'rb')
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            continue
+        finally:
+            savefile.close()
+        if _NOTDONEYET:
+            logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        marglogl= numpy.zeros((logl.shape[0],logl.shape[8]))
+        if ii == 0:
+            allmarglogl= numpy.zeros((logl.shape[0],logl.shape[8],npops))
+        for jj in range(marglogl.shape[0]):
+            for kk in range(marglogl.shape[1]):
+                indx= True-numpy.isnan(logl[jj,0,0,:,:,:,:,:,kk,:,:].flatten())
+                if numpy.sum(indx) > 0:
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,:,:,:,:,kk,:,:].flatten()[indx])
+                else:
+                    marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        allmarglogl[:,:,ii]= marglogl
+        #Normalize
+        alogl= marglogl-numpy.amax(marglogl)
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
+                              origin='lower',cmap='gist_yarg',
+                              interpolation='nearest',
+                              xrange=[1.5,4.5],
+                              yrange=[0.,.3],
+                              xlabel=r'$R_d$',
+                              ylabel=r'$P_{\mathrm{out}}$')
+        #Plotname
+        spl= options.outfilename.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        bovy_plot.bovy_end_print(newname)
+    #Now plot combined
+    alogl= numpy.sum(allmarglogl,axis=2)\
+        -numpy.amax(numpy.sum(allmarglogl,axis=2))
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
+                          origin='lower',cmap='gist_yarg',
+                          interpolation='nearest',
+                          xrange=[1.5,4.5],
+                          yrange=[0.,.3],
+                          xlabel=r'$R_d$',
+                          ylabel=r'$P_{\mathrm{out}}$')
+    bovy_plot.bovy_end_print(options.outfilename)
+
+def plotRddvt(options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    for ii in range(npops):
+        if _NOTDONEYET:
+            spl= options.restart.split('.')
+        else:
+            spl= args[0].split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        savefile= open(newname,'rb')
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            continue
+        finally:
+            savefile.close()
+        if _NOTDONEYET:
+            logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        marglogl= numpy.zeros((logl.shape[0],logl.shape[7]))
+        if ii == 0:
+            allmarglogl= numpy.zeros((logl.shape[0],logl.shape[7],npops))
+        for jj in range(marglogl.shape[0]):
+            for kk in range(marglogl.shape[1]):
+                indx= True-numpy.isnan(logl[jj,0,0,:,:,:,:,kk,:,:,:].flatten())
+                if numpy.sum(indx) > 0:
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,:,:,:,kk,:,:,:].flatten()[indx])
+                else:
+                    marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        allmarglogl[:,:,ii]= marglogl
+        #Normalize
+        alogl= marglogl-numpy.amax(marglogl)
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
+                              origin='lower',cmap='gist_yarg',
+                              interpolation='nearest',
+                              xrange=[1.5,4.5],
+                              yrange=[-22.,22.],
+                              xlabel=r'$R_d$',
+                              ylabel=r'$\Delta \bar{V}_T\ (\mathrm{km\,s}^{-1})$')
+        #Plotname
+        spl= options.outfilename.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        bovy_plot.bovy_end_print(newname)
+    #Now plot combined
+    alogl= numpy.sum(allmarglogl,axis=2)\
+        -numpy.amax(numpy.sum(allmarglogl,axis=2))
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
+                          origin='lower',cmap='gist_yarg',
+                          interpolation='nearest',
+                          xrange=[1.5,4.5],
+                          yrange=[-22.,22.],
+                          xlabel=r'$R_d$',
+                          ylabel=r'$\Delta \bar{V}_T\ (\mathrm{km\,s}^{-1})$')
     bovy_plot.bovy_end_print(options.outfilename)
 
 def plotsrsz(options,args):
@@ -83,11 +356,15 @@ def plotsrsz(options,args):
         newname+= '_%i.' % ii
         newname+= spl[-1]
         savefile= open(newname,'rb')
-        if not _NOTDONEYET:
-            params= pickle.load(savefile)
-            mlogl= pickle.load(savefile)
-        logl= pickle.load(savefile)
-        savefile.close()
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            continue
+        finally:
+            savefile.close()
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         marglogl= numpy.zeros((logl.shape[5],logl.shape[6]))
@@ -95,7 +372,11 @@ def plotsrsz(options,args):
             allmarglogl= numpy.zeros((logl.shape[5],logl.shape[6],npops))
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
-                marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,:,jj,kk,:,:,:,:].flatten())
+                indx= True-numpy.isnan(logl[:,0,0,:,:,jj,kk,:,:,:,:].flatten())
+                if numpy.sum(indx) > 0:
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,:,jj,kk,:,:,:,:].flatten()[indx])
+                else:
+                    marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         allmarglogl[:,:,ii]= marglogl
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
@@ -149,18 +430,26 @@ def plotPout(options,args):
         newname+= '_%i.' % ii
         newname+= spl[-1]
         savefile= open(newname,'rb')
-        if not _NOTDONEYET:
-            params= pickle.load(savefile)
-            mlogl= pickle.load(savefile)
-        logl= pickle.load(savefile)
-        savefile.close()
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            continue
+        finally:
+            savefile.close()
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         marglogl= numpy.zeros((logl.shape[8]))
         if ii == 0:
             allmarglogl= numpy.zeros((logl.shape[8],npops))
         for jj in range(marglogl.shape[0]):
-            marglogl[jj]= maxentropy.logsumexp(logl[:,0,0,:,:,:,:,:,jj,:,:].flatten())
+            indx= True-numpy.isnan(logl[:,0,0,:,:,:,:,:,jj,:,:].flatten())
+            if numpy.sum(indx) > 0:
+                marglogl[jj]= maxentropy.logsumexp(logl[:,0,0,:,:,:,:,:,jj,:,:].flatten()[indx])
+            else:
+                marglogl[jj]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         allmarglogl[:,ii]= marglogl
         #Normalize
         alogl= marglogl-numpy.nanmax(marglogl)
@@ -208,18 +497,26 @@ def plotdvt(options,args):
         newname+= '_%i.' % ii
         newname+= spl[-1]
         savefile= open(newname,'rb')
-        if not _NOTDONEYET:
-            params= pickle.load(savefile)
-            mlogl= pickle.load(savefile)
-        logl= pickle.load(savefile)
-        savefile.close()
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            continue
+        finally:
+            savefile.close()
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         marglogl= numpy.zeros((logl.shape[7]))
         if ii == 0:
             allmarglogl= numpy.zeros((logl.shape[7],npops))
         for jj in range(marglogl.shape[0]):
-            marglogl[jj]= maxentropy.logsumexp(logl[:,0,0,:,:,:,:,jj,:,:,:].flatten())
+            indx= True-numpy.isnan(logl[:,0,0,:,:,:,:,jj,:,:,:].flatten())
+            if numpy.sum(indx) > 0:
+                marglogl[jj]= maxentropy.logsumexp(logl[:,0,0,:,:,:,:,jj,:,:,:].flatten()[indx])
+            else:
+                marglogl[jj]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         allmarglogl[:,ii]= marglogl
         #Normalize
         alogl= marglogl-numpy.nanmax(marglogl)
@@ -260,4 +557,10 @@ if __name__ == '__main__':
         plotsrsz(options,args)
     elif options.type.lower() == 'dvt':
         plotdvt(options,args)
+    elif options.type.lower() == 'rdhr':
+        plotRdhr(options,args)
+    elif options.type.lower() == 'rdpout':
+        plotRdPout(options,args)
+    elif options.type.lower() == 'rddvt':
+        plotRddvt(options,args)
                             

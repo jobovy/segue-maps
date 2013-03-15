@@ -14,13 +14,15 @@ def generateHTML(options,args):
         npops= 62
     elif options.sample.lower() == 'k':
         npops= 30
-    types= ['rdfh','srsz','pout','dvt']
+    types= ['rdfh','rdhr','rdpout','rddvt','srsz','pout','dvt']
     ntypes= len(types)
     for ii in range(npops):
+        outfile.write('<p style="font-size:xx-large;">%i</p>\n' % ii)
         line= ''
         for jj in range(ntypes):
             line+= '<img src="%s" alt="" width="300" /> ' % (os.path.join(options.figdir,options.basename+'_%s_%i.png' % (types[jj],ii)))
         outfile.write(line+'<br>\n')
+        outfile.write('<hr size="3" color="black">\n')
     outfile.write('</body>\n')
     outfile.write('</html>\n')
     outfile.close()
