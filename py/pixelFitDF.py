@@ -142,6 +142,11 @@ def pixelFitDF(options,args,pool=None):
             nabundancebins= len(fehs)
             fehs= numpy.array(fehs)
             afes= numpy.array(afes)
+    #thissavefile= open('binmapping_k.sav','wb')
+    #pickle.dump(fehs,thissavefile)
+    #pickle.dump(afes,thissavefile)
+    #thissavefile.close()
+    #return None
     if options.singles:
         run_abundance_singles(options,args,fehs,afes)
         return None
@@ -4287,6 +4292,9 @@ def get_options():
     parser.add_option("--justvel",action="store_true", dest="justvel",
                       default=False,
                       help="Make plots just for the velocities")
+    parser.add_option("--restrictdvt",action="store_true", dest="restrictdvt",
+                      default=False,
+                      help="Restrict the range of dvt when displaying plot results")
     return parser
   
 if __name__ == '__main__':

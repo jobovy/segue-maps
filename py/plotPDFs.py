@@ -3,6 +3,7 @@ import cPickle as pickle
 import numpy
 from scipy import maxentropy
 from galpy.util import bovy_plot
+import monoAbundanceMW
 from pixelFitDF import get_options
 _NOTDONEYET= True
 def plotRdfh(options,args):
@@ -34,6 +35,8 @@ def plotRdfh(options,args):
             savefile.close()
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if options.restrictdvt:
+            logl= logl[:,:,:,:,:,:,:,1:4,:,:,:]
         marglogl= numpy.zeros((logl.shape[0],logl.shape[3]))
         marglogldvt0= numpy.zeros((logl.shape[0],logl.shape[3]))
         condfh= numpy.zeros((logl.shape[3]))
@@ -90,18 +93,19 @@ def plotRdfh(options,args):
         s-= numpy.amax(s)
         s+= 16.
         s*= 3.
-        bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0]),
-                            condfhdvt0,color='0.25',ls='-',
-                            overplot=True,zorder=1)
-        bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0]),
-                            condfhdvt0,color='0.25',marker='o',
-                            s=s,scatter=True,overplot=True,zorder=11)
-        maxindx= numpy.argmax(s)
-        bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0])[maxindx],
-                            condfhdvt0[maxindx],color='red',marker='o',
-                            ls='none',
-                            ms=8.,mec='none',
-                            overplot=True,zorder=12)
+        if not options.restrictdvt:
+            bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0]),
+                                condfhdvt0,color='0.25',ls='-',
+                                overplot=True,zorder=1)
+            bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0]),
+                                condfhdvt0,color='0.25',marker='o',
+                                s=s,scatter=True,overplot=True,zorder=11)
+            maxindx= numpy.argmax(s)
+            bovy_plot.bovy_plot(numpy.linspace(1.5,4.5,logl.shape[0])[maxindx],
+                                condfhdvt0[maxindx],color='red',marker='o',
+                                ls='none',
+                                ms=8.,mec='none',
+                                overplot=True,zorder=12)
         #Plotname
         spl= options.outfilename.split('.')
         newname= ''
@@ -110,6 +114,9 @@ def plotRdfh(options,args):
             if not jj == len(spl)-2: newname+= '.'
         newname+= '_%i.' % ii
         newname+= spl[-1]
+        if options.restrictdvt:
+            bovy_plot.bovy_text(r'$\mathrm{Restricted}\ \Delta \bar{V}_T\ \mathrm{range}$',
+                                top_right=True,size=14.)
         bovy_plot.bovy_end_print(newname)
     #Now plot combined
     alogl= numpy.sum(allmarglogl,axis=2)\
@@ -546,6 +553,84 @@ def plotdvt(options,args):
                         yrange=[0.,1.1])
     bovy_plot.bovy_end_print(options.outfilename)
 
+def plotloglhist(options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    for ii in range(npops):
+        if _NOTDONEYET:
+            spl= options.restart.split('.')
+        else:
+            spl= args[0].split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        savefile= open(newname,'rb')
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            continue
+        finally:
+            savefile.close()
+        if _NOTDONEYET:
+            logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_hist(logl.flatten()[(logl.flatten() >-1000000.)],
+                            xrange=[numpy.nanmax(logl)-50.,numpy.nanmax(logl)],
+                            xlabel=r'$\log \mathcal{L}$',
+                            histtype='step',color='k')
+        #Plotname
+        spl= options.outfilename.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        bovy_plot.bovy_end_print(newname)
+    return None
+
+def plotprops(options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+        savefile= open('binmapping_g.sav','rb')
+    elif options.sample.lower() == 'k':
+        npops= 30
+        savefile= open('binmapping_k.sav','rb')
+    fehs= pickle.load(savefile)
+    afes= pickle.load(savefile)
+    savefile.close()
+    for ii in range(npops):
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_text(r'$[\mathrm{Fe/H}] = %.2f$' % (fehs[ii])
+                            +'\n'
+                            r'$[\alpha/\mathrm{Fe}] = %.3f$' % (afes[ii])
+                            +'\n'
+                            r'$\ln h_R / 8\,\mathrm{kpc} = %.1f$' % (numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii])/8.)) 
+                            +'\n'
+                            +r'$\ln \sigma_R / 220\,\mathrm{km\,s}^{-1} = %.1f$' % (numpy.log(monoAbundanceMW.sigmar(fehs[ii],afes[ii])/220.))
+                            +'\n'
+                            +r'$\ln \sigma_Z / 220\,\mathrm{km\,s}^{-1} = %.1f$' % (numpy.log(monoAbundanceMW.sigmaz(fehs[ii],afes[ii])/220.)),
+                            top_left=True,size=16.)
+        #Plotname
+        spl= options.outfilename.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        bovy_plot.bovy_end_print(newname)
+
 if __name__ == '__main__':
     parser= get_options()
     options,args= parser.parse_args()
@@ -563,4 +648,8 @@ if __name__ == '__main__':
         plotRdPout(options,args)
     elif options.type.lower() == 'rddvt':
         plotRddvt(options,args)
+    elif options.type.lower() == 'loglhist':
+        plotloglhist(options,args)
+    elif options.type.lower() == 'props':
+        plotprops(options,args)
                             
