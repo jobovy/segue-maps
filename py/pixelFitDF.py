@@ -1387,11 +1387,12 @@ def approxFitResult(feh,afe):
     qdfsrs= pickle.load(savefile)
     savefile.close()
     indx= numpy.argmin((sr*_REFV0-qdfsrs)**2.) #Closest radial dispersion, roughly
-    hrSpline= interpolate.interp1d(numpy.log(hrhrhr[:,indx]*qdfhrs/_REFR0),
-                                   numpy.log(qdfhrs/_REFR0),
-                                   kind=3)
+    hrSpline= interpolate.UnivariateSpline(numpy.log(hrhrhr[:,indx]*qdfhrs[:,indx]/_REFR0),
+                                   numpy.log(qdfhrs[:,indx]/_REFR0),
+                                           k=3)
 #    try:
     lnhrin= hrSpline(numpy.log(hr))
+    if lnhrin < -1.6: lnhrin= -1.6
     #Now find the input sigmas: sigmaz
     savefile= open('szszsz.sav','rb')
     szszsz= pickle.load(savefile)
@@ -1399,9 +1400,9 @@ def approxFitResult(feh,afe):
     qdfhrs= pickle.load(savefile)
     savefile.close()
     indx= numpy.argmin((numpy.exp(lnhrin)*_REFR0-qdfhrs)**2.) #Closest radial scale length
-    szSpline= interpolate.interp1d(numpy.log(szszsz[:,indx]*qdfszs/_REFV0),
-                                   numpy.log(qdfszs/_REFV0),
-                                   kind=3)
+    szSpline= interpolate.UnivariateSpline(numpy.log(szszsz[:,indx]*qdfszs[:,indx]/_REFV0),
+                                   numpy.log(qdfszs[:,indx]/_REFV0),
+                                   k=3)
 #    try:
     lnszin= szSpline(numpy.log(sz))
     #sigmar:
@@ -1411,9 +1412,9 @@ def approxFitResult(feh,afe):
     qdfhrs= pickle.load(savefile)
     savefile.close()
     indx= numpy.argmin((numpy.exp(lnhrin)*_REFR0-qdfhrs)**2.) #Closest radial scale length
-    srSpline= interpolate.interp1d(numpy.log(srsrsr[:,indx]*qdfsrs/_REFV0),
-                                   numpy.log(qdfsrs/_REFV0),
-                                   kind=3)
+    srSpline= interpolate.UnivariateSpline(numpy.log(srsrsr[:,indx]*qdfsrs[:,indx]/_REFV0),
+                                   numpy.log(qdfsrs[:,indx]/_REFV0),
+                                   k=3)
 #    try:
     lnsrin= srSpline(numpy.log(sr))
     return (lnhrin,lnsrin,lnszin)
