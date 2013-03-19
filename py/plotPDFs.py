@@ -608,12 +608,15 @@ def plotprops(options,args):
         savefile= open('binmapping_k.sav','rb')
     fehs= pickle.load(savefile)
     afes= pickle.load(savefile)
+    ndatas= pickle.load(savefile)
     savefile.close()
     for ii in range(npops):
         bovy_plot.bovy_print()
         bovy_plot.bovy_text(r'$[\mathrm{Fe/H}] = %.2f$' % (fehs[ii])
                             +'\n'
                             r'$[\alpha/\mathrm{Fe}] = %.3f$' % (afes[ii])
+                            +'\n'
+                            r'$N_{\mathrm{data}} = %i$' % (ndatas[ii])
                             +'\n'
                             r'$\ln h_R / 8\,\mathrm{kpc} = %.1f$' % (numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii])/8.)) 
                             +'\n'

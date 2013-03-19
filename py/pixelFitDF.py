@@ -103,7 +103,7 @@ def pixelFitDF(options,args,pool=None):
     #Bin the data
     binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
     #Map the bins with ndata > minndata in 1D
-    fehs, afes= [], []
+    fehs, afes, ndatas= [], [], []
     for ii in range(len(binned.fehedges)-1):
         for jj in range(len(binned.afeedges)-1):
             data= binned(binned.feh(ii),binned.afe(jj))
@@ -112,9 +112,11 @@ def pixelFitDF(options,args,pool=None):
             #print binned.feh(ii), binned.afe(jj), len(data)
             fehs.append(binned.feh(ii))
             afes.append(binned.afe(jj))
+            ndatas.append(len(data))
     nabundancebins= len(fehs)
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
+    ndatas= numpy.array(ndatas)
     if not options.singlefeh is None:
         if options.loo:
             pass
@@ -145,6 +147,7 @@ def pixelFitDF(options,args,pool=None):
     #thissavefile= open('binmapping_k.sav','wb')
     #pickle.dump(fehs,thissavefile)
     #pickle.dump(afes,thissavefile)
+    #pickle.dump(ndatas,thissavefile)
     #thissavefile.close()
     #return None
     if options.singles:
