@@ -1370,6 +1370,54 @@ def logprior_dlnvcdlnr(dlnvcdlnr,options):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return numpy.log((sb-dlnvcdlnr/30.)/sb)-(sb-dlnvcdlnr/30.)/sb
 
+def approxFitResult(feh,afe):
+    """Return the result from the paper I and III fits, smoothed and transformed to DF input parameters
+    returns (lnhR,lnSr,lnSz)"""
+    #Get smoothed monoAbundance results
+    hr= monoAbundanceMW.hr(feh,afe)/_REFR0 #No smoothing for this
+    sr= monoAbundanceMW.sigmar(feh,afe,smooth=True)/_REFV0
+    sz= monoAbundanceMW.sigmaz(feh,afe,smooth=True)/_REFV0
+    #Special case the two most metal-poor G dwarf bins
+    if feh == -1.25 or feh == -1.15:
+        sr= monoAbundanceMW.sigmar(-1.05,afe,smooth=True)/_REFV0
+    #Load the results from qdfProperties that relates input and output parameters, first the scale length
+    savefile= open('hrhrhr.sav','rb')
+    hrhrhr= pickle.load(savefile)
+    qdfhrs= pickle.load(savefile)
+    qdfsrs= pickle.load(savefile)
+    savefile.close()
+    indx= numpy.argmin((sr*_REFV0-qdfsrs)**2.) #Closest radial dispersion, roughly
+    hrSpline= interpolate.interp1d(numpy.log(hrhrhr[:,indx]*qdfhrs/_REFR0),
+                                   numpy.log(qdfhrs/_REFR0),
+                                   kind=3)
+#    try:
+    lnhrin= hrSpline(numpy.log(hr))
+    #Now find the input sigmas: sigmaz
+    savefile= open('szszsz.sav','rb')
+    szszsz= pickle.load(savefile)
+    qdfszs= pickle.load(savefile)
+    qdfhrs= pickle.load(savefile)
+    savefile.close()
+    indx= numpy.argmin((numpy.exp(lnhrin)*_REFR0-qdfhrs)**2.) #Closest radial scale length
+    szSpline= interpolate.interp1d(numpy.log(szszsz[:,indx]*qdfszs/_REFV0),
+                                   numpy.log(qdfszs/_REFV0),
+                                   kind=3)
+#    try:
+    lnszin= szSpline(numpy.log(sz))
+    #sigmar:
+    savefile= open('srsrsr.sav','rb')
+    srsrsr= pickle.load(savefile)
+    qdfsrs= pickle.load(savefile)
+    qdfhrs= pickle.load(savefile)
+    savefile.close()
+    indx= numpy.argmin((numpy.exp(lnhrin)*_REFR0-qdfhrs)**2.) #Closest radial scale length
+    srSpline= interpolate.interp1d(numpy.log(srsrsr[:,indx]*qdfsrs/_REFV0),
+                                   numpy.log(qdfsrs/_REFV0),
+                                   kind=3)
+#    try:
+    lnsrin= srSpline(numpy.log(sr))
+    return (lnhrin,lnsrin,lnszin)
+    
 ##SETUP AND CALCULATE THE NORMALIZATION INTEGRAL
 def calc_normint(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     """Calculate the normalization integral"""
