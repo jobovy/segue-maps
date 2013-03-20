@@ -12,6 +12,7 @@ from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
+_NOTDONEYET= True
 def getMultiComparisonBins(options):
     if options.sample.lower() == 'g':
         if options.group == 'aenhanced':
@@ -94,12 +95,13 @@ def plotDensComparisonDFMulti(options,args):
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
     gafes, gfehs, left_legend= getMultiComparisonBins(options)
-    if options.usemedianpotential:
-        potparams= get_median_potential(options,nabundancebins)
-        print "Median potential parameters: ", potparams
+    ##########POTENTIAL PARAMETERS####################
+    potparams1= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
+    potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
+    potparams3= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.])
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
-    normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
+    normintstuff= setup_normintstuff(options,raw,binned,gfehs,gafes)
     M= len(gfehs)
     #Check whether fits exist, if not, pop
     removeBins= numpy.ones(M,dtype='bool')
@@ -141,6 +143,12 @@ def plotDensComparisonDFMulti(options,args):
     fehmins= []
     fehmaxs= []
     cfehs= []
+    #######DF PARAMETER RANGES###########
+    hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
+    srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
+    szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
+    dvts= numpy.linspace(-0.1,0.1,options.ndvts)
+    pouts= numpy.linspace(10.**-5.,.3,options.npouts)
     for jj in range(M):
         print "Working on group %i / %i ..." % (jj+1,M)
         #Find pop corresponding to this bin
@@ -157,53 +165,48 @@ def plotDensComparisonDFMulti(options,args):
             newname+= '_%i.' % pop
             newname+= spl[-1]
             savefile= open(newname,'rb')
-            tparams= pickle.load(savefile)
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
             savefile.close()
         else:
             raise IOError("base filename not specified ...")
-        if options.usemedianpotential:
-            tparams= set_potparams(potparams,tparams,options,1)
+        #Set DF parameters as the maximum at R_d=2.5, f_h=0.4
+        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,3,:,:,:,1:4,:,0,0]),
+                                  (8,8,8,3,31))
+        tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
+                              szs[indx[2]],numpy.log(8./_REFR0),
+                              numpy.log(7./_REFR0),pouts[indx[4]],
+                              0.,0.,0.,0.,0.])
+        options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
+        tparams= set_potparams(potparams1,tparams,options,1)
         print tparams
         #Set up density models and their parameters
         model1s.append(interpDens)
         paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
         params1.append(paramsInterp)
         if True:
-            #Add outlier and plot sum
-            if not options.usemedianpotential:
-                potparams= get_potparams(tparams,options,1)
-            logoutfrac= numpy.log(get_outfrac(tparams,0,options))
-            logoutfrac+= numpy.log(surfz)
-            outfrac= numpy.exp(logoutfrac)
-            ro= get_ro(tparams,options)
-            halodens= ro*outDens(1.,0.,None)
-            model2s.append(interpDenswoutlier)
-            params2.append([paramsInterp,outfrac*halodens])
-            model3s.append(None)
-            params3.append(None)
-        elif False:
-            if not options.usemedianpotential:
-                potparams= get_potparams(tparams,options,1)
-            if options.potential.lower() == 'flatlog':
-                tparams= set_potparams([potparams[0]*1.05,potparams[1]],
-                                       tparams,options,1)
-                model2s.append(interpDens)
-                params2.append(calc_model(tparams,options,0))
-                tparams= set_potparams([potparams[0]*0.95,potparams[1]],
-                                       tparams,options,1)
-                model3s.append(interpDens)
-                params3.append(calc_model(tparams,options,0))
-            elif options.potential.lower() == 'mwpotentialfixhalo':
-                tparams= set_potparams([numpy.log(2./_REFR0),potparams[1],
-                                        potparams[2],potparams[3],potparams[4]],
-                                       tparams,options,1)
-                model2s.append(interpDens)
-                params2.append(calc_model(tparams,options,0))
-                tparams= set_potparams([numpy.log(3./8.),potparams[1],
-                                        potparams[2],potparams[3],potparams[4]],
-                                       tparams,options,1)
-                model3s.append(interpDens)
-                params3.append(calc_model(tparams,options,0))
+            tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
+                                  szs[indx[2]],numpy.log(8./_REFR0),
+                                  numpy.log(7./_REFR0),pouts[indx[4]],
+                                  0.,0.,0.,0.,0.,0.])
+            options.potential= 'dpdiskplhalodarkdiskfixbulgeflatwgasalt'
+            tparams= set_potparams(potparams2,tparams,options,1)
+            print tparams
+            model2s.append(interpDens)
+            paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+            params2.append(paramsInterp)
+            tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
+                                  szs[indx[2]],numpy.log(8./_REFR0),
+                                  numpy.log(7./_REFR0),pouts[indx[4]],
+                                  0.,0.,0.,0.,0.])
+            options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+            tparams= set_potparams(potparams3,tparams,options,1)
+            print tparams
+            model3s.append(interpDens)
+            paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+            params3.append(paramsInterp)
         else:
             model2s.append(None)
             params2.append(None)
@@ -211,11 +214,11 @@ def plotDensComparisonDFMulti(options,args):
             params3.append(None)
         data.append(binned(fehs[pop],afes[pop]))
         #Setup everything for selection function
-        thisnormintstuff= normintstuff[pop]
+        thisnormintstuff= normintstuff[jj]
         if _PRECALCVSAMPLES:
-            sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
+            sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac,normR, normZ,surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
         else:
-            sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
+            sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac, normR, normZ= unpack_normintstuff(thisnormintstuff,options)
         colordists.append(colordist)
         fehdists.append(fehdist)
         fehmins.append(fehmin)
@@ -523,29 +526,6 @@ def plotMultiBins(options,args):
 def inMultiBin(feh,afe,gfehs,gafes):
     return (numpy.fabs(numpy.amin((gfehs-feh)**2./0.1+(gafes-afe)**2./0.0025)) < 0.00001)
 
-def get_median_potential(options,ndfbins):
-    #Run through all of the bins and medianize
-    all_potparams= numpy.zeros((get_npotparams(options),62))
-    for ii in range(ndfbins):
-        #Load savefile
-        if not options.init is None:
-            #Load initial parameters from file
-            savename= options.init
-            spl= savename.split('.')
-            newname= ''
-            for ll in range(len(spl)-1):
-                newname+= spl[ll]
-                if not ll == len(spl)-2: newname+= '.'
-            newname+= '_%i.' % ii
-            newname+= spl[-1]
-            savefile= open(newname,'rb')
-            tparams= pickle.load(savefile)
-            savefile.close()
-        else:
-            raise IOError("base filename not specified ...")
-        all_potparams[:,ii]= get_potparams(tparams,options,1)
-    return numpy.median(all_potparams,axis=1)
-    
 if __name__ == '__main__':
     (options,args)= get_options().parse_args()
     if options.type == 'bins':

@@ -3937,7 +3937,7 @@ def set_potparams(p,params,options,npops):
         params[startindx+2]= p[2]
         params[startindx+3]= p[3]
         params[startindx+4]= p[4]
-    elif options.potential.lower() == 'dpdiskflplhalodarkdiskfixplfixbulgeflat':
+    elif options.potential.lower() == 'dpdiskplhalodarkdiskfixbulgeflatwgasalt':
         params[startindx]= p[0]
         params[startindx+1]= p[1]
         params[startindx+2]= p[2]
