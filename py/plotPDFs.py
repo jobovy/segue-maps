@@ -682,6 +682,75 @@ def plotprops(options,args):
         newname+= spl[-1]
         bovy_plot.bovy_end_print(newname)
 
+def plotDF4fidpot(options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        savefile= open('binmapping_g.sav','rb')
+    elif options.sample.lower() == 'k':
+        savefile= open('binmapping_k.sav','rb')
+    fehs= pickle.load(savefile)
+    afes= pickle.load(savefile)
+    npops= len(fehs)
+    savefile.close()
+    for ii in range(npops):
+        if _NOTDONEYET:
+            spl= options.restart.split('.')
+        else:
+            spl= args[0].split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        savefile= open(newname,'rb')
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            continue
+        finally:
+            savefile.close()
+        if _NOTDONEYET:
+            logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if options.restrictdvt:
+            logl= logl[:,:,:,:,:,:,:,1:4,:,:,:]
+        if options.restrictdf:
+            hrs= numpy.log(numpy.linspace(1.5,5.,logl.shape[4])/_REFR0)
+            srs= numpy.log(numpy.linspace(25.,70.,logl.shape[5])/_REFV0)
+            szs= numpy.log(numpy.linspace(15.,60.,logl.shape[6])/_REFV0)
+            lnhrin, lnsrin, lnszin= approxFitResult(fehs[ii],afes[ii])
+            hrindx= numpy.argmin((hrs-lnhrin)**2.)
+            srindx= numpy.argmin((srs-lnsrin)**2.)
+            szindx= numpy.argmin((szs-lnszin)**2.)
+            minhrindx= hrindx-1
+            maxhrindx= hrindx+1
+            if minhrindx < 0: 
+                minhrindx+= 1
+                maxhrindx+= 1
+            elif maxhrindx >= logl.shape[4]: 
+                minhrindx-= 1
+                maxhrindx-= 1
+            minsrindx= srindx-1
+            maxsrindx= srindx+1
+            if minsrindx < 0: 
+                minsrindx+= 1
+                maxsrindx+= 1
+            elif maxsrindx >= logl.shape[5]: 
+                minsrindx-= 1
+                maxsrindx-= 1
+            minszindx= szindx-1
+            maxszindx= szindx+1
+            if minszindx < 0: 
+                minszindx+= 1
+                maxszindx+= 1
+            elif maxszindx >= logl.shape[6]: 
+                minszindx-= 1
+                maxszindx-= 1
+            logl= logl[:,:,:,:,minhrindx:maxhrindx+1,minsrindx:maxsrindx+1,
+                               minszindx:maxszindx+1,:,:,:,:]
 if __name__ == '__main__':
     parser= get_options()
     options,args= parser.parse_args()

@@ -2864,6 +2864,46 @@ def setup_potential(params,options,npops,
             return [dp,hp,bp,gp]
         else:
             return potential.interpRZPotential(RZPot=[dp,hp,bp,gp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True,interpDens=interpDens,interpdvcircdr=interpdvcircdr)
+    elif options.potential.lower() == 'dpdiskplhalodarkdiskfixbulgeflatwgasalt':
+        ro= get_ro(params,options)
+        vo= get_vo(params,options,npops)
+        dlnvcdlnr= potparams[4]/30.
+        ampb= _GMBULGE/_ABULGE*(_REFR0*ro/_ABULGE)/(1.+(_REFR0*ro/_ABULGE))**2./_REFV0**2./vo**2.
+        bp= potential.HernquistPotential(a=_ABULGE/_REFR0/ro,normalize=ampb)
+        #Also add 13 Msol/pc^2 with a scale height of 130 pc, and a scale length of ?
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*numpy.exp(potparams[0])/ro,
+                                                     hz=0.130/ro/_REFR0,
+                                                     normalize=1.)
+        gassurfdens= 2.*gp.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*gp._hz*ro*_REFR0*1000.
+        gp= potential.DoubleExponentialDiskPotential(hr=2.*numpy.exp(potparams[0])/ro,
+                                                     hz=0.130/ro/_REFR0,
+                                                     normalize=13./gassurfdens)
+        fdfh= 1.-13./gassurfdens-ampb
+        fd= (1.-potparams[3])*fdfh
+        fh= fdfh-fd
+        dp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
+                                                     hz=numpy.exp(potparams[2])/ro,
+                                                     normalize=fd)
+        darkdp= potential.DoubleExponentialDiskPotential(hr=7./_REFR0/ro,
+                                                     hz=2./_REFR0/ro,
+                                                     normalize=1.)
+        darkdrhoo= potential.evaluateDensities(1.,0.,darkdp)      
+        gamma= potparams[5]
+#        try:
+        plhalo, ampdarkd, amph= plhaloamp_from_dlnvcdlnr_darkd(dlnvcdlnr,darkdp,[dp,bp,gp],options,fh,darkdrhoo,gamma)
+        if plhalo < 0. or plhalo > 3:
+            raise RuntimeError("plhalo=%f" % plhalo)
+        #print ampb, 13./gassurfdens, ampd, amph, dp(1.,0.), hp(1.,0.)
+        #Use an interpolated version for speed
+        darkdp= potential.DoubleExponentialDiskPotential(hr=7./_REFR0/ro,
+                                                     hz=2./_REFR0/ro,
+                                                     normalize=ampdarkd)
+        hp= potential.PowerSphericalPotential(alpha=plhalo,
+                                              normalize=amph)
+        if returnrawpot:
+            return [dp,hp,bp,gp,darkdp]
+        else:
+            return potential.interpRZPotential(RZPot=[dp,hp,bp,gp,darkdp],rgrid=(numpy.log(0.01),numpy.log(20.),101),zgrid=(0.,1.,101),logR=True,interpepifreq=True,interpverticalfreq=True,interpvcirc=True,use_c=True,enable_c=True,interpPot=True,interpDens=interpDens,interpdvcircdr=interpdvcircdr)
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         ro= get_ro(params,options)
         vo= get_vo(params,options,npops)
@@ -2981,6 +3021,24 @@ def plhalo_from_dlnvcdlnr(dlnvcdlnr,diskpot,bulgepot,options,fh):
     dvcdr_bulge= -potential.evaluateRforces(1.,0.,bulgepot)+potential.evaluateR2derivs(1.,0.,bulgepot)
     if 'plhalo' in options.potential.lower():
         return 2.-(2.*dlnvcdlnr-dvcdr_disk-dvcdr_bulge)/fh
+
+def plhaloamp_from_dlnvcdlnr_darkd(dlnvcdlnr,darkdpot,
+                                   restpot,options,fh,darkdrhoo,gamma):
+    """Calculate the halo's shape corresponding to this rotation curve derivative in the case of a dark disk"""
+    #First calculate the derivatives dvc^2/dR of the rest and of the dark disk
+    dvcdr_rest= -potential.evaluateRforces(1.,0.,restpot)\
+        +potential.evaluateR2derivs(1.,0.,restpot)
+    dvcdr_darkd= -potential.evaluateRforces(1.,0.,darkdpot)\
+        +potential.evaluateR2derivs(1.,0.,darkdpot)
+    alpha= optimize.brentq(_plhaloamp_eq,0.,3.,args=(darkdrhoo,dvcdr_darkd,dvcdr_rest,dlnvcdlnr,fh,gamma))
+    delta= fh*darkdrhoo/(gamma*(3.-alpha)+darkdrhoo)
+    eps= fh-delta
+    return (alpha,eps,delta)
+
+def _plhaloamp_eq(alpha,darkdrhoo,dvcdr_darkd,dvcdr_rest,dlnvcdlnr,fh,gamma):
+    delta= fh*darkdrhoo/(gamma*(3.-alpha)+darkdrhoo)
+    eps= fh-delta
+    return dlnvcdr-eps*dvcdr_darkd-delta*(2.-alpha)+dvcdr_rest
 
 ##FULL OPTIMIZER
 def full_optimize(params,fehs,afes,binned,options,normintstuff,errstuff):
