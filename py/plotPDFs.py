@@ -4,14 +4,18 @@ import numpy
 from scipy import maxentropy
 from galpy.util import bovy_plot
 import monoAbundanceMW
-from pixelFitDF import get_options
+from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0
 _NOTDONEYET= True
 def plotRdfh(options,args):
     #Go through all of the bins
     if options.sample.lower() == 'g':
-        npops= 62
+        savefile= open('binmapping_g.sav','rb')
     elif options.sample.lower() == 'k':
-        npops= 30
+        savefile= open('binmapping_k.sav','rb')
+    fehs= pickle.load(savefile)
+    afes= pickle.load(savefile)
+    npops= len(fehs)
+    savefile.close()
     for ii in range(npops):
         if _NOTDONEYET:
             spl= options.restart.split('.')
@@ -37,6 +41,40 @@ def plotRdfh(options,args):
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         if options.restrictdvt:
             logl= logl[:,:,:,:,:,:,:,1:4,:,:,:]
+        if options.restrictdf:
+            hrs= numpy.log(numpy.linspace(1.5,5.,logl.shape[4])/_REFR0)
+            srs= numpy.log(numpy.linspace(25.,70.,logl.shape[5])/_REFV0)
+            szs= numpy.log(numpy.linspace(15.,60.,logl.shape[6])/_REFV0)
+            lnhrin, lnsrin, lnszin= approxFitResult(fehs[ii],afes[ii])
+            hrindx= numpy.argmin((hrs-lnhrin)**2.)
+            srindx= numpy.argmin((srs-lnsrin)**2.)
+            szindx= numpy.argmin((szs-lnszin)**2.)
+            minhrindx= hrindx-1
+            maxhrindx= hrindx+1
+            if minhrindx < 0: 
+                minhrindx+= 1
+                maxhrindx+= 1
+            elif maxhrindx >= logl.shape[4]: 
+                minhrindx-= 1
+                maxhrindx-= 1
+            minsrindx= srindx-1
+            maxsrindx= srindx+1
+            if minsrindx < 0: 
+                minsrindx+= 1
+                maxsrindx+= 1
+            elif maxsrindx >= logl.shape[5]: 
+                minsrindx-= 1
+                maxsrindx-= 1
+            minszindx= szindx-1
+            maxszindx= szindx+1
+            if minszindx < 0: 
+                minszindx+= 1
+                maxszindx+= 1
+            elif maxszindx >= logl.shape[6]: 
+                minszindx-= 1
+                maxszindx-= 1
+            logl= logl[:,:,:,:,minhrindx:maxhrindx+1,minsrindx:maxsrindx+1,
+                               minszindx:maxszindx+1,:,:,:,:]
         marglogl= numpy.zeros((logl.shape[0],logl.shape[3]))
         marglogldvt0= numpy.zeros((logl.shape[0],logl.shape[3]))
         condfh= numpy.zeros((logl.shape[3]))
@@ -63,7 +101,9 @@ def plotRdfh(options,args):
             condlogpdvt0[jj]= maxentropy.logsumexp(marglogldvt0[jj,:])
             condlogldvt0= marglogldvt0[jj,:]-maxentropy.logsumexp(marglogldvt0[jj,:])
             condfhdvt0[jj]= numpy.sum(numpy.exp(condlogldvt0)*numpy.linspace(0.,1.,logl.shape[3]))/numpy.sum(numpy.exp(condlogldvt0))
-        allmarglogl[:,:,ii]= marglogl
+        if monoAbundanceMW.hr(fehs[ii],afes[ii]) < 3.5 \
+                and numpy.amax(logl) < 0.: #latter removes ridiculous bins
+            allmarglogl[:,:,ii]= marglogl
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
         bovy_plot.bovy_print()
@@ -114,8 +154,16 @@ def plotRdfh(options,args):
             if not jj == len(spl)-2: newname+= '.'
         newname+= '_%i.' % ii
         newname+= spl[-1]
-        if options.restrictdvt:
+        if options.restrictdf and not options.restrictdvt:
+            bovy_plot.bovy_text(r'$\mathrm{Restricted\ DF\ parameters}$',
+                                top_right=True,size=14.)
+        elif options.restrictdvt and not options.restrictdf:
             bovy_plot.bovy_text(r'$\mathrm{Restricted}\ \Delta \bar{V}_T\ \mathrm{range}$',
+                                top_right=True,size=14.)
+        elif options.restrictdvt and options.restrictdf:
+            bovy_plot.bovy_text(r'$\mathrm{Restricted\ DF\ parameters}$'
+                                +'\n'
+                                +r'$\mathrm{Restricted}\ \Delta \bar{V}_T\ \mathrm{range}$',
                                 top_right=True,size=14.)
         bovy_plot.bovy_end_print(newname)
     #Now plot combined

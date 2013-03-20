@@ -1378,7 +1378,7 @@ def approxFitResult(feh,afe):
     sr= monoAbundanceMW.sigmar(feh,afe,smooth=True)/_REFV0
     sz= monoAbundanceMW.sigmaz(feh,afe,smooth=True)/_REFV0
     #Special case the two most metal-poor G dwarf bins
-    if feh == -1.25 or feh == -1.15:
+    if feh < -1.1:
         sr= monoAbundanceMW.sigmar(-1.05,afe,smooth=True)/_REFV0
     #Load the results from qdfProperties that relates input and output parameters, first the scale length
     savefile= open('hrhrhr.sav','rb')
@@ -4347,6 +4347,9 @@ def get_options():
     parser.add_option("--restrictdvt",action="store_true", dest="restrictdvt",
                       default=False,
                       help="Restrict the range of dvt when displaying plot results")
+    parser.add_option("--restrictdf",action="store_true", dest="restrictdf",
+                      default=False,
+                      help="Restrict the range of DF parameters")
     return parser
   
 if __name__ == '__main__':
