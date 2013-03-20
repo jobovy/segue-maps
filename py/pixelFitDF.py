@@ -2884,20 +2884,19 @@ def setup_potential(params,options,npops,
         dp= potential.DoubleExponentialDiskPotential(hr=numpy.exp(potparams[0])/ro,
                                                      hz=numpy.exp(potparams[2])/ro,
                                                      normalize=fd)
-        darkdp= potential.DoubleExponentialDiskPotential(hr=7./_REFR0/ro,
-                                                     hz=2./_REFR0/ro,
-                                                     normalize=1.)
+        darkdp= potential.DoubleExponentialDiskPotential(hr=options.darkdiskrd/_REFR0/ro,
+                                                         hz=1.5/_REFR0/ro,
+                                                         normalize=1.)
         darkdrhoo= potential.evaluateDensities(1.,0.,darkdp)      
-        gamma= potparams[5]
-#        try:
+        gamma= potparams[5]/4./numpy.pi
         plhalo, ampdarkd, amph= plhaloamp_from_dlnvcdlnr_darkd(dlnvcdlnr,darkdp,[dp,bp,gp],options,fh,darkdrhoo,gamma)
-        if plhalo < 0. or plhalo > 3:
-            raise RuntimeError("plhalo=%f" % plhalo)
+        if ampdarkd < 0. or amph < 0.:
+            raise RuntimeError("Amplitude of one of the halo components is negaitve")
         #print ampb, 13./gassurfdens, ampd, amph, dp(1.,0.), hp(1.,0.)
         #Use an interpolated version for speed
-        darkdp= potential.DoubleExponentialDiskPotential(hr=7./_REFR0/ro,
-                                                     hz=2./_REFR0/ro,
-                                                     normalize=ampdarkd)
+        darkdp= potential.DoubleExponentialDiskPotential(hr=options.darkdiskrd/_REFR0/ro,
+                                                         hz=1.5/_REFR0/ro,
+                                                         normalize=ampdarkd)
         hp= potential.PowerSphericalPotential(alpha=plhalo,
                                               normalize=amph)
         if returnrawpot:
@@ -3030,15 +3029,19 @@ def plhaloamp_from_dlnvcdlnr_darkd(dlnvcdlnr,darkdpot,
         +potential.evaluateR2derivs(1.,0.,restpot)
     dvcdr_darkd= -potential.evaluateRforces(1.,0.,darkdpot)\
         +potential.evaluateR2derivs(1.,0.,darkdpot)
-    alpha= optimize.brentq(_plhaloamp_eq,0.,3.,args=(darkdrhoo,dvcdr_darkd,dvcdr_rest,dlnvcdlnr,fh,gamma))
-    delta= fh*darkdrhoo/(gamma*(3.-alpha)+darkdrhoo)
-    eps= fh-delta
-    return (alpha,eps,delta)
+    try:
+        alpha= optimize.brentq(_plhaloamp_eq,0.,3.,args=(darkdrhoo,dvcdr_darkd,dvcdr_rest,dlnvcdlnr,fh,gamma))
+    except ValueError:
+        raise RuntimeError('plhalo < 0 or plhalo > 3')
+    else:
+        delta= fh*darkdrhoo/(gamma*(3.-alpha)+darkdrhoo)
+        eps= fh-delta
+        return (alpha,eps,delta)
 
 def _plhaloamp_eq(alpha,darkdrhoo,dvcdr_darkd,dvcdr_rest,dlnvcdlnr,fh,gamma):
     delta= fh*darkdrhoo/(gamma*(3.-alpha)+darkdrhoo)
     eps= fh-delta
-    return dlnvcdr-eps*dvcdr_darkd-delta*(2.-alpha)+dvcdr_rest
+    return dlnvcdlnr-eps*dvcdr_darkd-delta*(2.-alpha)-dvcdr_rest
 
 ##FULL OPTIMIZER
 def full_optimize(params,fehs,afes,binned,options,normintstuff,errstuff):
@@ -3630,6 +3633,8 @@ def initialize(options,fehs,afes):
         p.extend([-1.39,1.,-3.,0.,1.15])
         #p.extend([-1.,1.,-3.,0.,1.35])
         #p.extend([-.69,1.07,-3.,0.,2.2])
+    elif options.potential.lower() == 'dpdiskplhalodarkdiskfixbulgeflatwgas':
+        p.extend([-1.39,1.,-3.,0.,1.15,0.])
     elif options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         #p.extend([-1.39,1.,-3.,0.3,-0.05])
         #p.extend([-1.,1.,-3.,0.5,0.])
@@ -3850,6 +3855,8 @@ def get_potparams(p,options,npops):
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4]) # hr, vo, hz,dlnvcdlnr,power-law halo
+    elif options.potential.lower() == 'dpdiskplhalodarkdiskfixbulgeflatwgasalt':
+        return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4],p[startindx+5]) # hr, vo, hz,dlnvcdlnr,power-law halo, relative dark disk density
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
         return (p[startindx],p[startindx+1],p[startindx+2],p[startindx+3],p[startindx+4],p[startindx+5]) # hr, vo, hz,dlnvcdlnr,flattening, power-law halo
     elif options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
@@ -3878,6 +3885,7 @@ def get_vo(p,options,npops):
             or options.potential.lower() == 'dpdiskplhalofixbulgeflat' \
             or options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt' \
+            or options.potential.lower() == 'dpdiskplhalodarkdiskfixbulgeflatwgasalt' \
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgas' \
             or options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         return p[startindx+1]
@@ -3929,6 +3937,13 @@ def set_potparams(p,params,options,npops):
         params[startindx+2]= p[2]
         params[startindx+3]= p[3]
         params[startindx+4]= p[4]
+    elif options.potential.lower() == 'dpdiskflplhalodarkdiskfixplfixbulgeflat':
+        params[startindx]= p[0]
+        params[startindx+1]= p[1]
+        params[startindx+2]= p[2]
+        params[startindx+3]= p[3]
+        params[startindx+4]= p[4]
+        params[startindx+5]= p[5]
     elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
         params[startindx]= p[0]
         params[startindx+1]= p[1]
@@ -4005,7 +4020,8 @@ def get_npotparams(options):
             or options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt' \
             or options.potential.lower() == 'mpdiskflplhalofixplfixbulgeflat':
         return 5
-    elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas':
+    elif options.potential.lower() == 'dpdiskflplhalofixbulgeflatwgas' \
+            or options.potential.lower() == 'dpdiskplhalodarkdiskfixbulgeflatwgas':
         return 6
     elif options.potential.lower() == 'bti' \
             or options.potential.lower() == 'btii':
@@ -4329,6 +4345,8 @@ def get_options():
                       help="vc when it is fixed")
     parser.add_option("--dlnvcdlnr",dest='dlnvcdlnr',default=0.,type='float',
                       help="dlnvcdlnr when it is fixed")
+    parser.add_option("--darkdiskrd",dest='darkdiskrd',default=9.,type='float',
+                      help="Scale length of the dark disk")
     parser.add_option("--maxiter",dest='maxiter',default=8,type='int',
                       help="Maximum number of iterations in DF optimization")
     #Total grid-based
