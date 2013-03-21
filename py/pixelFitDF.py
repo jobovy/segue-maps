@@ -77,6 +77,7 @@ _MULTIDFGRID= True
 _SMOOTHDISPS= True
 _SIMPLEOPTDF= True
 _JUSTSIMPLEOPTDF= False
+_NEWDFRANGES= True
 def pixelFitDF(options,args,pool=None):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
@@ -212,11 +213,18 @@ def pixelFitDF(options,args,pool=None):
         gridOut= gridallLike(fehs,afes,binned,options,normintstuff,
                              errstuff)
         #Find best-fit
-        hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
-        srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
-        szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
-        dvts= numpy.linspace(-0.1,0.1,options.ndvts)
-        pouts= numpy.linspace(10.**-5.,.3,options.npouts)
+        if _NEWDFRANGES:
+            hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
+            srs= numpy.log(numpy.linspace(30.,70.,options.nsrs)/_REFV0)
+            szs= numpy.log(numpy.linspace(12.,80.,options.nszs)/_REFV0)
+            dvts= numpy.linspace(-0.05,0.05,options.ndvts)
+            pouts= numpy.linspace(10.**-5.,.5,options.npouts)
+        else:
+            hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
+            srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
+            szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
+            dvts= numpy.linspace(-0.1,0.1,options.ndvts)
+            pouts= numpy.linspace(10.**-5.,.3,options.npouts)
         indx= numpy.unravel_index(numpy.argmax(gridOut[0]),gridOut[0].shape)
         params= [dvts[indx[7]],hrs[indx[4]],srs[indx[5]],szs[indx[6]],
                  numpy.log(8./_REFR0),numpy.log(7./_REFR0),pouts[indx[8]]]
@@ -970,9 +978,14 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         normszs[ii,:]= qdf._sz*numpy.exp((1.-Rgrid[ii])/qdf._hsz)
     #Go through the grid
     #IF YOU EDIT THIS, ALSO EDIT IT ABOVE
-    hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
-    srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
-    szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
+    if _NEWDFRANGES:
+        hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
+        srs= numpy.log(numpy.linspace(30.,70.,options.nsrs)/_REFV0)
+        szs= numpy.log(numpy.linspace(12.,80.,options.nszs)/_REFV0)
+    else:
+        hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
+        srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
+        szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
     start= time.time()
     for ii in range(options.nhrs):
         print "Working on DF %i, dt= %f" % (ii,time.time()-start)
@@ -1225,8 +1238,12 @@ def mloglike_gridall(fullparams,hr,sr,sz,
                                              rgs,kappas,nus,Omegas)
     tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
     #Run through the grid
-    dvts= numpy.linspace(-0.1,0.1,toptions.ndvts)
-    pouts= numpy.linspace(10.**-5.,.3,toptions.npouts)
+    if _NEWDFRANGES:
+        dvts= numpy.linspace(-0.05,0.05,options.ndvts)
+        pouts= numpy.linspace(10.**-5.,.5,options.npouts)
+    else:
+        dvts= numpy.linspace(-0.1,0.1,toptions.ndvts)
+        pouts= numpy.linspace(10.**-5.,.3,toptions.npouts)
     for ii in range(toptions.ndvts):
         dvt= dvts[ii]
         tvT= vT+dvt/vo
@@ -4361,10 +4378,16 @@ def get_options():
                       help="Number of radial dispersions to use in grid-based search")
     parser.add_option("--nszs",dest='nszs',default=8,type='int',
                       help="Number of vertical dispersions to use in grid-based search")
-    parser.add_option("--ndvts",dest='ndvts',default=5,type='int',
-                      help="Number of dvts to use in grid-based search")
-    parser.add_option("--npouts",dest='npouts',default=31,type='int',
-                      help="Number of pouts to use in grid-based search")
+    if _NEWDFRANGES:
+        parser.add_option("--ndvts",dest='ndvts',default=3,type='int',
+                          help="Number of dvts to use in grid-based search")
+        parser.add_option("--npouts",dest='npouts',default=25,type='int',
+                          help="Number of pouts to use in grid-based search")
+    else:
+        parser.add_option("--ndvts",dest='ndvts',default=5,type='int',
+                          help="Number of dvts to use in grid-based search")
+        parser.add_option("--npouts",dest='npouts',default=31,type='int',
+                          help="Number of pouts to use in grid-based search")
     #Type of fit
     parser.add_option("--justdf",action="store_true", dest="justdf",
                       default=False,
