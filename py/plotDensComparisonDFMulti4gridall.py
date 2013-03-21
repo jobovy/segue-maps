@@ -298,6 +298,7 @@ def plotDensComparisonDFMulti(options,args):
         if options.all: return None
     bins= 16
     for ii in range(len(ls)):
+        print "Working on plates in the direction of l = %.0f, b=%.0f" % (ls[ii],bs[ii])
         #Bright
         plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
                                                        sf,data,

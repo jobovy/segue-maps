@@ -778,7 +778,8 @@ def compareRdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                            fehmin=-0.4,fehmax=0.5,feh=-0.15,
                            convolve=0.05,xrange=None,yrange=None,
                            overplot=False,bins=21,color='k',ls='-',
-                           left_legend=None,right_legend=None):
+                           left_legend=None,right_legend=None,
+                           numcores=None):
     """
     NAME:
        compareRdistPlateMulti
@@ -804,6 +805,7 @@ def compareRdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
        color= color for model
        left_legend = if set, legend to put at the left top
        right_legend = if set, legend to put at the right top
+       numcores= if not None, use multiprocessing
     OUTPUT:
        plot to output
        return rdist, datahist, dataedges
@@ -880,26 +882,51 @@ def compareRdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
         platels, platebs= [], []
         for jj in range(M):
             cnt= 0
-            for p in plate:
-                cnt+= 1
-                sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,cnt,len(plate)))
-                sys.stdout.flush()
-                #l and b?
-                pindx= (sf.plates == p)
-                platel= platelb[pindx,0][0]
-                plateb= platelb[pindx,1][0]
-                if jj == 0: #only do this once
-                    platels.append(platel)
-                    platebs.append(plateb)
-                thisRdist= _predict_Rdist_plate(Rs,
-                                                densfunc[jj],params[jj],
-                                                rmin,rmax,
-                                                platel,
-                                                plateb,grmin,grmax,
-                                                fehmin[jj],fehmax[jj],
-                                                feh[jj],colordist[jj],
-                                                fehdist[jj],sf,p)
-                Rdist[jj,:]+= thisRdist
+            if not numcores is None:
+                thisRdists= numpy.array(multi.parallel_map((lambda x: _calc_Rdists_multi(plate[x],
+                                                                                     platelb,
+                                                                                     Rs,
+                                                                                     densfunc[jj],
+                                                                                     params[jj],
+                                                                                     rmin,rmax,
+                                                                                     grmin,grmax,
+                                                                                     fehmin[jj],fehmax[jj],
+                                                                                     feh[jj],colordist[jj],
+                                                                                     fehdist[jj],sf)),
+                                                           
+                                                           range(len(plate)),numcores=numcores))
+                for ii in range(len(plate)):
+                    Rdist[jj,:]+= thisRdists[ii]
+                for p in plate:
+                    cnt+= 1
+                    if jj == 0: #only do this once
+                       #l and b?
+                        pindx= (sf.plates == p)
+                        platel= platelb[pindx,0][0]
+                        plateb= platelb[pindx,1][0]
+                        platels.append(platel)
+                        platebs.append(plateb)
+            else:
+                for p in plate:
+                    cnt+= 1
+                    sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,cnt,len(plate)))
+                    sys.stdout.flush()
+                    #l and b?
+                    pindx= (sf.plates == p)
+                    platel= platelb[pindx,0][0]
+                    plateb= platelb[pindx,1][0]
+                    if jj == 0: #only do this once
+                        platels.append(platel)
+                        platebs.append(plateb)
+                    thisRdist= _predict_Rdist_plate(Rs,
+                                                    densfunc[jj],params[jj],
+                                                    rmin,rmax,
+                                                    platel,
+                                                    plateb,grmin,grmax,
+                                                    fehmin[jj],fehmax[jj],
+                                                    feh[jj],colordist[jj],
+                                                    fehdist[jj],sf,p)
+                    Rdist[jj,:]+= thisRdist
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         #Fix relative normalization
@@ -1058,6 +1085,23 @@ def compareRdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
         if not left_legend is None:
             bovy_plot.bovy_text(left_legend,top_left=True,size=_legendsize)
         return (Rdist, hist[0], hist[1])
+
+#For multi evaluation of previous    
+def _calc_Rdists_multi(p,platelb,Rs,densfunc,params,rmin,rmax,
+                       grmin,grmax,fehmin,fehmax,
+                       feh,colordist,fehdist,sf):
+    #l and b?
+    pindx= (sf.plates == p)
+    platel= platelb[pindx,0][0]
+    plateb= platelb[pindx,1][0]
+    thisRdist= _predict_Rdist_plate(Rs,densfunc,params,
+                                    rmin,rmax,
+                                    platel,
+                                    plateb,grmin,grmax,
+                                    fehmin,fehmax,
+                                    feh,colordist,
+                                    fehdist,sf,p)
+    return thisRdist
 
 def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                         rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,
