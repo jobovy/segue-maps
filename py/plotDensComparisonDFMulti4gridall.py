@@ -232,11 +232,11 @@ def plotDensComparisonDFMulti(options,args):
             #Cut out bright stars on faint plates and vice versa
             indx= []
             nfaintbright, nbrightfaint= 0, 0
-            for ii in range(len(data[jj].feh)):
-                if sf.platebright[str(data[jj][ii].plate)] and data[jj][ii].dered_r >= 17.8:
+            for ii in range(len(data[-1].feh)):
+                if sf.platebright[str(data[-1][ii].plate)] and data[-1][ii].dered_r >= 17.8:
                     indx.append(False)
                     nbrightfaint+= 1
-                elif not sf.platebright[str(data[jj][ii].plate)] and data[jj][ii].dered_r < 17.8:
+                elif not sf.platebright[str(data[-1][ii].plate)] and data[-1][ii].dered_r < 17.8:
                     indx.append(False)
                     nfaintbright+= 1
                 else:
@@ -244,7 +244,7 @@ def plotDensComparisonDFMulti(options,args):
             print "nbrightfaint, nfaintbright", nbrightfaint, nfaintbright
             indx= numpy.array(indx,dtype='bool')
             if numpy.sum(indx) > 0:
-                data[jj]= data[jj][indx]
+                data[-1]= data[-1][indx]
     #Ranges
     if options.type == 'z':
         xrange= [-0.1,5.]
