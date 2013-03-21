@@ -99,7 +99,7 @@ def plotDensComparisonDFMulti(options,args):
     potparams1= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
     potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
     potparams3= numpy.array([numpy.log(2.5/8.),235./220.,
-                             numpy.log(400./8000.),0.666666,0.])
+                             numpy.log(400./8000.),0.2,0.])
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,gfehs,gafes)
