@@ -98,7 +98,8 @@ def plotDensComparisonDFMulti(options,args):
     ##########POTENTIAL PARAMETERS####################
     potparams1= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
     potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
-    potparams3= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.])
+    potparams3= numpy.array([numpy.log(2.5/8.),235./220.,
+                             numpy.log(400./8000.),0.666666,0.])
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,gfehs,gafes)
@@ -147,8 +148,8 @@ def plotDensComparisonDFMulti(options,args):
     hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
     srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
     szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
-    dvts= numpy.linspace(-0.1,0.1,options.ndvts)
-    pouts= numpy.linspace(10.**-5.,.3,options.npouts)
+    dvts= numpy.linspace(-0.1,0.1,5)
+    pouts= numpy.linspace(10.**-5.,.3,31)
     for jj in range(M):
         print "Working on group %i / %i ..." % (jj+1,M)
         #Find pop corresponding to this bin
