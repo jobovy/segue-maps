@@ -165,11 +165,15 @@ def plotDensComparisonDFMulti(options,args):
             newname+= '_%i.' % pop
             newname+= spl[-1]
             savefile= open(newname,'rb')
-            if not _NOTDONEYET:
-                params= pickle.load(savefile)
-                mlogl= pickle.load(savefile)
-            logl= pickle.load(savefile)
-            savefile.close()
+            try:
+                if not _NOTDONEYET:
+                    params= pickle.load(savefile)
+                    mlogl= pickle.load(savefile)
+                logl= pickle.load(savefile)
+            except:
+                continue
+            finally:
+                savefile.close()
         else:
             raise IOError("base filename not specified ...")
         #Set DF parameters as the maximum at R_d=2.5, f_h=0.4
