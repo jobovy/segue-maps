@@ -1,9 +1,11 @@
+import sys
 import os, os.path
 import cPickle as pickle
 import numpy
 from scipy import maxentropy
 from galpy.util import bovy_plot
 import monoAbundanceMW
+from segueSelect import _ERASESTR
 from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0
 _NOTDONEYET= True
 def plotRdfh(options,args):
@@ -692,7 +694,10 @@ def plotDF4fidpot(options,args):
     afes= pickle.load(savefile)
     npops= len(fehs)
     savefile.close()
+    plotthis= numpy.zeros(npops)+numpy.nan
     for ii in range(npops):
+        sys.stdout.write('\r'+"Working on bin %i / %i ..." % (ii+1,npops))
+        sys.stdout.flush()
         if _NOTDONEYET:
             spl= options.restart.split('.')
         else:
@@ -715,12 +720,12 @@ def plotDF4fidpot(options,args):
             savefile.close()
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        hrs= numpy.log(numpy.linspace(1.5,5.,logl.shape[4])/_REFR0)
+        srs= numpy.log(numpy.linspace(25.,70.,logl.shape[5])/_REFV0)
+        szs= numpy.log(numpy.linspace(15.,60.,logl.shape[6])/_REFV0)
         if options.restrictdvt:
             logl= logl[:,:,:,:,:,:,:,1:4,:,:,:]
         if options.restrictdf:
-            hrs= numpy.log(numpy.linspace(1.5,5.,logl.shape[4])/_REFR0)
-            srs= numpy.log(numpy.linspace(25.,70.,logl.shape[5])/_REFV0)
-            szs= numpy.log(numpy.linspace(15.,60.,logl.shape[6])/_REFV0)
             lnhrin, lnsrin, lnszin= approxFitResult(fehs[ii],afes[ii])
             hrindx= numpy.argmin((hrs-lnhrin)**2.)
             srindx= numpy.argmin((srs-lnsrin)**2.)
@@ -751,6 +756,144 @@ def plotDF4fidpot(options,args):
                 maxszindx-= 1
             logl= logl[:,:,:,:,minhrindx:maxhrindx+1,minsrindx:maxsrindx+1,
                                minszindx:maxszindx+1,:,:,:,:]
+        #Find best-fit df for the fiducial potential
+        indx= numpy.unravel_index(options.index,(logl.shape[0],logl.shape[3]))
+        logl= logl[indx[0],0,0,indx[1],:,:,:,:,:,:,:]
+        maxindx= numpy.unravel_index(numpy.argmax(logl),(logl.shape))
+        if options.subtype.lower() == 'hr':
+            plotthis[ii]= numpy.exp(hrs[maxindx[0]])*_REFR0
+        elif options.subtype.lower() == 'sr':
+            plotthis[ii]= numpy.exp(srs[maxindx[1]])*_REFV0
+        elif options.subtype.lower() == 'sz':
+            plotthis[ii]= numpy.exp(szs[maxindx[2]])*_REFV0
+    sys.stdout.write('\r'+_ERASESTR+'\r')
+    sys.stdout.flush()
+    #Now plot
+    if options.subtype.lower() == 'hr':
+        vmin, vmax= 1.35,4.5
+        zlabel=r'$\mathrm{Input\ radial\ scale\ length\ [kpc]}$'
+    elif options.subtype.lower() == 'sr':
+        vmin, vmax= 30., 60.
+        zlabel= r'$\mathrm{Input\ radial\ velocity\ dispersion\ [km\,s}^{-1}]$'
+    elif options.subtype.lower() == 'sz':
+        vmin, vmax= 10., 80.
+        zlabel= r'$\mathrm{Input\ vertical\ velocity\ dispersion\ [km\,s}^{-1}]$'
+    bovy_plot.bovy_print()
+    monoAbundanceMW.plotPixelFunc(fehs,afes,plotthis,
+                                  vmin=vmin,vmax=vmax,
+                                  zlabel=zlabel)
+    bovy_plot.bovy_end_print(options.outfilename)
+
+def plotbestpot(options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        savefile= open('binmapping_g.sav','rb')
+    elif options.sample.lower() == 'k':
+        savefile= open('binmapping_k.sav','rb')
+    fehs= pickle.load(savefile)
+    afes= pickle.load(savefile)
+    npops= len(fehs)
+    savefile.close()
+    plotthis_rd= numpy.zeros(npops)+numpy.nan
+    plotthis_fh= numpy.zeros(npops)+numpy.nan
+    for ii in range(npops):
+        sys.stdout.write('\r'+"Working on bin %i / %i ..." % (ii+1,npops))
+        sys.stdout.flush()
+        if _NOTDONEYET:
+            spl= options.restart.split('.')
+        else:
+            spl= args[0].split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        savefile= open(newname,'rb')
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            continue
+        finally:
+            savefile.close()
+        if _NOTDONEYET:
+            logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        rds= numpy.linspace(1.5,4.5,logl.shape[0])
+        fhs= numpy.linspace(0.,1.,logl.shape[3])
+        if options.restrictdvt:
+            logl= logl[:,:,:,:,:,:,:,1:4,:,:,:]
+        hrs= numpy.log(numpy.linspace(1.5,5.,logl.shape[4])/_REFR0)
+        srs= numpy.log(numpy.linspace(25.,70.,logl.shape[5])/_REFV0)
+        szs= numpy.log(numpy.linspace(15.,60.,logl.shape[6])/_REFV0)
+        if options.restrictdf:
+            lnhrin, lnsrin, lnszin= approxFitResult(fehs[ii],afes[ii])
+            hrindx= numpy.argmin((hrs-lnhrin)**2.)
+            srindx= numpy.argmin((srs-lnsrin)**2.)
+            szindx= numpy.argmin((szs-lnszin)**2.)
+            minhrindx= hrindx-1
+            maxhrindx= hrindx+1
+            if minhrindx < 0: 
+                minhrindx+= 1
+                maxhrindx+= 1
+            elif maxhrindx >= logl.shape[4]: 
+                minhrindx-= 1
+                maxhrindx-= 1
+            minsrindx= srindx-1
+            maxsrindx= srindx+1
+            if minsrindx < 0: 
+                minsrindx+= 1
+                maxsrindx+= 1
+            elif maxsrindx >= logl.shape[5]: 
+                minsrindx-= 1
+                maxsrindx-= 1
+            minszindx= szindx-1
+            maxszindx= szindx+1
+            if minszindx < 0: 
+                minszindx+= 1
+                maxszindx+= 1
+            elif maxszindx >= logl.shape[6]: 
+                minszindx-= 1
+                maxszindx-= 1
+            logl= logl[:,:,:,:,minhrindx:maxhrindx+1,minsrindx:maxsrindx+1,
+                               minszindx:maxszindx+1,:,:,:,:]
+        #Find best-fit potential
+        maxindx= numpy.unravel_index(numpy.argmax(logl),(logl.shape))
+        plotthis_rd[ii]= rds[maxindx[0]]
+        plotthis_fh[ii]= fhs[maxindx[3]]
+    sys.stdout.write('\r'+_ERASESTR+'\r')
+    sys.stdout.flush()
+    #Now plot
+    bovy_plot.bovy_print()
+    monoAbundanceMW.plotPixelFunc(fehs,afes,plotthis_rd,
+                                  vmin=1.5,vmax=4.5,
+                                  zlabel=r'$R_d\ [\mathrm{kpc}]$')
+    #Plotname
+    spl= options.outfilename.split('.')
+    newname= ''
+    for jj in range(len(spl)-1):
+        newname+= spl[jj]
+        if not jj == len(spl)-2: newname+= '.'
+    newname+= '_rd.'
+    newname+= spl[-1]
+    bovy_plot.bovy_end_print(newname)
+    #fh
+    bovy_plot.bovy_print()
+    monoAbundanceMW.plotPixelFunc(fehs,afes,plotthis_fh,
+                                  vmin=0.,vmax=1.,
+                                  zlabel=r'$f_h$')
+    #Plotname
+    spl= options.outfilename.split('.')
+    newname= ''
+    for jj in range(len(spl)-1):
+        newname+= spl[jj]
+        if not jj == len(spl)-2: newname+= '.'
+    newname+= '_fh.'
+    newname+= spl[-1]
+    bovy_plot.bovy_end_print(newname)
+
 if __name__ == '__main__':
     parser= get_options()
     options,args= parser.parse_args()
@@ -772,4 +915,8 @@ if __name__ == '__main__':
         plotloglhist(options,args)
     elif options.type.lower() == 'props':
         plotprops(options,args)
+    elif options.type.lower() == 'df4fidpot':
+        plotDF4fidpot(options,args)
+    elif options.type.lower() == 'bestpot':
+        plotbestpot(options,args)
                             
