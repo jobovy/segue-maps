@@ -2890,6 +2890,8 @@ def setup_potential(params,options,npops,
         darkdrhoo= potential.evaluateDensities(1.,0.,darkdp)      
         gamma= potparams[5]/4./numpy.pi
         plhalo, ampdarkd, amph= plhaloamp_from_dlnvcdlnr_darkd(dlnvcdlnr,darkdp,[dp,bp,gp],options,fh,darkdrhoo,gamma)
+        if ampdarkd < 0. and ampdarkd > -10.**-10.:
+            ampdarkd= 0. #tweak for when ampdarkd gets slightly below zero
         if ampdarkd < 0. or amph < 0.:
             raise RuntimeError("Amplitude of one of the halo components is negaitve")
         #print ampb, 13./gassurfdens, ampd, amph, dp(1.,0.), hp(1.,0.)
