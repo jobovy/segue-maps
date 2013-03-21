@@ -1336,7 +1336,8 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                            fehmin=-0.4,fehmax=0.5,feh=-0.15,
                            convolve=0.,xrange=None,yrange=None,
                            overplot=False,bins=21,color='k',ls='-',
-                           left_legend=None,right_legend=None):
+                           left_legend=None,right_legend=None,
+                           numcores=None):
     """
     NAME:
        comparezdistPlateMulti
@@ -1362,6 +1363,7 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
        color= color for model
        left_legend = if set, legend to put at the left top
        right_legend = if set, legend to put at the right top
+       numcores= if not None, use multiprocessing
     OUTPUT:
        plot to output
        return rdist, datahist, dataedges
@@ -1431,33 +1433,58 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
     sys.stdout.flush()
     zmin, zmax= dmin*numpy.sin(bmin*_DEGTORAD), dmax*numpy.sin(bmax*_DEGTORAD)
     zs= numpy.linspace(numpy.amin(zmin),numpy.amax(zmax),_NZS)
-    if False: #remnant of old code
+    if False: #Remnant from old code, retained for ease of indenting
         pass
     else: #single value
         zdist= numpy.zeros((M,_NZS))
         platels, platebs= [], []
         for jj in range(M):
             cnt= 0
-            for p in plate:
-                cnt+= 1
-                sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,cnt,len(plate)))
-                sys.stdout.flush()
-                #l and b?
-                pindx= (sf.plates == p)
-                platel= platelb[pindx,0][0]
-                plateb= platelb[pindx,1][0]
-                if jj == 0: #only do this once
-                    platels.append(platel)
-                    platebs.append(plateb)
-                thiszdist= _predict_zdist_plate(zs,
-                                                densfunc[jj],params[jj],
-                                                rmin,rmax,
-                                                platel,
-                                                plateb,grmin,grmax,
-                                                fehmin[jj],fehmax[jj],
-                                                feh[jj],colordist[jj],
-                                                fehdist[jj],sf,p)
-                zdist[jj,:]+= thiszdist
+            if not numcores is None:
+                thiszdists= numpy.array(multi.parallel_map((lambda x: _calc_zdists_multi(plate[x],
+                                                                                     platelb,
+                                                                                     zs,
+                                                                                     densfunc[jj],
+                                                                                     params[jj],
+                                                                                     rmin,rmax,
+                                                                                     grmin,grmax,
+                                                                                     fehmin[jj],fehmax[jj],
+                                                                                     feh[jj],colordist[jj],
+                                                                                     fehdist[jj],sf)),
+                                                           
+                                                           range(len(plate)),numcores=numcores))
+                for ii in range(len(plate)):
+                    zdist[jj,:]+= thiszdists[ii]
+                for p in plate:
+                    cnt+= 1
+                    if jj == 0: #only do this once
+                       #l and b?
+                        pindx= (sf.plates == p)
+                        platel= platelb[pindx,0][0]
+                        plateb= platelb[pindx,1][0]
+                        platels.append(platel)
+                        platebs.append(plateb)
+            else:
+                for p in plate:
+                    cnt+= 1
+                    sys.stdout.write('\r'+"Working on plate %i (%i/%i)" % (p,cnt,len(plate)))
+                    sys.stdout.flush()
+                    #l and b?
+                    pindx= (sf.plates == p)
+                    platel= platelb[pindx,0][0]
+                    plateb= platelb[pindx,1][0]
+                    if jj == 0: #only do this once
+                        platels.append(platel)
+                        platebs.append(plateb)
+                    thiszdist= _predict_zdist_plate(zs,
+                                                    densfunc[jj],params[jj],
+                                                    rmin,rmax,
+                                                    platel,
+                                                    plateb,grmin,grmax,
+                                                    fehmin[jj],fehmax[jj],
+                                                    feh[jj],colordist[jj],
+                                                    fehdist[jj],sf,p)
+                    zdist[jj,:]+= thiszdist
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         #Fix relative normalization
@@ -1616,6 +1643,23 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
             return (zdist, hist[0], hist[1])
         else:
             return (zdist, None,None)
+
+#For multi evaluation of previous    
+def _calc_zdists_multi(p,platelb,zs,densfunc,params,rmin,rmax,
+                       grmin,grmax,fehmin,fehmax,
+                       feh,colordist,fehdist,sf):
+    #l and b?
+    pindx= (sf.plates == p)
+    platel= platelb[pindx,0][0]
+    plateb= platelb[pindx,1][0]
+    thiszdist= _predict_zdist_plate(zs,densfunc,params,
+                                    rmin,rmax,
+                                    platel,
+                                    plateb,grmin,grmax,
+                                    fehmin,fehmax,
+                                    feh,colordist,
+                                    fehdist,sf,p)
+    return thiszdist
 
 ###############################################################################
 #   Good sets of plates to run comparerdistPlate for

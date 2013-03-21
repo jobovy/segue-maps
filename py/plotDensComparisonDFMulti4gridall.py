@@ -1,9 +1,11 @@
 import os, os.path
+import tempfile
 import copy
 import numpy
 import cPickle as pickle
 from optparse import OptionParser
-from galpy.util import bovy_plot, bovy_coords
+import multiprocessing
+from galpy.util import bovy_plot, bovy_coords, multi, save_pickles
 import segueSelect
 import compareDataModel
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
@@ -97,7 +99,8 @@ def plotDensComparisonDFMulti(options,args):
     gafes, gfehs, left_legend= getMultiComparisonBins(options)
     ##########POTENTIAL PARAMETERS####################
     potparams1= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
-    potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
+    potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
+    #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
     potparams3= numpy.array([numpy.log(2.5/8.),235./220.,
                              numpy.log(400./8000.),0.2,0.])
     #Setup everything for the selection function
@@ -150,102 +153,86 @@ def plotDensComparisonDFMulti(options,args):
     szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
     dvts= numpy.linspace(-0.1,0.1,5)
     pouts= numpy.linspace(10.**-5.,.3,31)
-    for jj in range(M):
-        print "Working on group %i / %i ..." % (jj+1,M)
-        #Find pop corresponding to this bin
-        pop= numpy.argmin((gfehs[jj]-fehs)**2./0.1+(gafes[jj]-afes)**2./0.0025)
-        #Load savefile
-        if not options.init is None:
-            #Load initial parameters from file
-            savename= options.init
-            spl= savename.split('.')
-            newname= ''
-            for ll in range(len(spl)-1):
-                newname+= spl[ll]
-                if not ll == len(spl)-2: newname+= '.'
-            newname+= '_%i.' % pop
-            newname+= spl[-1]
-            savefile= open(newname,'rb')
+    if not options.multi is None:
+        #Generate list of temporary files
+        tmpfiles= []
+        for jj in range(M): 
+            tfile, tmpfile= tempfile.mkstemp()
+            os.close(tfile) #Close because it's open
+            tmpfiles.append(tmpfile)
+        try:
+            dummy= multi.parallel_map((lambda x: run_calc_model_multi(x,M,
+                                                                      gfehs,gafes,
+                                                                      fehs,afes,
+                                                                      options,
+                                                                      hrs,srs,szs,dvts,pouts,
+                                                                      potparams1,potparams2,potparams3,
+                                                                      binned,normintstuff,
+                                                                      True,tmpfiles)),
+                                      range(M),
+                                      numcores=numpy.amin([M,
+                                                           multiprocessing.cpu_count(),
+                                                           options.multi]))
+            #Now read all of the temporary files
+            for jj in range(M):
+                tmpfile= open(tmpfiles[jj],'rb')
+                model1= pickle.load(tmpfile)
+                if model1 is None:
+                    continue
+                tparams1= pickle.load(tmpfile)
+                model2= pickle.load(tmpfile)
+                tparams2= pickle.load(tmpfile)
+                model3= pickle.load(tmpfile)
+                tparams3= pickle.load(tmpfile)
+                tdata= pickle.load(tmpfile)
+                colordist= pickle.load(tmpfile)
+                fehdist= pickle.load(tmpfile)
+                fehmin= pickle.load(tmpfile)
+                fehmax= pickle.load(tmpfile)
+                feh= pickle.load(tmpfile)
+                sf= pickle.load(tmpfile)
+                rmin= pickle.load(tmpfile)
+                rmax= pickle.load(tmpfile)
+                grmin= pickle.load(tmpfile)
+                grmax= pickle.load(tmpfile)
+                tmpfile.close()
+                model1s.append(model1)
+                model2s.append(model2)
+                model3s.append(model3)
+                params1.append(tparams1)
+                params2.append(tparams2)
+                params3.append(tparams3)
+                data.append(tdata)
+                colordists.append(colordist)
+                fehdists.append(fehdist)
+                fehmins.append(fehmin)
+                fehmaxs.append(fehmax)
+                cfehs.append(feh)
+        finally:
+            for jj in range(M):
+                os.remove(tmpfiles[jj])
+    else:
+        for jj in range(M):
             try:
-                if not _NOTDONEYET:
-                    params= pickle.load(savefile)
-                    mlogl= pickle.load(savefile)
-                logl= pickle.load(savefile)
-            except:
+                model1,tparams1,model2,tparams2,model3,tparams3,tdata,colordist,fehdist,fehmin,fehmax,feh, sf, rmin, rmax, grmin, grmax= run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
+                                                                                                                                hrs,srs,szs,dvts,pouts,
+                                                                                                                                potparams1,potparams2,potparams3,
+                                                                                                                                binned,normintstuff,
+                                                                                                                                False,None)
+            except TypeError:
                 continue
-            finally:
-                savefile.close()
-        else:
-            raise IOError("base filename not specified ...")
-        #Set DF parameters as the maximum at R_d=2.5, f_h=0.4
-        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,3,:,:,:,1:4,:,0,0]),
-                                  (8,8,8,3,31))
-        tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
-                              szs[indx[2]],numpy.log(8./_REFR0),
-                              numpy.log(7./_REFR0),pouts[indx[4]],
-                              0.,0.,0.,0.,0.])
-        options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
-        tparams= set_potparams(potparams1,tparams,options,1)
-        print tparams
-        #Set up density models and their parameters
-        model1s.append(interpDens)
-        paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
-        params1.append(paramsInterp)
-        if True:
-            tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
-                                  szs[indx[2]],numpy.log(8./_REFR0),
-                                  numpy.log(7./_REFR0),pouts[indx[4]],
-                                  0.,0.,0.,0.,0.,0.])
-            options.potential= 'dpdiskplhalodarkdiskfixbulgeflatwgasalt'
-            tparams= set_potparams(potparams2,tparams,options,1)
-            print tparams
-            model2s.append(interpDens)
-            paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
-            params2.append(paramsInterp)
-            tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
-                                  szs[indx[2]],numpy.log(8./_REFR0),
-                                  numpy.log(7./_REFR0),pouts[indx[4]],
-                                  0.,0.,0.,0.,0.])
-            options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
-            tparams= set_potparams(potparams3,tparams,options,1)
-            print tparams
-            model3s.append(interpDens)
-            paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
-            params3.append(paramsInterp)
-        else:
-            model2s.append(None)
-            params2.append(None)
-            model3s.append(None)
-            params3.append(None)
-        data.append(binned(fehs[pop],afes[pop]))
-        #Setup everything for selection function
-        thisnormintstuff= normintstuff[jj]
-        if _PRECALCVSAMPLES:
-            sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac,normR, normZ,surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
-        else:
-            sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac, normR, normZ= unpack_normintstuff(thisnormintstuff,options)
-        colordists.append(colordist)
-        fehdists.append(fehdist)
-        fehmins.append(fehmin)
-        fehmaxs.append(fehmax)
-        cfehs.append(feh)
-        if True:
-            #Cut out bright stars on faint plates and vice versa
-            indx= []
-            nfaintbright, nbrightfaint= 0, 0
-            for ii in range(len(data[-1].feh)):
-                if sf.platebright[str(data[-1][ii].plate)] and data[-1][ii].dered_r >= 17.8:
-                    indx.append(False)
-                    nbrightfaint+= 1
-                elif not sf.platebright[str(data[-1][ii].plate)] and data[-1][ii].dered_r < 17.8:
-                    indx.append(False)
-                    nfaintbright+= 1
-                else:
-                    indx.append(True)
-            print "nbrightfaint, nfaintbright", nbrightfaint, nfaintbright
-            indx= numpy.array(indx,dtype='bool')
-            if numpy.sum(indx) > 0:
-                data[-1]= data[-1][indx]
+            model1s.append(model1)
+            model2s.append(model2)
+            model3s.append(model3)
+            params1.append(tparams1)
+            params2.append(tparams2)
+            params3.append(tparams3)
+            data.append(tdata)
+            colordists.append(colordist)
+            fehdists.append(fehdist)
+            fehmins.append(fehmin)
+            fehmaxs.append(fehmax)
+            cfehs.append(feh)
     #Ranges
     if options.type == 'z':
         xrange= [-0.1,5.]
@@ -267,8 +254,10 @@ def plotDensComparisonDFMulti(options,args):
     #all, faint, bright
     bins= [31,31,31]
     plates= ['all','bright','faint']
+    numcores= options.multi
     for ii in range(len(plates)):
         plate= plates[ii]
+        print "Working on %s plates" % plate
         if plate == 'all':
             thisleft_legend= left_legend
 #            thisright_legend= right_legend
@@ -285,7 +274,7 @@ def plotDensComparisonDFMulti(options,args):
                      fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                      xrange=xrange,
                      bins=bins[ii],ls='-',left_legend=thisleft_legend,
-                     right_legend=thisright_legend)
+                     right_legend=thisright_legend,numcores=numcores)
         if not params2[0] is None:
             compare_func(model2s,params2,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins[ii],
@@ -293,7 +282,7 @@ def plotDensComparisonDFMulti(options,args):
                          grmin=grmin,grmax=grmax,
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
-                         overplot=True,ls='--')
+                         overplot=True,ls='--',numcores=numcores)
         if not params3[0] is None:
             compare_func(model3s,params3,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins[ii],
@@ -301,7 +290,7 @@ def plotDensComparisonDFMulti(options,args):
                          grmin=grmin,grmax=grmax,
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
-                         overplot=True,ls=':')
+                         overplot=True,ls=':',numcores=numcores)
         if options.type == 'r':
             bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+plate+'.'+options.ext)
         else:
@@ -321,7 +310,7 @@ def plotDensComparisonDFMulti(options,args):
                      grmax=grmax,
                      fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                      xrange=xrange,
-                     bins=bins,ls='-')
+                     bins=bins,ls='-',numcores=numcores)
         if not params2[0] is None:
             compare_func(model2s,params2,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins,
@@ -330,7 +319,7 @@ def plotDensComparisonDFMulti(options,args):
                          grmax=grmax,
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
-                         overplot=True,ls='--')
+                         overplot=True,ls='--',numcores=numcores)
         if not params3[0] is None:
             compare_func(model3s,params3,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins,
@@ -339,7 +328,7 @@ def plotDensComparisonDFMulti(options,args):
                          grmax=grmax,
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
-                         overplot=True,ls=':')
+                         overplot=True,ls=':',numcores=numcores)
         if options.type == 'r':
             bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+'l%i_b%i_bright.' % (ls[ii],bs[ii])+options.ext)
         else:
@@ -356,7 +345,7 @@ def plotDensComparisonDFMulti(options,args):
                      grmax=grmax,
                      fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                      xrange=xrange,
-                     bins=bins,ls='-')
+                     bins=bins,ls='-',numcores=numcores)
         if not params2[0] is None:
             compare_func(model2s,params2,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins,
@@ -364,7 +353,7 @@ def plotDensComparisonDFMulti(options,args):
                          grmax=grmax,
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
-                         overplot=True,ls='--')
+                         overplot=True,ls='--',numcores=numcores)
         if not params3[0] is None:
             compare_func(model3s,params3,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins,
@@ -372,15 +361,128 @@ def plotDensComparisonDFMulti(options,args):
                          grmax=grmax,
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
-                         overplot=True,ls=':')
+                         overplot=True,ls=':',
+                         numcores=numcores)
         if options.type == 'r':
             bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+'l%i_b%i_faint.' % (ls[ii],bs[ii])+options.ext)
         else:
             bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_l%i_b%i_faint.' % (ls[ii],bs[ii])+options.ext)
     return None
 
+def run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
+                         hrs,srs,szs,dvts,pouts,
+                         potparams1,potparams2,potparams3,
+                         binned,normintstuff,
+                         savetopickle,tmpfiles):
+    print "Working on group %i / %i ..." % (jj+1,M)
+    #Find pop corresponding to this bin
+    pop= numpy.argmin((gfehs[jj]-fehs)**2./0.1+(gafes[jj]-afes)**2./0.0025)
+    #Load savefile
+    if not options.init is None:
+        #Load initial parameters from file
+        savename= options.init
+        spl= savename.split('.')
+        newname= ''
+        for ll in range(len(spl)-1):
+            newname+= spl[ll]
+            if not ll == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % pop
+        newname+= spl[-1]
+        savefile= open(newname,'rb')
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            if savetopickle:
+                save_pickles(tmpfiles[jj],None)
+                return None
+            else:
+                return None
+        finally:
+            savefile.close()
+    else:
+        raise IOError("base filename not specified ...")
+    #Set DF parameters as the maximum at R_d=2.5, f_h=0.4
+    indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,3,:,:,:,1:4,:,0,0]),
+                              (8,8,8,3,31))
+    tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
+                          szs[indx[2]],numpy.log(8./_REFR0),
+                          numpy.log(7./_REFR0),pouts[indx[4]],
+                          0.,0.,0.,0.,0.])
+    options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
+    tparams= set_potparams(potparams1,tparams,options,1)
+    #Set up density models and their parameters
+    model1= interpDens
+    print "Working on model 1 ..."
+    paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+    params1= paramsInterp
+    if True:
+        tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],
+                              srs[indx[1]-(indx[1] != 0)],
+                              szs[indx[2]-(indx[2] != 0)],
+                              numpy.log(8./_REFR0),
+                              numpy.log(7./_REFR0),pouts[indx[4]],
+                              0.,0.,0.,0.,0.,0.])
+        #options.potential= 'dpdiskplhalodarkdiskfixbulgeflatwgasalt'
+        options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+        tparams= set_potparams(potparams2,tparams,options,1)
+        model2= interpDens
+        print "Working on model 2 ..."
+        paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+        params2= paramsInterp
+        tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
+                              szs[indx[2]],numpy.log(8./_REFR0),
+                              numpy.log(7./_REFR0),pouts[indx[4]],
+                              0.,0.,0.,0.,0.])
+        options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+        tparams= set_potparams(potparams3,tparams,options,1)
+        model3= interpDens
+        print "Working on model 3 ..."
+        paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+        params3= paramsInterp
+    else:
+        model2= None
+        params2= None
+        model3= None
+        params3= None
+    data= binned(fehs[pop],afes[pop])
+    #Setup everything for selection function
+    thisnormintstuff= normintstuff[jj]
+    if _PRECALCVSAMPLES:
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac,normR, normZ,surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
+    else:
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac, normR, normZ= unpack_normintstuff(thisnormintstuff,options)
+    if True:
+        #Cut out bright stars on faint plates and vice versa
+        indx= []
+        nfaintbright, nbrightfaint= 0, 0
+        for ii in range(len(data.feh)):
+            if sf.platebright[str(data[ii].plate)] and data[ii].dered_r >= 17.8:
+                indx.append(False)
+                nbrightfaint+= 1
+            elif not sf.platebright[str(data[ii].plate)] and data[ii].dered_r < 17.8:
+                indx.append(False)
+                nfaintbright+= 1
+            else:
+                indx.append(True)
+        print "nbrightfaint, nfaintbright", nbrightfaint, nfaintbright
+        indx= numpy.array(indx,dtype='bool')
+        if numpy.sum(indx) > 0:
+            data= data[indx]
+    if savetopickle:
+        save_pickles(tmpfiles[jj],model1,params1,model2,params2,model3,params3,
+                     data,
+                     colordist,fehdist,fehmin,fehmax,feh,sf,rmin,rmax,grmin,grmax)
+        return None
+    else:
+        return (model1,params1,model2,params2,model3,params3,
+                data,
+                colordist,fehdist,fehmin,fehmax,feh,sf,rmin,rmax,grmin,grmax)
+
 def calc_model(params,options,pop,_retsurfz=False):
-    nrs, nzs= 21, 21
+    nrs, nzs= 5, 5#21, 21
     thisrmin, thisrmax= 4./_REFR0, 15./_REFR0
     thiszmin, thiszmax= 0., .8
     Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
