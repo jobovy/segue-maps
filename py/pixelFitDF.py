@@ -918,6 +918,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     vo= get_vo(tparams,toptions,len(fehs))
     ro= get_ro(tparams,toptions)
     if toptions.dfmodel.lower() == 'qdf':
+        print "BOVY: INITIALIZE USING GUESSES"
         #Normalize
         hr= dfparams[0]/ro
         sr= dfparams[1]/vo
@@ -2109,7 +2110,7 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         grs= numpy.linspace(grmin,grmax,_NGR)
         fehsgrid= numpy.linspace(fehrange[0],fehrange[1],_NFEH)
         rhogr= numpy.array([colordist(gr) for gr in grs])
-        rhofeh= numpy.array([fehdist(feh) for feh in fehsgrid])
+        rhofeh= numpy.array([fehdist(tfeh) for tfeh in fehsgrid])
         mr= numpy.zeros((_NGR,_NFEH))
         for kk in range(_NGR):
             for ll in range(_NFEH):
