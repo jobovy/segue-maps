@@ -22,13 +22,14 @@ import time
 import subprocess
 import math
 import numpy
-from scipy import optimize, interpolate, linalg
+from scipy import optimize, interpolate
 from scipy.maxentropy import logsumexp
 import cPickle as pickle
 from optparse import OptionParser
 import multi
 import multiprocessing
-from galpy.util import bovy_coords, bovy_plot, save_pickles
+import pdb
+from galpy.util import bovy_coords, save_pickles
 from galpy import potential
 from galpy.actionAngle import actionAngleAdiabatic
 from galpy.actionAngle import actionAngleAdiabaticGrid
@@ -888,6 +889,10 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         out= numpy.zeros((options.nhrs,options.nsrs,options.nszs,
                           options.npouts,1,1))+numpy.nan
     if toptions.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
+        if False:
+            print "BOVY: YOU ARE FIXING THE POTENTIAL FOR DEBUGGING"
+            params[0]= numpy.log(2.5/8.)
+            params[3]= 0.466666666666
         potparams= numpy.array([params[0],params[1],params[2],params[3],toptions.dlnvcdlnr])
     elif toptions.potential.lower() == 'bt':
         potparams= numpy.array([])
@@ -1215,6 +1220,7 @@ def mloglike_gridall(fullparams,hr,sr,sz,
         hsr= dfparams[3]/ro
         hsz= dfparams[4]/ro
         #Setup
+        #pdb.set_trace()
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
     #Calculate surface(R=1.) for relative outlier normalization
     logoutfrac= numpy.log(qdf.surfacemass_z(1.,ngl=toptions.ngl))
