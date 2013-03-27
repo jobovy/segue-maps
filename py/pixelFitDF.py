@@ -42,7 +42,8 @@ import emcee
 try:
     from emcee.utils import MPIPool
 except ImportError:
-    print "Warning: could not import MPIPool"
+    pass
+#    print "Warning: could not import MPIPool"
 import acor
 import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
@@ -75,10 +76,12 @@ _BFGS= False
 _CUSTOMSAMPLING= True
 _MULTIWHOLEGRID= False
 _MULTIDFGRID= True
+_INITWESTIMATES= True
 _SMOOTHDISPS= True
 _SIMPLEOPTDF= True
 _JUSTSIMPLEOPTDF= False
 _NEWDFRANGES= True
+_NEWRDRANGE= True
 def pixelFitDF(options,args,pool=None):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
@@ -511,7 +514,10 @@ def gridLike(fehs,afes,binned,options,normintstuff,errstuff):
         print "BOVY: ADJUST VC AND ZH"
         vcs= numpy.array([options.fixvc/_REFV0])
         zhs= numpy.array([options.fixzh/1000./_REFR0])
-        rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
+        if _NEWRDRANGE:
+            rds= numpy.linspace(1.8,3.2,options.nrds)/_REFR0
+        else:
+            rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
         fhs= numpy.linspace(0.,1.,options.nfhs)
         #print "BOVY: ADJUST RDS AND FHS"
         #rds= numpy.array([3.])/_REFR0
@@ -610,7 +616,10 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
         print "BOVY: ADJUST VC AND ZH"
         vcs= numpy.array([options.fixvc/_REFV0])
         zhs= numpy.array([options.fixzh/1000./_REFR0])
-        rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
+        if _NEWRDRANGE:
+            rds= numpy.linspace(1.8,3.2,options.nrds)/_REFR0
+        else:
+            rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
         fhs= numpy.linspace(0.,1.,options.nfhs)
         #print "BOVY: ADJUST RDS AND FHS"
         #rds= numpy.array([3.])/_REFR0
@@ -631,11 +640,11 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             if options.fitdvt:
                 out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),
                                   options.nhrs,options.nsrs,options.nszs,
-                                  options.ndvts,options.npouts,1,1))
+                                  options.ndvts,options.npouts,1,1,3))
             else:
                 out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),
                                   options.nhrs,options.nsrs,options.nszs,
-                                  options.npouts,1,1))
+                                  options.npouts,1,1,3))
         while ii < len(rds):
             while jj < len(vcs):
                 while kk <len(zhs):
@@ -648,12 +657,17 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                                                                      options.multi]))
                         for ll in range(len(fhs)):
                             optout= multOut[ll]
-                            out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
+                            out[ii,jj,kk,ll,:,:,:,:,:,:,:,:]= optout
                     else:
                         for ll in range(len(fhs)):
                             print "Working on %i,%i,%i,%i" % (ii,jj,kk,ll)
                             optout= loglike_gridall([rds[ii],vcs[jj],zhs[kk],fhs[ll]],fehs,afes,binned,options,normintstuff,errstuff,normalization_out)                   
-                            out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
+                            out[ii,jj,kk,ll,:,:,:,:,:,:,:,:]= optout
+                            if ll > 4:
+                                print "BOVY: YOU ARE SAVING TOO OFTEN"
+                                if not options.restart is None:
+                                    save_pickles(options.restart,
+                                                 out,ii,jj,kk)
                     kk+= 1
                     if not options.restart is None:
                         save_pickles(options.restart,
@@ -884,10 +898,10 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         toptions.multi= toptions.multi2 #Set multi to the second multi
     if toptions.fitdvt:
         out= numpy.zeros((options.nhrs,options.nsrs,options.nszs,
-                          options.ndvts,options.npouts,1,1))+numpy.nan
+                          options.ndvts,options.npouts,1,1,3))+numpy.nan
     else:
         out= numpy.zeros((options.nhrs,options.nsrs,options.nszs,
-                          options.npouts,1,1))+numpy.nan
+                          options.npouts,1,1,3))+numpy.nan
     if toptions.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         if False:
             print "BOVY: YOU ARE FIXING THE POTENTIAL FOR DEBUGGING"
@@ -903,11 +917,11 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     tparams= initialize(toptions,fehs,afes)    
     tparams= set_potparams(potparams,tparams,toptions,len(fehs))
     if numpy.any(numpy.isnan(tparams)):
-        out[:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        out[:,:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         return out
     logpotprior= logprior_pot(tparams,toptions,len(fehs))
     if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-        out[:,:,:,:,:,:,:]= logpotprior
+        out[:,:,:,:,:,:,:,:]= logpotprior
         return out
     #Set up potential and actionAngle
     if _DEBUG:
@@ -915,7 +929,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     try:
         pot= setup_potential(tparams,toptions,len(fehs))
     except RuntimeError: #if this set of parameters gives a nonsense potential
-        out[:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        out[:,:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         return out
     aA= setup_aA(pot,toptions)
     #Set-up the fiducial DF
@@ -923,7 +937,6 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     vo= get_vo(tparams,toptions,len(fehs))
     ro= get_ro(tparams,toptions)
     if toptions.dfmodel.lower() == 'qdf':
-        print "BOVY: INITIALIZE USING GUESSES"
         #Normalize
         hr= dfparams[0]/ro
         sr= dfparams[1]/vo
@@ -985,9 +998,10 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     #Go through the grid
     #IF YOU EDIT THIS, ALSO EDIT IT ABOVE
     if _NEWDFRANGES:
-        hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
-        srs= numpy.log(numpy.linspace(30.,70.,options.nsrs)/_REFV0)
-        szs= numpy.log(numpy.linspace(12.,80.,options.nszs)/_REFV0)
+        lnhr, lnsr, lnsz= approxFitResult(fehs[0],afes[0])
+        hrs= numpy.linspace(lnhr-0.2,lnhr+0.2,options.nhrs)
+        srs= numpy.linspace(lnsr-0.2,lnsr+0.2,options.nsrs)
+        szs= numpy.linspace(lnsz-0.2,lnsz+0.2,options.nszs)
     else:
         hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
         srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
@@ -1011,10 +1025,10 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                                  multiprocessing.cpu_count(),
                                                                  options.multi]))
                 for kk in range(options.nszs):
-                    out[ii,jj,kk,:,:,:,:]= multOut[kk]
+                    out[ii,jj,kk,:,:,:,:,:]= multOut[kk]
             else:
                 for kk in range(options.nszs):
-                    out[ii,jj,kk,:,:,:,:]= mloglike_gridall(tparams,
+                    out[ii,jj,kk,:,:,:,:,:]= mloglike_gridall(tparams,
                                                             hrs[ii],srs[jj],szs[kk],
                                                             pot,aA,fehs,afes,binned,normintstuff,
                                                             len(fehs),errstuff,toptions,vo,ro,
@@ -1208,7 +1222,7 @@ def mloglike_gridall(fullparams,hr,sr,sz,
     tparams[startindx+1]= sr
     tparams[startindx+2]= sz
     #Setup out
-    out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1))
+    out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1,3))
     #Setup everything for fast calculations
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
     dfparams= get_dfparams(tparams,0,toptions,log=False)
@@ -1262,8 +1276,11 @@ def mloglike_gridall(fullparams,hr,sr,sz,
             #Sum data and outlier df, for all MC samples
             data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]+= numpy.log(pouts[jj])
             sumdata_lndf= mylogsumexp(data_lndf,axis=1)
-            out[ii,jj,0,0]= numpy.sum(sumdata_lndf)\
+            out[ii,jj,0,0,0]= numpy.sum(sumdata_lndf)\
                 -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out)+numpy.log(toptions.nmcerr)) #latter so we can compare
+            out[ii,jj,0,0,1]= numpy.sum(sumdata_lndf)\
+                -ndata*numpy.log(toptions.nmcerr) #latter so we can compare
+            out[ii,jj,0,0,2]= -ndata*numpy.log(normalization_qdf+pouts[jj]*tnormalization_out) #latter so we can compare
             data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(pouts[jj])
  #Reset
     return -out
@@ -3604,7 +3621,13 @@ def initialize(options,fehs,afes):
             abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                                      +(afes[ii]-mapafes)**2./0.0025)
             feh, afe= mapfehs[abindx], mapafes[abindx]
-            if _SMOOTHDISPS:
+            if _INITWESTIMATES:
+                print "USING ESTIMATES TO INIT"
+                lnhr, lnsr, lnsz= approxFitResult(feh,afe)
+                thishr= numpy.exp(lnhr)*8.
+                thissr= numpy.exp(lnsr)*220.
+                thissz= numpy.exp(lnsz)*220.
+            elif _SMOOTHDISPS:
                 #Smooth sz
                 up= monoAbundanceMW.sigmaz(feh+0.1,afe)
                 down= monoAbundanceMW.sigmaz(feh-0.1,afe)
@@ -3632,11 +3655,13 @@ def initialize(options,fehs,afes):
                 allsr= numpy.array([here,up,down,left,right,upright,upleft,downright,downleft])
                 indx= True-numpy.isnan(allsr)
                 thissr= numpy.mean(allsr[True-numpy.isnan(allsr)])
+                thishr= 0.9*monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])
             else:
                 thissz= monoAbundanceMW.sigmaz(feh,afe)
                 thissr= monoAbundanceMW.sigmar(feh,afe)
+                thishr= 0.9*monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])
             #Put everthing together
-            p.extend([numpy.log(0.9*monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])/_REFR0), #hR
+            p.extend([numpy.log(thishr/_REFR0),
                       numpy.log(thissr/_REFV0), #sigmaR
                       numpy.log(thissz/_REFV0), #sigmaZ
                       numpy.log(8./_REFR0),numpy.log(7./_REFR0)]) #hsigR, hsigZ
