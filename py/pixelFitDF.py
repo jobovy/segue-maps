@@ -999,17 +999,17 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     #IF YOU EDIT THIS, ALSO EDIT IT ABOVE
     if _NEWDFRANGES:
         lnhr, lnsr, lnsz= approxFitResult(fehs[0],afes[0])
-        hrs= numpy.linspace(lnhr-0.2,lnhr+0.2,options.nhrs)
-        srs= numpy.linspace(lnsr-0.2,lnsr+0.2,options.nsrs)
-        szs= numpy.linspace(lnsz-0.2,lnsz+0.2,options.nszs)
+        hrs= numpy.linspace(lnhr-0.3,lnhr+0.3,options.nhrs)
+        srs= numpy.linspace(lnsr-0.1,lnsr+0.1,options.nsrs)
+        szs= numpy.linspace(lnsz-0.1,lnsz+0.1,options.nszs)
     else:
         hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
         srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
         szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
-    start= time.time()
+    #start= time.time()
     for ii in range(options.nhrs):
-        print "Working on DF %i, dt= %f" % (ii,time.time()-start)
-        start= time.time()
+        #print "Working on DF %i, dt= %f" % (ii,time.time()-start)
+        #start= time.time()
         for jj in range(options.nsrs):
             if _MULTIDFGRID:
                 multOut= multi.parallel_map((lambda x: mloglike_gridall(tparams,
