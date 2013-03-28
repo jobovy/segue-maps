@@ -130,6 +130,7 @@ def pixelFitDF(options,args,pool=None):
             indx= binned.callIndx(options.singlefeh,options.singleafe)
             if numpy.sum(indx) == 0:
                 raise IOError("Bin corresponding to singlefeh and singleafe is empty ...")
+            allraw= copy.copy(raw)
             raw= copy.copy(binned.data[indx])
             newerrstuff= []
             for ii in range(len(binned.data)):
@@ -149,6 +150,8 @@ def pixelFitDF(options,args,pool=None):
             nabundancebins= len(fehs)
             fehs= numpy.array(fehs)
             afes= numpy.array(afes)
+    else:
+        allraw= raw
     #thissavefile= open('binmapping_k.sav','wb')
     #pickle.dump(fehs,thissavefile)
     #pickle.dump(afes,thissavefile)
@@ -160,7 +163,7 @@ def pixelFitDF(options,args,pool=None):
         return None
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
-    normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
+    normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
     if not options.init is None and os.path.exists(options.init):
         #Load initial parameters from file
         print "Loading parameters for file "+options.init
@@ -1822,7 +1825,7 @@ def _calc_surfgrid_actions(R,zgrid,nzs,options,qdf,
                              _sigmaz1=normszs[jj])
     return out
 
-def setup_normintstuff(options,raw,binned,fehs,afes):
+def setup_normintstuff(options,raw,binned,fehs,afes,allraw):
     """Gather everything necessary for calculating the normalization integral"""
     if not options.savenorm is None and os.path.exists(options.savenorm):
         print "Reading normintstuff from file ..."
@@ -1831,7 +1834,7 @@ def setup_normintstuff(options,raw,binned,fehs,afes):
         savefile.close()
         return out
     #Load selection function
-    plates= numpy.array(list(set(list(raw.plate))),dtype='int') #Only load plates that we use
+    plates= numpy.array(list(set(list(allraw.plate))),dtype='int') #Only load plates that we use
     print "Using %i plates, %i stars ..." %(len(plates),len(raw))
     sf= segueSelect(plates=plates,type_faint='tanhrcut',
                     sample=options.sample,type_bright='tanhrcut',
