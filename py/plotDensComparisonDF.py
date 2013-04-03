@@ -12,6 +12,8 @@ from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
+from plotDensComparisonDFMulti4gridall import calc_model
+_NOTDONEYET= True
 def plotDensComparisonDF(options,args):
     #Read data etc.
     print "Reading the data ..."
@@ -37,11 +39,12 @@ def plotDensComparisonDF(options,args):
             indx= binned.callIndx(options.singlefeh,options.singleafe)
             if numpy.sum(indx) == 0:
                 raise IOError("Bin corresponding to singlefeh and singleafe is empty ...")
+            allraw= copy.copy(raw)
             raw= copy.copy(binned.data[indx])
-            newerrstuff= []
-            for ii in range(len(binned.data)):
-                if indx[ii]: newerrstuff.append(errstuff[ii])
-            errstuff= newerrstuff
+            #newerrstuff= []
+            #for ii in range(len(binned.data)):
+            #    if indx[ii]: newerrstuff.append(errstuff[ii])
+            #errstuff= newerrstuff
             print "Using %i data points ..." % (len(data))
             #Bin again
             binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
@@ -61,38 +64,94 @@ def plotDensComparisonDF(options,args):
         return None
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
-    normintstuff= setup_normintstuff(options,raw,binned,fehs,afes)
-    if not options.init is None:
-        #Load initial parameters from file
-        savefile= open(options.init,'rb')
-        params= pickle.load(savefile)
-        savefile.close()
-    else:
-        print "WARNING: Parameters not specified, using default ..."
-        params= initialize(options,fehs,afes)
+    normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
+    ##########POTENTIAL PARAMETERS####################
+    potparams1= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
+    potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
+    #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
+    potparams3= numpy.array([numpy.log(2.5/8.),235./220.,
+                             numpy.log(400./8000.),0.2,0.])
     #Set up density models and their parameters
     pop= 0 #assume first population
-    model1= interpDens
-    params1= calc_model(params,options,pop)
-    if True:
-        params= set_potparams([1.,0.75],params,options,1)
-        model2= interpDens
-        params2= calc_model(params,options,pop)
-        params= set_potparams([1.,0.65],params,options,1)
-        model3= interpDens
-        params3= calc_model(params,options,pop)
+    #Load savefile
+    if not options.init is None:
+        #Load initial parameters from file
+        savename= options.init
+#        spl= savename.split('.')
+#        newname= ''
+#        for ll in range(len(spl)-1):
+#            newname+= spl[ll]
+#            if not ll == len(spl)-2: newname+= '.'
+#        newname+= '_%i.' % pop
+#        newname+= spl[-1]
+        savefile= open(savename,'rb')
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            if savetopickle:
+                save_pickles(tmpfiles[jj],None)
+                return None
+            else:
+                return None
+        finally:
+            savefile.close()
     else:
-        model2= None
-        params2= None
-        model3= None
-        params3= None
+        raise IOError("base filename not specified ...")
+    #Set DF parameters as the maximum at R_d=2.4, f_h=0.4
+    #######DF PARAMETER RANGES###########
+    lnhr, lnsr, lnsz= approxFitResult(fehs[0],afes[0])
+    hrs= numpy.linspace(lnhr-0.3,lnhr+0.3,options.nhrs)
+    srs= numpy.linspace(lnsr-0.1,lnsr+0.1,options.nsrs)
+    szs= numpy.linspace(lnsz-0.1,lnsz+0.1,options.nszs)
+    dvts= numpy.linspace(-0.05,0.05,options.ndvts)
+    pouts= numpy.linspace(10.**-5.,.5,options.npouts)
+    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,:,:,:,:,:,0,0]),
+                              (8,8,8,3,25))
+    tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],srs[indx[1]],
+                          szs[indx[2]],numpy.log(8./_REFR0),
+                          numpy.log(7./_REFR0),pouts[indx[4]],
+                          0.,0.,0.,0.,0.])
+    options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
+    tparams= set_potparams(potparams1,tparams,options,1)
+    #Set up density models and their parameters
+    model1= interpDens
+    print "Working on model 1 ..."
+    paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+    params1= paramsInterp
+    if True:
+        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
+                              srs[indx[1]-(indx[1] != 0)],
+                              szs[indx[2]-(indx[2] != 0)],
+                              numpy.log(8./_REFR0),
+                              numpy.log(7./_REFR0),pouts[indx[4]],
+                              0.,0.,0.,0.,0.,0.])
+        #options.potential= 'dpdiskplhalodarkdiskfixbulgeflatwgasalt'
+        options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+        tparams= set_potparams(potparams2,tparams,options,1)
+        model2= interpDens
+        print "Working on model 2 ..."
+        paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+        params2= paramsInterp
+        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],srs[indx[1]],
+                              szs[indx[2]],numpy.log(8./_REFR0),
+                              numpy.log(7./_REFR0),pouts[indx[4]],
+                              0.,0.,0.,0.,0.])
+        options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+        tparams= set_potparams(potparams3,tparams,options,1)
+        model3= interpDens
+        print "Working on model 3 ..."
+        paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+        params3= paramsInterp
     data= binned(fehs[pop],afes[pop])
     #Setup everything for selection function
     thisnormintstuff= normintstuff[pop]
     if _PRECALCVSAMPLES:
-        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac,normR, normZ,surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
     else:
-        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz= unpack_normintstuff(thisnormintstuff,options)
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac, normR, normZ= unpack_normintstuff(thisnormintstuff,options)
     if True:
         #Cut out bright stars on faint plates and vice versa
         indx= []
@@ -242,7 +301,7 @@ def plotDensComparisonDF(options,args):
             bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.type+'dist_l%i_b%i_faint.' % (ls[ii],bs[ii])+options.ext)
     return None
 
-def calc_model(params,options,pop):
+def old_calc_model(params,options,pop):
     nrs, nzs= _SURFNRS, _SURFNZS
     thisrmin, thisrmax= 4./_REFR0, 15./_REFR0
     thiszmin, thiszmax= 0., .8

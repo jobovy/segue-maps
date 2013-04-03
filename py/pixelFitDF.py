@@ -1001,10 +1001,14 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     #Go through the grid
     #IF YOU EDIT THIS, ALSO EDIT IT ABOVE
     if _NEWDFRANGES:
-        lnhr, lnsr, lnsz= approxFitResult(fehs[0],afes[0])
-        hrs= numpy.linspace(lnhr-0.3,lnhr+0.3,options.nhrs)
-        srs= numpy.linspace(lnsr-0.1,lnsr+0.1,options.nsrs)
-        szs= numpy.linspace(lnsz-0.1,lnsz+0.1,options.nszs)
+        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
+                                                            relerr=True)
+        if rehr > 0.3: rehr= 0.3 #regularize
+        if resr > 0.3: resr= 0.3
+        if resz > 0.3: resz= 0.3
+        hrs= numpy.linspace(lnhr-2.*rehr,lnhr+2.*rehr,options.nhrs)
+        srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
+        szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
     else:
         hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
         srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
@@ -1414,13 +1418,18 @@ def logprior_dlnvcdlnr(dlnvcdlnr,options):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return numpy.log((sb-dlnvcdlnr/30.)/sb)-(sb-dlnvcdlnr/30.)/sb
 
-def approxFitResult(feh,afe):
+def approxFitResult(feh,afe,relerr=False):
     """Return the result from the paper I and III fits, smoothed and transformed to DF input parameters
-    returns (lnhR,lnSr,lnSz)"""
+    returns (lnhR,lnSr,lnSz)
+    also returns hRerr/hR,sRerr/sR,sZerr/sz if relerr=True (these are not transformed, as the transformation shouldn't change these too much"""
     #Get smoothed monoAbundance results
     hr= monoAbundanceMW.hr(feh,afe)/_REFR0 #No smoothing for this
     sr= monoAbundanceMW.sigmar(feh,afe,smooth=True)/_REFV0
     sz= monoAbundanceMW.sigmaz(feh,afe,smooth=True)/_REFV0
+    if relerr:
+        rehr= monoAbundanceMW.hr(feh,afe,err=True)[1]/_REFR0/hr #No smoothing for this
+        resr= monoAbundanceMW.sigmar(feh,afe,smooth=False,err=True)/_REFV0/sr
+        resz= monoAbundanceMW.sigmaz(feh,afe,smooth=False,err=True)/_REFV0/sz
     #Special case the two most metal-poor G dwarf bins
     if feh < -1.1:
         sr= monoAbundanceMW.sigmar(-1.05,afe,smooth=True)/_REFV0
@@ -1461,7 +1470,10 @@ def approxFitResult(feh,afe):
                                    k=3)
 #    try:
     lnsrin= srSpline(numpy.log(sr))
-    return (lnhrin,lnsrin,lnszin)
+    if relerr:
+        return (lnhrin,lnsrin,lnszin,rehr,resr,resz)
+    else:
+        return (lnhrin,lnsrin,lnszin)
     
 ##SETUP AND CALCULATE THE NORMALIZATION INTEGRAL
 def calc_normint(qdf,indx,normintstuff,params,npops,options,logoutfrac):
@@ -3625,7 +3637,6 @@ def initialize(options,fehs,afes):
                                      +(afes[ii]-mapafes)**2./0.0025)
             feh, afe= mapfehs[abindx], mapafes[abindx]
             if _INITWESTIMATES:
-                print "USING ESTIMATES TO INIT"
                 lnhr, lnsr, lnsz= approxFitResult(feh,afe)
                 thishr= numpy.exp(lnhr)*8.
                 thissr= numpy.exp(lnsr)*220.

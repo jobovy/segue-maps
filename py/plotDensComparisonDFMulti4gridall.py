@@ -105,7 +105,7 @@ def plotDensComparisonDFMulti(options,args):
                              numpy.log(400./8000.),0.2,0.])
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
-    normintstuff= setup_normintstuff(options,raw,binned,gfehs,gafes)
+    normintstuff= setup_normintstuff(options,raw,binned,gfehs,gafes,raw)
     M= len(gfehs)
     #Check whether fits exist, if not, pop
     removeBins= numpy.ones(M,dtype='bool')
