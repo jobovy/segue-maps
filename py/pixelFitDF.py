@@ -1428,8 +1428,8 @@ def approxFitResult(feh,afe,relerr=False):
     sz= monoAbundanceMW.sigmaz(feh,afe,smooth=True)/_REFV0
     if relerr:
         rehr= monoAbundanceMW.hr(feh,afe,err=True)[1]/_REFR0/hr #No smoothing for this
-        resr= monoAbundanceMW.sigmar(feh,afe,smooth=False,err=True)/_REFV0/sr
-        resz= monoAbundanceMW.sigmaz(feh,afe,smooth=False,err=True)/_REFV0/sz
+        resr= monoAbundanceMW.sigmar(feh,afe,smooth=False,err=True)[1]/_REFV0/sr
+        resz= monoAbundanceMW.sigmaz(feh,afe,smooth=False,err=True)[1]/_REFV0/sz
     #Special case the two most metal-poor G dwarf bins
     if feh < -1.1:
         sr= monoAbundanceMW.sigmar(-1.05,afe,smooth=True)/_REFV0
