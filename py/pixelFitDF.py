@@ -1003,10 +1003,11 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     if _NEWDFRANGES:
         lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
                                                             relerr=True)
-        if rehr > 0.3: rehr= 0.3 #regularize
+        #if rehr > 0.3: rehr= 0.3 #regularize
+        if True: rehr= 0.3 #regularize
         if resr > 0.3: resr= 0.3
         if resz > 0.3: resz= 0.3
-        hrs= numpy.linspace(lnhr-2.*rehr,lnhr+2.*rehr,options.nhrs)
+        hrs= numpy.linspace(lnhr-12.*rehr,lnhr+12.*rehr,options.nhrs)
         srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
         szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
     else:
@@ -1014,29 +1015,29 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
         szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
     #start= time.time()
-    for ii in range(options.nhrs):
+    for ii in range(options.nszs):
         #print "Working on DF %i, dt= %f" % (ii,time.time()-start)
         #start= time.time()
         for jj in range(options.nsrs):
             if _MULTIDFGRID:
                 multOut= multi.parallel_map((lambda x: mloglike_gridall(tparams,
-                                                            hrs[ii],srs[jj],szs[x],
+                                                            hrs[x],srs[jj],szs[ii],
                                                             pot,aA,fehs,afes,binned,normintstuff,
                                                             len(fehs),errstuff,toptions,vo,ro,
                                                             jrs,lzs,jzs,normsrs,normszs,
                                                             qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
                                                             rgs,kappas,nus,Omegas,
                                                                         normalization_out)),
-                                            range(options.nszs),
-                                            numcores=numpy.amin([options.nszs,
+                                            range(options.nhrs),
+                                            numcores=numpy.amin([options.nhrs,
                                                                  multiprocessing.cpu_count(),
                                                                  options.multi]))
-                for kk in range(options.nszs):
-                    out[ii,jj,kk,:,:,:,:,:]= multOut[kk]
+                for kk in range(options.nhrs):
+                    out[kk,jj,ii,:,:,:,:,:]= multOut[kk]
             else:
-                for kk in range(options.nszs):
-                    out[ii,jj,kk,:,:,:,:,:]= mloglike_gridall(tparams,
-                                                            hrs[ii],srs[jj],szs[kk],
+                for kk in range(options.nhrs):
+                    out[kk,jj,ii,:,:,:,:,:]= mloglike_gridall(tparams,
+                                                            hrs[kk],srs[jj],szs[ii],
                                                             pot,aA,fehs,afes,binned,normintstuff,
                                                             len(fehs),errstuff,toptions,vo,ro,
                                                             jrs,lzs,jzs,normsrs,normszs,
