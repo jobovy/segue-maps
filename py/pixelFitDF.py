@@ -224,7 +224,7 @@ def pixelFitDF(options,args,pool=None):
             hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
             srs= numpy.log(numpy.linspace(30.,70.,options.nsrs)/_REFV0)
             szs= numpy.log(numpy.linspace(12.,80.,options.nszs)/_REFV0)
-            dvts= numpy.linspace(-0.05,0.05,options.ndvts)
+            dvts= numpy.linspace(-0.2,0.2,options.ndvts)
             pouts= numpy.linspace(10.**-5.,.5,options.npouts)
         else:
             hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
@@ -1007,7 +1007,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         if True: rehr= 0.3 #regularize
         if resr > 0.3: resr= 0.3
         if resz > 0.3: resz= 0.3
-        hrs= numpy.linspace(lnhr-12.*rehr,lnhr+12.*rehr,options.nhrs)
+        hrs= numpy.linspace(lnhr-6.*rehr,lnhr+6.*rehr,options.nhrs)
         srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
         szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
     else:
@@ -1268,7 +1268,7 @@ def mloglike_gridall(fullparams,hr,sr,sz,
     tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
     #Run through the grid
     if _NEWDFRANGES:
-        dvts= numpy.linspace(-0.05,0.05,options.ndvts)
+        dvts= numpy.linspace(-0.2,0.2,options.ndvts)
         pouts= numpy.linspace(10.**-5.,.5,options.npouts)
     else:
         dvts= numpy.linspace(-0.1,0.1,toptions.ndvts)
