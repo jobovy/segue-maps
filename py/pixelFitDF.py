@@ -654,11 +654,11 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                     print "Working on %i,%i,%i" % (ii,jj,kk)
                     if _MULTIWHOLEGRID and not options.multi is None:
                         multOut= multi.parallel_map((lambda x: loglike_gridall([rds[ii],vcs[jj],zhs[kk],fhs[x]],fehs,afes,binned,options,normintstuff,errstuff,normalization_out)),
-                                                range(len(fhs)),
+                                                range(len(fhs)-1,-1,-1),
                                                 numcores=numpy.amin([len(fhs),
                                                                      multiprocessing.cpu_count(),
                                                                      options.multi]))
-                        for ll in range(len(fhs)):
+                        for ll in range(len(fhs)-1,-1,-1):
                             optout= multOut[ll]
                             out[ii,jj,kk,ll,:,:,:,:,:,:,:,:]= optout
                     else:
@@ -1005,8 +1005,10 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                             relerr=True)
         #if rehr > 0.3: rehr= 0.3 #regularize
         if True: rehr= 0.3 #regularize
-        if resr > 0.3: resr= 0.3
-        if resz > 0.3: resz= 0.3
+        #if resr > 0.3: resr= 0.3
+        #if resz > 0.3: resz= 0.3
+        if True: resr= 0.3
+        if True: resz= 0.3
         hrs= numpy.linspace(lnhr-6.*rehr,lnhr+6.*rehr,options.nhrs)
         srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
         szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
@@ -1018,9 +1020,25 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     for ii in range(options.nszs):
         #print "Working on DF %i, dt= %f" % (ii,time.time()-start)
         #start= time.time()
-        for jj in range(options.nsrs):
-            if _MULTIDFGRID:
-                multOut= multi.parallel_map((lambda x: mloglike_gridall(tparams,
+        if _MULTIDFGRID and options.multi > options.nhrs:
+            multOut= multi.parallel_map((lambda x: mloglike_gridall(tparams,
+                                                            hrs[x % options.nhrs],srs[x / options.nhrs],szs[ii],
+                                                            pot,aA,fehs,afes,binned,normintstuff,
+                                                            len(fehs),errstuff,toptions,vo,ro,
+                                                            jrs,lzs,jzs,normsrs,normszs,
+                                                            qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
+                                                            rgs,kappas,nus,Omegas,
+                                                                        normalization_out)),
+                                            range(options.nhrs*options.nsrs),
+                                            numcores=numpy.amin([options.nhrs*options.nsrs,
+                                                                 multiprocessing.cpu_count(),
+                                                                 options.multi]))
+            for jj in range(options.nsrs*options.nhrs):
+                out[jj % options.nhrs,jj/options.nhrs,ii,:,:,:,:,:]= multOut[jj]
+        else:
+            for jj in range(options.nsrs):
+                if _MULTIDFGRID:
+                    multOut= multi.parallel_map((lambda x: mloglike_gridall(tparams,
                                                             hrs[x],srs[jj],szs[ii],
                                                             pot,aA,fehs,afes,binned,normintstuff,
                                                             len(fehs),errstuff,toptions,vo,ro,
@@ -1032,8 +1050,8 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                             numcores=numpy.amin([options.nhrs,
                                                                  multiprocessing.cpu_count(),
                                                                  options.multi]))
-                for kk in range(options.nhrs):
-                    out[kk,jj,ii,:,:,:,:,:]= multOut[kk]
+                    for kk in range(options.nhrs):
+                        out[kk,jj,ii,:,:,:,:,:]= multOut[kk]
             else:
                 for kk in range(options.nhrs):
                     out[kk,jj,ii,:,:,:,:,:]= mloglike_gridall(tparams,
@@ -1268,7 +1286,7 @@ def mloglike_gridall(fullparams,hr,sr,sz,
     tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
     #Run through the grid
     if _NEWDFRANGES:
-        dvts= numpy.linspace(-0.2,0.2,options.ndvts)
+        dvts= numpy.linspace(-0.35,0.05,options.ndvts)
         pouts= numpy.linspace(10.**-5.,.5,options.npouts)
     else:
         dvts= numpy.linspace(-0.1,0.1,toptions.ndvts)
