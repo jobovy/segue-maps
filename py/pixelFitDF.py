@@ -1000,7 +1000,17 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         normszs[ii,:]= qdf._sz*numpy.exp((1.-Rgrid[ii])/qdf._hsz)
     #Go through the grid
     #IF YOU EDIT THIS, ALSO EDIT IT ABOVE
-    if _NEWDFRANGES:
+    if toptions.physicaldfparams:
+        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
+                                                            relerr=True)
+        #if rehr > 0.3: rehr= 0.3 #regularize
+        if True: rehr= 0.3 #regularize
+        if resr > 0.3: resr= 0.3
+        if resz > 0.3: resz= 0.3
+        hrs= numpy.linspace(lnhr-1.5*rehr,lnhr+1.5*rehr,options.nhrs)
+        srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
+        szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
+    elif _NEWDFRANGES:
         lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
                                                             relerr=True)
         #if rehr > 0.3: rehr= 0.3 #regularize
@@ -1087,8 +1097,8 @@ def chi2_simpleoptdf(dfparams,goal_params,pot,aA,options,ro,vo):
     this_hr= qdf.estimate_hr(1.,z=0.8/8.,dR=0.33/ro,gl=True)
     this_hsr= qdf.estimate_hsr(1.,z=0.8/8./ro,dR=0.33/ro,gl=True)
     this_hsz= qdf.estimate_hsz(1.,z=0.8/8./ro,dR=0.33/ro,gl=True)
-    this_sr= numpy.sqrt(qdf.sigmaR2(1.,1./8./ro,gl=True))
-    this_sz= numpy.sqrt(qdf.sigmaz2(1.,1./8./ro,gl=True))
+    this_sr= numpy.sqrt(qdf.sigmaR2(1.,.8/8./ro,gl=True))
+    this_sz= numpy.sqrt(qdf.sigmaz2(1.,.8/8./ro,gl=True))
     return 1.+(this_hr-goal_params[0]/ro)**2./goal_params[0]**2.*ro**2.\
         +(this_hsr-goal_params[3]/ro)**2./goal_params[3]**2.*ro**2.\
         +(this_hsz-goal_params[4]/ro)**2./goal_params[4]**2.*ro**2.\
@@ -1252,6 +1262,19 @@ def mloglike_gridall(fullparams,hr,sr,sz,
     #Setup everything for fast calculations
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
     dfparams= get_dfparams(tparams,0,toptions,log=False)
+    if toptions.physicaldfparams:
+        dfparams= get_dfparams(tparams,0,toptions,log=True)
+        dfparams= dfparams[0:5]
+        optout= optimize.fmin_powell(chi2_simpleoptdf,dfparams,
+                                     args=(numpy.exp(copy.copy(dfparams)),
+                                           pot,aA,toptions,ro,vo),
+                                     xtol=10.**-3.,
+                                     ftol=0.0005,
+                                     full_output=True,
+                                     maxiter=options.maxiter,
+                                     maxfun=10000,disp=False)
+        dfparams= list(numpy.exp(optout[0]))
+        dfparams= numpy.array(dfparams)
     if toptions.dfmodel.lower() == 'qdf':
         #Normalize
         hr= dfparams[0]/ro
@@ -4516,6 +4539,10 @@ def get_options():
     parser.add_option("--restrictdf",action="store_true", dest="restrictdf",
                       default=False,
                       help="Restrict the range of DF parameters")
+    parser.add_option("--physicaldfparams",action="store_true",
+                      dest="physicaldfparams",
+                      default=False,
+                      help="Use physical DF parameters, i.e., specify the actual dispersion and first find the DF params which give you the desired dispersions (and scale lengths")
     return parser
   
 if __name__ == '__main__':
