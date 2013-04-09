@@ -66,10 +66,10 @@ def plotDensComparisonDF(options,args):
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
     ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(1.8/8.),1.,numpy.log(400./8000.),0.33333,0.])
-    potparams2= numpy.array([numpy.log(2.8/8.),1.,numpy.log(400./8000.),0.6,0.])
+    potparams1= numpy.array([numpy.log(1.8/8.),235./220.,numpy.log(400./8000.),0.33333,0.])
+    potparams2= numpy.array([numpy.log(2.8/8.),235./220,numpy.log(400./8000.),0.6,0.])
     #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
-    potparams3= numpy.array([numpy.log(2.4/8.),220./220.,
+    potparams3= numpy.array([numpy.log(2.4/8.),235./220.,
                              numpy.log(400./8000.),0.26666666,0.])
     #Set up density models and their parameters
     pop= 0 #assume first population
@@ -102,15 +102,26 @@ def plotDensComparisonDF(options,args):
         raise IOError("base filename not specified ...")
     #Set DF parameters as the maximum at R_d=2.4, f_h=0.4
     #######DF PARAMETER RANGES###########
-    lnhr, lnsr, lnsz= approxFitResult(fehs[0],afes[0])
-    hrs= numpy.linspace(lnhr-0.3,lnhr+0.3,options.nhrs)
-    srs= numpy.linspace(lnsr-0.1,lnsr+0.1,options.nsrs)
-    szs= numpy.linspace(lnsz-0.1,lnsz+0.1,options.nszs)
-    dvts= numpy.linspace(-0.05,0.05,options.ndvts)
+    lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
+                                                        relerr=True)
+    #if rehr > 0.3: rehr= 0.3 #regularize
+    if True: rehr= 0.3 #regularize
+    #if resr > 0.3: resr= 0.3
+    #if resz > 0.3: resz= 0.3
+    if True: resr= 0.3
+    if True: resz= 0.3
+    hrs= numpy.linspace(lnhr-1.5*rehr,lnhr+1.5*rehr,options.nhrs)
+    srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
+    szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
+    #hrs= numpy.linspace(lnhr-0.3,lnhr+0.3,options.nhrs)
+    #srs= numpy.linspace(lnsr-0.1,lnsr+0.1,options.nsrs)
+    #szs= numpy.linspace(lnsz-0.1,lnsz+0.1,options.nszs)
+    dvts= numpy.linspace(-0.35,0.05,options.ndvts)
+    #dvts= numpy.linspace(-0.05,0.05,options.ndvts)
     pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-    indx= numpy.unravel_index(numpy.argmax(logl[0,0,0,5,:,:,:,:,:,0,0]),
-                              (8,8,8,3,25))
-    tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],srs[indx[1]],
+    indx= numpy.unravel_index(numpy.argmax(logl[0,0,0,5,3:,:,:,:,:,0,0]),
+                              (5,8,8,12,25))
+    tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],srs[indx[1]],
                           szs[indx[2]],numpy.log(8./_REFR0),
                           numpy.log(7./_REFR0),pouts[indx[4]],
                           0.,0.,0.,0.,0.])
@@ -122,9 +133,9 @@ def plotDensComparisonDF(options,args):
     paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
     params1= paramsInterp
     if True:
-        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,9,:,:,:,:,:,0,0]),
-                                  (8,8,8,3,25))
-        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
+        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,9,3:,:,:,:,:,0,0]),
+                                  (5,8,8,12,25))
+        tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
                               srs[indx[1]],
                               szs[indx[2]],
                               numpy.log(8./_REFR0),
@@ -137,9 +148,9 @@ def plotDensComparisonDF(options,args):
         print "Working on model 2 ..."
         paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
         params2= paramsInterp
-        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,:,:,:,:,:,0,0]),
-                                  (8,8,8,3,25))
-        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],srs[indx[1]],
+        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,3:,:,:,:,:,0,0]),
+                                  (5,8,8,12,25))
+        tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],srs[indx[1]],
                               szs[indx[2]],numpy.log(8./_REFR0),
                               numpy.log(7./_REFR0),pouts[indx[4]],
                               0.,0.,0.,0.,0.])
