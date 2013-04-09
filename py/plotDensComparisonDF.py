@@ -66,11 +66,11 @@ def plotDensComparisonDF(options,args):
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
     ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
-    potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
+    potparams1= numpy.array([numpy.log(1.8/8.),1.,numpy.log(400./8000.),0.33333,0.])
+    potparams2= numpy.array([numpy.log(2.8/8.),1.,numpy.log(400./8000.),0.6,0.])
     #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
-    potparams3= numpy.array([numpy.log(2.5/8.),235./220.,
-                             numpy.log(400./8000.),0.2,0.])
+    potparams3= numpy.array([numpy.log(2.4/8.),220./220.,
+                             numpy.log(400./8000.),0.26666666,0.])
     #Set up density models and their parameters
     pop= 0 #assume first population
     #Load savefile
@@ -108,7 +108,7 @@ def plotDensComparisonDF(options,args):
     szs= numpy.linspace(lnsz-0.1,lnsz+0.1,options.nszs)
     dvts= numpy.linspace(-0.05,0.05,options.ndvts)
     pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,:,:,:,:,:,0,0]),
+    indx= numpy.unravel_index(numpy.argmax(logl[0,0,0,5,:,:,:,:,:,0,0]),
                               (8,8,8,3,25))
     tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],srs[indx[1]],
                           szs[indx[2]],numpy.log(8./_REFR0),
@@ -122,9 +122,11 @@ def plotDensComparisonDF(options,args):
     paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
     params1= paramsInterp
     if True:
+        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,9,:,:,:,:,:,0,0]),
+                                  (8,8,8,3,25))
         tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
-                              srs[indx[1]-(indx[1] != 0)],
-                              szs[indx[2]-(indx[2] != 0)],
+                              srs[indx[1]],
+                              szs[indx[2]],
                               numpy.log(8./_REFR0),
                               numpy.log(7./_REFR0),pouts[indx[4]],
                               0.,0.,0.,0.,0.,0.])
@@ -135,6 +137,8 @@ def plotDensComparisonDF(options,args):
         print "Working on model 2 ..."
         paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
         params2= paramsInterp
+        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,:,:,:,:,:,0,0]),
+                                  (8,8,8,3,25))
         tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],srs[indx[1]],
                               szs[indx[2]],numpy.log(8./_REFR0),
                               numpy.log(7./_REFR0),pouts[indx[4]],

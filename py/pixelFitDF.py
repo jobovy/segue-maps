@@ -24,7 +24,8 @@ import math
 import numpy
 from scipy import optimize, interpolate
 from scipy.maxentropy import logsumexp
-import cPickle as pickle
+#import cPickle as pickle
+import pickle
 from optparse import OptionParser
 import multi
 import multiprocessing
