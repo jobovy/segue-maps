@@ -3571,6 +3571,9 @@ def setup_err_mc(data,options):
         sinphi= XYZ[:,:,1]/R
         vR= -outvxvyvz[:,0,:]*cosphi.T+outvxvyvz[:,1,:]*sinphi.T
         vT= outvxvyvz[:,0,:]*sinphi.T+outvxvyvz[:,1,:]*cosphi.T
+        if options.marginalizevrvt:
+            vR+= numpy.random.normal(size=vR.shape)*100.
+            vT+= numpy.random.normal(size=vT.shape)*100.
         #Load into structure
         errstuff= []
         for ii in range(len(data)):
@@ -4484,9 +4487,14 @@ def get_options():
     parser.add_option("--justpot",action="store_true", dest="justpot",
                       default=False,
                       help="If set, just fit the potential assuming fixed DF (CURRENTLY ONLY FOR FIT, NOT FOR SAMPLE")
-    parser.add_option("--marginalizevt",action="store_true", dest="marginalizevt",
+    parser.add_option("--marginalizevt",action="store_true",
+                      dest="marginalizevt",
                       default=False,
                       help="If set, don't use vT data")
+    parser.add_option("--marginalizevrvt",action="store_true",
+                      dest="marginalizevrvt",
+                      default=False,
+                      help="If set, don't use vR or vT data")
     #seed
     parser.add_option("--seed",dest='seed',default=1,type='int',
                       help="seed for random number generator")
