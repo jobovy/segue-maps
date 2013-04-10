@@ -100,6 +100,7 @@ def plotDensComparisonDF(options,args):
             savefile.close()
     else:
         raise IOError("base filename not specified ...")
+    logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
     #Set DF parameters as the maximum at R_d=2.4, f_h=0.4
     #######DF PARAMETER RANGES###########
     lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
