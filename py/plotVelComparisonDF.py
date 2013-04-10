@@ -2,7 +2,7 @@ import os, os.path
 import numpy
 from scipy import ndimage
 import cPickle as pickle
-from galpy.util import bovy_plot
+from galpy.util import bovy_plot, multi
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
     segueSelect
 from fitDensz import _ZSUN
@@ -61,7 +61,7 @@ def plotVelComparisonDF(options,args):
         run_abundance_singles_plotdens(options,args,fehs,afes)
         return None
     ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(1.8/8.),235./220.,numpy.log(400./8000.),0.33333,0.])
+    potparams1= numpy.array([numpy.log(2.0/8.),235./220.,numpy.log(400./8000.),0.33333,0.])
     potparams2= numpy.array([numpy.log(2.8/8.),235./220,numpy.log(400./8000.),0.6,0.])
     potparams3= numpy.array([numpy.log(2.4/8.),235./220.,
                              numpy.log(400./8000.),0.26666666,0.])
@@ -113,10 +113,14 @@ def plotVelComparisonDF(options,args):
     dvts= numpy.linspace(-0.35,0.05,options.ndvts)
     #dvts= numpy.linspace(-0.05,0.05,options.ndvts)
     pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-    indx= numpy.unravel_index(numpy.argmax(logl[0,0,0,5,3:,:,:,:,:,0,0]),
+    indx= numpy.unravel_index(numpy.argmax(logl[1,0,0,5,3:,:,:,:,:,0,0,0]),
                               (5,8,8,12,25))
-    tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],srs[indx[1]],
-                          szs[indx[2]],numpy.log(8./_REFR0),
+    tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+                          #srs[indx[1]-2.*(indx[1] != 0)],
+                          #szs[indx[2]-2.*(indx[2] != 0)],
+                          srs[indx[1]],
+                          szs[indx[2]],
+                          numpy.log(8./_REFR0),
                           numpy.log(7./_REFR0),pouts[indx[4]],
                           0.,0.,0.,0.,0.])
     options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
@@ -164,9 +168,11 @@ def plotVelComparisonDF(options,args):
     velps[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
     alts= True
     if alts:
-        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,9,3:,:,:,:,:,0,0]),
+        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,9,3:,:,:,:,:,0,0,0]),
                                   (5,8,8,12,25))
         tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+                              #srs[indx[1]-1.*(indx[1] != 0)],
+                              #szs[indx[2]-1.*(indx[2] != 0)],
                               srs[indx[1]],
                               szs[indx[2]],
                               numpy.log(8./_REFR0),
@@ -177,10 +183,14 @@ def plotVelComparisonDF(options,args):
         tparams= set_potparams(potparams2,tparams,options,1)
         print "Working on model 2 ..."
         velps2[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
-        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,3:,:,:,:,:,0,0]),
+        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,3:,:,:,:,:,0,0,0]),
                                   (5,8,8,12,25))
-        tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],srs[indx[1]],
-                              szs[indx[2]],numpy.log(8./_REFR0),
+        tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+                              #srs[indx[1]-2.*(indx[1] != 0)],
+                              #szs[indx[2]-2.*(indx[2] != 0)],
+                              srs[indx[1]],
+                              szs[indx[2]],
+                              numpy.log(8./_REFR0),
                               numpy.log(7./_REFR0),pouts[indx[4]],
                               0.,0.,0.,0.,0.])
         options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
@@ -286,27 +296,61 @@ def calc_model(params,options,data,vs):
             sxy= cov_vxvyvz[rr,0:2,0:2]
             sRT= numpy.dot(rot,numpy.dot(sxy,rot.T))
             cov_vxvyvz[rr,0:2,0:2]= sRT
-    for ii in range(len(data)):
-        if options.type.lower() == 'vz':
-            thisp= numpy.array([qdf.pvz(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
-            ndimage.filters.gaussian_filter1d(thisp,
-                                              data.vzc_err[ii]/(vs[1]-vs[0]),
+    else:
+        cov_vxvyvz= None # FOR MULTI
+    if not options.multi is None:
+        multOut= multi.parallel_map((lambda x: _calc_model_one(x,R,z,vs,qdf,options,data,params,cov_vxvyvz,vo)),
+                                    range(len(data)),
+                                    numcores=numpy.amin([len(data),
+                                                         multiprocessing.cpu_count(),
+                                                         options.multi]))
+        for ii in range(len(data)):
+            out[ii,:]= multOut[ii]
+    else:
+        for ii in range(len(data)):
+            if options.type.lower() == 'vz':
+                thisp= numpy.array([qdf.pvz(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
+                ndimage.filters.gaussian_filter1d(thisp,
+                                                  data.vzc_err[ii]/(vs[1]-vs[0]),
+                                                  output=thisp)
+            elif options.type.lower() == 'vr':
+                thisp= numpy.array([qdf.pvR(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
+                ndimage.filters.gaussian_filter1d(thisp,
+                                                  numpy.sqrt(cov_vxvyvz[ii,0,0])/(vs[1]-vs[0]),
                                               output=thisp)
-        elif options.type.lower() == 'vr':
-            thisp= numpy.array([qdf.pvR(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
-            ndimage.filters.gaussian_filter1d(thisp,
-                                              numpy.sqrt(cov_vxvyvz[ii,0,0])/(vs[1]-vs[0]),
-                                              output=thisp)
-        elif options.type.lower() == 'vt':
-            if options.fitdvt:
-                dvt= get_dvt(params,options)
-            else:
-                dvt= 0.
-            thisp= numpy.array([qdf.pvT(v/_REFV0/vo+dvt/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
-            ndimage.filters.gaussian_filter1d(thisp,
-                                              numpy.sqrt(cov_vxvyvz[ii,1,1])/(vs[1]-vs[0]),
-                                              output=thisp)
-        out[ii,:]= thisp/numpy.sum(thisp)/(vs[1]-vs[0])
+            elif options.type.lower() == 'vt':
+                if options.fitdvt:
+                    dvt= get_dvt(params,options)
+                else:
+                    dvt= 0.
+                thisp= numpy.array([qdf.pvT(v/_REFV0/vo+dvt/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
+                ndimage.filters.gaussian_filter1d(thisp,
+                                                  numpy.sqrt(cov_vxvyvz[ii,1,1])/(vs[1]-vs[0]),
+                                                  output=thisp)
+            out[ii,:]= thisp/numpy.sum(thisp)/(vs[1]-vs[0])
+    return out
+
+def _calc_model_one(ii,R,z,vs,qdf,options,data,params,cov_vxvyvz,vo):
+    if options.type.lower() == 'vz':
+        thisp= numpy.array([qdf.pvz(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
+        ndimage.filters.gaussian_filter1d(thisp,
+                                          data.vzc_err[ii]/(vs[1]-vs[0]),
+                                          output=thisp)
+    elif options.type.lower() == 'vr':
+        thisp= numpy.array([qdf.pvR(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
+        ndimage.filters.gaussian_filter1d(thisp,
+                                          numpy.sqrt(cov_vxvyvz[ii,0,0])/(vs[1]-vs[0]),
+                                          output=thisp)
+    elif options.type.lower() == 'vt':
+        if options.fitdvt:
+            dvt= get_dvt(params,options)
+        else:
+            dvt= 0.
+        thisp= numpy.array([qdf.pvT(v/_REFV0/vo+dvt/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
+        ndimage.filters.gaussian_filter1d(thisp,
+                                          numpy.sqrt(cov_vxvyvz[ii,1,1])/(vs[1]-vs[0]),
+                                                  output=thisp)
+    out= thisp/numpy.sum(thisp)/(vs[1]-vs[0])
     return out
 
 if __name__ == '__main__':

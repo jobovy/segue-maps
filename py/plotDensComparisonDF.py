@@ -14,6 +14,7 @@ from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
 from plotDensComparisonDFMulti4gridall import calc_model
 _NOTDONEYET= True
+_RRANGES= True
 def plotDensComparisonDF(options,args):
     #Read data etc.
     print "Reading the data ..."
@@ -66,7 +67,7 @@ def plotDensComparisonDF(options,args):
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
     ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(1.8/8.),235./220.,numpy.log(400./8000.),0.33333,0.])
+    potparams1= numpy.array([numpy.log(2.0/8.),235./220.,numpy.log(400./8000.),0.33333,0.])
     potparams2= numpy.array([numpy.log(2.8/8.),235./220,numpy.log(400./8000.),0.6,0.])
     #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
     potparams3= numpy.array([numpy.log(2.4/8.),235./220.,
@@ -120,10 +121,14 @@ def plotDensComparisonDF(options,args):
     dvts= numpy.linspace(-0.35,0.05,options.ndvts)
     #dvts= numpy.linspace(-0.05,0.05,options.ndvts)
     pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-    indx= numpy.unravel_index(numpy.argmax(logl[0,0,0,5,3:,:,:,:,:,0,0]),
+    indx= numpy.unravel_index(numpy.argmax(logl[1,0,0,5,3:,:,:,:,:,0,0,0]),
                               (5,8,8,12,25))
-    tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],srs[indx[1]],
-                          szs[indx[2]],numpy.log(8./_REFR0),
+    tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+                          #srs[indx[1]-2.*(indx[1] != 0)],
+                          #szs[indx[2]-2.*(indx[2] != 0)],
+                          srs[indx[1]],
+                          szs[indx[2]],
+                          numpy.log(8./_REFR0),
                           numpy.log(7./_REFR0),pouts[indx[4]],
                           0.,0.,0.,0.,0.])
     options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
@@ -134,9 +139,11 @@ def plotDensComparisonDF(options,args):
     paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
     params1= paramsInterp
     if True:
-        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,9,3:,:,:,:,:,0,0]),
+        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,9,3:,:,:,:,:,0,0,0]),
                                   (5,8,8,12,25))
         tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+                              #srs[indx[1]-2.*(indx[1] != 0)],
+                              #szs[indx[2]-2.*(indx[2] != 0)],
                               srs[indx[1]],
                               szs[indx[2]],
                               numpy.log(8./_REFR0),
@@ -149,10 +156,14 @@ def plotDensComparisonDF(options,args):
         print "Working on model 2 ..."
         paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
         params2= paramsInterp
-        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,3:,:,:,:,:,0,0]),
+        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,3:,:,:,:,:,0,0,0]),
                                   (5,8,8,12,25))
-        tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],srs[indx[1]],
-                              szs[indx[2]],numpy.log(8./_REFR0),
+        tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+                              #srs[indx[1]-2.*(indx[1] != 0)],
+                              #szs[indx[2]-2.*(indx[2] != 0)],
+                              srs[indx[1]],
+                              szs[indx[2]],
+                              numpy.log(8./_REFR0),
                               numpy.log(7./_REFR0),pouts[indx[4]],
                               0.,0.,0.,0.,0.])
         options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
@@ -203,7 +214,7 @@ def plotDensComparisonDF(options,args):
     elif options.type == 'R':
         compare_func= compareDataModel.compareRdistPlate
     #First do R ranges for z
-    if options.type.lower() == 'z':
+    if options.type.lower() == 'z' and _RRANGES:
         bins=21
         Rmins= [None,7.,9.]
         Rmaxs= [7.,9.,None]
