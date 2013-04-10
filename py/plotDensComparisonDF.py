@@ -202,6 +202,54 @@ def plotDensComparisonDF(options,args):
         compare_func= compareDataModel.comparezdistPlate
     elif options.type == 'R':
         compare_func= compareDataModel.compareRdistPlate
+    #First do R ranges for z
+    if options.type.lower() == 'z':
+        bins=21
+        Rmins= [None,7.,9.]
+        Rmaxs= [7.,9.,None]
+        nameRmins= [4,7,9]
+        nameRmaxs= [7,9,13]
+        for ii in range(len(Rmins)):
+            plate= 'all'
+            if Rmins[ii] is None:
+                thisleft_legend= r'$R \leq 7\,\mathrm{kpc\ plates}$'
+            elif Rmins[ii] == 7.:
+                thisleft_legend= r'$7\,\mathrm{kpc} < R \leq 9\,\mathrm{kpc\ plates}$'
+            elif Rmaxs[ii] is None:
+                thisleft_legend= r'$R \geq 9\,\mathrm{kpc\ plates}$'
+            thisright_legend= None
+            bovy_plot.bovy_print()
+            compare_func(model1,params1,sf,colordist,fehdist,
+                         data,plate,color='k',
+                         rmin=14.5,rmax=rmax,
+                         grmin=grmin,grmax=grmax,
+                         fehmin=fehmin,fehmax=fehmax,feh=feh,
+                         xrange=xrange,
+                         bins=bins,ls='-',left_legend=thisleft_legend,
+                         right_legend=thisright_legend,
+                         Rmin=Rmins[ii],Rmax=Rmaxs[ii])
+            if not params2 is None:
+                compare_func(model2,params2,sf,colordist,fehdist,
+                             data,plate,color='k',bins=bins,
+                             rmin=14.5,rmax=rmax,
+                             grmin=grmin,grmax=grmax,
+                             fehmin=fehmin,fehmax=fehmax,feh=feh,
+                             xrange=xrange,
+                             overplot=True,ls='--',
+                             Rmin=Rmins[ii],Rmax=Rmaxs[ii])
+            if not params3 is None:
+                compare_func(model3,params3,sf,colordist,fehdist,
+                             data,plate,color='k',bins=bins,
+                             rmin=14.5,rmax=rmax,
+                             grmin=grmin,grmax=grmax,
+                             fehmin=fehmin,fehmax=fehmax,feh=feh,
+                             xrange=xrange,
+                             overplot=True,ls=':',
+                             Rmin=Rmins[ii],Rmax=Rmaxs[ii])
+            if options.type == 'r':
+                bovy_plot.bovy_end_print(args[0]+'model_data_g_%iR%i' % (nameRmins[ii],nameRmaxs[ii])+'.'+options.ext)
+            else:
+                bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.type+'dist_%iR%i' % (nameRmins[ii],nameRmaxs[ii])+'.'+options.ext)
     #all, faint, bright
     bins= [31,31,31]
     plates= ['all','bright','faint']

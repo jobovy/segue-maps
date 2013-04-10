@@ -247,6 +247,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                       fehmax=0.5,feh=-0.15,
                       convolve=0.,xrange=None,yrange=None,
                       overplot=False,bins=21,color='k',ls='-',
+                      Rmin=None,Rmax=None,
                       left_legend=None,right_legend=None):
     """
     NAME:
@@ -273,6 +274,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
        color= color for model
        left_legend = if set, legend to put at the left top
        right_legend = if set, legend to put at the right top
+       Rmin, Rmax= if set, restrict to this Galactocentric radius range
     OUTPUT:
        plot to output
        return rdist, datahist, dataedges
@@ -359,7 +361,8 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                             platel,
                                             plateb,grmin,grmax,
                                             fehmin,fehmax,
-                                            feh,colordist,fehdist,sf,p)
+                                            feh,colordist,fehdist,sf,p,
+                                            Rmin=Rmin,Rmax=Rmax)
             zdist+= thiszdist
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
@@ -386,8 +389,17 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                             ylabel='$\mathrm{density}$',overplot=overplot)
         #Plot the data
         data_z= []
+        if not Rmin is None or not Rmax is None:
+            tdata_R= numpy.sqrt((8.-data.xc)**2.+data.yc**2.)
         for p in plate:
-            data_z.extend(numpy.fabs(data[(data.plate == p)].zc))
+            if Rmin is None and not Rmax is None:
+                data_z.extend(numpy.fabs(data[(data.plate == p)*(tdata_R < Rmax) ].zc))
+            elif Rmax is None and not Rmin is None:
+                data_z.extend(numpy.fabs(data[(data.plate == p)*(tdata_R >= Rmin)].zc))
+            elif not Rmax is None and not Rmin is None:
+                data_z.extend(numpy.fabs(data[(data.plate == p)*(tdata_R >= Rmin)*(tdata_R < Rmax)].zc))
+            else:
+                data_z.extend(numpy.fabs(data[(data.plate == p)].zc))
         hist= bovy_plot.bovy_hist(data_z,
                                   normed=True,bins=bins,ec='k',
                                   histtype='step',
@@ -1835,7 +1847,8 @@ def _predict_rdist_plate(rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
 def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
                          fehmin,fehmax,
                          feh,colordist,fehdist,sf,plate,distfac=1.,R0=8.,
-                         colorfehfac=None,R=None,Z=None):
+                         colorfehfac=None,R=None,Z=None,
+                         Rmin=None,Rmax=None):
     """Predict the Z distribution for a plate"""
     if b > 0.:
         ds= (zs-_ZSUN)/numpy.fabs(numpy.sin(b*_DEGTORAD))
@@ -1869,6 +1882,10 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
                                     ds,degree=True)
         R= ((R0-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
         Z= XYZ[:,2]+_ZSUN
+    if not Rmin is None:
+        out[(R < Rmin)]= 0.
+    if not Rmax is None:
+        out[(R >= Rmax)]= 0.
     out*= ds**2.*densfunc(R,Z,params)/numpy.fabs(numpy.sin(b*_DEGTORAD))
     return out
 
