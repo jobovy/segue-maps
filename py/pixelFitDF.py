@@ -3572,8 +3572,10 @@ def setup_err_mc(data,options):
         vR= -outvxvyvz[:,0,:]*cosphi.T+outvxvyvz[:,1,:]*sinphi.T
         vT= outvxvyvz[:,0,:]*sinphi.T+outvxvyvz[:,1,:]*cosphi.T
         if options.marginalizevrvt:
-            vR+= numpy.random.normal(size=vR.shape)*100.
-            vT+= numpy.random.normal(size=vT.shape)*100.
+            #vR+= numpy.random.normal(size=vR.shape)*100.
+            #vT+= numpy.random.normal(size=vT.shape)*100.
+            vR= numpy.random.uniform(size=vR.shape)*300.-150.
+            vT= numpy.random.uniform(size=vT.shape)*300.
         #Load into structure
         errstuff= []
         for ii in range(len(data)):
