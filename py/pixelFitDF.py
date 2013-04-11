@@ -245,7 +245,8 @@ def pixelFitDF(options,args,pool=None):
         elif options.potential.lower() == 'bt':
             params.append(gridOut[2][indx[0]])
         params= numpy.array(params)
-        save_pickles(args[0],params,-gridOut[0][indx],*gridOut)
+        if options.restart is None: #if restart, then we already have the output
+            save_pickles(args[0],params,-gridOut[0][indx],*gridOut)
     else:
         #Sample
         if options.justdf:
@@ -1310,7 +1311,7 @@ def mloglike_gridall(fullparams,hr,sr,sz,
     tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
     #Run through the grid
     if _NEWDFRANGES:
-        dvts= numpy.linspace(-0.35,0.05,options.ndvts)
+        dvts= numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
         pouts= numpy.linspace(10.**-5.,.5,options.npouts)
     else:
         dvts= numpy.linspace(-0.1,0.1,toptions.ndvts)
