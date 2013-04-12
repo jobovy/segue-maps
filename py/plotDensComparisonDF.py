@@ -68,10 +68,10 @@ def plotDensComparisonDF(options,args):
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
     ##########POTENTIAL PARAMETERS####################
     potparams1= numpy.array([numpy.log(2.0/8.),235./220.,numpy.log(400./8000.),0.33333,0.])
-    potparams2= numpy.array([numpy.log(2.8/8.),235./220,numpy.log(400./8000.),0.6,0.])
+    potparams2= numpy.array([numpy.log(2.8/8.),235./220,numpy.log(400./8000.),0.8,0.])
     #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
-    potparams3= numpy.array([numpy.log(2.4/8.),235./220.,
-                             numpy.log(400./8000.),0.26666666,0.])
+    potparams3= numpy.array([numpy.log(2.6/8.),235./220.,
+                             numpy.log(400./8000.),0.33333333,0.])
     #Set up density models and their parameters
     pop= 0 #assume first population
     #Load savefile
