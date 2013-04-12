@@ -245,8 +245,7 @@ def pixelFitDF(options,args,pool=None):
         elif options.potential.lower() == 'bt':
             params.append(gridOut[2][indx[0]])
         params= numpy.array(params)
-        if options.restart is None: #if restart, then we already have the output
-            save_pickles(args[0],params,-gridOut[0][indx],*gridOut)
+        save_pickles(args[0],params,-gridOut[0][indx]) #Just so that there is a record of the fact that the fit is done
     else:
         #Sample
         if options.justdf:
@@ -622,7 +621,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
         vcs= numpy.array([options.fixvc/_REFV0])
         zhs= numpy.array([options.fixzh/1000./_REFR0])
         if _NEWRDRANGE:
-            rds= numpy.linspace(1.8,3.2,options.nrds)/_REFR0
+            rds= numpy.linspace(2.0,3.4,options.nrds)/_REFR0
         else:
             rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
         fhs= numpy.linspace(0.,1.,options.nfhs)
@@ -645,11 +644,11 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             if options.fitdvt:
                 out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),
                                   options.nhrs,options.nsrs,options.nszs,
-                                  options.ndvts,options.npouts,1,1,3))
+                                  options.ndvts,options.npouts,1,1))
             else:
                 out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),
                                   options.nhrs,options.nsrs,options.nszs,
-                                  options.npouts,1,1,3))
+                                  options.npouts,1,1))
         while ii < len(rds):
             while jj < len(vcs):
                 while kk <len(zhs):
@@ -662,12 +661,12 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                                                                      options.multi]))
                         for ll in range(len(fhs)-1,-1,-1):
                             optout= multOut[ll]
-                            out[ii,jj,kk,ll,:,:,:,:,:,:,:,:]= optout
+                            out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
                     else:
                         for ll in range(len(fhs)):
                             print "Working on %i,%i,%i,%i" % (ii,jj,kk,ll)
                             optout= loglike_gridall([rds[ii],vcs[jj],zhs[kk],fhs[ll]],fehs,afes,binned,options,normintstuff,errstuff,normalization_out)                   
-                            out[ii,jj,kk,ll,:,:,:,:,:,:,:,:]= optout
+                            out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
                             if ll > 4:
                                 print "BOVY: YOU ARE SAVING TOO OFTEN"
                                 if not options.restart is None:
@@ -903,10 +902,10 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         toptions.multi= toptions.multi2 #Set multi to the second multi
     if toptions.fitdvt:
         out= numpy.zeros((options.nhrs,options.nsrs,options.nszs,
-                          options.ndvts,options.npouts,1,1,3))+numpy.nan
+                          options.ndvts,options.npouts,1,1))-numpy.finfo(numpy.dtype(numpy.float64)).max
     else:
         out= numpy.zeros((options.nhrs,options.nsrs,options.nszs,
-                          options.npouts,1,1,3))+numpy.nan
+                          options.npouts,1,1))-numpy.finfo(numpy.dtype(numpy.float64)).max
     if toptions.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         if False:
             print "BOVY: YOU ARE FIXING THE POTENTIAL FOR DEBUGGING"
@@ -922,11 +921,11 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     tparams= initialize(toptions,fehs,afes)    
     tparams= set_potparams(potparams,tparams,toptions,len(fehs))
     if numpy.any(numpy.isnan(tparams)):
-        out[:,:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        out[:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         return out
     logpotprior= logprior_pot(tparams,toptions,len(fehs))
     if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-        out[:,:,:,:,:,:,:,:]= logpotprior
+        out[:,:,:,:,:,:,:]= logpotprior
         return out
     #Set up potential and actionAngle
     if _DEBUG:
@@ -934,7 +933,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     try:
         pot= setup_potential(tparams,toptions,len(fehs))
     except RuntimeError: #if this set of parameters gives a nonsense potential
-        out[:,:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        out[:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         return out
     aA= setup_aA(pot,toptions)
     #Set-up the fiducial DF
@@ -1046,7 +1045,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                                  multiprocessing.cpu_count(),
                                                                  options.multi]))
             for jj in range(options.nsrs*options.nhrs):
-                out[jj % options.nhrs,jj/options.nhrs,ii,:,:,:,:,:]= multOut[jj]
+                out[jj % options.nhrs,jj/options.nhrs,ii,:,:,:,:]= multOut[jj]
         else:
             for jj in range(options.nsrs):
                 if _MULTIDFGRID:
@@ -1063,10 +1062,10 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                                  multiprocessing.cpu_count(),
                                                                  options.multi]))
                     for kk in range(options.nhrs):
-                        out[kk,jj,ii,:,:,:,:,:]= multOut[kk]
+                        out[kk,jj,ii,:,:,:,:]= multOut[kk]
             else:
                 for kk in range(options.nhrs):
-                    out[kk,jj,ii,:,:,:,:,:]= mloglike_gridall(tparams,
+                    out[kk,jj,ii,:,:,:,:]= mloglike_gridall(tparams,
                                                             hrs[kk],srs[jj],szs[ii],
                                                             pot,aA,fehs,afes,binned,normintstuff,
                                                             len(fehs),errstuff,toptions,vo,ro,
@@ -1260,7 +1259,7 @@ def mloglike_gridall(fullparams,hr,sr,sz,
     tparams[startindx+1]= sr
     tparams[startindx+2]= sz
     #Setup out
-    out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1,3))
+    out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1))
     #Setup everything for fast calculations
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
     dfparams= get_dfparams(tparams,0,toptions,log=False)
@@ -1327,11 +1326,11 @@ def mloglike_gridall(fullparams,hr,sr,sz,
             #Sum data and outlier df, for all MC samples
             data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]+= numpy.log(pouts[jj])
             sumdata_lndf= mylogsumexp(data_lndf,axis=1)
-            out[ii,jj,0,0,0]= numpy.sum(sumdata_lndf)\
+            out[ii,jj,0,0]= numpy.sum(sumdata_lndf)\
                 -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out)+numpy.log(toptions.nmcerr)) #latter so we can compare
-            out[ii,jj,0,0,1]= numpy.sum(sumdata_lndf)\
-                -ndata*numpy.log(toptions.nmcerr) #latter so we can compare
-            out[ii,jj,0,0,2]= -ndata*numpy.log(normalization_qdf+pouts[jj]*tnormalization_out) #latter so we can compare
+#            out[ii,jj,0,0,1]= numpy.sum(sumdata_lndf)\
+#                -ndata*numpy.log(toptions.nmcerr) #latter so we can compare
+#            out[ii,jj,0,0,2]= -ndata*numpy.log(normalization_qdf+pouts[jj]*tnormalization_out) #latter so we can compare
             data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(pouts[jj])
  #Reset
     return -out
@@ -2531,6 +2530,8 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
     newname+= '_%i.' % ii
     newname+= spl[-1]
     args[0]= newname
+    if options.gridall and os.path.exists(newname): #Fit is already done
+        return None
     if options.mcsample and not initname is None:
         #Do the same for init
         spl= initname.split('.')
