@@ -1021,7 +1021,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         if True: resr= 0.3
         if True: resz= 0.3
         hrs= numpy.linspace(lnhr-6.*rehr,lnhr+6.*rehr,options.nhrs)
-        srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
+        srs= numpy.linspace(lnsr-0.66*resz,lnsr+0.66*resz,options.nsrs)#USE ESZ
         szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
     else:
         hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
@@ -4552,6 +4552,9 @@ def get_options():
     parser.add_option("--restrictdf",action="store_true", dest="restrictdf",
                       default=False,
                       help="Restrict the range of DF parameters")
+    parser.add_option("--conditional",action="store_true", dest="conditional",
+                      default=False,
+                      help="Plot a conditional PDF")
     parser.add_option("--physicaldfparams",action="store_true",
                       dest="physicaldfparams",
                       default=False,

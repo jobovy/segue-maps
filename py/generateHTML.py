@@ -14,9 +14,13 @@ def generateHTML(options,args):
         npops= 62
     elif options.sample.lower() == 'k':
         npops= 30
-    types= ['rdfh','rdfhrdvt','rdhr','rdsz',
-            'rdpout','rddvt','srsz','pout','dvt',
-            'loglhist','props','rdfhrdf','rdfhrdvtrdf']
+    if False:
+        types= ['rdfh','rdfhrdvt','rdhr','rdsz',
+                'rdpout','rddvt','srsz','pout','dvt',
+                'loglhist','props','rdfhrdf','rdfhrdvtrdf']
+    types= ['rdfh','rdhr','rdhrc','rdsz',
+            'rdpout','rddvt','srsz','srszc','pout',
+            'loglhist','props']
     ntypes= len(types)
     for ii in range(npops):
         outfile.write('<p style="font-size:xx-large;">%i</p>\n' % ii)

@@ -12,6 +12,22 @@ _NOTDONEYET= True
 def plotRdfh(options,args):
     #Go through all of the bins
     if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: plotRdfh_single(x,options,args)),
+                                  range(npops),
+                                  numcores=numpy.amin([options.multi,
+                                                       npops,
+                                                       multiprocessing.cpu_count()]))
+    else:
+        for ii in range(npops):
+            plotRdfh_single(ii,options,args)
+
+def plotRdfh_single(ii,options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
         savefile= open('binmapping_g.sav','rb')
     elif options.sample.lower() == 'k':
         savefile= open('binmapping_k.sav','rb')
@@ -19,7 +35,7 @@ def plotRdfh(options,args):
     afes= pickle.load(savefile)
     npops= len(fehs)
     savefile.close()
-    for ii in range(npops):
+    if True:
         if _NOTDONEYET:
             spl= options.restart.split('.')
         else:
@@ -37,7 +53,7 @@ def plotRdfh(options,args):
                 mlogl= pickle.load(savefile)
             logl= pickle.load(savefile)
         except:
-            continue
+            return None
         finally:
             savefile.close()
         if _NOTDONEYET:
@@ -46,17 +62,26 @@ def plotRdfh(options,args):
         marglogl= numpy.zeros((logl.shape[0],logl.shape[3]))
         condfh= numpy.zeros((logl.shape[0]))
         condlogp= numpy.zeros(logl.shape[0])
-        if ii == 0:
-            allmarglogl= numpy.zeros((logl.shape[0],logl.shape[3],npops))
+        #Get hR range
+        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[ii],afes[ii],
+                                                            relerr=True)
+        if True: rehr= 0.3 #regularize
+        hrs= numpy.linspace(lnhr-6.*rehr,lnhr+6.*rehr,options.nhrs)
+        if not numpy.sum(hrs <= 1.5) == 0:
+            logl[:,:,:,:,(hrs > 1.5),:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        else:
+            logl[:,:,:,:,1:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+            logl[:,:,:,:,3,:,:,:,:,:,:]= logl[:,:,:,:,0,:,:,:,:,:,:] #BOVY: HACK
+        #logl[:,:,:,:,:,:,:,0,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max   
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
-                marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,:,:,:,:].flatten())
+                marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,kk,3:,:,:,:,:,:,:].flatten())
             condlogp[jj]= maxentropy.logsumexp(marglogl[jj,:])
             condlogl= marglogl[jj,:]-maxentropy.logsumexp(marglogl[jj,:])
             condfh[jj]= numpy.sum(numpy.exp(condlogl)*numpy.linspace(0.,1.,logl.shape[3]))/numpy.sum(numpy.exp(condlogl))
-        if monoAbundanceMW.hr(fehs[ii],afes[ii]) < 3.5 \
-                and numpy.amax(logl) < 0.: #latter removes ridiculous bins
-            allmarglogl[:,:,ii]= marglogl
+#        if monoAbundanceMW.hr(fehs[ii],afes[ii]) < 3.5 \
+#                and numpy.amax(logl) < 0.: #latter removes ridiculous bins
+#            allmarglogl[:,:,ii]= marglogl
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
         bovy_plot.bovy_print()
@@ -64,7 +89,7 @@ def plotRdfh(options,args):
                               origin='lower',cmap='gist_yarg',
                               interpolation='nearest',
                               xrange=[1.9,3.5],yrange=[-1./32.,1.+1./32.],
-                              xlabel=r'$R_d\ (\mathrm{kp})$',ylabel=r'$f_h$')
+                              xlabel=r'$R_d\ (\mathrm{kpc})$',ylabel=r'$f_h$')
         s= 2.*condlogp
         s-= numpy.amax(s)
         s+= 16.
@@ -90,6 +115,7 @@ def plotRdfh(options,args):
         newname+= '_%i.' % ii
         newname+= spl[-1]
         bovy_plot.bovy_end_print(newname)
+    return None
     #Now plot combined
     alogl= numpy.sum(allmarglogl,axis=2)\
         -numpy.amax(numpy.sum(allmarglogl,axis=2))
@@ -99,10 +125,26 @@ def plotRdfh(options,args):
                           interpolation='nearest',
                           xrange=[1.9,3.5],
                           yrange=[-1./32.,1.+1./32.],
-                          xlabel=r'$R_d\ (\mathrm{kp})$',ylabel=r'$f_h$')
+                          xlabel=r'$R_d\ (\mathrm{kpc})$',ylabel=r'$f_h$')
     bovy_plot.bovy_end_print(options.outfilename)
 
 def plotRdhr(options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: plotRdhr_single(x,options,args)),
+                                  range(npops),
+                                  numcores=numpy.amin([options.multi,
+                                                       npops,
+                                                       multiprocessing.cpu_count()]))
+    else:
+        for ii in range(npops):
+            plotRdhr_single(ii,options,args)
+
+def plotRdhr_single(ii,options,args):
     #Go through all of the bins
     if options.sample.lower() == 'g':
         savefile= open('binmapping_g.sav','rb')
@@ -115,7 +157,7 @@ def plotRdhr(options,args):
         npops= 62
     elif options.sample.lower() == 'k':
         npops= 30
-    for ii in range(npops):
+    if True:
         if _NOTDONEYET:
             spl= options.restart.split('.')
         else:
@@ -133,27 +175,23 @@ def plotRdhr(options,args):
                 mlogl= pickle.load(savefile)
             logl= pickle.load(savefile)
         except:
-            continue
+            return None
         finally:
             savefile.close()
         logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         marglogl= numpy.zeros((logl.shape[0],logl.shape[4]))
-        if ii == 0:
-            allmarglogl= numpy.zeros((logl.shape[0],logl.shape[4],npops))
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
-                indx= True-numpy.isnan(logl[jj,0,0,:,kk,:,:,:,:,:,:].flatten())
-                if numpy.sum(indx) > 0:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,kk,:,:,:,:,:,:].flatten()[indx])
+                if options.conditional:
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,kk,:,:,:,:,:,:])-maxentropy.logsumexp(logl[:,0,0,:,kk,:,:,:,:,:,:])
                 else:
-                    marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
-        allmarglogl[:,:,ii]= marglogl
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,kk,:,:,:,:,:,:])
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
         #Get hR range
-        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
+        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[ii],afes[ii],
                                                             relerr=True)
         if True: rehr= 0.3 #regularize
         hrs= numpy.linspace(lnhr-6.*rehr,lnhr+6.*rehr,options.nhrs)
@@ -207,16 +245,9 @@ def plotRdPout(options,args):
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         marglogl= numpy.zeros((logl.shape[0],logl.shape[8]))
-        if ii == 0:
-            allmarglogl= numpy.zeros((logl.shape[0],logl.shape[8],npops))
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
-                indx= True-numpy.isnan(logl[jj,0,0,:,:,:,:,:,kk,:,:].flatten())
-                if numpy.sum(indx) > 0:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,:,:,:,:,kk,:,:].flatten()[indx])
-                else:
-                    marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
-        allmarglogl[:,:,ii]= marglogl
+                marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,3:,:,:,:,kk,:,:].flatten())
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
         bovy_plot.bovy_print()
@@ -272,11 +303,7 @@ def plotRddvt(options,args):
             allmarglogl= numpy.zeros((logl.shape[0],logl.shape[7],npops))
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
-                indx= True-numpy.isnan(logl[jj,0,0,:,:,:,:,kk,:,:,:].flatten())
-                if numpy.sum(indx) > 0:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,:,:,:,kk,:,:,:].flatten()[indx])
-                else:
-                    marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,3:,:,:,kk,:,:,:].flatten())
         allmarglogl[:,:,ii]= marglogl
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
@@ -301,6 +328,22 @@ def plotRddvt(options,args):
 def plotsrsz(options,args):
     #Go through all of the bins
     if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: plotsrsz_single(x,options,args)),
+                                  range(npops),
+                                  numcores=numpy.amin([options.multi,
+                                                       npops,
+                                                       multiprocessing.cpu_count()]))
+    else:
+        for ii in range(npops):
+            plotsrsz_single(ii,options,args)
+
+def plotsrsz_single(ii,options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
         savefile= open('binmapping_g.sav','rb')
     elif options.sample.lower() == 'k':
         savefile= open('binmapping_k.sav','rb')
@@ -311,7 +354,7 @@ def plotsrsz(options,args):
         npops= 62
     elif options.sample.lower() == 'k':
         npops= 30
-    for ii in range(npops):
+    if True:
         if _NOTDONEYET:
             spl= options.restart.split('.')
         else:
@@ -329,31 +372,27 @@ def plotsrsz(options,args):
                 mlogl= pickle.load(savefile)
             logl= pickle.load(savefile)
         except:
-            continue
+            return None
         finally:
             savefile.close()
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         marglogl= numpy.zeros((logl.shape[5],logl.shape[6]))
-        if ii == 0:
-            allmarglogl= numpy.zeros((logl.shape[5],logl.shape[6],npops))
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
-                indx= True-numpy.isnan(logl[:,0,0,:,:,jj,kk,:,:,:,:].flatten())
-                if numpy.sum(indx) > 0:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,:,jj,kk,:,:,:,:].flatten()[indx])
+                if options.conditional:
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,3:,jj,kk,:,:,:,:].flatten())-maxentropy.logsumexp(logl[:,0,0,:,3:,jj,:,:,:,:,:].flatten())
                 else:
-                    marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
-        allmarglogl[:,:,ii]= marglogl
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,3:,jj,kk,:,:,:,:].flatten())
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
         #Get ranges
-        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
+        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[ii],afes[ii],
                                                             relerr=True)
         if True: resr= 0.3
         if True: resz= 0.3
-        srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
+        srs= numpy.linspace(lnsr-0.66*resz,lnsr+0.66*resz,options.nsrs)#USE ESZ
         szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
@@ -428,15 +467,11 @@ def plotRdsz_single(ii,options,args):
         marglogl= numpy.zeros((logl.shape[0],logl.shape[6]))
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
-                indx= True-numpy.isnan(logl[jj,0,0,:,:,:,kk,:,:,:,:].flatten())
-                if numpy.sum(indx) > 0:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,:,:,kk,:,:,:,:].flatten()[indx])
-                else:
-                    marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+                marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,3:,:,kk,:,:,:,:].flatten())
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
         #Get range
-        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
+        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[ii],afes[ii],
                                                             relerr=True)
         if True: resz= 0.3
         szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
@@ -444,7 +479,7 @@ def plotRdsz_single(ii,options,args):
         bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
                               origin='lower',cmap='gist_yarg',
                               interpolation='nearest',
-                              xrange=[1.5,4.5],
+                              xrange=[1.9,3.5],
                               yrange=[szs[0]-(szs[1]-szs[0])/2.,
                                       szs[-1]+(szs[1]-szs[0])/2.],
                               xlabel=r'$R_d\ (\mathrm{kpc})$',
@@ -466,7 +501,23 @@ def plotPout(options,args):
         npops= 62
     elif options.sample.lower() == 'k':
         npops= 30
-    for ii in range(npops):
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: plotPout_single(x,options,args)),
+                                  range(npops),
+                                  numcores=numpy.amin([options.multi,
+                                                       npops,
+                                                       multiprocessing.cpu_count()]))
+    else:
+        for ii in range(npops):
+            plotPout_single(ii,options,args)
+
+def plotPout_single(ii,options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    if True:
         if _NOTDONEYET:
             spl= options.restart.split('.')
         else:
@@ -484,22 +535,15 @@ def plotPout(options,args):
                 mlogl= pickle.load(savefile)
             logl= pickle.load(savefile)
         except:
-            continue
+            return None
         finally:
             savefile.close()
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         marglogl= numpy.zeros((logl.shape[8]))
-        if ii == 0:
-            allmarglogl= numpy.zeros((logl.shape[8],npops))
         for jj in range(marglogl.shape[0]):
-            indx= True-numpy.isnan(logl[:,0,0,:,:,:,:,:,jj,:,:].flatten())
-            if numpy.sum(indx) > 0:
-                marglogl[jj]= maxentropy.logsumexp(logl[:,0,0,:,:,:,:,:,jj,:,:].flatten()[indx])
-            else:
-                marglogl[jj]= -numpy.finfo(numpy.dtype(numpy.float64)).max
-        allmarglogl[:,ii]= marglogl
+            marglogl[jj]= maxentropy.logsumexp(logl[:,0,0,:,3:,:,:,:,jj,:,:].flatten())
         #Normalize
         alogl= marglogl-numpy.nanmax(marglogl)
         bovy_plot.bovy_print()
@@ -605,6 +649,7 @@ def plotloglhist(options,args):
         finally:
             savefile.close()
         logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        logl[:,:,:,:3,:,:,:,:,:,:]= -100000000000000.
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         bovy_plot.bovy_print()
