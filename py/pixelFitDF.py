@@ -667,7 +667,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                             print "Working on %i,%i,%i,%i" % (ii,jj,kk,ll)
                             optout= loglike_gridall([rds[ii],vcs[jj],zhs[kk],fhs[ll]],fehs,afes,binned,options,normintstuff,errstuff,normalization_out)                   
                             out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
-                            if ll > 4:
+                            if True:
                                 print "BOVY: YOU ARE SAVING TOO OFTEN"
                                 if not options.restart is None:
                                     save_pickles(options.restart,

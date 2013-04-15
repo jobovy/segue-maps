@@ -121,7 +121,7 @@ def plotDensComparisonDF(options,args):
     dvts= numpy.linspace(-0.35,0.05,options.ndvts)
     #dvts= numpy.linspace(-0.05,0.05,options.ndvts)
     pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-    indx= numpy.unravel_index(numpy.argmax(logl[1,0,0,5,3:,:,:,:,:,0,0,0]),
+    indx= numpy.unravel_index(numpy.argmax(logl[1,0,0,5,3:,:,:,:,:,0,0]),
                               (5,8,8,12,25))
     tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
                           #srs[indx[1]-2.*(indx[1] != 0)],
@@ -139,7 +139,7 @@ def plotDensComparisonDF(options,args):
     paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
     params1= paramsInterp
     if True:
-        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,9,3:,:,:,:,:,0,0,0]),
+        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,9,3:,:,:,:,:,0,0]),
                                   (5,8,8,12,25))
         tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
                               #srs[indx[1]-2.*(indx[1] != 0)],
@@ -156,7 +156,7 @@ def plotDensComparisonDF(options,args):
         print "Working on model 2 ..."
         paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
         params2= paramsInterp
-        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,3:,:,:,:,:,0,0,0]),
+        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,3:,:,:,:,:,0,0]),
                                   (5,8,8,12,25))
         tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
                               #srs[indx[1]-2.*(indx[1] != 0)],
