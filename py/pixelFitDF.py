@@ -81,7 +81,8 @@ _INITWESTIMATES= True
 _SMOOTHDISPS= True
 _SIMPLEOPTDF= True
 _JUSTSIMPLEOPTDF= False
-_NEWDFRANGES= True
+_NEWDFRANGES= False
+_NEWESTDFRANGES= True
 _NEWRDRANGE= True
 def pixelFitDF(options,args,pool=None):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
@@ -638,7 +639,10 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             ii= pickle.load(savefile)
             jj= pickle.load(savefile)
             kk= pickle.load(savefile)
-            ll= pickle.load(savefile)
+            try:
+                ll= pickle.load(savefile)
+            except EOFError:
+                ll= 0
             savefile.close()
         else:
             ii, jj, kk, ll= 0, 0, 0, 0 
@@ -1014,6 +1018,18 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         hrs= numpy.linspace(lnhr-1.5*rehr,lnhr+1.5*rehr,options.nhrs)
         srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
         szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
+    elif _NEWESTDFRANGES:
+        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
+                                                            relerr=True)
+        #if rehr > 0.3: rehr= 0.3 #regularize
+        if True: rehr= 0.3 #regularize
+        #if resr > 0.3: resr= 0.3
+        #if resz > 0.3: resz= 0.3
+        if True: resr= 0.3
+        if True: resz= 0.3
+        hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
+        srs= numpy.linspace(lnsr-0.8*resz,lnsr+0.8*resz,options.nsrs)#USE ESZ
+        szs= numpy.linspace(lnsz-0.8*resz,lnsz+0.8*resz,options.nszs)
     elif _NEWDFRANGES:
         lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
                                                             relerr=True)
@@ -1300,10 +1316,16 @@ def mloglike_gridall(fullparams,hr,sr,sz,
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
     #Evaluate outliers
-    data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]= logoutfrac+loghalodens\
-        -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
-        -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)\
-        -1.5*numpy.log(2.*math.pi)
+    if options.marginalizevrvt:
+        data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]= logoutfrac+loghalodens\
+            -numpy.log(szhalo)-2.*numpy.log(300./_REFV0/vo)\
+            -0.5*(vz**2./szhalo**2.)\
+            -0.5*numpy.log(2.*math.pi)
+    else:
+        data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]= logoutfrac+loghalodens\
+            -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
+            -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)\
+            -1.5*numpy.log(2.*math.pi)
     #Calculate normalizations
     normalization_qdf= calc_normint_fixedpot(qdf,0,normintstuff,tparams,npops,
                                              toptions,
