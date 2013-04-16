@@ -1306,7 +1306,17 @@ def mloglike_gridall(fullparams,hr,sr,sz,
         #pdb.set_trace()
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
     #Calculate surface(R=1.) for relative outlier normalization
-    logoutfrac= numpy.log(qdf.surfacemass_z(1.,ngl=toptions.ngl))
+    #logoutfrac= numpy.log(qdf.surfacemass_z(1.,ngl=toptions.ngl))
+    #Calculate normalizations
+    normalization_qdf= calc_normint_fixedpot(qdf,0,normintstuff,tparams,npops,
+                                             toptions,
+                                             -numpy.finfo(numpy.dtype(numpy.float64)).max,
+                                             jrs,lzs,jzs,normsrs,normszs,
+                                             rgs,kappas,nus,Omegas)
+    #tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
+    tnormalization_out= normalization_out*vo**3.
+    logoutfrac= numpy.log(normalization_qdf/tnormalization_out)
+    tnormalization_out= normalization_qdf
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(tparams,0,fehs,afes,binned,errstuff,
                                       toptions,npops)
@@ -1326,13 +1336,6 @@ def mloglike_gridall(fullparams,hr,sr,sz,
             -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
             -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)\
             -1.5*numpy.log(2.*math.pi)
-    #Calculate normalizations
-    normalization_qdf= calc_normint_fixedpot(qdf,0,normintstuff,tparams,npops,
-                                             toptions,
-                                             -numpy.finfo(numpy.dtype(numpy.float64)).max,
-                                             jrs,lzs,jzs,normsrs,normszs,
-                                             rgs,kappas,nus,Omegas)
-    tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
     #Run through the grid
     if _NEWDFRANGES:
         dvts= numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
