@@ -638,6 +638,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             ii= pickle.load(savefile)
             jj= pickle.load(savefile)
             kk= pickle.load(savefile)
+            ll= pickle.load(savefile)
             savefile.close()
         else:
             ii, jj, kk, ll= 0, 0, 0, 0 
@@ -663,7 +664,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                             optout= multOut[ll]
                             out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
                     else:
-                        for ll in range(len(fhs)):
+                        while ll <len(fhs):
                             print "Working on %i,%i,%i,%i" % (ii,jj,kk,ll)
                             optout= loglike_gridall([rds[ii],vcs[jj],zhs[kk],fhs[ll]],fehs,afes,binned,options,normintstuff,errstuff,normalization_out)                   
                             out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
@@ -672,6 +673,8 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                                 if not options.restart is None:
                                     save_pickles(options.restart,
                                                  out,ii,jj,kk)
+                            ll+= 1
+                    ll= 0
                     kk+= 1
                     if not options.restart is None:
                         save_pickles(options.restart,
