@@ -3,6 +3,7 @@ import numpy
 from scipy import ndimage
 import cPickle as pickle
 from galpy.util import bovy_plot, multi
+from matplotlib import pyplot
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
     segueSelect
 from fitDensz import _ZSUN
@@ -61,10 +62,11 @@ def plotVelComparisonDF(options,args):
         run_abundance_singles_plotdens(options,args,fehs,afes)
         return None
     ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(2.0/8.),235./220.,numpy.log(400./8000.),0.33333,0.])
-    potparams2= numpy.array([numpy.log(2.8/8.),235./220,numpy.log(400./8000.),0.8,0.])
-    potparams3= numpy.array([numpy.log(2.6/8.),235./220.,
-                             numpy.log(400./8000.),0.333333333,0.])
+    potparams1= numpy.array([numpy.log(2.6/8.),220./220.,numpy.log(400./8000.),0.2,0.])
+    potparams2= numpy.array([numpy.log(2.8/8.),220./220,numpy.log(400./8000.),0.26666666,0.])
+    #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
+    potparams3= numpy.array([numpy.log(2.6/8.),220./220.,
+                             numpy.log(400./8000.),0.4666666,0.])
     pop= 0 #assume first population
     #Load savefile
     if not options.init is None:
@@ -104,18 +106,19 @@ def plotVelComparisonDF(options,args):
     #if resz > 0.3: resz= 0.3
     if True: resr= 0.3
     if True: resz= 0.3
-    hrs= numpy.linspace(lnhr-1.5*rehr,lnhr+1.5*rehr,options.nhrs)
-    srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
-    szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
+    hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
+    #hrs= numpy.linspace(lnhr-1.5*rehr,lnhr+1.5*rehr,options.nhrs)
+    srs= numpy.linspace(lnsr-0.8*resz,lnsr+0.8*resz,options.nsrs)#USE ESZ
+    szs= numpy.linspace(lnsz-0.8*resz,lnsz+0.8*resz,options.nszs)
     #hrs= numpy.linspace(lnhr-0.3,lnhr+0.3,options.nhrs)
     #srs= numpy.linspace(lnsr-0.1,lnsr+0.1,options.nsrs)
     #szs= numpy.linspace(lnsz-0.1,lnsz+0.1,options.nszs)
     dvts= numpy.linspace(-0.35,0.05,options.ndvts)
     #dvts= numpy.linspace(-0.05,0.05,options.ndvts)
     pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-    indx= numpy.unravel_index(numpy.argmax(logl[1,0,0,5,3:,:,:,:,:,0,0,0]),
-                              (5,8,8,12,25))
-    tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,:,:,0,0]),
+                              logl[3,0,0,3,:,:,:,:,:,0,0].shape)
+    tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
                           #srs[indx[1]-2.*(indx[1] != 0)],
                           #szs[indx[2]-2.*(indx[2] != 0)],
                           srs[indx[1]],
@@ -168,9 +171,9 @@ def plotVelComparisonDF(options,args):
     velps[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
     alts= True
     if alts:
-        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,9,3:,:,:,:,:,0,0,0]),
-                                  (5,8,8,12,25))
-        tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+        indx= numpy.unravel_index(numpy.argmax(logl[4,0,0,4,:,:,:,:,:,0,0]),
+                                  logl[4,0,0,4,:,:,:,:,:,0,0].shape)
+        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
                               #srs[indx[1]-1.*(indx[1] != 0)],
                               #szs[indx[2]-1.*(indx[2] != 0)],
                               srs[indx[1]],
@@ -183,9 +186,9 @@ def plotVelComparisonDF(options,args):
         tparams= set_potparams(potparams2,tparams,options,1)
         print "Working on model 2 ..."
         velps2[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
-        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,3:,:,:,:,:,0,0,0]),
-                                  (5,8,8,12,25))
-        tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,7,:,:,:,:,:,0,0]),
+                                  logl[3,0,0,7,:,:,:,:,:,0,0].shape)
+        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
                               #srs[indx[1]-2.*(indx[1] != 0)],
                               #szs[indx[2]-2.*(indx[2] != 0)],
                               srs[indx[1]],
@@ -234,22 +237,32 @@ def plotVelComparisonDF(options,args):
     bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.type+'dist_all.'+options.ext)
     if options.all: return None
     #Plot zranges
-    zranges= [0.5,1.,1.5,2.,3.,4.]
+    zranges= numpy.array([0.5,1.,1.5,2.,3.,4.])
     nzranges= len(zranges)-1
     zs= numpy.array(zs)
     data= numpy.array(data)
+    sigzsd= numpy.empty(nzranges)
+    esigzsd= numpy.empty(nzranges)
+    sigzs1= numpy.empty(nzranges)
+    sigzs2= numpy.empty(nzranges)
+    sigzs3= numpy.empty(nzranges)
     for ii in range(nzranges):
         indx= (numpy.fabs(zs) >= zranges[ii])*(numpy.fabs(zs) < zranges[ii+1])
         bovy_plot.bovy_print()
         bovy_plot.bovy_hist(data[indx],bins=26,normed=True,color='k',
                             histtype='step',
                             xrange=xrange,xlabel=xlabel)
+        sigzsd[ii]= numpy.std(data[indx][(numpy.fabs(data[indx]) < 100.)])
+        esigzsd[ii]= sigzsd[ii]/numpy.sqrt(float(len(data[indx][(numpy.fabs(data[indx]) < 100.)])))
         plotp= numpy.nansum(velps[indx,:],axis=0)/numpy.sum(indx)
+        sigzs1[ii]= numpy.sqrt(numpy.sum(vs**2.*plotp)/numpy.sum(plotp)-(numpy.sum(vs*plotp)/numpy.sum(plotp))**2.)
         bovy_plot.bovy_plot(vs,plotp,'k-',overplot=True)
         if alts:
             plotp= numpy.nansum(velps2[indx,:],axis=0)/numpy.sum(indx)
+            sigzs2[ii]= numpy.sqrt(numpy.sum(vs**2.*plotp)/numpy.sum(plotp)-(numpy.sum(vs*plotp)/numpy.sum(plotp))**2.)
             bovy_plot.bovy_plot(vs,plotp,'k--',overplot=True)
             plotp= numpy.nansum(velps3[indx,:],axis=0)/numpy.sum(indx)
+            sigzs3[ii]= numpy.sqrt(numpy.sum(vs**2.*plotp)/numpy.sum(plotp)-(numpy.sum(vs*plotp)/numpy.sum(plotp))**2.)
             bovy_plot.bovy_plot(vs,plotp,'k:',overplot=True)
         bovy_plot.bovy_text(r'$ %i\ \mathrm{pc} \leq |Z| < %i\ \mathrm{pc}$' % (int(1000*zranges[ii]),int(1000*zranges[ii+1]))
                             +'\n'+
@@ -257,6 +270,24 @@ def plotVelComparisonDF(options,args):
                             (numpy.sum(indx)),top_right=True,
                             size=_legendsize)
         bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.type+'dist_z%.1f_z%.1f.' % (zranges[ii],zranges[ii+1])+options.ext)
+    #Plot velocity dispersion as a function of |Z|
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_plot((((numpy.roll(zranges,-1)+zranges)/2.)[:5]),sigzsd,
+                        'ko',
+                        xlabel=r'$|Z|\ (\mathrm{kpc})$',
+                        ylabel=r'$\sigma_z\ (\mathrm{km\,s}^{-1})$',
+                        xrange=[0.,4.],
+                        yrange=[0.,60.])
+    pyplot.errorbar(((numpy.roll(zranges,-1)+zranges)/2.)[:5],sigzsd,
+                    yerr=esigzsd,
+                    marker='o',color='k',linestyle='none')
+    bovy_plot.bovy_plot((((numpy.roll(zranges,-1)+zranges)/2.)[:5]),sigzs1,
+                        'k+',overplot=True)
+    bovy_plot.bovy_plot((((numpy.roll(zranges,-1)+zranges)/2.)[:5]),sigzs2,
+                        'kx',overplot=True)
+    bovy_plot.bovy_plot((((numpy.roll(zranges,-1)+zranges)/2.)[:5]),sigzs3,
+                        'kd',overplot=True)
+    bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.type+'dist_szvsz.'+options.ext)
     return None
 
 def calc_model(params,options,data,vs):

@@ -4502,7 +4502,7 @@ def get_options():
                       help="Number of radial dispersions to use in grid-based search")
     parser.add_option("--nszs",dest='nszs',default=8,type='int',
                       help="Number of vertical dispersions to use in grid-based search")
-    if _NEWDFRANGES:
+    if _NEWDFRANGES or _NEWESTDFRANGES:
         parser.add_option("--ndvts",dest='ndvts',default=3,type='int',
                           help="Number of dvts to use in grid-based search")
         parser.add_option("--npouts",dest='npouts',default=25,type='int',

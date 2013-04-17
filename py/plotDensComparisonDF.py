@@ -67,11 +67,11 @@ def plotDensComparisonDF(options,args):
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
     ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(2.0/8.),235./220.,numpy.log(400./8000.),0.33333,0.])
-    potparams2= numpy.array([numpy.log(2.8/8.),235./220,numpy.log(400./8000.),0.8,0.])
+    potparams1= numpy.array([numpy.log(2.6/8.),220./220.,numpy.log(400./8000.),0.2,0.])
+    potparams2= numpy.array([numpy.log(2.8/8.),220./220,numpy.log(400./8000.),0.26666666,0.])
     #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
-    potparams3= numpy.array([numpy.log(2.6/8.),235./220.,
-                             numpy.log(400./8000.),0.33333333,0.])
+    potparams3= numpy.array([numpy.log(2.6/8.),220./220.,
+                             numpy.log(400./8000.),0.4666666,0.])
     #Set up density models and their parameters
     pop= 0 #assume first population
     #Load savefile
@@ -112,18 +112,19 @@ def plotDensComparisonDF(options,args):
     #if resz > 0.3: resz= 0.3
     if True: resr= 0.3
     if True: resz= 0.3
-    hrs= numpy.linspace(lnhr-1.5*rehr,lnhr+1.5*rehr,options.nhrs)
-    srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
-    szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
+    hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
+    #hrs= numpy.linspace(lnhr-1.5*rehr,lnhr+1.5*rehr,options.nhrs)
+    srs= numpy.linspace(lnsr-0.8*resz,lnsr+0.8*resz,options.nsrs)#USE ESZ
+    szs= numpy.linspace(lnsz-0.8*resz,lnsz+0.8*resz,options.nszs)
     #hrs= numpy.linspace(lnhr-0.3,lnhr+0.3,options.nhrs)
     #srs= numpy.linspace(lnsr-0.1,lnsr+0.1,options.nsrs)
     #szs= numpy.linspace(lnsz-0.1,lnsz+0.1,options.nszs)
     dvts= numpy.linspace(-0.35,0.05,options.ndvts)
     #dvts= numpy.linspace(-0.05,0.05,options.ndvts)
     pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-    indx= numpy.unravel_index(numpy.argmax(logl[1,0,0,5,3:,:,:,:,:,0,0]),
-                              (5,8,8,12,25))
-    tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,:,:,0,0]),
+                              logl[3,0,0,3,:,:,:,:,:,0,0].shape)
+    tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
                           #srs[indx[1]-2.*(indx[1] != 0)],
                           #szs[indx[2]-2.*(indx[2] != 0)],
                           srs[indx[1]],
@@ -139,9 +140,9 @@ def plotDensComparisonDF(options,args):
     paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
     params1= paramsInterp
     if True:
-        indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,9,3:,:,:,:,:,0,0]),
-                                  (5,8,8,12,25))
-        tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+        indx= numpy.unravel_index(numpy.argmax(logl[4,0,0,4,:,:,:,:,:,0,0]),
+                                  logl[4,0,0,4,:,:,:,:,:,0,0].shape)
+        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
                               #srs[indx[1]-2.*(indx[1] != 0)],
                               #szs[indx[2]-2.*(indx[2] != 0)],
                               srs[indx[1]],
@@ -156,9 +157,9 @@ def plotDensComparisonDF(options,args):
         print "Working on model 2 ..."
         paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
         params2= paramsInterp
-        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,3:,:,:,:,:,0,0]),
-                                  (5,8,8,12,25))
-        tparams= numpy.array([dvts[indx[3]],hrs[3+indx[0]],
+        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,7,:,:,:,:,:,0,0]),
+                                  logl[3,0,0,7,:,:,:,:,:,0,0].shape)
+        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
                               #srs[indx[1]-2.*(indx[1] != 0)],
                               #szs[indx[2]-2.*(indx[2] != 0)],
                               srs[indx[1]],
