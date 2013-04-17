@@ -220,7 +220,23 @@ def plotRdPout(options,args):
         npops= 62
     elif options.sample.lower() == 'k':
         npops= 30
-    for ii in range(npops):
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: plotRdPout_single(x,options,args)),
+                                  range(npops),
+                                  numcores=numpy.amin([options.multi,
+                                                       npops,
+                                                       multiprocessing.cpu_count()]))
+    else:
+        for ii in range(npops):
+            plotRdPout_single(ii,options,args)
+
+def plotRdPout_single(ii,options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    if True:
         if _NOTDONEYET:
             spl= options.restart.split('.')
         else:
@@ -238,7 +254,7 @@ def plotRdPout(options,args):
                 mlogl= pickle.load(savefile)
             logl= pickle.load(savefile)
         except:
-            continue
+            return None
         finally:
             savefile.close()
         logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -247,7 +263,10 @@ def plotRdPout(options,args):
         marglogl= numpy.zeros((logl.shape[0],logl.shape[8]))
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
-                marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,3:,:,:,:,kk,:,:].flatten())
+                if options.conditional:
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,3:,:,:,:,kk,:,:].flatten())-maxentropy.logsumexp(logl[:,0,0,:,3:,:,:,:,kk,:,:].flatten())
+                else:
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,3:,:,:,:,kk,:,:].flatten())
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
         bovy_plot.bovy_print()
@@ -268,13 +287,29 @@ def plotRdPout(options,args):
         newname+= spl[-1]
         bovy_plot.bovy_end_print(newname)
 
-def plotRddvt(options,args):
+def plotfhPout(options,args):
     #Go through all of the bins
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
         npops= 30
-    for ii in range(npops):
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: plotfhPout_single(x,options,args)),
+                                  range(npops),
+                                  numcores=numpy.amin([options.multi,
+                                                       npops,
+                                                       multiprocessing.cpu_count()]))
+    else:
+        for ii in range(npops):
+            plotfhPout_single(ii,options,args)
+
+def plotfhPout_single(ii,options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    if True:
         if _NOTDONEYET:
             spl= options.restart.split('.')
         else:
@@ -292,19 +327,89 @@ def plotRddvt(options,args):
                 mlogl= pickle.load(savefile)
             logl= pickle.load(savefile)
         except:
-            continue
+            return None
+        finally:
+            savefile.close()
+        logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if _NOTDONEYET:
+            logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        marglogl= numpy.zeros((logl.shape[8],logl.shape[3]))
+        for jj in range(marglogl.shape[0]):
+            for kk in range(marglogl.shape[1]):
+                if options.conditional:
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,kk,3:,:,:,:,jj,:,:].flatten())-maxentropy.logsumexp(logl[:,0,0,:,3:,:,:,:,jj,:,:].flatten())
+                else:
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,kk,3:,:,:,:,jj,:,:].flatten())
+        #Normalize
+        alogl= marglogl-numpy.amax(marglogl)
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
+                              origin='lower',cmap='gist_yarg',
+                              interpolation='nearest',
+                              yrange=[-1./32.,1.+1./32.],
+                              xrange=[-0.01,.51],
+                              ylabel=r'$f_h$',
+                              xlabel=r'$P_{\mathrm{out}}$')
+        #Plotname
+        spl= options.outfilename.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        bovy_plot.bovy_end_print(newname)
+
+def plotRddvt(options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: plotRddvt_single(x,options,args)),
+                                  range(npops),
+                                  numcores=numpy.amin([options.multi,
+                                                       npops,
+                                                       multiprocessing.cpu_count()]))
+    else:
+        for ii in range(npops):
+            plotRddvt_single(ii,options,args)
+
+def plotRddvt_single(ii,options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    if True:
+        if _NOTDONEYET:
+            spl= options.restart.split('.')
+        else:
+            spl= args[0].split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        savefile= open(newname,'rb')
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            return None
         finally:
             savefile.close()
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         marglogl= numpy.zeros((logl.shape[0],logl.shape[7]))
-        if ii == 0:
-            allmarglogl= numpy.zeros((logl.shape[0],logl.shape[7],npops))
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
                     marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,3:,:,:,kk,:,:,:].flatten())
-        allmarglogl[:,:,ii]= marglogl
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
         bovy_plot.bovy_print()
@@ -627,7 +732,23 @@ def plotloglhist(options,args):
         npops= 62
     elif options.sample.lower() == 'k':
         npops= 30
-    for ii in range(npops):
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: plotloglhist_single(x,options,args)),
+                                  range(npops),
+                                  numcores=numpy.amin([options.multi,
+                                                       npops,
+                                                       multiprocessing.cpu_count()]))
+    else:
+        for ii in range(npops):
+            plotloglhist_single(ii,options,args)
+
+def plotloglhist_single(ii,options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    if True:
         if _NOTDONEYET:
             spl= options.restart.split('.')
         else:
@@ -645,7 +766,7 @@ def plotloglhist(options,args):
                 mlogl= pickle.load(savefile)
             logl= pickle.load(savefile)
         except:
-            continue
+            return None
         finally:
             savefile.close()
         logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -932,6 +1053,8 @@ if __name__ == '__main__':
         plotRdsz(options,args)
     elif options.type.lower() == 'rdpout':
         plotRdPout(options,args)
+    elif options.type.lower() == 'fhpout':
+        plotfhPout(options,args)
     elif options.type.lower() == 'rddvt':
         plotRddvt(options,args)
     elif options.type.lower() == 'loglhist':
