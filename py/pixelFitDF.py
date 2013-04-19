@@ -50,7 +50,7 @@ import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
     segueSelect, _mr_gi, _gi_gr, _ERASESTR, _append_field_recarray, \
     ivezic_dist_gr
-from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
+from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS, _DblExpDensity
 from compareDataModel import _predict_rdist_plate, comparernumberPlate
 from pixelFitDens import pixelAfeFeh
 _DEBUG= False
@@ -84,6 +84,7 @@ _JUSTSIMPLEOPTDF= False
 _NEWDFRANGES= False
 _NEWESTDFRANGES= True
 _NEWRDRANGE= True
+_NEWSAVE= True
 def pixelFitDF(options,args,pool=None):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
@@ -104,7 +105,7 @@ def pixelFitDF(options,args,pool=None):
     print "Reading the data ..."
     raw= read_rawdata(options)
     #Setup error mc integration
-    if not options.singles:
+    if not options.singles and options.singlefeh is None:
         print "Setting up error integration ..."
         raw, errstuff= setup_err_mc(raw,options)
     #Bin the data
@@ -135,9 +136,11 @@ def pixelFitDF(options,args,pool=None):
             allraw= copy.copy(raw)
             raw= copy.copy(binned.data[indx])
             newerrstuff= []
-            for ii in range(len(binned.data)):
-                if indx[ii]: newerrstuff.append(errstuff[ii])
-            errstuff= newerrstuff
+            print "Setting up error integration ..."
+            raw, errstuff= setup_err_mc(raw,options)
+            #for ii in range(len(binned.data)):
+            #    if indx[ii]: newerrstuff.append(errstuff[ii])
+            #errstuff= newerrstuff
             print "Using %i data points ..." % (len(raw))
             #Bin again
             binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
@@ -221,32 +224,7 @@ def pixelFitDF(options,args,pool=None):
     elif options.gridall:
         gridOut= gridallLike(fehs,afes,binned,options,normintstuff,
                              errstuff)
-        #Find best-fit
-        if _NEWDFRANGES:
-            hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
-            srs= numpy.log(numpy.linspace(30.,70.,options.nsrs)/_REFV0)
-            szs= numpy.log(numpy.linspace(12.,80.,options.nszs)/_REFV0)
-            dvts= numpy.linspace(-0.2,0.2,options.ndvts)
-            pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-        else:
-            hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
-            srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
-            szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
-            dvts= numpy.linspace(-0.1,0.1,options.ndvts)
-            pouts= numpy.linspace(10.**-5.,.3,options.npouts)
-        indx= numpy.unravel_index(numpy.argmax(gridOut[0]),gridOut[0].shape)
-        params= [dvts[indx[7]],hrs[indx[4]],srs[indx[5]],szs[indx[6]],
-                 numpy.log(8./_REFR0),numpy.log(7./_REFR0),pouts[indx[8]]]
-        if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
-            params.append(gridOut[1][indx[0]])
-            params.append(gridOut[2][indx[1]])
-            params.append(gridOut[3][indx[2]])
-            params.append(gridOut[4][indx[3]])
-            params.append(options.dlnvcdlnr)
-        elif options.potential.lower() == 'bt':
-            params.append(gridOut[2][indx[0]])
-        params= numpy.array(params)
-        save_pickles(args[0],params,-gridOut[0][indx]) #Just so that there is a record of the fact that the fit is done
+        save_pickles(args[0],None) #Just so that there is a record of the fact that the fit is done
     else:
         #Sample
         if options.justdf:
@@ -616,6 +594,18 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                                                  0.,
                                                  None,None,None,None,None,
                                                  None,None,None,None,fqdf=0.)
+        dblexphr= monoAbundanceMW.hr(fehs[0],afes[0])
+        dblexphz= monoAbundanceMW.hz(fehs[0],afes[0])
+        normalization_dout= calc_normint_fixedpot(None,0,normintstuff,
+                                                  out_params,
+                                                  1,
+                                                  options,
+                                                  0.,
+                                                  None,None,None,None,None,
+                                                  None,None,None,None,fqdf=0.,
+                                                  dblexp=True,
+                                                  dblexphr=dblexphr,
+                                                  dblexphz=dblexphz)
         vcs= numpy.array([200./_REFV0,220./_REFV0,240./_REFV0])
         zhs= numpy.array([300./1000./_REFR0,400./1000./_REFR0,500./1000./_REFR0])
         print "BOVY: ADJUST VC AND ZH"
@@ -623,6 +613,8 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
         zhs= numpy.array([options.fixzh/1000./_REFR0])
         if _NEWRDRANGE:
             rds= numpy.linspace(2.0,3.4,options.nrds)/_REFR0
+            rds= rds[3:]
+            print "BOVY: YOU ARE CHANGING THE RD RANGE FOR TESTING"
         else:
             rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
         fhs= numpy.linspace(0.,1.,options.nfhs)
@@ -646,7 +638,11 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             savefile.close()
         else:
             ii, jj, kk, ll= 0, 0, 0, 0 
-            if options.fitdvt:
+            if _NEWSAVE:
+                out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),
+                                  options.nhrs,options.nsrs,options.nszs,
+                                  5)) #latter are nuisance params+1
+            elif options.fitdvt:
                 out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),
                                   options.nhrs,options.nsrs,options.nszs,
                                   options.ndvts,options.npouts,1,1))
@@ -659,21 +655,27 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                 while kk <len(zhs):
                     print "Working on %i,%i,%i" % (ii,jj,kk)
                     if _MULTIWHOLEGRID and not options.multi is None:
-                        multOut= multi.parallel_map((lambda x: loglike_gridall([rds[ii],vcs[jj],zhs[kk],fhs[x]],fehs,afes,binned,options,normintstuff,errstuff,normalization_out)),
+                        multOut= multi.parallel_map((lambda x: loglike_gridall([rds[ii],vcs[jj],zhs[kk],fhs[x]],fehs,afes,binned,options,normintstuff,errstuff,normalization_out,normalization_dout)),
                                                 range(len(fhs)-1,-1,-1),
                                                 numcores=numpy.amin([len(fhs),
                                                                      multiprocessing.cpu_count(),
                                                                      options.multi]))
                         for ll in range(len(fhs)-1,-1,-1):
                             optout= multOut[ll]
-                            out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
+                            if _NEWSAVE:
+                                out[ii,jj,kk,ll,:,:,:,:]= optout
+                            else:
+                                out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
                     else:
                         while ll <len(fhs):
                             print "Working on %i,%i,%i,%i" % (ii,jj,kk,ll)
-                            optout= loglike_gridall([rds[ii],vcs[jj],zhs[kk],fhs[ll]],fehs,afes,binned,options,normintstuff,errstuff,normalization_out)                   
-                            out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
-                            if True:
-                                print "BOVY: YOU ARE SAVING TOO OFTEN"
+                            start= time.time()
+                            optout= loglike_gridall([rds[ii],vcs[jj],zhs[kk],fhs[ll]],fehs,afes,binned,options,normintstuff,errstuff,normalization_out,normalization_dout)                   
+                            if _NEWSAVE:
+                                out[ii,jj,kk,ll,:,:,:,:]= optout
+                            else:
+                                out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
+                            if (time.time()-start) > 10.:
                                 if not options.restart is None:
                                     save_pickles(options.restart,
                                                  out,ii,jj,kk)
@@ -902,12 +904,15 @@ def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     return out
 
 def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
-                    normalization_out):
+                    normalization_out,normalization_dout):
     """log likelihood, ASSUMES A SINGLE BIN"""
     toptions= copy.copy(options)
     if _MULTIWHOLEGRID:
         toptions.multi= toptions.multi2 #Set multi to the second multi
-    if toptions.fitdvt:
+    if _NEWSAVE:
+        out= numpy.zeros((options.nhrs,options.nsrs,options.nszs,
+                          5))-numpy.finfo(numpy.dtype(numpy.float64)).max
+    elif toptions.fitdvt:
         out= numpy.zeros((options.nhrs,options.nsrs,options.nszs,
                           options.ndvts,options.npouts,1,1))-numpy.finfo(numpy.dtype(numpy.float64)).max
     else:
@@ -928,11 +933,17 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     tparams= initialize(toptions,fehs,afes)    
     tparams= set_potparams(potparams,tparams,toptions,len(fehs))
     if numpy.any(numpy.isnan(tparams)):
-        out[:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if _NEWSAVE:
+            out[:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        else:
+            out[:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         return out
     logpotprior= logprior_pot(tparams,toptions,len(fehs))
     if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-        out[:,:,:,:,:,:,:]= logpotprior
+        if _NEWSAVE:
+            out[:,:,:,:]= logpotprior
+        else:
+            out[:,:,:,:,:,:,:]= logpotprior
         return out
     #Set up potential and actionAngle
     if _DEBUG:
@@ -940,7 +951,10 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     try:
         pot= setup_potential(tparams,toptions,len(fehs))
     except RuntimeError: #if this set of parameters gives a nonsense potential
-        out[:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        if _NEWSAVE:
+            out[:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        else:
+            out[:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         return out
     aA= setup_aA(pot,toptions)
     #Set-up the fiducial DF
@@ -1006,6 +1020,62 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     for ii in range(nrs):
         normsrs[ii,:]= qdf._sr*numpy.exp((1.-Rgrid[ii])/qdf._hsr)
         normszs[ii,:]= qdf._sz*numpy.exp((1.-Rgrid[ii])/qdf._hsz)
+    #Now for the data
+    #Get data ready
+    R,vR,vT,z,vz= prepare_coordinates(tparams,0,fehs,afes,binned,errstuff,
+                                      toptions,len(fehs))
+    ndata= R.shape[0]
+    datajrs= numpy.empty((ndata*options.nmcerr,options.ndvts))
+    datalzs= numpy.empty((ndata*options.nmcerr,options.ndvts))
+    datajzs= numpy.empty((ndata*options.nmcerr,options.ndvts))
+    datargs= numpy.empty((ndata*options.nmcerr,options.ndvts))
+    datakappas= numpy.empty((ndata*options.nmcerr,options.ndvts))
+    datanus= numpy.empty((ndata*options.nmcerr,options.ndvts))
+    dataOmegas= numpy.empty((ndata*options.nmcerr,options.ndvts))
+    if _NEWESTDFRANGES:
+        dvts= [0.] #numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
+    elif _NEWDFRANGES:
+        dvts= numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
+    else:
+        dvts= numpy.linspace(-0.1,0.1,toptions.ndvts)  
+    if not toptions.multi is None:
+        multOut= multi.parallel_map((lambda x: setup_optdf_data_actions(R,
+                                                                        vR,
+                                                                        vT,
+                                                                        z,
+                                                                        vz,
+                                                                        dvts[x],
+                                                                        toptions,
+                                                                        qdf,vo)),
+                                    range(len(dvts)),
+                                    numcores=numpy.amin([len(dvts),
+                                                         multiprocessing.cpu_count(),
+                                                         toptions.multi]))
+        for ii in range(options.ndvts):
+            datajrs[:,ii]= multOut[ii][0,:]
+            datalzs[:,ii]= multOut[ii][1,:]
+            datajzs[:,ii]= multOut[ii][2,:]
+            datargs[:,ii]= multOut[ii][3,:]
+            datakappas[:,ii]= multOut[ii][4,:]
+            datanus[:,ii]= multOut[ii][5,:]
+            dataOmegas[:,ii]= multOut[ii][6,:]
+    else:
+        for ii in range(ndata):
+            multOut= setup_optdf_data_actions(R,
+                                              vR,
+                                              vT,
+                                              z,
+                                              vz,
+                                              dvts[ii],
+                                              toptions,
+                                              qdf,vo)
+            datajrs[:,ii]= multOut[0,:]
+            datalzs[:,ii]= multOut[1,:]
+            datajzs[:,ii]= multOut[2,:]
+            datargs[:,ii]= multOut[3,:]
+            datakappas[:,ii]= multOut[4,:]
+            datanus[:,ii]= multOut[5,:]
+            dataOmegas[:,ii]= multOut[6,:]
     #Go through the grid
     #IF YOU EDIT THIS, ALSO EDIT IT ABOVE
     if toptions.physicaldfparams:
@@ -1051,48 +1121,72 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         #print "Working on DF %i, dt= %f" % (ii,time.time()-start)
         #start= time.time()
         if _MULTIDFGRID and options.multi > options.nhrs:
-            multOut= multi.parallel_map((lambda x: mloglike_gridall(tparams,
+            multOut= multi.parallel_map((lambda x: mmloglike_gridall(tparams,
                                                             hrs[x % options.nhrs],srs[x / options.nhrs],szs[ii],
                                                             pot,aA,fehs,afes,binned,normintstuff,
                                                             len(fehs),errstuff,toptions,vo,ro,
                                                             jrs,lzs,jzs,normsrs,normszs,
                                                             qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
                                                             rgs,kappas,nus,Omegas,
-                                                                        normalization_out)),
+                                                                        normalization_out,normalization_dout,
+                                                                     datajrs,datalzs,datajzs,
+                                                                     datargs,datakappas,datanus,dataOmegas)),
                                             range(options.nhrs*options.nsrs),
                                             numcores=numpy.amin([options.nhrs*options.nsrs,
                                                                  multiprocessing.cpu_count(),
                                                                  options.multi]))
             for jj in range(options.nsrs*options.nhrs):
-                out[jj % options.nhrs,jj/options.nhrs,ii,:,:,:,:]= multOut[jj]
+                if _NEWSAVE:
+                    out[jj % options.nhrs,jj/options.nhrs,ii,:]= multOut[jj]
+                else:
+                    out[jj % options.nhrs,jj/options.nhrs,ii,:,:,:,:]= multOut[jj]
         else:
             for jj in range(options.nsrs):
                 if _MULTIDFGRID:
-                    multOut= multi.parallel_map((lambda x: mloglike_gridall(tparams,
+                    multOut= multi.parallel_map((lambda x: mmloglike_gridall(tparams,
                                                             hrs[x],srs[jj],szs[ii],
                                                             pot,aA,fehs,afes,binned,normintstuff,
                                                             len(fehs),errstuff,toptions,vo,ro,
                                                             jrs,lzs,jzs,normsrs,normszs,
                                                             qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
                                                             rgs,kappas,nus,Omegas,
-                                                                        normalization_out)),
-                                            range(options.nhrs),
+                                                                        normalization_out,normalization_dout,
+                                                                             datajrs,datalzs,datajzs,
+                                                                             datargs,datakappas,datanus,dataOmegas)),
+                                                range(options.nhrs),
                                             numcores=numpy.amin([options.nhrs,
                                                                  multiprocessing.cpu_count(),
                                                                  options.multi]))
                     for kk in range(options.nhrs):
-                        out[kk,jj,ii,:,:,:,:]= multOut[kk]
+                        if _NEWSAVE:
+                            out[kk,jj,ii,:]= multOut[kk]
+                        else:
+                            out[kk,jj,ii,:,:,:,:]= multOut[kk]
             else:
                 for kk in range(options.nhrs):
-                    out[kk,jj,ii,:,:,:,:]= mloglike_gridall(tparams,
-                                                            hrs[kk],srs[jj],szs[ii],
-                                                            pot,aA,fehs,afes,binned,normintstuff,
-                                                            len(fehs),errstuff,toptions,vo,ro,
-                                                            jrs,lzs,jzs,normsrs,normszs,
-                                                            qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
-                                                            rgs,kappas,nus,Omegas,
-                                                            normalization_out)
-    return -out
+                    if _NEWSAVE:
+                        out[kk,jj,ii,:]= mmloglike_gridall(tparams,
+                                                           hrs[kk],srs[jj],szs[ii],
+                                                           pot,aA,fehs,afes,binned,normintstuff,
+                                                           len(fehs),errstuff,toptions,vo,ro,
+                                                           jrs,lzs,jzs,normsrs,normszs,
+                                                           qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
+                                                           rgs,kappas,nus,Omegas,
+                                                           normalization_out,normalization_dout,
+                                                           datajrs,datalzs,datajzs,
+                                                           datargs,datakappas,datanus,dataOmegas)
+                    else:
+                        out[kk,jj,ii,:,:,:,:]= mmloglike_gridall(tparams,
+                                                                 hrs[kk],srs[jj],szs[ii],
+                                                                 pot,aA,fehs,afes,binned,normintstuff,
+                                                                 len(fehs),errstuff,toptions,vo,ro,
+                                                                 jrs,lzs,jzs,normsrs,normszs,
+                                                                 qdf._sr*vo,qdf._sz*vo,qdf._hr*ro,
+                                                                 rgs,kappas,nus,Omegas,
+                                                                 normalization_out,normalization_dout,
+                                                                 datajrs,datalzs,datajzs,
+                                                                 datargs,datakappas,datanus,dataOmegas)
+    return out
 
 def chi2_simpleoptdf(dfparams,goal_params,pot,aA,options,ro,vo):
     #Setup DF
@@ -1130,6 +1224,25 @@ def logit(x):
 
 def ilogit(x):
     return numpy.exp(x)/(1.+numpy.exp(x))
+
+def setup_optdf_data_actions(R,vR,vT,z,vz,dvt,toptions,qdf,vo):
+    js= numpy.zeros((7,R.shape[0]*options.nmcerr))
+    tvT= vT+dvt/vo
+    dumm, tjr, tlz, tjz, trg, tkappa, tnu, tOmega= qdf(R.flatten(),
+                                                       vR.flatten(),
+                                                       tvT.flatten(),
+                                                       z.flatten(),vz.flatten(),
+                                                       log=True,
+                                                       _return_actions=True,
+                                                       _return_freqs=True)
+    js[0,:]= tjr
+    js[1,:]= tlz
+    js[2,:]= tjz
+    js[3,:]= trg
+    js[4,:]= tkappa
+    js[5,:]= tnu
+    js[6,:]= tOmega
+    return js
 
 def setup_optdf_actions(R,zgrid,nzs,options,qdf):
     js= numpy.zeros((7,nzs,options.ngl**3))
@@ -1258,11 +1371,14 @@ def mloglike_optdf_2optimize(params,fullparams,
 #        print -out, tparams
     return -out
 
-def mloglike_gridall(fullparams,hr,sr,sz,
-                     pot,aA,fehs,afes,binned,normintstuff,
-                     npops,errstuff,options,vo,ro,
-                     jrs,lzs,jzs,normsrs,normszs,initsr,initsz,inithr,
-                     rgs,kappas,nus,Omegas,normalization_out):
+def mmloglike_gridall(fullparams,hr,sr,sz,
+                      pot,aA,fehs,afes,binned,normintstuff,
+                      npops,errstuff,options,vo,ro,
+                      jrs,lzs,jzs,normsrs,normszs,initsr,initsz,inithr,
+                      rgs,kappas,nus,Omegas,normalization_out,
+                      normalization_dout,
+                      datajrs,datalzs,datajzs,
+                      datargs,datakappas,datanus,dataOmegas):
     """Actual minus loglikelihood to optimize, SINGLE POPULATION"""
     toptions= copy.copy(options)
     if _MULTIDFGRID:
@@ -1278,7 +1394,12 @@ def mloglike_gridall(fullparams,hr,sr,sz,
     tparams[startindx+1]= sr
     tparams[startindx+2]= sz
     #Setup out
-    out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1))
+    if _NEWSAVE:
+        out= numpy.zeros(5)
+        tmp_out= numpy.zeros((toptions.ndvts,toptions.npouts,toptions.npouts,
+                              toptions.nszouts))
+    else:
+        out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1))
     #Setup everything for fast calculations
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
     dfparams= get_dfparams(tparams,0,toptions,log=False)
@@ -1317,51 +1438,84 @@ def mloglike_gridall(fullparams,hr,sr,sz,
     tnormalization_out= normalization_out*vo**3.
     logoutfrac= numpy.log(normalization_qdf/tnormalization_out)
     tnormalization_out= normalization_qdf
+    tnormalization_dout= normalization_dout*vo**3.
+    logdoutfrac= numpy.log(normalization_qdf/tnormalization_dout)
+    tnormalization_dout= normalization_qdf
     #Get data ready
     R,vR,vT,z,vz= prepare_coordinates(tparams,0,fehs,afes,binned,errstuff,
                                       toptions,npops)
     ndata= R.shape[0]
-    data_lndf= numpy.zeros((ndata,2*toptions.nmcerr))
+    #ndata= datajrs.shape[0]
+    data_lndf= numpy.zeros((ndata,3*toptions.nmcerr))
+    odata_lndf= numpy.zeros((ndata,toptions.nmcerr,toptions.nszouts))
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
+    dblexphr= monoAbundanceMW.hr(fehs[0],afes[0])
+    dblexphz= monoAbundanceMW.hz(fehs[0],afes[0])
     #Evaluate outliers
     if options.marginalizevrvt:
         data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]= logoutfrac+loghalodens\
             -numpy.log(szhalo)-2.*numpy.log(300./_REFV0/vo)\
             -0.5*(vz**2./szhalo**2.)\
             -0.5*numpy.log(2.*math.pi)
+        szouts= numpy.exp(numpy.linspace(numpy.log(10.),numpy.log(60.),options.nszouts))/_REFV0/vo
+        tdens= logdoutfrac+numpy.log(_DblExpDensity(R*_REFR0*ro,z*_REFR0*ro,[numpy.log(dblexphz/1000.),-numpy.log(dblexphr)]))
+        for ii in range(toptions.nszouts):
+            odata_lndf[:,:,ii]= tdens\
+                -numpy.log(szouts[ii])-2.*numpy.log(300./_REFV0/vo)\
+                -0.5*(vz**2./szouts[ii]**2.)\
+                -0.5*numpy.log(2.*math.pi)
     else:
         data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
             -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)\
             -1.5*numpy.log(2.*math.pi)
     #Run through the grid
-    if _NEWDFRANGES:
+    if _NEWESTDFRANGES:
+        dvts= [0.]#numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
+        pouts= numpy.linspace(10.**-5.,.2,options.npouts)
+    elif _NEWDFRANGES:
         dvts= numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
         pouts= numpy.linspace(10.**-5.,.5,options.npouts)
     else:
         dvts= numpy.linspace(-0.1,0.1,toptions.ndvts)
         pouts= numpy.linspace(10.**-5.,.3,toptions.npouts)
     for ii in range(toptions.ndvts):
-        dvt= dvts[ii]
-        tvT= vT+dvt/vo
-        data_lndf[:,0:toptions.nmcerr]= qdf(R.flatten(),vR.flatten(),
-                                           tvT.flatten(),
-                                           z.flatten(),
-                                           vz.flatten(),log=True).reshape((ndata,toptions.nmcerr))
-        for jj in range(toptions.npouts):
-            #Sum data and outlier df, for all MC samples
-            data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]+= numpy.log(pouts[jj])
-            sumdata_lndf= mylogsumexp(data_lndf,axis=1)
-            out[ii,jj,0,0]= numpy.sum(sumdata_lndf)\
-                -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out)+numpy.log(toptions.nmcerr)) #latter so we can compare
-#            out[ii,jj,0,0,1]= numpy.sum(sumdata_lndf)\
-#                -ndata*numpy.log(toptions.nmcerr) #latter so we can compare
-#            out[ii,jj,0,0,2]= -ndata*numpy.log(normalization_qdf+pouts[jj]*tnormalization_out) #latter so we can compare
-            data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(pouts[jj])
+        #dvt= dvts[ii]
+        #tvT= vT+dvt/vo
+        #data_lndf[:,0:toptions.nmcerr]= qdf(R.flatten(),vR.flatten(),
+        #                                   tvT.flatten(),
+        #                                   z.flatten(),
+        #                                   vz.flatten(),log=True).reshape((ndata,toptions.nmcerr))
+        data_lndf[:,0:toptions.nmcerr]= qdf((datajrs[:,ii],
+                                             datalzs[:,ii],
+                                             datajzs[:,ii]),
+                                            rg=datargs[:,ii],
+                                            kappa=datakappas[:,ii],
+                                            nu=datanus[:,ii],
+                                            Omega=dataOmegas[:,ii],
+                                            log=True).reshape((ndata,toptions.nmcerr))
+        for ll in range(toptions.nszouts):
+            data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]= odata_lndf[:,:,ll]
+            for jj in range(toptions.npouts):
+                #Sum data and outlier df, for all MC samples
+                data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]+= numpy.log(pouts[jj])
+                for kk in range(toptions.npouts):
+                    data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]+= numpy.log(pouts[kk])
+                    sumdata_lndf= mylogsumexp(data_lndf,axis=1)
+                    tmp_out[ii,jj,kk,ll]= numpy.sum(sumdata_lndf)\
+                        -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out+pouts[kk]*tnormalization_dout)+numpy.log(toptions.nmcerr)) #latter so we can compare
+                    data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]-= numpy.log(pouts[kk])
+                data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(pouts[jj])
  #Reset
-    return -out
+    out[0]= logsumexp(tmp_out)
+    indx= numpy.unravel_index(numpy.argmax(tmp_out),tmp_out.shape)
+    out[1]= dvts[indx[0]]
+    out[2]= pouts[indx[1]]
+    out[3]= pouts[indx[2]]
+    out[4]= szouts[indx[3]]
+    return out
 
 ##PRIORS
 def logprior_ro(ro,options):
@@ -1781,7 +1935,8 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
 
 def calc_normint_fixedpot(qdf,indx,normintstuff,params,npops,options,
                           logoutfrac,jrs,lzs,jzs,normsrs,normszs,
-                          rgs,kappas,nus,Omegas,fqdf=1.):
+                          rgs,kappas,nus,Omegas,fqdf=1.,
+                          dblexp=False,dblexphr=None,dblexphz=None):
     """Calculate the normalization integral"""
     if options.mcall or options.mcwdf: #evaluation is the same for these
         raise NotImplementedError("mcall and mcwdf not implemented for fixed potential")
@@ -1790,11 +1945,13 @@ def calc_normint_fixedpot(qdf,indx,normintstuff,params,npops,options,
                                          options,
                                          logoutfrac,
                                          jrs,lzs,jzs,normsrs,normszs,
-                                         rgs,kappas,nus,Omegas,fqdf)
+                                         rgs,kappas,nus,Omegas,fqdf,
+                                         dblexp,dblexphr,dblexphz)
 
 def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
                               logoutfrac,jrs,lzs,jzs,normsrs,normszs,
-                              rgs,kappas,nus,Omegas,fqdf):
+                              rgs,kappas,nus,Omegas,fqdf,dblexp,
+                              dblexphr,dblexphz):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
     thisnormintstuff= normintstuff[indx]
     if _PRECALCVSAMPLES:
@@ -1865,6 +2022,8 @@ def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
             compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0)-x/ro/_REFR0/ehr-numpy.fabs(y)/ehz/ro/_REFR0)+outfrac*halodens
         elif not fqdf == 0.:
             compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0))+outfrac*halodens
+        elif dblexp: #just do the outliers
+            compare_func= lambda x,y,du: outfrac*_DblExpDensity(x,y,[numpy.log(dblexphz/1000.),-numpy.log(dblexphr)])
         else: #just do the outliers
             compare_func= lambda x,y,du: outfrac*halodens
         distfac= 10.**(get_dm(params,options)/5.)
@@ -3453,9 +3612,14 @@ def custom_markovpy(options,npops,initial_theta,step,lnpdf,pdf_params,
         return (samples,pos,prob,state)
 
 ##SETUP ERROR INTEGRATION
-def setup_err_mc(data,options):
+def setup_err_mc(data,options,indx=None):
     #First sample distances, then sample velocities 
     #Calculate r error
+    if indx is None:
+        ndata= len(data)
+        indx= numpy.zeros(ndata,dtype='bool')+True
+    else:
+        ndata= numpy.sum(indx)
     if options.nmcerr > 1:
         rerr= ivezic_dist_gr(data.dered_g,
                              data.dered_r,
@@ -3465,18 +3629,18 @@ def setup_err_mc(data,options):
                              dfeh=data.feh_err,
                              return_error=True,
                              _returndmr=True)        
-        rsamples= numpy.tile(data.dered_r,(options.nmcerr,1)).T\
-            +numpy.random.normal(size=(len(data),options.nmcerr))\
-            *numpy.tile(rerr,(options.nmcerr,1)).T
-        dsamples= ivezic_dist_gr(numpy.tile(data.dered_g-data.dered_r,(options.nmcerr,1)).T+rsamples,
+        rsamples= numpy.tile(data[indx].dered_r,(options.nmcerr,1)).T\
+            +numpy.random.normal(size=(ndata,options.nmcerr))\
+            *numpy.tile(rerr[indx],(options.nmcerr,1)).T
+        dsamples= ivezic_dist_gr(numpy.tile(data[indx].dered_g-data[indx].dered_r,(options.nmcerr,1)).T+rsamples,
                                  rsamples,
-                                 numpy.tile(data.feh,(options.nmcerr,1)).T)[0]
+                                 numpy.tile(data[indx].feh,(options.nmcerr,1)).T)[0]
         if not options.fixdm is None:
             distfac= 10.**(options.fixdm/5.)
             dsamples*= distfac
         #dsamples[(dsamples > 15.)]= 15. #to make sure samples don't go nuts
         #Transform to XYZ
-        lb= bovy_coords.radec_to_lb(data.ra,data.dec,degree=True)
+        lb= bovy_coords.radec_to_lb(data[indx].ra,data[indx].dec,degree=True)
         XYZ= bovy_coords.lbd_to_XYZ(numpy.tile(lb[:,0],(options.nmcerr,1)).T,
                                     numpy.tile(lb[:,1],(options.nmcerr,1)).T,
                                     dsamples,degree=True)
@@ -3496,6 +3660,7 @@ def setup_err_mc(data,options):
     xdraws= numpy.zeros(len(data),dtype=list)
     outvxvyvz= numpy.zeros((len(data),3,options.nmcerr))
     for ii in range(len(data)):
+        if not indx[ii]: continue
 #        xdraws[ii]= []
 #        vdraws[ii]= []
         #First cholesky the covariance
@@ -3512,9 +3677,6 @@ def setup_err_mc(data,options):
                                                         pmdecsamples,
                                                         numpy.ones(options.nmcerr)*data[ii].ra,
                                                         numpy.ones(options.nmcerr)*data[ii].dec,degree=True)
-            if options.marginalizevt:
-                #'sabotage' pm_ll to remove information in the plane
-                pmllpmbb[:,0]= 2.*(numpy.random.uniform(size=options.nmcerr)-1.)*100.
             l,b= bovy_coords.radec_to_lb(data[ii].ra,data[ii].dec,degree=True)
             if options.fitdm:
                 outvxvyvz[ii,0,:]= vrsamples
@@ -4502,7 +4664,12 @@ def get_options():
                       help="Number of radial dispersions to use in grid-based search")
     parser.add_option("--nszs",dest='nszs',default=8,type='int',
                       help="Number of vertical dispersions to use in grid-based search")
-    if _NEWDFRANGES or _NEWESTDFRANGES:
+    if _NEWESTDFRANGES:
+        parser.add_option("--ndvts",dest='ndvts',default=1,type='int',
+                          help="Number of dvts to use in grid-based search")
+        parser.add_option("--npouts",dest='npouts',default=10,type='int',
+                          help="Number of pouts to use in grid-based search")
+    elif _NEWDFRANGES:
         parser.add_option("--ndvts",dest='ndvts',default=3,type='int',
                           help="Number of dvts to use in grid-based search")
         parser.add_option("--npouts",dest='npouts',default=25,type='int',
@@ -4512,6 +4679,8 @@ def get_options():
                           help="Number of dvts to use in grid-based search")
         parser.add_option("--npouts",dest='npouts',default=31,type='int',
                           help="Number of pouts to use in grid-based search")
+    parser.add_option("--nszouts",dest='nszouts',default=8,type='int',
+                      help="Number of szouts to use in grid-based search")
     #Type of fit
     parser.add_option("--justdf",action="store_true", dest="justdf",
                       default=False,
@@ -4528,7 +4697,7 @@ def get_options():
                       default=False,
                       help="If set, don't use vR or vT data")
     #seed
-    parser.add_option("--seed",dest='seed',default=1,type='int',
+    parser.add_option("--seed",dest='seed',default=2,type='int',
                       help="seed for random number generator")
     #Other options (not necessarily used in this file
     parser.add_option("-t","--type",dest='type',default=None,
