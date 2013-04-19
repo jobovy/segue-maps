@@ -678,13 +678,13 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                             if (time.time()-start) > 10.:
                                 if not options.restart is None:
                                     save_pickles(options.restart,
-                                                 out,ii,jj,kk)
+                                                 out,ii,jj,kk,ll)
                             ll+= 1
                     ll= 0
                     kk+= 1
                     if not options.restart is None:
                         save_pickles(options.restart,
-                                     out,ii,jj,kk)
+                                     out,ii,jj,kk,ll)
                 kk= 0
                 jj+= 1
             jj= 0
@@ -1025,57 +1025,85 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     R,vR,vT,z,vz= prepare_coordinates(tparams,0,fehs,afes,binned,errstuff,
                                       toptions,len(fehs))
     ndata= R.shape[0]
-    datajrs= numpy.empty((ndata*options.nmcerr,options.ndvts))
-    datalzs= numpy.empty((ndata*options.nmcerr,options.ndvts))
-    datajzs= numpy.empty((ndata*options.nmcerr,options.ndvts))
-    datargs= numpy.empty((ndata*options.nmcerr,options.ndvts))
-    datakappas= numpy.empty((ndata*options.nmcerr,options.ndvts))
-    datanus= numpy.empty((ndata*options.nmcerr,options.ndvts))
-    dataOmegas= numpy.empty((ndata*options.nmcerr,options.ndvts))
+    datajrs= numpy.empty((ndata,options.nmcerr,options.ndvts,toptions.ngl**2))
+    datalzs= numpy.empty((ndata,options.nmcerr,options.ndvts,toptions.ngl**2))
+    datajzs= numpy.empty((ndata,options.nmcerr,options.ndvts,toptions.ngl**2))
+    datargs= numpy.empty((ndata,options.nmcerr,options.ndvts,toptions.ngl**2))
+    datakappas= numpy.empty((ndata,options.nmcerr,options.ndvts,toptions.ngl**2))
+    datanus= numpy.empty((ndata,options.nmcerr,options.ndvts,toptions.ngl**2))
+    dataOmegas= numpy.empty((ndata,options.nmcerr,options.ndvts,toptions.ngl**2))
     if _NEWESTDFRANGES:
         dvts= [0.] #numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
     elif _NEWDFRANGES:
         dvts= numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
     else:
         dvts= numpy.linspace(-0.1,0.1,toptions.ndvts)  
-    if not toptions.multi is None:
-        multOut= multi.parallel_map((lambda x: setup_optdf_data_actions(R,
-                                                                        vR,
-                                                                        vT,
-                                                                        z,
-                                                                        vz,
-                                                                        dvts[x],
-                                                                        toptions,
-                                                                        qdf,vo)),
-                                    range(len(dvts)),
-                                    numcores=numpy.amin([len(dvts),
-                                                         multiprocessing.cpu_count(),
-                                                         toptions.multi]))
-        for ii in range(options.ndvts):
-            datajrs[:,ii]= multOut[ii][0,:]
-            datalzs[:,ii]= multOut[ii][1,:]
-            datajzs[:,ii]= multOut[ii][2,:]
-            datargs[:,ii]= multOut[ii][3,:]
-            datakappas[:,ii]= multOut[ii][4,:]
-            datanus[:,ii]= multOut[ii][5,:]
-            dataOmegas[:,ii]= multOut[ii][6,:]
-    else:
-        for ii in range(ndata):
-            multOut= setup_optdf_data_actions(R,
-                                              vR,
-                                              vT,
-                                              z,
-                                              vz,
-                                              dvts[ii],
-                                              toptions,
-                                              qdf,vo)
-            datajrs[:,ii]= multOut[0,:]
-            datalzs[:,ii]= multOut[1,:]
-            datajzs[:,ii]= multOut[2,:]
-            datargs[:,ii]= multOut[3,:]
-            datakappas[:,ii]= multOut[4,:]
-            datanus[:,ii]= multOut[5,:]
-            dataOmegas[:,ii]= multOut[6,:]
+    datanormsrs= qdf._sr*numpy.exp((1.-R)/qdf._hsr)
+    if True:
+        if not toptions.multi is None:
+            multOut= multi.parallel_map((lambda x: setup_optdf_data_actions_alt(R[:,x],z[:,x],vz[:,x],toptions,qdf,datanormsrs[:,x])),
+                                        range(options.nmcerr),
+                                        numcores=numpy.amin([options.nmcerr,
+                                                             multiprocessing.cpu_count(),
+                                                             toptions.multi]))
+            for ii in range(options.nmcerr):
+                datajrs[:,ii,0,:]= multOut[ii][0,:,:]
+                datalzs[:,ii,0,:]= multOut[ii][1,:,:]
+                datajzs[:,ii,0,:]= multOut[ii][2,:,:]
+                datargs[:,ii,0,:]= multOut[ii][3,:,:]
+                datakappas[:,ii,0,:]= multOut[ii][4,:,:]
+                datanus[:,ii,0,:]= multOut[ii][5,:,:]
+                dataOmegas[:,ii,0,:]= multOut[ii][6,:,:]
+        else:
+            for x in range(options.nmcerr):
+                multOut= setup_optdf_data_actions_alt(R[:,x],z[:,x],vz[:,x],toptions,qdf,datanormsrs[:,x])
+                ii= x
+                datajrs[:,ii,0,:]= multOut[0,:,:]
+                datalzs[:,ii,0,:]= multOut[1,:,:]
+                datajzs[:,ii,0,:]= multOut[2,:,:]
+                datargs[:,ii,0,:]= multOut[3,:,:]
+                datakappas[:,ii,0,:]= multOut[4,:,:]
+                datanus[:,ii,0,:]= multOut[5,:,:]
+                dataOmegas[:,ii,0,:]= multOut[6,:,:]
+    if False:
+        if not toptions.multi is None:
+            multOut= multi.parallel_map((lambda x: setup_optdf_data_actions(R,
+                                                                            vR,
+                                                                            vT,
+                                                                            z,
+                                                                            vz,
+                                                                            dvts[x],
+                                                                            toptions,
+                                                                            qdf,vo)),
+                                        range(len(dvts)),
+                                        numcores=numpy.amin([len(dvts),
+                                                             multiprocessing.cpu_count(),
+                                                             toptions.multi]))
+            for ii in range(options.ndvts):
+                datajrs[:,ii,:]= multOut[ii][0,:]
+                datalzs[:,ii,:]= multOut[ii][1,:]
+                datajzs[:,ii,:]= multOut[ii][2,:]
+                datargs[:,ii,:]= multOut[ii][3,:]
+                datakappas[:,ii,:]= multOut[ii][4,:]
+                datanus[:,ii,:]= multOut[ii][5,:]
+                dataOmegas[:,ii,:]= multOut[ii][6,:]
+        else:
+            for ii in range(options.ndvts):
+                multOut= setup_optdf_data_actions(R,
+                                                  vR,
+                                                  vT,
+                                                  z,
+                                                  vz,
+                                                  dvts[ii],
+                                                  toptions,
+                                                  qdf,vo)
+                datajrs[:,ii,:]= multOut[0,:]
+                datalzs[:,ii,:]= multOut[1,:]
+                datajzs[:,ii,:]= multOut[2,:]
+                datargs[:,ii,:]= multOut[3,:]
+                datakappas[:,ii,:]= multOut[4,:]
+                datanus[:,ii,:]= multOut[5,:]
+                dataOmegas[:,ii,:]= multOut[6,:]
     #Go through the grid
     #IF YOU EDIT THIS, ALSO EDIT IT ABOVE
     if toptions.physicaldfparams:
@@ -1130,7 +1158,8 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                             rgs,kappas,nus,Omegas,
                                                                         normalization_out,normalization_dout,
                                                                      datajrs,datalzs,datajzs,
-                                                                     datargs,datakappas,datanus,dataOmegas)),
+                                                                     datargs,datakappas,datanus,dataOmegas,
+                                                                     datanormsrs)),
                                             range(options.nhrs*options.nsrs),
                                             numcores=numpy.amin([options.nhrs*options.nsrs,
                                                                  multiprocessing.cpu_count(),
@@ -1152,7 +1181,8 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                             rgs,kappas,nus,Omegas,
                                                                         normalization_out,normalization_dout,
                                                                              datajrs,datalzs,datajzs,
-                                                                             datargs,datakappas,datanus,dataOmegas)),
+                                                                             datargs,datakappas,datanus,dataOmegas,
+                                                                             datanormsrs)),
                                                 range(options.nhrs),
                                             numcores=numpy.amin([options.nhrs,
                                                                  multiprocessing.cpu_count(),
@@ -1174,7 +1204,8 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                            rgs,kappas,nus,Omegas,
                                                            normalization_out,normalization_dout,
                                                            datajrs,datalzs,datajzs,
-                                                           datargs,datakappas,datanus,dataOmegas)
+                                                           datargs,datakappas,datanus,dataOmegas,
+                                                           datanormsrs)
                     else:
                         out[kk,jj,ii,:,:,:,:]= mmloglike_gridall(tparams,
                                                                  hrs[kk],srs[jj],szs[ii],
@@ -1185,7 +1216,8 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                                  rgs,kappas,nus,Omegas,
                                                                  normalization_out,normalization_dout,
                                                                  datajrs,datalzs,datajzs,
-                                                                 datargs,datakappas,datanus,dataOmegas)
+                                                                 datargs,datakappas,datanus,dataOmegas,
+                                                                 datanormsrs)
     return out
 
 def chi2_simpleoptdf(dfparams,goal_params,pot,aA,options,ro,vo):
@@ -1224,6 +1256,25 @@ def logit(x):
 
 def ilogit(x):
     return numpy.exp(x)/(1.+numpy.exp(x))
+
+def setup_optdf_data_actions_alt(R,z,vz,toptions,qdf,datanormsrs):
+    js= numpy.zeros((7,R.shape[0],options.ngl*options.ngl))
+    dumm, tjr, tlz, tjz, trg, tkappa, tnu, tOmega= qdf.pvz(vz.flatten(),
+                                                           R.flatten(),
+                                                           z.flatten(),
+                                                           gl=True,
+                                                           ngl=options.ngl,
+                                                           _return_actions=True,
+                                                           _return_freqs=True,
+                                                           _sigmaR1=datanormsrs.flatten())
+    js[0,:,:]= numpy.reshape(tjr,(R.shape[0],options.ngl*options.ngl))
+    js[1,:,:]= numpy.reshape(tlz,(R.shape[0],options.ngl*options.ngl))
+    js[2,:,:]= numpy.reshape(tjz,(R.shape[0],options.ngl*options.ngl))
+    js[3,:,:]= numpy.reshape(trg,(R.shape[0],options.ngl*options.ngl))
+    js[4,:,:]= numpy.reshape(tkappa,(R.shape[0],options.ngl*options.ngl))
+    js[5,:,:]= numpy.reshape(tnu,(R.shape[0],options.ngl*options.ngl))
+    js[6,:,:]= numpy.reshape(tOmega,(R.shape[0],options.ngl*options.ngl))
+    return js
 
 def setup_optdf_data_actions(R,vR,vT,z,vz,dvt,toptions,qdf,vo):
     js= numpy.zeros((7,R.shape[0]*options.nmcerr))
@@ -1378,7 +1429,8 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
                       rgs,kappas,nus,Omegas,normalization_out,
                       normalization_dout,
                       datajrs,datalzs,datajzs,
-                      datargs,datakappas,datanus,dataOmegas):
+                      datargs,datakappas,datanus,dataOmegas,
+                      datanormsrs):
     """Actual minus loglikelihood to optimize, SINGLE POPULATION"""
     toptions= copy.copy(options)
     if _MULTIDFGRID:
@@ -1491,14 +1543,27 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
         #                                   tvT.flatten(),
         #                                   z.flatten(),
         #                                   vz.flatten(),log=True).reshape((ndata,toptions.nmcerr))
-        data_lndf[:,0:toptions.nmcerr]= qdf((datajrs[:,ii],
-                                             datalzs[:,ii],
-                                             datajzs[:,ii]),
-                                            rg=datargs[:,ii],
-                                            kappa=datakappas[:,ii],
-                                            nu=datanus[:,ii],
-                                            Omega=dataOmegas[:,ii],
-                                            log=True).reshape((ndata,toptions.nmcerr))
+        #data_lndf[:,0:toptions.nmcerr]= qdf((datajrs[:,ii],
+        #                                     datalzs[:,ii],
+        #                                     datajzs[:,ii]),
+        #                                    rg=datargs[:,ii],
+        #                                    kappa=datakappas[:,ii],
+        #                                    nu=datanus[:,ii],
+        #                                    Omega=dataOmegas[:,ii],
+        #                                    log=True).reshape((ndata,toptions.nmcerr))
+        data_lndf[:,0:toptions.nmcerr]= numpy.log(qdf.pvz(vz.flatten(),
+                                                R.flatten(),
+                                                z.flatten(),
+                                                gl=True,
+                                                ngl=options.ngl,
+                                                _jr=datajrs[:,:,ii,:].flatten(),
+                                                _lz=datalzs[:,:,ii,:].flatten(),
+                                                _jz=datajzs[:,:,ii,:].flatten(),
+                                                _rg=datargs[:,:,ii,:].flatten(),
+                                                _kappa=datakappas[:,:,ii,:].flatten(),
+                                                _nu=datanus[:,:,ii,:].flatten(),
+                                                _Omega=dataOmegas[:,:,ii,:].flatten(),
+                                                _sigmaR1=datanormsrs.flatten())).reshape((ndata,toptions.nmcerr))+2.*numpy.log(vo)-2.*numpy.log(300./_REFV0/vo)
         for ll in range(toptions.nszouts):
             if options.npouts2 != 1:
                 data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]= odata_lndf[:,:,ll]
