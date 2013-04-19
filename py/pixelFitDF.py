@@ -1396,7 +1396,8 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     #Setup out
     if _NEWSAVE:
         out= numpy.zeros(5)
-        tmp_out= numpy.zeros((toptions.ndvts,toptions.npouts,toptions.npouts,
+        if toptions.npouts2 == 1: toptions.nszouts= 1
+        tmp_out= numpy.zeros((toptions.ndvts,toptions.npouts,toptions.npouts2,
                               toptions.nszouts))
     else:
         out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1))
@@ -1475,6 +1476,8 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     if _NEWESTDFRANGES:
         dvts= [0.]#numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
         pouts= numpy.linspace(10.**-5.,.2,options.npouts)
+        pouts2= [0.] #numpy.linspace(10.**-5.,.2,options.npouts)
+        data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]= -numpy.finfo(numpy.dtype(numpy.float64)).max
     elif _NEWDFRANGES:
         dvts= numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
         pouts= numpy.linspace(10.**-5.,.5,options.npouts)
@@ -1497,18 +1500,24 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
                                             Omega=dataOmegas[:,ii],
                                             log=True).reshape((ndata,toptions.nmcerr))
         for ll in range(toptions.nszouts):
-            data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]= odata_lndf[:,:,ll]
+            if options.npouts2 != 1:
+                data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]= odata_lndf[:,:,ll]
+            #start= time.time()
             for jj in range(toptions.npouts):
                 #Sum data and outlier df, for all MC samples
                 data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]+= numpy.log(pouts[jj])
-                for kk in range(toptions.npouts):
-                    data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]+= numpy.log(pouts[kk])
+                for kk in range(toptions.npouts2):
+                    if options.npouts2 != 1:
+                        data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]+= numpy.log(pouts2[kk])
                     sumdata_lndf= mylogsumexp(data_lndf,axis=1)
                     tmp_out[ii,jj,kk,ll]= numpy.sum(sumdata_lndf)\
                         -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out+pouts[kk]*tnormalization_dout)+numpy.log(toptions.nmcerr)) #latter so we can compare
-                    data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]-= numpy.log(pouts[kk])
+                    if options.npouts2 != 1:
+                        data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]-= numpy.log(pouts2[kk])
                 data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(pouts[jj])
  #Reset
+            #end= time.time()
+            #print "One inner loop took %f seconds ..." % (end-start)
     out[0]= logsumexp(tmp_out)
     indx= numpy.unravel_index(numpy.argmax(tmp_out),tmp_out.shape)
     out[1]= dvts[indx[0]]
@@ -4668,6 +4677,8 @@ def get_options():
         parser.add_option("--ndvts",dest='ndvts',default=1,type='int',
                           help="Number of dvts to use in grid-based search")
         parser.add_option("--npouts",dest='npouts',default=10,type='int',
+                          help="Number of pouts to use in grid-based search")
+        parser.add_option("--npouts2",dest='npouts2',default=1,type='int',
                           help="Number of pouts to use in grid-based search")
     elif _NEWDFRANGES:
         parser.add_option("--ndvts",dest='ndvts',default=3,type='int',
