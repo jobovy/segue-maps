@@ -1075,6 +1075,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         vzgl*= numpy.tile(4.*datasz/2.,(toptions.ngl,1)).T
         tdatasz= numpy.tile(datasz,(toptions.ngl,1)).T
         vzglw*= 1./numpy.sqrt(2.*numpy.pi)/tdatasz*numpy.exp(-vzgl**2./2./tdatasz**2.)
+        vzgl+= numpy.tile(vz[:,0],(toptions.ngl,1)).T
         if not toptions.multi is None:
             multOut= multi.parallel_map((lambda x: setup_optdf_data_actions_gl(vzgl[:,x],R,z,toptions,qdf,datanormsrs)),
                                         range(options.ngl),
