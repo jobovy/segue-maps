@@ -1212,8 +1212,8 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         if True: resr= 0.3
         if True: resz= 0.3
         hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
-        srs= numpy.linspace(lnsr-0.8*resz,lnsr+0.8*resz,options.nsrs)#USE ESZ
-        szs= numpy.linspace(lnsz-0.8*resz,lnsz+0.8*resz,options.nszs)
+        srs= numpy.linspace(lnsr-0.6*resz,lnsr+0.6*resz,options.nsrs)#USE ESZ
+        szs= numpy.linspace(lnsz-0.6*resz,lnsz+0.6*resz,options.nszs)
     elif _NEWDFRANGES:
         lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
                                                             relerr=True)
