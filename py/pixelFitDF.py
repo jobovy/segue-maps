@@ -623,8 +623,8 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
         zhs= numpy.array([options.fixzh/1000./_REFR0])
         if _NEWRDRANGE:
             rds= numpy.linspace(2.0,3.4,options.nrds)/_REFR0
-            rds= rds[3:]
-            print "BOVY: YOU ARE CHANGING THE RD RANGE FOR TESTING"
+            #rds= rds[3:]
+            #print "BOVY: YOU ARE CHANGING THE RD RANGE FOR TESTING"
         else:
             rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
         fhs= numpy.linspace(0.,1.,options.nfhs)
@@ -1234,7 +1234,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     for ii in range(options.nszs):
         #print "Working on DF %i, dt= %f" % (ii,time.time()-start)
         #start= time.time()
-        if _MULTIDFGRID and options.multi > options.nhrs:
+        if _MULTIDFGRID and True:#options.multi > options.nhrs:
             multOut= multi.parallel_map((lambda x: mmloglike_gridall(tparams,
                                                             hrs[x % options.nhrs],srs[x / options.nhrs],szs[ii],
                                                             pot,aA,fehs,afes,binned,normintstuff,
