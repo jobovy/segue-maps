@@ -657,17 +657,21 @@ def plotPout_single(ii,options,args):
         if _NOTDONEYET:
             logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
-        marglogl= numpy.zeros((logl.shape[8]))
-        for jj in range(marglogl.shape[0]):
-            marglogl[jj]= maxentropy.logsumexp(logl[:,0,0,:,3:,:,:,:,jj,:,:].flatten())
+        bfpouts= numpy.zeros((logl.shape[0],logl.shape[3]))+numpy.nan
+        for jj in range(bfpouts.shape[0]):
+            for kk in range(bfpouts.shape[1]):
+                if maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,0]) > -10000000000000.:
+                    hrindx, srindx, szindx= numpy.unravel_index(numpy.argmax(logl[jj,0,0,kk,:,:,:,0]),(options.nhrs,options.nsrs,options.nszs))
+                    bfpouts[jj,kk]= logl[jj,0,0,kk,hrindx,srindx,szindx,2]
         #Normalize
-        alogl= marglogl-numpy.nanmax(marglogl)
         bovy_plot.bovy_print()
-        bovy_plot.bovy_plot(numpy.linspace(10.**-5.,0.5,logl.shape[8]),
-                            numpy.exp(alogl).T,'k-',
-                            xrange=[0.0,0.5],
-                            xlabel='$P_{\mathrm{out}}$',
-                            yrange=[0.,1.1])
+        bovy_plot.bovy_dens2d(bfpouts.T,origin='lower',cmap='jet',
+                              interpolation='nearest',
+                              xrange=[1.9,3.5],yrange=[-1./32.,1.+1./32.],
+                              xlabel=r'$R_d\ (\mathrm{kpc})$',ylabel=r'$f_h$',
+                              zlabel=r'$f_{out}$',
+                              colorbar=True,
+                              vmin=0.,vmax=.2)
         #Plotname
         spl= options.outfilename.split('.')
         newname= ''

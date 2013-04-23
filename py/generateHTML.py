@@ -23,7 +23,7 @@ def generateHTML(options,args):
                 'rdpout','rdpoutc','fhpoutc','rddvt','srsz','srszc','pout',
                 'loglhist','props']
     types= ['rdfh','rdhr','rdhrc','rdsz',
-            'srsz','srszc',
+            'srsz','srszc','pout',
             'loglhist','props']
     ntypes= len(types)
     for ii in range(npops):
