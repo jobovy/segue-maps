@@ -1037,11 +1037,15 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         dvts= numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
     else:
         dvts= numpy.linspace(-0.1,0.1,toptions.ndvts)  
+    vRgl= None
+    vRglw= None
+    vTgl= None
+    vTglw= None
     vzgl= None
     vzglw= None
-    if _INTEGRATEMARGINALIZE:
+    if _INTEGRATEMARGINALIZE and options.marginalizevrvt:
         #Get data ready
-        R,vR,vT,z,vz, datasz= prepare_coordinates(tparams,0,fehs,afes,binned,errstuff,
+        R,vR,vT,z,vz, datasr, datasz, datarhorz= prepare_coordinates(tparams,0,fehs,afes,binned,errstuff,
                                           toptions,len(fehs))
         ndata= R.shape[0]
         datajrs= numpy.empty((ndata,toptions.ngl,options.ndvts,toptions.ngl**2))
@@ -1101,6 +1105,118 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                 datakappas[:,ii,0,:]= multOut[4,:,:]
                 datanus[:,ii,0,:]= multOut[5,:,:]
                 dataOmegas[:,ii,0,:]= multOut[6,:,:]
+    elif _INTEGRATEMARGINALIZE and options.marginalizevt:
+        #Get data ready
+        R,vR,vT,z,vz, datasr, datasz, datarhorz= prepare_coordinates(tparams,
+                                                                     0,fehs,
+                                                                     afes,
+                                                                     binned,
+                                                                     errstuff,
+                                                                     toptions,
+                                                                     len(fehs))
+        ndata= R.shape[0]
+        datajrs= numpy.empty((ndata,options.ndvts,toptions.ngl**3))
+        datalzs= numpy.empty((ndata,options.ndvts,toptions.ngl**3))
+        datajzs= numpy.empty((ndata,options.ndvts,toptions.ngl**3))
+        datargs= numpy.empty((ndata,options.ndvts,toptions.ngl**3))
+        datakappas= numpy.empty((ndata,options.ndvts,toptions.ngl**3))
+        datanus= numpy.empty((ndata,options.ndvts,toptions.ngl**3))
+        dataOmegas= numpy.empty((ndata,options.ndvts,toptions.ngl**3))
+        datanormsrs= qdf._sr*numpy.exp((1.-R)/qdf._hsr)
+        #setup GL
+        if toptions.ngl == _DEFAULTNGL:
+            glx, glw= _glxdef, _glwdef
+            glx12, glw12= _glxdef12, _glwdef12
+        elif toptions.ngl == _DEFAULTNGL2:
+            glx, glw= _glxdef2, _glwdef2
+            glx12, glw12= _glxdef, _glwdef
+        else:
+            glx, glw= numpy.polynomial.legendre.leggauss(toptions.ngl)
+            glx12, glw12= numpy.polynomial.legendre.leggauss(toptions.ngl/2)
+        vTgl= 1.5/2.*(glx+1.)
+        vzgl= (glx12+1.)
+        vzgl= list(vzgl)
+        vzgl.extend(-(glx12+1.))
+        vzgl= numpy.array(vzgl)
+        vzglw= glw12
+        vzglw= list(vzglw)
+        vzglw.extend(glw12)
+        vzglw= numpy.array(vzglw)
+        vRgl= (glx12+1.)
+        vRgl= list(vRgl)
+        vRgl.extend(-(glx12+1.))
+        vRgl= numpy.array(vRgl)
+        vRglw= glw12
+        vRglw= list(vRglw)
+        vRglw.extend(glw12)
+        vRglw= numpy.array(vRglw)
+        #tile
+        #First tile
+        vTgl= numpy.tile(vTgl,(options.ngl,options.ngl,1)).T
+        vRgl= numpy.tile(numpy.reshape(vRgl,(1,options.ngl)).T,
+                         (options.ngl,1,options.ngl))
+        vzgl= numpy.tile(vzgl,(options.ngl,options.ngl,1))
+        vTglw= numpy.tile(glw,(options.ngl,options.ngl,1)).T #also tile weights
+        vRglw= numpy.tile(numpy.reshape(vRglw,(1,options.ngl)).T,
+                          (options.ngl,1,options.ngl))
+        vzglw= numpy.tile(vzglw,(options.ngl,options.ngl,1))
+        #Second, data tile
+        vTgl= numpy.tile(vTgl,(ndata,1,1,1))
+        vTglw= numpy.tile(vTglw,(ndata,1,1,1))
+        vRgl= numpy.tile(vRgl,(ndata,1,1,1))
+        vRglw= numpy.tile(vRglw,(ndata,1,1,1))
+        vzgl= numpy.tile(vzgl,(ndata,1,1,1))
+        vzglw= numpy.tile(vzglw,(ndata,1,1,1))
+        #Adjust
+        vzgl*= numpy.tile(4.*datasz/2.,
+                          (toptions.ngl,toptions.ngl,toptions.ngl,1)).T
+        vRgl*= numpy.tile(4.*datasr/2.,
+                          (toptions.ngl,toptions.ngl,toptions.ngl,1)).T
+        datacovrz= datarhorz*datasr*datasz                   
+        vRvzgl= numpy.empty((ndata,toptions.ngl**3,2))
+        vRvzgl[:,:,0]= numpy.reshape(vRgl,(ndata,toptions.ngl**3))
+        vRvzgl[:,:,1]= numpy.reshape(vzgl,(ndata,toptions.ngl**3))
+        for ii in range(ndata):
+            cov= numpy.array([[datasr[ii]**2.,datacovrz[ii]],
+                              [datacovrz[ii],datasz[ii]**2.]])
+            covinv= numpy.linalg.inv(cov)
+            covdet= numpy.linalg.det(cov)
+            vzglw[ii,:,:,:]*= numpy.reshape(1./2.*numpy.pi/numpy.sqrt(covdet)*numpy.exp(-0.5*numpy.sum(vRvzgl[ii,:,:]*numpy.dot(vRvzgl[ii,:,:],covinv),axis=1)),(toptions.ngl,toptions.ngl,toptions.ngl))
+        vRgl+= numpy.tile(vR[:,0],(toptions.ngl,toptions.ngl,toptions.ngl,1)).T
+        vzgl+= numpy.tile(vz[:,0],(toptions.ngl,toptions.ngl,toptions.ngl,1)).T
+        #Now flatten
+        vRgl= numpy.reshape(vRgl,(ndata,toptions.ngl**3))
+        vTgl= numpy.reshape(vTgl,(ndata,toptions.ngl**3))
+        vzgl= numpy.reshape(vzgl,(ndata,toptions.ngl**3))
+        vRglw= numpy.reshape(vRglw,(ndata,toptions.ngl**3))
+        vTglw= numpy.reshape(vTglw,(ndata,toptions.ngl**3))
+        vzglw= numpy.reshape(vzglw,(ndata,toptions.ngl**3))
+        if not toptions.multi is None:
+            multOut= multi.parallel_map((lambda x: setup_optdf_data_actions_margvr_gl(vRgl[x,:],vTgl[x,:],vzgl[x,:],R[x,0],z[x,0],toptions,qdf)),
+                                        range(ndata),
+                                        numcores=numpy.amin([ndata,
+                                                             multiprocessing.cpu_count(),
+                                                             toptions.multi]))
+            for ii in range(ndata):
+                datajrs[ii,0,:]= multOut[ii][0,:]
+                datalzs[ii,0,:]= multOut[ii][1,:]
+                datajzs[ii,0,:]= multOut[ii][2,:]
+                datargs[ii,0,:]= multOut[ii][3,:]
+                datakappas[ii,0,:]= multOut[ii][4,:]
+                datanus[ii,0,:]= multOut[ii][5,:]
+                dataOmegas[ii,0,:]= multOut[ii][6,:]
+        else:
+            for x in range(options.ngl):
+                multOut= setup_optdf_data_actions_gl(vRgl[x,:],vTgl[x,:],
+                                                     vzgl[x,:],R[x,0],z[x,0],toptions,qdf)
+                ii= x
+                datajrs[ii,0,:]= multOut[0,:]
+                datalzs[ii,0,:]= multOut[1,:]
+                datajzs[ii,0,:]= multOut[2,:]
+                datargs[ii,0,:]= multOut[3,:]
+                datakappas[ii,0,:]= multOut[4,:]
+                datanus[ii,0,:]= multOut[5,:]
+                dataOmegas[ii,0,:]= multOut[6,:]
     elif False:
         #Get data ready
         R,vR,vT,z,vz= prepare_coordinates(tparams,0,fehs,afes,binned,errstuff,
@@ -1245,7 +1361,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                                         normalization_out,normalization_dout,
                                                                      datajrs,datalzs,datajzs,
                                                                      datargs,datakappas,datanus,dataOmegas,
-                                                                     datanormsrs,vzgl,vzglw)),
+                                                                     datanormsrs,vzgl,vzglw,vRgl,vRglw,vTgl,vTglw)),
                                             range(options.nhrs*options.nsrs),
                                             numcores=numpy.amin([options.nhrs*options.nsrs,
                                                                  multiprocessing.cpu_count(),
@@ -1268,7 +1384,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                                         normalization_out,normalization_dout,
                                                                              datajrs,datalzs,datajzs,
                                                                              datargs,datakappas,datanus,dataOmegas,
-                                                                             datanormsrs,vzgl,vzglw)),
+                                                                             datanormsrs,vzgl,vzglw,vRgl,vRglw,vTgl,vTglw)),
                                                 range(options.nhrs),
                                             numcores=numpy.amin([options.nhrs,
                                                                  multiprocessing.cpu_count(),
@@ -1291,7 +1407,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                            normalization_out,normalization_dout,
                                                            datajrs,datalzs,datajzs,
                                                            datargs,datakappas,datanus,dataOmegas,
-                                                           datanormsrs,vzgl,vzglw)
+                                                           datanormsrs,vzgl,vzglw,vRgl,vRglw,vTgl,vTglw)
                     else:
                         out[kk,jj,ii,:,:,:,:]= mmloglike_gridall(tparams,
                                                                  hrs[kk],srs[jj],szs[ii],
@@ -1303,7 +1419,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                                  normalization_out,normalization_dout,
                                                                  datajrs,datalzs,datajzs,
                                                                  datargs,datakappas,datanus,dataOmegas,
-                                                                 datanormsrs,vzgl,vzglw)
+                                                                 datanormsrs,vzgl,vzglw,vRgl,vRglw,vTgl,vTglw)
     return out
 
 def chi2_simpleoptdf(dfparams,goal_params,pot,aA,options,ro,vo):
@@ -1342,6 +1458,24 @@ def logit(x):
 
 def ilogit(x):
     return numpy.exp(x)/(1.+numpy.exp(x))
+
+def setup_optdf_data_actions_margvr_gl(vR,vT,vz,R,z,toptions,qdf):
+    js= numpy.zeros((7,toptions.ngl**3))
+    dumm, tjr, tlz, tjz, trg, tkappa, tnu, tOmega= qdf(R+numpy.zeros(toptions.ngl**3),
+                                                       vR,
+                                                       vT,
+                                                       z+numpy.zeros(toptions.ngl**3),
+                                                       vz,
+                                                       _return_actions=True,
+                                                       _return_freqs=True)
+    js[0,:]= tjr
+    js[1,:]= tlz
+    js[2,:]= tjz
+    js[3,:]= trg
+    js[4,:]= tkappa
+    js[5,:]= tnu
+    js[6,:]= tOmega
+    return js
 
 def setup_optdf_data_actions_gl(vz,R,z,toptions,qdf,datanormsrs):
     js= numpy.zeros((7,R.shape[0],options.ngl*options.ngl))
@@ -1535,7 +1669,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
                       normalization_dout,
                       datajrs,datalzs,datajzs,
                       datargs,datakappas,datanus,dataOmegas,
-                      datanormsrs,vzgl,vzglw):
+                      datanormsrs,vzgl,vzglw,vRgl,vRglw,vTgl,vTglw):
     """Actual minus loglikelihood to optimize, SINGLE POPULATION"""
     toptions= copy.copy(options)
     if _MULTIDFGRID:
@@ -1600,9 +1734,12 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     logdoutfrac= numpy.log(normalization_qdf/tnormalization_dout)
     tnormalization_dout= normalization_qdf
     #Get data ready
-    R,vR,vT,z,vz, datasz= prepare_coordinates(tparams,0,fehs,afes,
-                                              binned,errstuff,
-                                              toptions,npops)
+    R,vR,vT,z,vz, datasr, datasz, datarhorz= prepare_coordinates(tparams,0,
+                                                                 fehs,afes,
+                                                                 binned,
+                                                                 errstuff,
+                                                                 toptions,
+                                                                 npops)
     ndata= R.shape[0]
     if _INTEGRATEMARGINALIZE:
         R= R[:,0]
@@ -1612,7 +1749,10 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
         vz= vz[:,0]
     #ndata= datajrs.shape[0]
     data_lndf= numpy.zeros((ndata,3*toptions.nmcerr))
-    mdata_df= numpy.zeros((ndata,toptions.ngl))
+    if options.marginalizevt:
+        mdata_df= numpy.zeros((ndata,toptions.ngl**3))
+    else:
+        mdata_df= numpy.zeros((ndata,toptions.ngl))
     odata_lndf= numpy.zeros((ndata,toptions.nmcerr,toptions.nszouts))
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
@@ -1630,6 +1770,24 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
             -numpy.log(szhalo)-fac*numpy.log(300./_REFV0/vo)\
             -0.5*(vz**2./szhalo**2.)\
             -0.5*numpy.log(2.*math.pi),(ndata,toptions.nmcerr))
+        szouts= numpy.exp(numpy.linspace(numpy.log(10.),numpy.log(60.),options.nszouts))/_REFV0/vo
+        tdens= logdoutfrac+numpy.log(_DblExpDensity(R*_REFR0*ro,z*_REFR0*ro,[numpy.log(dblexphz/1000.),-numpy.log(dblexphr)]))
+        for ii in range(toptions.nszouts):
+            odata_lndf[:,:,ii]= numpy.reshape(tdens\
+                -numpy.log(szouts[ii])-2.*numpy.log(300./_REFV0/vo)\
+                -0.5*(vz**2./szouts[ii]**2.)\
+                -0.5*numpy.log(2.*math.pi),(ndata,toptions.nmcerr))
+    elif options.marginalizevt:
+        if _INTEGRATEMARGINALIZE:
+            szhalo= numpy.sqrt(datasz**2.+szhalo**2.)
+            srhalo= numpy.sqrt(datasr**2.+srhalo**2.)
+            fac= 0.
+        else:
+            fac= 1.
+        data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]= numpy.reshape(logoutfrac+loghalodens\
+            -numpy.log(srhalo)-numpy.log(szhalo)-fac*numpy.log(300./_REFV0/vo)\
+            -0.5*(vz**2./szhalo**2.+vR**2./srhalo**2.)\
+            -1.*numpy.log(2.*math.pi),(ndata,toptions.nmcerr))
         szouts= numpy.exp(numpy.linspace(numpy.log(10.),numpy.log(60.),options.nszouts))/_REFV0/vo
         tdens= logdoutfrac+numpy.log(_DblExpDensity(R*_REFR0*ro,z*_REFR0*ro,[numpy.log(dblexphz/1000.),-numpy.log(dblexphr)]))
         for ii in range(toptions.nszouts):
@@ -1670,21 +1828,36 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
         #                                    Omega=dataOmegas[:,ii],
         #                                    log=True).reshape((ndata,toptions.nmcerr))
         if _INTEGRATEMARGINALIZE:
-            for ll in range(options.ngl):
-                mdata_df[:,ll]= qdf.pvz(vzgl[:,ll],
-                                        R.flatten(),
-                                        z.flatten(),
-                                        gl=True,
-                                        ngl=options.ngl,
-                                        _jr=datajrs[:,ll,ii,:].flatten(),
-                                        _lz=datalzs[:,ll,ii,:].flatten(),
-                                        _jz=datajzs[:,ll,ii,:].flatten(),
-                                        _rg=datargs[:,ll,ii,:].flatten(),
-                                        _kappa=datakappas[:,ll,ii,:].flatten(),
-                                        _nu=datanus[:,ll,ii,:].flatten(),
-                                        _Omega=dataOmegas[:,ll,ii,:].flatten(),
-                                        _sigmaR1=datanormsrs.flatten())
-            data_lndf[:,0]= numpy.log(numpy.sum(mdata_df*vzglw,axis=1)*datasz*2.)+3.*numpy.log(vo)
+            if options.marginalizevrvt:
+                for ll in range(options.ngl):
+                    mdata_df[:,ll]= qdf.pvz(vzgl[:,ll],
+                                            R.flatten(),
+                                            z.flatten(),
+                                            gl=True,
+                                            ngl=options.ngl,
+                                            _jr=datajrs[:,ll,ii,:].flatten(),
+                                            _lz=datalzs[:,ll,ii,:].flatten(),
+                                            _jz=datajzs[:,ll,ii,:].flatten(),
+                                            _rg=datargs[:,ll,ii,:].flatten(),
+                                            _kappa=datakappas[:,ll,ii,:].flatten(),
+                                            _nu=datanus[:,ll,ii,:].flatten(),
+                                            _Omega=dataOmegas[:,ll,ii,:].flatten(),
+                                            _sigmaR1=datanormsrs.flatten())
+                data_lndf[:,0]= numpy.log(numpy.sum(mdata_df*vzglw,axis=1)*datasz*2.)+3.*numpy.log(vo)
+            elif options.marginalizevt:
+                for ll in range(ndata):
+                    mdata_df[ll,:]= qdf((datajrs[ll,ii,:],
+                                         datalzs[ll,ii,:],
+                                         datajzs[ll,ii,:]),
+                                        rg=datargs[ll,ii,:],
+                                        kappa=datakappas[ll,ii,:],
+                                        nu=datanus[ll,ii,:],
+                                        Omega=dataOmegas[ll,ii,:],
+                                        log=False,
+                                        _return_actions=False,
+                                        _return_freqs=False)
+                data_lndf[:,0]= numpy.log(numpy.sum(mdata_df*vzglw*vRglw*vTglw,
+                                                    axis=1)*datasz*datasr*3.)+3.*numpy.log(vo)
         else:
             data_lndf[:,0:toptions.nmcerr]= numpy.log(qdf.pvz(vz.flatten(),
                                                               R.flatten(),
@@ -3058,7 +3231,10 @@ def prepare_coordinates(params,indx,fehs,afes,binned,errstuff,options,
         vR= numpy.array([e.vR for e in errstuff])[callindx]/vo/_REFV0
         vT= numpy.array([e.vT for e in errstuff])[callindx]/vo/_REFV0
         vz= numpy.array([e.vz for e in errstuff])[callindx]/vo/_REFV0
-        return (R,vR,vT,z,vz,binned.data[callindx].vzc_err/vo/_REFV0)
+        return (R,vR,vT,z,vz,
+                binned.data[callindx].vRc_err/vo/_REFV0,
+                binned.data[callindx].vzc_err/vo/_REFV0,
+                binned.data[callindx].vRvzc_rho)
     elif (options.fitvsun or options.fitvtsun) and not options.fitro \
             and not options.fitdm:
         callindx= binned.callIndx(fehs[indx],afes[indx])
@@ -3973,9 +4149,9 @@ def setup_err_mc(data,options,indx=None):
         vR= -outvxvyvz[:,0,:]*cosphi.T+outvxvyvz[:,1,:]*sinphi.T
         vT= outvxvyvz[:,0,:]*sinphi.T+outvxvyvz[:,1,:]*cosphi.T
         if options.marginalizevrvt:
-            #vR+= numpy.random.normal(size=vR.shape)*100.
-            #vT+= numpy.random.normal(size=vT.shape)*100.
             vR= numpy.random.uniform(size=vR.shape)*300.-150.
+            vT= numpy.random.uniform(size=vT.shape)*300.
+        elif options.marginalizevt:
             vT= numpy.random.uniform(size=vT.shape)*300.
         #Load into structure
         errstuff= []
