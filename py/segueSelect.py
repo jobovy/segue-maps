@@ -1536,6 +1536,18 @@ def _add_velocities(raw,nosolar=False):
     XYZ= XYZ.astype(numpy.float64)
     vxvyvz= vxvyvz.astype(numpy.float64)
     cov_vxvyvz= cov_vxvyvz.astype(numpy.float64)
+    cov_vRvTvz= copy.copy(cov_vxvyvz)
+    #Rotate vxvyvz to vRvTvz
+    R= numpy.sqrt((8.-XYZ[:,0])**2.+XYZ[:,1]**2.)
+    cosphi= (8.-XYZ[:,0])/R
+    sinphi= XYZ[:,1]/R
+    for rr in range(len(XYZ[:,0])):
+        rot= numpy.array([[cosphi[rr],sinphi[rr],0.],
+                          [-sinphi[rr],cosphi[rr],0.],
+                          [0.,0.,1.]])
+        sxy= cov_vxvyvz[rr,0:3,0:3]
+        sRT= numpy.dot(rot,numpy.dot(sxy,rot.T))
+        cov_vRvTvz[rr,0:3,0:3]= sRT
     #Append results to structure
     raw= _append_field_recarray(raw,'xc',XYZ[:,0])
     raw= _append_field_recarray(raw,'yc',XYZ[:,1])
@@ -1555,6 +1567,17 @@ def _add_velocities(raw,nosolar=False):
     raw= _append_field_recarray(raw,'vyvzc_rho',cov_vxvyvz[:,1,2]\
                                     /numpy.sqrt(cov_vxvyvz[:,1,1])\
                                     /numpy.sqrt(cov_vxvyvz[:,2,2]))
+    raw= _append_field_recarray(raw,'vRc_err',numpy.sqrt(cov_vRvTvz[:,0,0]))
+    raw= _append_field_recarray(raw,'vTc_err',numpy.sqrt(cov_vRvTvz[:,1,1]))
+    raw= _append_field_recarray(raw,'vRvTc_rho',cov_vRvTvz[:,0,1]\
+                                    /numpy.sqrt(cov_vRvTvz[:,0,0])\
+                                    /numpy.sqrt(cov_vRvTvz[:,1,1]))
+    raw= _append_field_recarray(raw,'vRvzc_rho',cov_vRvTvz[:,0,2]\
+                                    /numpy.sqrt(cov_vRvTvz[:,0,0])\
+                                    /numpy.sqrt(cov_vRvTvz[:,2,2]))
+    raw= _append_field_recarray(raw,'vTvzc_rho',cov_vRvTvz[:,1,2]\
+                                    /numpy.sqrt(cov_vRvTvz[:,1,1])\
+                                    /numpy.sqrt(cov_vRvTvz[:,2,2]))
     return raw
 
 def _load_fits(file,ext=1):
