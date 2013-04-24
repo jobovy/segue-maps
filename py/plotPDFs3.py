@@ -5,9 +5,11 @@ import numpy
 from scipy import maxentropy
 import multiprocessing
 from galpy.util import bovy_plot, multi
+from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 import monoAbundanceMW
 from segueSelect import _ERASESTR
-from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0
+from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0, \
+    setup_potential, setup_aA
 _NOTDONEYET= True
 def plotRdfh(options,args):
     #Go through all of the bins
@@ -682,6 +684,107 @@ def plotPout_single(ii,options,args):
         newname+= spl[-1]
         bovy_plot.bovy_end_print(newname)
 
+def plothrreal(options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: plothrreal_single(x,options,args)),
+                                  range(npops),
+                                  numcores=numpy.amin([options.multi,
+                                                       npops,
+                                                       multiprocessing.cpu_count()]))
+    else:
+        for ii in range(npops):
+            plothrreal_single(ii,options,args)
+
+def plothrreal_single(ii,options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        savefile= open('binmapping_g.sav','rb')
+    elif options.sample.lower() == 'k':
+        savefile= open('binmapping_k.sav','rb')
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    fehs= pickle.load(savefile)
+    afes= pickle.load(savefile)
+    if True:
+        if _NOTDONEYET:
+            spl= options.restart.split('.')
+        else:
+            spl= args[0].split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        savefile= open(newname,'rb')
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            return None
+        finally:
+            savefile.close()
+        if _NOTDONEYET:
+            logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        #Get hR range
+        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[ii],afes[ii],
+                                                            relerr=True)
+        if True: resr= 0.3
+        if True: resz= 0.3
+        hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
+        srs= numpy.linspace(lnsr-0.6*resz,lnsr+0.6*resz,options.nsrs)#USE ESZ
+        szs= numpy.linspace(lnsz-0.6*resz,lnsz+0.6*resz,options.nszs)
+        rds= numpy.linspace(2.,3.4,8)
+        fhs= numpy.linspace(0.,1.,16)
+        bfhrs= numpy.zeros((logl.shape[0],logl.shape[3]))+numpy.nan
+        vo= options.fixvc/220.
+        options.fitdvt= False #Just to make sure what follows works
+        for jj in range(bfhrs.shape[0]):
+            print "Rd %f" % (rds[jj])
+            for kk in range(bfhrs.shape[1]):
+                print "fh %i" % kk
+                if maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,0]) > -10000000000000.:
+                    hrindx, srindx, szindx= numpy.unravel_index(numpy.argmax(logl[jj,0,0,kk,:,:,:,0]),(options.nhrs,options.nsrs,options.nszs))
+                    #Setup potential
+                    potparams= numpy.array([numpy.log(rds[jj]/8.),vo,numpy.log(options.fixzh/8000.),fhs[kk],options.dlnvcdlnr])
+                    pot= setup_potential(potparams,options,0)
+                    aA= setup_aA(pot,options)
+                    qdf= quasiisothermaldf(numpy.exp(hrs[hrindx]),
+                                           numpy.exp(srs[srindx])/vo,
+                                           numpy.exp(szs[szindx])/vo,
+                                           1.,7./8.,
+                                           pot=pot,aA=aA,cutcounter=True)
+                    bfhrs[jj,kk]= qdf.estimate_hr(1.,z=0.8/8.,dR=0.33,gl=True)*8.
+                    print bfhrs[jj,kk], numpy.exp(hrs[hrindx])*8.
+        #Normalize
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_dens2d(bfhrs.T,origin='lower',cmap='jet',
+                              interpolation='nearest',
+                              xrange=[1.9,3.5],yrange=[-1./32.,1.+1./32.],
+                              xlabel=r'$R_d\ (\mathrm{kpc})$',ylabel=r'$f_h$',
+                              zlabel=r'$h_R^{\mathrm{phys}}\ (\mathrm{kpc})$',
+                              colorbar=True,
+                              vmin=1.5,vmax=4.5)
+        #Plotname
+        spl= options.outfilename.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        bovy_plot.bovy_end_print(newname)
+
 def plotdvt(options,args):
     #Go through all of the bins
     if options.sample.lower() == 'g':
@@ -1080,4 +1183,6 @@ if __name__ == '__main__':
         plotDF4fidpot(options,args)
     elif options.type.lower() == 'bestpot':
         plotbestpot(options,args)
+    elif options.type.lower() == 'hrreal':
+        plothrreal(options,args)
                             
