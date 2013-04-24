@@ -774,7 +774,7 @@ def plothrreal_single(ii,options,args):
                               xlabel=r'$R_d\ (\mathrm{kpc})$',ylabel=r'$f_h$',
                               zlabel=r'$h_R^{\mathrm{phys}}\ (\mathrm{kpc})$',
                               colorbar=True,
-                              vmin=1.5,vmax=4.5)
+                              vmin=0.5,vmax=4.5)
         #Plotname
         spl= options.outfilename.split('.')
         newname= ''
