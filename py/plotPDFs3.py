@@ -2,10 +2,11 @@ import sys
 import os, os.path
 import cPickle as pickle
 import numpy
-from scipy import maxentropy
+from scipy import maxentropy, integrate
 import multiprocessing
 from galpy.util import bovy_plot, multi
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
+from galpy import potential
 import monoAbundanceMW
 from segueSelect import _ERASESTR
 from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0, \
@@ -493,7 +494,7 @@ def plotsrsz_single(ii,options,args):
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
                 if options.conditional:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,:,jj,kk,0].flatten())-maxentropy.logsumexp(logl[:,0,0,:,:,jj,0].flatten())
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,:,jj,kk,0].flatten())-maxentropy.logsumexp(logl[:,0,0,:,:,kk,0].flatten())
                 else:
                     marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,:,jj,kk,0].flatten())
         #Normalize
@@ -907,6 +908,145 @@ def plotloglhist_single(ii,options,args):
         bovy_plot.bovy_end_print(newname)
     return None
 
+def plotderived(options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 30
+    if not options.multi is None:
+        dummy= multi.parallel_map((lambda x: plotderived_single(x,options,args)),
+                                  range(npops),
+                                  numcores=numpy.amin([options.multi,
+                                                       npops,
+                                                       multiprocessing.cpu_count()]))
+    else:
+        for ii in range(npops):
+            plotderived_single(ii,options,args)
+
+def plotderived_single(ii,options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        savefile= open('binmapping_g.sav','rb')
+    elif options.sample.lower() == 'k':
+        savefile= open('binmapping_k.sav','rb')
+    fehs= pickle.load(savefile)
+    afes= pickle.load(savefile)
+    npops= len(fehs)
+    savefile.close()
+    if True:
+        if _NOTDONEYET:
+            spl= options.restart.split('.')
+        else:
+            spl= args[0].split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        savefile= open(newname,'rb')
+        try:
+            if not _NOTDONEYET:
+                params= pickle.load(savefile)
+                mlogl= pickle.load(savefile)
+            logl= pickle.load(savefile)
+        except:
+            return None
+        finally:
+            savefile.close()
+        if _NOTDONEYET:
+            logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        marglogl= numpy.zeros((logl.shape[0],logl.shape[3]))
+        nderived= 8
+        dmarglogl= numpy.zeros((logl.shape[0],logl.shape[3],nderived))
+        #Get hR range
+        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[ii],afes[ii],
+                                                            relerr=True)
+        if True: resr= 0.3
+        if True: resz= 0.3
+        hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
+        srs= numpy.linspace(lnsr-0.6*resz,lnsr+0.6*resz,options.nsrs)#USE ESZ
+        szs= numpy.linspace(lnsz-0.6*resz,lnsz+0.6*resz,options.nszs)
+        rds= numpy.linspace(2.,3.4,8)
+        fhs= numpy.linspace(0.,1.,16)
+        ro= 1.
+        vo= options.fixvc/220.
+        options.fitdvt= False #Just to make sure what follows works
+        for jj in range(marglogl.shape[0]):
+            for kk in range(marglogl.shape[1]):
+                marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,0].flatten())
+                #Setup potential to calculate stuff
+                potparams= numpy.array([numpy.log(rds[jj]/8.),vo,numpy.log(options.fixzh/8000.),fhs[kk],options.dlnvcdlnr])
+                try:
+                    pot= setup_potential(potparams,options,0,returnrawpot=True)
+                except RuntimeError:
+                    continue
+                #First up, total surface density
+                surfz= 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
+                dmarglogl[jj,kk,0]= surfz
+                #Disk density
+                surfzdisk= 2.*pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*400./8000.*ro*_REFR0*1000.
+                dmarglogl[jj,kk,1]= surfzdisk
+                #halo density
+                rhodm= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+                dmarglogl[jj,kk,2]= rhodm
+                #total density
+                rhoo= potential.evaluateDensities(1.,0.,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+                dmarglogl[jj,kk,3]= rhoo
+                #mass of the disk
+                rhod= pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+                massdisk= rhod*2.*options.fixzh/8000.*numpy.exp(8./rds[jj])*rds[jj]**2./8**2.*2.*numpy.pi*(ro*_REFR0)**3./10.
+                dmarglogl[jj,kk,4]= massdisk
+                #pl halo
+                dmarglogl[jj,kk,5]= pot[1].alpha
+                #vcdvc
+                vcdvc= pot[0].vcirc(2.2*rds[jj]/8.)/potential.vcirc(pot,2.2*rds[jj]/8.)
+                dmarglogl[jj,kk,6]= vcdvc
+        #Calculate mean and stddv
+        alogl= marglogl-maxentropy.logsumexp(marglogl.flatten())
+        margp= numpy.exp(alogl)
+        mean_surfz= numpy.sum(dmarglogl[:,:,0]*margp)
+        std_surfz= numpy.sqrt(numpy.sum(dmarglogl[:,:,0]**2.*margp)-mean_surfz**2.)
+        mean_surfzdisk= numpy.sum(dmarglogl[:,:,1]*margp)
+        std_surfzdisk= numpy.sqrt(numpy.sum(dmarglogl[:,:,1]**2.*margp)-mean_surfzdisk**2.)
+        mean_rhodm= numpy.sum(dmarglogl[:,:,2]*margp)
+        std_rhodm= numpy.sqrt(numpy.sum(dmarglogl[:,:,2]**2.*margp)-mean_rhodm**2.)
+        mean_rhoo= numpy.sum(dmarglogl[:,:,3]*margp)
+        std_rhoo= numpy.sqrt(numpy.sum(dmarglogl[:,:,3]**2.*margp)-mean_rhoo**2.)
+        mean_massdisk= numpy.sum(dmarglogl[:,:,4]*margp)
+        std_massdisk= numpy.sqrt(numpy.sum(dmarglogl[:,:,4]**2.*margp)-mean_massdisk**2.)
+        mean_plhalo= numpy.sum(dmarglogl[:,:,5]*margp)
+        std_plhalo= numpy.sqrt(numpy.sum(dmarglogl[:,:,5]**2.*margp)-mean_plhalo**2.)
+        mean_vcdvc= numpy.sum(dmarglogl[:,:,6]*margp)
+        std_vcdvc= numpy.sqrt(numpy.sum(dmarglogl[:,:,6]**2.*margp)-mean_vcdvc**2.)
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_text(r'$\Sigma(R_0,|Z| < 1.1\,\mathrm{kpc}) = %.1f \pm %.1f\,M_\odot\,\mathrm{pc}^{-2}$' % (mean_surfz,std_surfz)
+                            +'\n'
+                            +r'$\Sigma_{\mathrm{disk}}(R_0) = %.1f \pm %.1f\,M_\odot\,\mathrm{pc}^{-2}$' % (mean_surfzdisk,std_surfzdisk)
+                            +'\n'
+                            +r'$\rho_{\mathrm{total}}(R_0,Z=0) = %.3f \pm %.3f\,M_\odot\,\mathrm{pc}^{-3}$' % (mean_rhoo,std_rhoo)
+                            +'\n'
+                            +r'$M_{\mathrm{disk}} = %.3f \pm %.3f\, \times 10^{10}\,M_{\odot}$' % (mean_massdisk,std_massdisk)
+                            +'\n'
+                            +r'$V_{c,\mathrm{disk}}/V_c\,(2.2\,R_d) = %.2f \pm %.2f$' % (mean_vcdvc,std_vcdvc)
+                            +'\n'
+                            +r'$\rho_{\mathrm{DM}}(R_0,Z=0) = %.4f \pm %.4f\,M_\odot\,\mathrm{pc}^{-3}$' % (mean_rhodm,std_rhodm)
+                            +'\n'
+                            +r'$\alpha_{h}= %.2f \pm %.2f$' % (mean_plhalo,std_plhalo),
+                            top_left=True,size=16.)
+        #Plotname
+        spl= options.outfilename.split('.')
+        newname= ''
+        for jj in range(len(spl)-1):
+            newname+= spl[jj]
+            if not jj == len(spl)-2: newname+= '.'
+        newname+= '_%i.' % ii
+        newname+= spl[-1]
+        bovy_plot.bovy_end_print(newname)
+    return None
+
 def plotprops(options,args):
     #Go through all of the bins
     if options.sample.lower() == 'g':
@@ -1179,6 +1319,8 @@ if __name__ == '__main__':
         plotloglhist(options,args)
     elif options.type.lower() == 'props':
         plotprops(options,args)
+    elif options.type.lower() == 'derived':
+        plotderived(options,args)
     elif options.type.lower() == 'df4fidpot':
         plotDF4fidpot(options,args)
     elif options.type.lower() == 'bestpot':
