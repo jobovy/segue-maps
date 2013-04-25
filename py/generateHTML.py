@@ -24,7 +24,7 @@ def generateHTML(options,args):
                 'loglhist','props']
     types= ['rdfh','rdhr','rdhrc','rdsz',
             'srsz','srszc','pout','hrreal',
-            'loglhist','props']
+            'loglhist','derived','props']
     ntypes= len(types)
     for ii in range(npops):
         outfile.write('<p style="font-size:xx-large;">%i</p>\n' % ii)
