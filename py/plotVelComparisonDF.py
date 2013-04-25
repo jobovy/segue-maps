@@ -13,6 +13,7 @@ from pixelFitDF import _REFR0, _REFV0, _VRSUN, _VTSUN, _VZSUN
 from plotDensComparisonDFMulti import getMultiComparisonBins, get_median_potential
 _legendsize= 16
 _NOTDONEYET= True
+_VARYHSZ= True
 def plotVelComparisonDF(options,args):
     #Read data etc.
     print "Reading the data ..."
@@ -63,10 +64,10 @@ def plotVelComparisonDF(options,args):
         return None
     ##########POTENTIAL PARAMETERS####################
     potparams1= numpy.array([numpy.log(2.6/8.),220./220.,numpy.log(400./8000.),0.2,0.])
-    potparams2= numpy.array([numpy.log(2.8/8.),220./220,numpy.log(400./8000.),0.26666666,0.])
+    potparams2= numpy.array([numpy.log(2.8/8.),220./220,numpy.log(400./8000.),0.4,0.])
     #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
     potparams3= numpy.array([numpy.log(2.6/8.),220./220.,
-                             numpy.log(400./8000.),0.4666666,0.])
+                             numpy.log(400./8000.),0.5333333,0.])
     pop= 0 #assume first population
     #Load savefile
     if not options.init is None:
@@ -108,7 +109,10 @@ def plotVelComparisonDF(options,args):
     if True: resz= 0.3
     hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
     #hrs= numpy.linspace(lnhr-1.5*rehr,lnhr+1.5*rehr,options.nhrs)
-    srs= numpy.linspace(lnsr-0.8*resz,lnsr+0.8*resz,options.nsrs)#USE ESZ
+    if _VARYHSZ:
+        srs= numpy.linspace(numpy.log(0.5),numpy.log(2.),options.nsrs)#hsz now
+    else:
+        srs= numpy.linspace(lnsr-0.6*resz,lnsr+0.6*resz,options.nsrs)#USE ESZ
     szs= numpy.linspace(lnsz-0.8*resz,lnsz+0.8*resz,options.nszs)
     #hrs= numpy.linspace(lnhr-0.3,lnhr+0.3,options.nhrs)
     #srs= numpy.linspace(lnsr-0.1,lnsr+0.1,options.nsrs)
@@ -116,16 +120,28 @@ def plotVelComparisonDF(options,args):
     dvts= numpy.linspace(-0.35,0.05,options.ndvts)
     #dvts= numpy.linspace(-0.05,0.05,options.ndvts)
     pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,:,:,0,0]),
-                              logl[3,0,0,3,:,:,:,:,:,0,0].shape)
-    tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
-                          #srs[indx[1]-2.*(indx[1] != 0)],
-                          #szs[indx[2]-2.*(indx[2] != 0)],
-                          srs[indx[1]],
-                          szs[indx[2]],
-                          numpy.log(8./_REFR0),
-                          numpy.log(7./_REFR0),pouts[indx[4]],
-                          0.,0.,0.,0.,0.])
+    #indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,:,:,0,0]),
+    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,0]),
+                              logl[3,0,0,3,:,:,:,0].shape)
+    #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
+    if _VARYHSZ:
+        tparams= numpy.array([0.,hrs[indx[0]],
+                              #srs[indx[1]-2.*(indx[1] != 0)],
+                              #szs[indx[2]-2.*(indx[2] != 0)],
+                              lnsr,
+                              szs[indx[2]],
+                              numpy.log(8./_REFR0),
+                              srs[indx[1]],0.,#pouts[indx[4]],
+                              0.,0.,0.,0.,0.])
+    else:
+        tparams= numpy.array([0.,hrs[indx[0]],
+                              #srs[indx[1]-2.*(indx[1] != 0)],
+                              #szs[indx[2]-2.*(indx[2] != 0)],
+                              srs[indx[1]],
+                              szs[indx[2]],
+                              numpy.log(8./_REFR0),
+                              numpy.log(7./_REFR0),0.,#pouts[indx[4]],
+                              0.,0.,0.,0.,0.])
     options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
     tparams= set_potparams(potparams1,tparams,options,1)
     data= []
@@ -171,31 +187,53 @@ def plotVelComparisonDF(options,args):
     velps[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
     alts= True
     if alts:
-        indx= numpy.unravel_index(numpy.argmax(logl[4,0,0,4,:,:,:,:,:,0,0]),
-                                  logl[4,0,0,4,:,:,:,:,:,0,0].shape)
-        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
-                              #srs[indx[1]-1.*(indx[1] != 0)],
-                              #szs[indx[2]-1.*(indx[2] != 0)],
-                              srs[indx[1]],
-                              szs[indx[2]],
-                              numpy.log(8./_REFR0),
-                              numpy.log(7./_REFR0),pouts[indx[4]],
-                              0.,0.,0.,0.,0.,0.])
+        indx= numpy.unravel_index(numpy.argmax(logl[4,0,0,4,:,:,:,0]),
+                                  logl[4,0,0,4,:,:,:,0].shape)
+        #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
+        if _VARYHSZ:
+            tparams= numpy.array([0.,hrs[indx[0]],
+                                  #srs[indx[1]-1.*(indx[1] != 0)],
+                                  #szs[indx[2]-1.*(indx[2] != 0)],
+                                  srs[indx[1]],
+                                  szs[indx[2]],
+                                  numpy.log(8./_REFR0),
+                                  numpy.log(7./_REFR0),0.,#pouts[indx[4]],
+                                  0.,0.,0.,0.,0.,0.])
+        else:
+            tparams= numpy.array([0.,hrs[indx[0]],
+                                  #srs[indx[1]-1.*(indx[1] != 0)],
+                                  #szs[indx[2]-1.*(indx[2] != 0)],
+                                  lnsr,
+                                  szs[indx[2]],
+                                  numpy.log(8./_REFR0),
+                                  srs[indx[1]],0.,#pouts[indx[4]],
+                                  0.,0.,0.,0.,0.,0.])
         #options.potential= 'dpdiskplhalodarkdiskfixbulgeflatwgasalt'
         options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
         tparams= set_potparams(potparams2,tparams,options,1)
         print "Working on model 2 ..."
         velps2[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
-        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,7,:,:,:,:,:,0,0]),
-                                  logl[3,0,0,7,:,:,:,:,:,0,0].shape)
-        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
-                              #srs[indx[1]-2.*(indx[1] != 0)],
-                              #szs[indx[2]-2.*(indx[2] != 0)],
-                              srs[indx[1]],
-                              szs[indx[2]],
-                              numpy.log(8./_REFR0),
-                              numpy.log(7./_REFR0),pouts[indx[4]],
-                              0.,0.,0.,0.,0.])
+        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,8,:,:,:,0]),
+                                  logl[3,0,0,8,:,:,:,0].shape)
+        #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
+        if _VARYHSZ:
+            tparams= numpy.array([0.,hrs[indx[0]],
+                                  #srs[indx[1]-2.*(indx[1] != 0)],
+                                  #szs[indx[2]-2.*(indx[2] != 0)],
+                                  lnsr,
+                                  szs[indx[2]],
+                                  numpy.log(8./_REFR0),
+                                  srs[indx[1]],0.,#pouts[indx[4]],
+                                  0.,0.,0.,0.,0.])
+        else:
+            tparams= numpy.array([0.,hrs[indx[0]],
+                                  #srs[indx[1]-2.*(indx[1] != 0)],
+                                  #szs[indx[2]-2.*(indx[2] != 0)],
+                                  srs[indx[1]],
+                                  szs[indx[2]],
+                                  numpy.log(8./_REFR0),
+                                  numpy.log(7./_REFR0),0.,#pouts[indx[4]],
+                                  0.,0.,0.,0.,0.])
         options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
         tparams= set_potparams(potparams3,tparams,options,1)
         print "Working on model 3 ..."
@@ -340,7 +378,8 @@ def calc_model(params,options,data,vs):
     else:
         for ii in range(len(data)):
             if options.type.lower() == 'vz':
-                thisp= numpy.array([qdf.pvz(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
+                #thisp= numpy.array([qdf.pvz(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
+                thisp= qdf.pvz(vs/_REFV0/vo,R[ii]+numpy.zeros(len(vs)),z[ii]+numpy.zeros(len(vs)),ngl=options.ngl,gl=True)
                 ndimage.filters.gaussian_filter1d(thisp,
                                                   data.vzc_err[ii]/(vs[1]-vs[0]),
                                                   output=thisp)
@@ -363,7 +402,8 @@ def calc_model(params,options,data,vs):
 
 def _calc_model_one(ii,R,z,vs,qdf,options,data,params,cov_vxvyvz,vo):
     if options.type.lower() == 'vz':
-        thisp= numpy.array([qdf.pvz(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
+        thisp= qdf.pvz(vs/_REFV0/vo,R[ii]+numpy.zeros(len(vs)),z[ii]+numpy.zeros(len(vs)),ngl=options.ngl,gl=True)
+        #thisp= numpy.array([qdf.pvz(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
         ndimage.filters.gaussian_filter1d(thisp,
                                           data.vzc_err[ii]/(vs[1]-vs[0]),
                                           output=thisp)

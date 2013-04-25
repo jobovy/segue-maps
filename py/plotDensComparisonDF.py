@@ -15,6 +15,7 @@ from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
 from plotDensComparisonDFMulti4gridall import calc_model
 _NOTDONEYET= True
 _RRANGES= True
+_VARYHSZ= True
 def plotDensComparisonDF(options,args):
     #Read data etc.
     print "Reading the data ..."
@@ -68,10 +69,10 @@ def plotDensComparisonDF(options,args):
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
     ##########POTENTIAL PARAMETERS####################
     potparams1= numpy.array([numpy.log(2.6/8.),220./220.,numpy.log(400./8000.),0.2,0.])
-    potparams2= numpy.array([numpy.log(2.8/8.),220./220,numpy.log(400./8000.),0.26666666,0.])
+    potparams2= numpy.array([numpy.log(2.8/8.),220./220,numpy.log(400./8000.),0.4,0.])
     #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
     potparams3= numpy.array([numpy.log(2.6/8.),220./220.,
-                             numpy.log(400./8000.),0.4666666,0.])
+                             numpy.log(400./8000.),0.5333333,0.])
     #Set up density models and their parameters
     pop= 0 #assume first population
     #Load savefile
@@ -114,24 +115,39 @@ def plotDensComparisonDF(options,args):
     if True: resz= 0.3
     hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
     #hrs= numpy.linspace(lnhr-1.5*rehr,lnhr+1.5*rehr,options.nhrs)
-    srs= numpy.linspace(lnsr-0.8*resz,lnsr+0.8*resz,options.nsrs)#USE ESZ
-    szs= numpy.linspace(lnsz-0.8*resz,lnsz+0.8*resz,options.nszs)
+    if _VARYHSZ:
+        srs= numpy.linspace(numpy.log(0.5),numpy.log(2.),options.nsrs)#hsz now
+    else:
+        srs= numpy.linspace(lnsr-0.6*resz,lnsr+0.6*resz,options.nsrs)#USE ESZ
+    szs= numpy.linspace(lnsz-0.6*resz,lnsz+0.6*resz,options.nszs)
     #hrs= numpy.linspace(lnhr-0.3,lnhr+0.3,options.nhrs)
     #srs= numpy.linspace(lnsr-0.1,lnsr+0.1,options.nsrs)
     #szs= numpy.linspace(lnsz-0.1,lnsz+0.1,options.nszs)
     dvts= numpy.linspace(-0.35,0.05,options.ndvts)
     #dvts= numpy.linspace(-0.05,0.05,options.ndvts)
     pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,:,:,0,0]),
-                              logl[3,0,0,3,:,:,:,:,:,0,0].shape)
-    tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
-                          #srs[indx[1]-2.*(indx[1] != 0)],
-                          #szs[indx[2]-2.*(indx[2] != 0)],
-                          srs[indx[1]],
-                          szs[indx[2]],
-                          numpy.log(8./_REFR0),
-                          numpy.log(7./_REFR0),pouts[indx[4]],
-                          0.,0.,0.,0.,0.])
+    #indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,:,:,0,0]),
+    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,0]),
+                              logl[3,0,0,3,:,:,:,0].shape)
+    #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
+    if _VARYHSZ:
+        tparams= numpy.array([0.,hrs[indx[0]],
+                              #srs[indx[1]-2.*(indx[1] != 0)],
+                              #szs[indx[2]-2.*(indx[2] != 0)],
+                              lnsr,
+                              szs[indx[2]],
+                              numpy.log(8./_REFR0),
+                              srs[indx[1]],0.,#pouts[indx[4]],
+                              0.,0.,0.,0.,0.])
+    else:
+        tparams= numpy.array([0.,hrs[indx[0]],
+                              #srs[indx[1]-2.*(indx[1] != 0)],
+                              #szs[indx[2]-2.*(indx[2] != 0)],
+                              srs[indx[1]],
+                              szs[indx[2]],
+                              numpy.log(8./_REFR0),
+                              numpy.log(7./_REFR0),0.,#pouts[indx[4]],
+                              0.,0.,0.,0.,0.])
     options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
     tparams= set_potparams(potparams1,tparams,options,1)
     #Set up density models and their parameters
@@ -140,16 +156,27 @@ def plotDensComparisonDF(options,args):
     paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
     params1= paramsInterp
     if True:
-        indx= numpy.unravel_index(numpy.argmax(logl[4,0,0,4,:,:,:,:,:,0,0]),
-                                  logl[4,0,0,4,:,:,:,:,:,0,0].shape)
-        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
-                              #srs[indx[1]-2.*(indx[1] != 0)],
-                              #szs[indx[2]-2.*(indx[2] != 0)],
-                              srs[indx[1]],
-                              szs[indx[2]],
-                              numpy.log(8./_REFR0),
-                              numpy.log(7./_REFR0),pouts[indx[4]],
-                              0.,0.,0.,0.,0.,0.])
+        indx= numpy.unravel_index(numpy.argmax(logl[4,0,0,4,:,:,:,0]),
+                                  logl[4,0,0,4,:,:,:,0].shape)
+        #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
+        if _VARYHSZ:
+            tparams= numpy.array([0.,hrs[indx[0]],
+                                  #srs[indx[1]-2.*(indx[1] != 0)],
+                                  #szs[indx[2]-2.*(indx[2] != 0)],
+                                  lnsr,
+                                  szs[indx[2]],
+                                  numpy.log(8./_REFR0),
+                                  srs[indx[1]],0.,#pouts[indx[4]],
+                                  0.,0.,0.,0.,0.,0.])
+        else:
+            tparams= numpy.array([0.,hrs[indx[0]],
+                                  #srs[indx[1]-2.*(indx[1] != 0)],
+                                  #szs[indx[2]-2.*(indx[2] != 0)],
+                                  srs[indx[1]],
+                                  szs[indx[2]],
+                                  numpy.log(8./_REFR0),
+                                  numpy.log(7./_REFR0),0.,#pouts[indx[4]],
+                                  0.,0.,0.,0.,0.,0.])
         #options.potential= 'dpdiskplhalodarkdiskfixbulgeflatwgasalt'
         options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
         tparams= set_potparams(potparams2,tparams,options,1)
@@ -157,16 +184,27 @@ def plotDensComparisonDF(options,args):
         print "Working on model 2 ..."
         paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
         params2= paramsInterp
-        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,7,:,:,:,:,:,0,0]),
-                                  logl[3,0,0,7,:,:,:,:,:,0,0].shape)
-        tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
-                              #srs[indx[1]-2.*(indx[1] != 0)],
-                              #szs[indx[2]-2.*(indx[2] != 0)],
-                              srs[indx[1]],
-                              szs[indx[2]],
-                              numpy.log(8./_REFR0),
-                              numpy.log(7./_REFR0),pouts[indx[4]],
-                              0.,0.,0.,0.,0.])
+        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,8,:,:,:,0]),
+                                  logl[3,0,0,8,:,:,:,0].shape)
+        #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
+        if _VARYHSZ:
+            tparams= numpy.array([0.,hrs[indx[0]],
+                                  #srs[indx[1]-2.*(indx[1] != 0)],
+                                  #szs[indx[2]-2.*(indx[2] != 0)],
+                                  lnsr,
+                                  szs[indx[2]],
+                                  numpy.log(8./_REFR0),
+                                  srs[indx[1]],0.,#pouts[indx[4]],
+                                  0.,0.,0.,0.,0.])
+        else:
+            tparams= numpy.array([0.,hrs[indx[0]],
+                                  #srs[indx[1]-2.*(indx[1] != 0)],
+                                  #szs[indx[2]-2.*(indx[2] != 0)],
+                                  srs[indx[1]],
+                                  szs[indx[2]],
+                                  numpy.log(8./_REFR0),
+                                  numpy.log(7./_REFR0),0.,#pouts[indx[4]],
+                                  0.,0.,0.,0.,0.])
         options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
         tparams= set_potparams(potparams3,tparams,options,1)
         model3= interpDens
@@ -307,20 +345,25 @@ def plotDensComparisonDF(options,args):
         if options.all: return None
     bins= 16
     for ii in range(len(ls)):
+        nodata= False
         #Bright
         plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
                                                        sf,data,
                                                        faint=False)
         bovy_plot.bovy_print()
-        compare_func(model1,params1,sf,colordist,fehdist,
-                     data,plate,color='k',
-                     rmin=14.5,rmax=rmax,
-                     grmin=grmin,
-                     grmax=grmax,
-                     fehmin=fehmin,fehmax=fehmax,feh=feh,
-                     xrange=xrange,
-                     bins=bins,ls='-')
-        if not params2 is None:
+        try:
+            compare_func(model1,params1,sf,colordist,fehdist,
+                         data,plate,color='k',
+                         rmin=14.5,rmax=rmax,
+                         grmin=grmin,
+                         grmax=grmax,
+                         fehmin=fehmin,fehmax=fehmax,feh=feh,
+                         xrange=xrange,
+                         bins=bins,ls='-')
+        except IndexError:
+            #no data
+            nodata= True
+        if not params2 is None and not nodata:
             compare_func(model2,params2,sf,colordist,fehdist,
                          data,plate,color='k',bins=bins,
                          rmin=14.5,rmax=rmax,
@@ -329,7 +372,7 @@ def plotDensComparisonDF(options,args):
                          fehmin=fehmin,fehmax=fehmax,feh=feh,
                          xrange=xrange,
                          overplot=True,ls='--')
-        if not params3 is None:
+        if not params3 is None and not nodata:
             compare_func(model3,params3,sf,colordist,fehdist,
                          data,plate,color='k',bins=bins,
                          rmin=14.5,rmax=rmax,
@@ -338,23 +381,28 @@ def plotDensComparisonDF(options,args):
                          fehmin=fehmin,fehmax=fehmax,feh=feh,
                          xrange=xrange,
                          overplot=True,ls=':')
-        if options.type == 'r':
-            bovy_plot.bovy_end_print(args[0]+'model_data_g_'+'l%i_b%i_bright.' % (ls[ii],bs[ii])+options.ext)
-        else:
-            bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.type+'dist_l%i_b%i_bright.' % (ls[ii],bs[ii])+options.ext)
+        if not nodata:
+            if options.type == 'r':
+                bovy_plot.bovy_end_print(args[0]+'model_data_g_'+'l%i_b%i_bright.' % (ls[ii],bs[ii])+options.ext)
+            else:
+                bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.type+'dist_l%i_b%i_bright.' % (ls[ii],bs[ii])+options.ext)
         #Faint
         plate= compareDataModel.similarPlatesDirection(ls[ii],bs[ii],20.,
                                                        sf,data,
                                                        bright=False)
         bovy_plot.bovy_print()
-        compare_func(model1,params1,sf,colordist,fehdist,
-                     data,plate,color='k',
-                     rmin=14.5,rmax=rmax,
-                     grmin=grmin,
-                     grmax=grmax,
-                     fehmin=fehmin,fehmax=fehmax,feh=feh,
-                     xrange=xrange,
-                     bins=bins,ls='-')
+        try:
+            compare_func(model1,params1,sf,colordist,fehdist,
+                         data,plate,color='k',
+                         rmin=14.5,rmax=rmax,
+                         grmin=grmin,
+                         grmax=grmax,
+                         fehmin=fehmin,fehmax=fehmax,feh=feh,
+                         xrange=xrange,
+                         bins=bins,ls='-')
+        except IndexError:
+            #No data
+            continue
         if not params2 is None:
             compare_func(model2,params2,sf,colordist,fehdist,
                          data,plate,color='k',bins=bins,
