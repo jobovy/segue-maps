@@ -86,7 +86,7 @@ _NEWESTDFRANGES= True
 _NEWRDRANGE= True
 _NEWSAVE= True
 _INTEGRATEMARGINALIZE= True
-_VARYHSZ= False #For cluster
+_VARYHSZ= True
 #GL
 _DEFAULTNGL=10
 _DEFAULTNGL2=20
@@ -634,7 +634,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
         fhs= numpy.linspace(0.,1.,options.nfhs)
         #rds= rds[3:]
-        #fhs= fhs[7:]
+        #fhs= fhs[8:]
         #print "BOVY: YOU ARE CHANGING RD/FH"
         #print "BOVY: ADJUST RDS AND FHS"
         #rds= numpy.array([3.])/_REFR0
@@ -1433,14 +1433,16 @@ def setup_dfgrid(fehs,afes,options):
     #Adustements based on inspection
     if options.sample.lower() == 'g':
         abindx= abToIndx(fehs[0],afes[0],sample=options.sample.lower())
-        if abindx < 4:
+        if abindx < 2:
+            szs-= 0.3
+        elif abindx < 4:
             szs-= 0.2
         elif abindx < 8:
             szs-= 0.15
         elif abindx < 10:
             szs-= 0.10
         elif abindx < 13:
-            szs-= 0.225
+            szs-= 0.125
         elif abindx > 15 and abindx < 19:
             szs-= 0.2
         elif abindx > 18 and abindx < 22:
@@ -1852,7 +1854,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     #Run through the grid
     if _NEWESTDFRANGES:
         dvts= numpy.zeros(1)#numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
-        pouts= numpy.linspace(10.**-5.,.2,options.npouts)
+        pouts= numpy.linspace(10.**-5.,.5,options.npouts)
         pouts2= [0.] #numpy.linspace(10.**-5.,.2,options.npouts)
         data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]= -numpy.finfo(numpy.dtype(numpy.float64)).max
     elif _NEWDFRANGES:
@@ -3152,6 +3154,10 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
     newname+= spl[-1]
     args[0]= newname
     if options.gridall and os.path.exists(newname): #Fit is already done
+        return None
+    if options.sample.lower() == 'g' \
+            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii])/8.) > -0.5:
+        #Don't run, because we cannot model these populations with our model
         return None
     if options.mcsample and not initname is None:
         #Do the same for init
@@ -5104,7 +5110,7 @@ def get_options():
     if _NEWESTDFRANGES:
         parser.add_option("--ndvts",dest='ndvts',default=1,type='int',
                           help="Number of dvts to use in grid-based search")
-        parser.add_option("--npouts",dest='npouts',default=10,type='int',
+        parser.add_option("--npouts",dest='npouts',default=25,type='int',
                           help="Number of pouts to use in grid-based search")
         parser.add_option("--npouts2",dest='npouts2',default=1,type='int',
                           help="Number of pouts to use in grid-based search")
