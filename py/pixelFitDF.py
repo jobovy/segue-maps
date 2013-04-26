@@ -628,7 +628,10 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             #print "BOVY: YOU ARE CHANGING THE RD RANGE FOR TESTING"
         else:
             rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
-        fhs= numpy.linspace(0.,1.,options.nfhs)
+        #fhs= numpy.linspace(0.,1.,options.nfhs)
+        #rds= rds[3:]
+        #fhs= fhs[7:]
+        #print "BOVY: YOU ARE CHANGING RD/FH"
         #print "BOVY: ADJUST RDS AND FHS"
         #rds= numpy.array([3.])/_REFR0
         #fhs= numpy.array([0.5])
@@ -1697,6 +1700,10 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
         if toptions.npouts2 == 1: toptions.nszouts= 1
         tmp_out= numpy.zeros((toptions.ndvts,toptions.npouts,toptions.npouts2,
                               toptions.nszouts))
+        #tmp_out1= numpy.zeros((toptions.ndvts,toptions.npouts,toptions.npouts2,
+        #                      toptions.nszouts))
+        #tmp_out2= numpy.zeros((toptions.ndvts,toptions.npouts,toptions.npouts2,
+        #                      toptions.nszouts))
     else:
         out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1))
     #Setup everything for fast calculations
@@ -1892,6 +1899,8 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
                     sumdata_lndf= mylogsumexp(data_lndf,axis=1)
                     tmp_out[ii,jj,kk,ll]= numpy.sum(sumdata_lndf)\
                         -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out+pouts[kk]*tnormalization_dout)+numpy.log(toptions.nmcerr)) #latter so we can compare
+                    #tmp_out1[ii,jj,kk,ll]= numpy.sum(sumdata_lndf)
+                    #tmp_out2[ii,jj,kk,ll]= -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out+pouts[kk]*tnormalization_dout)+numpy.log(toptions.nmcerr)) #latter so we can compare
                     if options.npouts2 != 1:
                         data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]-= numpy.log(pouts2[kk])
                 data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(pouts[jj])
@@ -1904,6 +1913,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     out[2]= pouts[indx[1]]
     out[3]= pouts[indx[2]]
     out[4]= szouts[indx[3]]
+    #pdb.set_trace()
     return out
 
 ##PRIORS
