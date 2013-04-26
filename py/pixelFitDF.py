@@ -76,7 +76,7 @@ _BFGS_CONSTRAINED= False
 _BFGS= False
 _CUSTOMSAMPLING= True
 _MULTIWHOLEGRID= False
-_MULTIDFGRID= True
+_MULTIDFGRID= False
 _INITWESTIMATES= True
 _SMOOTHDISPS= True
 _SIMPLEOPTDF= True
@@ -1398,10 +1398,10 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                             out[kk,jj,ii,:]= multOut[kk]
                         else:
                             out[kk,jj,ii,:,:,:,:]= multOut[kk]
-            else:
-                for kk in range(options.nhrs):
-                    if _NEWSAVE:
-                        out[kk,jj,ii,:]= mmloglike_gridall(tparams,
+                else:
+                    for kk in range(options.nhrs):
+                        if _NEWSAVE:
+                            out[kk,jj,ii,:]= mmloglike_gridall(tparams,
                                                            hrs[kk],srs[jj],szs[ii],
                                                            pot,aA,fehs,afes,binned,normintstuff,
                                                            len(fehs),errstuff,toptions,vo,ro,
@@ -1412,8 +1412,8 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                            datajrs,datalzs,datajzs,
                                                            datargs,datakappas,datanus,dataOmegas,
                                                            datanormsrs,vzgl,vzglw,vRgl,vRglw,vTgl,vTglw)
-                    else:
-                        out[kk,jj,ii,:,:,:,:]= mmloglike_gridall(tparams,
+                        else:
+                            out[kk,jj,ii,:,:,:,:]= mmloglike_gridall(tparams,
                                                                  hrs[kk],srs[jj],szs[ii],
                                                                  pot,aA,fehs,afes,binned,normintstuff,
                                                                  len(fehs),errstuff,toptions,vo,ro,
@@ -1809,7 +1809,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
             -1.5*numpy.log(2.*math.pi)
     #Run through the grid
     if _NEWESTDFRANGES:
-        dvts= [0.]#numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
+        dvts= numpy.zeros(1)#numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
         pouts= numpy.linspace(10.**-5.,.2,options.npouts)
         pouts2= [0.] #numpy.linspace(10.**-5.,.2,options.npouts)
         data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]= -numpy.finfo(numpy.dtype(numpy.float64)).max
