@@ -166,6 +166,10 @@ def pixelFitDF(options,args,pool=None):
             nabundancebins= len(fehs)
             fehs= numpy.array(fehs)
             afes= numpy.array(afes)
+        if options.sample.lower() == 'g' \
+                and numpy.log(monoAbundanceMW.hr(fehs[0],afes[0])/8.) > -0.5:
+            #Don't run, because we cannot model these populations with our model
+            return None
     else:
         allraw= raw
     #thissavefile= open('binmapping_k.sav','wb')
