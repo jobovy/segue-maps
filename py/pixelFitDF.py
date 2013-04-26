@@ -632,7 +632,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             #print "BOVY: YOU ARE CHANGING THE RD RANGE FOR TESTING"
         else:
             rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
-        #fhs= numpy.linspace(0.,1.,options.nfhs)
+        fhs= numpy.linspace(0.,1.,options.nfhs)
         #rds= rds[3:]
         #fhs= fhs[7:]
         #print "BOVY: YOU ARE CHANGING RD/FH"
@@ -1462,7 +1462,7 @@ def abToIndx(feh,afe,sample='g'):
     mapafes= monoAbundanceMW.afes()
     abindx= numpy.argmin((feh-mapfehs)**2./0.01 \
                              +(afe-mapafes)**2./0.0025)
-    print abindx
+    return abindx
 
 def chi2_simpleoptdf(dfparams,goal_params,pot,aA,options,ro,vo):
     #Setup DF
@@ -2480,7 +2480,7 @@ def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
         #print "Times: %f, %f, %f" % ((mid-start)/(end-start),
         #                             (end-mid)/(end-start),
         #                             end-start)
-        return numpy.sum(n)*vo**3.
+        return numpy.nansum(n)*vo**3.
 
 def _calc_surfgrid_actions(R,zgrid,nzs,options,qdf,
                            jrs,lzs,jzs,normsrs,normszs,
@@ -3204,7 +3204,7 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
         subprocess.call(["qsub","-w","n","-l","exclusive=true",
                          "-N",options.clustername,
                          "-hold_jid",options.clusterholdname,
-                         "-l","h_rt=12:00:00",cmdfilename])
+                         "-l","h_rt=24:00:00",cmdfilename])
     else:
         subprocess.call(["qsub","-w","n","-l","exclusive=true",
                          "-l","h_rt=36:00:00",cmdfilename])
