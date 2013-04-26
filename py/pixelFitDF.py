@@ -1327,20 +1327,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         srs= numpy.linspace(lnsr-0.66*resz,lnsz+0.66*resz,options.nsrs)#USE ESZ
         szs= numpy.linspace(lnsz-0.66*resz,lnsz+0.66*resz,options.nszs)
     elif _NEWESTDFRANGES:
-        lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
-                                                            relerr=True)
-        #if rehr > 0.3: rehr= 0.3 #regularize
-        if True: rehr= 0.3 #regularize
-        #if resr > 0.3: resr= 0.3
-        #if resz > 0.3: resz= 0.3
-        if True: resr= 0.3
-        if True: resz= 0.3
-        hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
-        if _VARYHSZ:
-            srs= numpy.linspace(numpy.log(0.5),numpy.log(2.),options.nsrs)#hsz now
-        else:
-            srs= numpy.linspace(lnsr-0.6*resz,lnsr+0.6*resz,options.nsrs)#USE ESZ
-        szs= numpy.linspace(lnsz-0.6*resz,lnsz+0.6*resz,options.nszs)
+        hrs, srs, szs=  setup_dfgrid(fehs,afes,options)
     elif _NEWDFRANGES:
         lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
                                                             relerr=True)
@@ -1432,6 +1419,50 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
                                                                  datargs,datakappas,datanus,dataOmegas,
                                                                  datanormsrs,vzgl,vzglw,vRgl,vRglw,vTgl,vTglw)
     return out
+
+def setup_dfgrid(fehs,afes,options):
+    lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
+                                                        relerr=True)
+    resz= 0.3
+    hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
+    if _VARYHSZ:
+        srs= numpy.linspace(numpy.log(0.5),numpy.log(2.),options.nsrs)#hsz now
+    else:
+        srs= numpy.linspace(lnsr-0.6*resz,lnsr+0.6*resz,options.nsrs)#USE ESZ
+    szs= numpy.linspace(lnsz-0.6*resz,lnsz+0.6*resz,options.nszs)
+    #Adustements based on inspection
+    if options.sample.lower() == 'g':
+        abindx= abToIndx(fehs[0],afes[0],sample=options.sample.lower())
+        if abindx < 4:
+            szs-= 0.2
+        elif abindx < 8:
+            szs-= 0.15
+        elif abindx < 10:
+            szs-= 0.10
+        elif abindx < 13:
+            szs-= 0.225
+        elif abindx > 15 and abindx < 19:
+            szs-= 0.2
+        elif abindx > 18 and abindx < 22:
+            szs+= 0.2
+        elif abindx == 25:
+            szs-= 0.1
+        elif abindx == 50:
+            szs-= 0.75
+        elif abindx == 57 or abindx == 58:
+            szs-= 0.2
+        elif abindx == 60:
+            szs= numpy.linspace(lnsz-0.9*resz,lnsz+0.9*resz,options.nszs)
+        elif abindx == 61:
+            szs= numpy.linspace(lnsz-1.1*resz,lnsz+1.1*resz,options.nszs)
+    return (hrs,srs,szs)
+
+def abToIndx(feh,afe,sample='g'):
+    mapfehs= monoAbundanceMW.fehs()
+    mapafes= monoAbundanceMW.afes()
+    abindx= numpy.argmin((feh-mapfehs)**2./0.01 \
+                             +(afe-mapafes)**2./0.0025)
+    print abindx
 
 def chi2_simpleoptdf(dfparams,goal_params,pot,aA,options,ro,vo):
     #Setup DF
