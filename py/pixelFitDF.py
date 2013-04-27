@@ -87,6 +87,7 @@ _NEWRDRANGE= True
 _NEWSAVE= True
 _INTEGRATEMARGINALIZE= True
 _VARYHSZ= True
+_RESUBMIT= False
 #GL
 _DEFAULTNGL=10
 _DEFAULTNGL2=20
@@ -3203,6 +3204,15 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
         shutil.copyfile('submit_template.txt',cmdfilename)
     cmdfile= open(cmdfilename,'a')
     cmdfile.write(cmd)
+    if _RESUBMIT:
+        cmdfile.write('\n')
+        cmdfile.write('if [ -f %s" ] \n' % (args[0]))
+        cmdfile.write('then\n')
+        cmdfile.write('\t echo "All done"\n')
+        cmdfile.write('else\n')
+        cmdfile.write('\t qresub $JOB_ID\n')
+        cmdfile.write('fi')
+        cmdfile.write
     cmdfile.close()
     #Now submit
     if options.grid or options.gridall:
