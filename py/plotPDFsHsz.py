@@ -10,9 +10,9 @@ from galpy import potential
 import monoAbundanceMW
 from segueSelect import _ERASESTR
 from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0, \
-    setup_potential, setup_aA, setup_dfgrid
+    setup_potential, setup_aA, setup_dfgrid, nnsmooth
 _NOTDONEYET= True
-_FIXOUTLIERS= True
+_FIXOUTLIERS= False
 def plotRdfh(options,args):
     #Go through all of the bins
     if options.sample.lower() == 'g':
@@ -80,7 +80,11 @@ def plotRdfh_single(ii,options,args):
 #            allmarglogl[:,:,ii]= marglogl
         #Normalize
         if _FIXOUTLIERS:
-            marglogl[(numpy.fabs(marglogl-numpy.median(marglogl[True-numpy.isnan(marglogl)])) > 8)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+            #marglogl[(numpy.fabs(marglogl-numpy.median(marglogl[True-numpy.isnan(marglogl)])) > 8)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+            indx= marglogl < -1000000000000.
+            nns, dev= nnsmooth(marglogl)
+            marglogl= nns
+            marglogl[indx]= -1000000000000.
         alogl= marglogl-numpy.nanmax(marglogl)
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
@@ -998,6 +1002,8 @@ def plotderived_single(ii,options,args):
                 #vcdvc
                 vcdvc= pot[0].vcirc(2.2*rds[jj]/8.)/potential.vcirc(pot,2.2*rds[jj]/8.)
                 dmarglogl[jj,kk,6]= vcdvc
+                #rd
+                dmarglogl[jj,kk,7]= rds[jj]
         #Calculate mean and stddv
         alogl= marglogl-maxentropy.logsumexp(marglogl.flatten())
         margp= numpy.exp(alogl)
@@ -1015,6 +1021,8 @@ def plotderived_single(ii,options,args):
         std_plhalo= numpy.sqrt(numpy.sum(dmarglogl[:,:,5]**2.*margp)-mean_plhalo**2.)
         mean_vcdvc= numpy.sum(dmarglogl[:,:,6]*margp)
         std_vcdvc= numpy.sqrt(numpy.sum(dmarglogl[:,:,6]**2.*margp)-mean_vcdvc**2.)
+        mean_rd= numpy.sum(dmarglogl[:,:,7]*margp)
+        std_rd= numpy.sqrt(numpy.sum(dmarglogl[:,:,7]**2.*margp)-mean_rd**2.)
         bovy_plot.bovy_print()
         bovy_plot.bovy_text(r'$\Sigma(R_0,|Z| < 1.1\,\mathrm{kpc}) = %.1f \pm %.1f\,M_\odot\,\mathrm{pc}^{-2}$' % (mean_surfz,std_surfz)
                             +'\n'
@@ -1023,6 +1031,8 @@ def plotderived_single(ii,options,args):
                             +r'$\rho_{\mathrm{total}}(R_0,Z=0) = %.3f \pm %.3f\,M_\odot\,\mathrm{pc}^{-3}$' % (mean_rhoo,std_rhoo)
                             +'\n'
                             +r'$M_{\mathrm{disk}} = %.3f \pm %.3f\, \times 10^{10}\,M_{\odot}$' % (mean_massdisk,std_massdisk)
+                            +'\n'
+                            +r'$R_d = %.1f \pm %.1f\, \mathrm{kpc}$' % (mean_rd,std_rd)
                             +'\n'
                             +r'$V_{c,\mathrm{disk}}/V_c\,(2.2\,R_d) = %.2f \pm %.2f$' % (mean_vcdvc,std_vcdvc)
                             +'\n'
