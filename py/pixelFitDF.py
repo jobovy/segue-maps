@@ -705,6 +705,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                 savefile.close()
             else:
                 ii, jj, kk, ll= 0, 0, 0, 0 
+        global _MULTIWHOLEGRID
         while ii < len(rds):
             while jj < len(vcs):
                 while kk <len(zhs):
