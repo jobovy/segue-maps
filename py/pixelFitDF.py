@@ -117,7 +117,8 @@ def pixelFitDF(options,args,pool=None):
     print "Reading the data ..."
     raw= read_rawdata(options)
     #Setup error mc integration
-    if not options.singles and options.singlefeh is None:
+    if not options.singles and options.singlefeh is None \
+            and options.singlebin is None:
         print "Setting up error integration ..."
         raw, errstuff= setup_err_mc(raw,options)
     #Bin the data
@@ -137,6 +138,9 @@ def pixelFitDF(options,args,pool=None):
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
     ndatas= numpy.array(ndatas)
+    if not options.singlebin is None:
+        options.singlefeh= fehs[options.singlebin]
+        options.singleafe= afes[options.singlebin]
     if not options.singlefeh is None:
         if options.loo:
             pass
@@ -4895,6 +4899,8 @@ def get_options():
     parser.add_option("--singles",action="store_true", dest="singles",
                       default=False,
                       help="If set, perform each bins independently, save as savefile_%i.sav' etc.")
+    parser.add_option("--singlebin",dest='singlebin',default=None,type='int',
+                      help="Bin when considering a single FeH")
     parser.add_option("--singlefeh",dest='singlefeh',default=None,type='float',
                       help="FeH when considering a single FeH (can be for loo)")   
     parser.add_option("--singleafe",dest='singleafe',default=None,type='float',
