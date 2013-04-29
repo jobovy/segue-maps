@@ -677,7 +677,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
         if options.fixbadvals:
             #Check for bad values and flag for re-calculation
             logl= copy.copy(out)
-            logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+            #logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
             marglogl= numpy.zeros((logl.shape[0],logl.shape[3]))
             for mm in range(marglogl.shape[0]):
                 for nn in range(marglogl.shape[1]):
@@ -702,7 +702,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                     ll= pickle.load(savefile)
                 except EOFError:
                     ll= 0
-            savefile.close()
+                savefile.close()
             else:
                 ii, jj, kk, ll= 0, 0, 0, 0 
         while ii < len(rds):
