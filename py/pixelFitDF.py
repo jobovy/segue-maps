@@ -24,6 +24,7 @@ import math
 import numpy
 from scipy import optimize, interpolate
 from scipy.maxentropy import logsumexp
+from scipy.stats import nanmedian
 #import cPickle as pickle
 import pickle
 from optparse import OptionParser
@@ -101,7 +102,7 @@ def pixelFitDF(options,args,pool=None):
     print "WARNING: IGNORING NUMPY FLOATING POINT WARNINGS ..."
     numpy.seterr(all='ignore')
     #Check whether the savefile already exists
-    if os.path.exists(args[0]):
+    if os.path.exists(args[0]) and not options.fixbadvals:
         savefile= open(args[0],'rb')
         params= pickle.load(savefile)
         if options.mcsample:
@@ -673,10 +674,42 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                 out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),
                                   options.nhrs,options.nsrs,options.nszs,
                                   options.npouts,1,1))
+        if options.fixbadvals:
+            #Check for bad values and flag for re-calculation
+            logl= copy.copy(out)
+            logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+            marglogl= numpy.zeros((logl.shape[0],logl.shape[3]))
+            for mm in range(marglogl.shape[0]):
+                for nn in range(marglogl.shape[1]):
+                    marglogl[mm,nn]= logsumexp(logl[mm,0,0,nn,:,:,:,0].flatten())
+            #Now find bad values
+            badvals= numpy.zeros((logl.shape[0],logl.shape[3]),dtype='bool')+False
+            badvals[numpy.isnan(marglogl)]= True
+            smooth_marglogl, dev_marglogl= nnsmooth(marglogl)
+            badvals[(numpy.fabs(marglogl-smooth_marglogl) > 5.*dev_marglogl)]= True
+            #badvals[(marglogl == -numpy.finfo(numpy.dtype(numpy.float64)).max)]= False #These aren't bad
+            print "Found %i bad values" % (numpy.sum(badvals))
+            #Reset to go through everything
+            if os.path.exists(options.restart+'.fix'):
+                 #Load previous state from file
+                print "Loading state from file "+options.restart+".fix"
+                savefile= open(options.restart+'.fix','rb')
+                out= pickle.load(savefile)
+                ii= pickle.load(savefile)
+                jj= pickle.load(savefile)
+                kk= pickle.load(savefile)
+                try:
+                    ll= pickle.load(savefile)
+                except EOFError:
+                    ll= 0
+            savefile.close()
+            else:
+                ii, jj, kk, ll= 0, 0, 0, 0 
         while ii < len(rds):
             while jj < len(vcs):
                 while kk <len(zhs):
                     print "Working on %i,%i,%i" % (ii,jj,kk)
+                    if options.fixbadvals: _MULTIWHOLEGRID= False
                     if _MULTIWHOLEGRID and not options.multi is None:
                         multOut= multi.parallel_map((lambda x: loglike_gridall([rds[ii],vcs[jj],zhs[kk],fhs[x]],fehs,afes,binned,options,normintstuff,errstuff,normalization_out,normalization_dout)),
                                                 range(len(fhs)-1,-1,-1),
@@ -691,6 +724,10 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                                 out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
                     else:
                         while ll <len(fhs):
+                            if options.fixbadvals:
+                                if not badvals[ii,ll]: 
+                                    ll+= 1
+                                    continue
                             print "Working on %i,%i,%i,%i" % (ii,jj,kk,ll)
                             start= time.time()
                             optout= loglike_gridall([rds[ii],vcs[jj],zhs[kk],fhs[ll]],fehs,afes,binned,options,normintstuff,errstuff,normalization_out,normalization_dout)                   
@@ -699,13 +736,19 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                             else:
                                 out[ii,jj,kk,ll,:,:,:,:,:,:,:]= optout
                             if (time.time()-start) > 10.:
-                                if not options.restart is None:
+                                if options.fixbadvals:
+                                    save_pickles(options.restart+'.fix',
+                                                 out,ii,jj,kk,ll)
+                                elif not options.restart is None:
                                     save_pickles(options.restart,
                                                  out,ii,jj,kk,ll)
                             ll+= 1
                     ll= 0
                     kk+= 1
-                    if not options.restart is None:
+                    if options.fixbadvals:
+                        save_pickles(options.restart+'.fix',
+                                     out,ii,jj,kk,ll)
+                    elif not options.restart is None:
                         save_pickles(options.restart,
                                      out,ii,jj,kk,ll)
                 kk= 0
@@ -714,6 +757,31 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             ii+= 1          
         return (out,rds,vcs,zhs,fhs)
 
+def nnsmooth(marglogl):
+    """Returns nearest-neighbors smoothed version, plus sigma"""
+    #first make a bigger array
+    tmarglogl= numpy.zeros((marglogl.shape[0]+4,marglogl.shape[1]+4,9))+numpy.nan
+    tmarglogl[2:-2,2:-2,0]= copy.copy(marglogl)
+    tmarglogl[:,:,1]= numpy.roll(tmarglogl[:,:,0],1,axis=0)
+    tmarglogl[:,:,2]= numpy.roll(tmarglogl[:,:,0],-1,axis=0)
+    tmarglogl[:,:,3]= numpy.roll(tmarglogl[:,:,0],1,axis=1)
+    tmarglogl[:,:,4]= numpy.roll(tmarglogl[:,:,0],-1,axis=1)
+    tmarglogl[:,:,5]= numpy.roll(tmarglogl[:,:,0],2,axis=0)
+    tmarglogl[:,:,6]= numpy.roll(tmarglogl[:,:,0],-2,axis=0)
+    tmarglogl[:,:,7]= numpy.roll(tmarglogl[:,:,0],2,axis=1)
+    tmarglogl[:,:,8]= numpy.roll(tmarglogl[:,:,0],-2,axis=1)
+    out= nanmedian(tmarglogl[:,:,0:9],axis=2)
+    tmarglogl[:,:,1]-= out
+    tmarglogl[:,:,2]-= out
+    tmarglogl[:,:,3]-= out
+    tmarglogl[:,:,4]-= out
+    tmarglogl[:,:,5]-= out
+    tmarglogl[:,:,6]-= out
+    tmarglogl[:,:,7]-= out
+    tmarglogl[:,:,8]-= out
+    dev= nanmedian(numpy.fabs(tmarglogl[:,:,1:9]),axis=2)
+    return (out[2:-2,2:-2],dev[2:-2,2:-2])
+          
 def loglike_optdf(params,fehs,afes,binned,options,normintstuff,errstuff):
     """log likelihood, ASSUMES A SINGLE BIN"""
     toptions= copy.copy(options)
@@ -5142,6 +5210,10 @@ def get_options():
                           help="Number of pouts to use in grid-based search")
     parser.add_option("--nszouts",dest='nszouts',default=8,type='int',
                       help="Number of szouts to use in grid-based search")
+    parser.add_option("--physicaldfparams",action="store_true",
+                      dest="physicaldfparams",
+                      default=False,
+                      help="Use physical DF parameters, i.e., specify the actual dispersion and first find the DF params which give you the desired dispersions (and scale lengths")
     #Type of fit
     parser.add_option("--justdf",action="store_true", dest="justdf",
                       default=False,
@@ -5157,6 +5229,10 @@ def get_options():
                       dest="marginalizevrvt",
                       default=False,
                       help="If set, don't use vR or vT data")
+    parser.add_option("--fixbadvals",action="store_true",
+                      dest="fixbadvals",
+                      default=False,
+                      help="If set, check a previous solution for bad values and re-calculate")
     #seed
     parser.add_option("--seed",dest='seed',default=2,type='int',
                       help="seed for random number generator")
@@ -5213,10 +5289,6 @@ def get_options():
     parser.add_option("--conditional",action="store_true", dest="conditional",
                       default=False,
                       help="Plot a conditional PDF")
-    parser.add_option("--physicaldfparams",action="store_true",
-                      dest="physicaldfparams",
-                      default=False,
-                      help="Use physical DF parameters, i.e., specify the actual dispersion and first find the DF params which give you the desired dispersions (and scale lengths")
     return parser
   
 if __name__ == '__main__':
