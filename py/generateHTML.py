@@ -1,5 +1,8 @@
 import os, os.path
+import pickle
 from optparse import OptionParser
+import numpy
+import monoAbundanceMW
 def generateHTML(options,args):
     outfile= open(options.outfilename,'w')
     outfile.write('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n')
@@ -14,6 +17,14 @@ def generateHTML(options,args):
         npops= 62
     elif options.sample.lower() == 'k':
         npops= 30
+    if options.sample.lower() == 'g':
+        savefile= open('binmapping_g.sav','rb')
+    elif options.sample.lower() == 'k':
+        savefile= open('binmapping_k.sav','rb')
+    fehs= pickle.load(savefile)
+    afes= pickle.load(savefile)
+    npops= len(fehs)
+    savefile.close()
     if False:
         types= ['rdfh','rdfhrdvt','rdhr','rdsz',
                 'rdpout','rddvt','srsz','pout','dvt',
@@ -23,10 +34,13 @@ def generateHTML(options,args):
                 'rdpout','rdpoutc','fhpoutc','rddvt','srsz','srszc','pout',
                 'loglhist','props']
     types= ['rdfh','rdhr','rdhrc','rdsz',
-            'srsz','srszc','pout','hrreal',
+            'hszsz','hszszc','pout','hrreal',
             'loglhist','derived','props']
     ntypes= len(types)
     for ii in range(npops):
+        if options.sample.lower() == 'g' \
+                and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii])/8.) > -0.5:
+            continue
         outfile.write('<p style="font-size:xx-large;">%i</p>\n' % ii)
         line= ''
         for jj in range(ntypes):
