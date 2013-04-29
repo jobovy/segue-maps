@@ -83,7 +83,7 @@ def plotRdfh_single(ii,options,args):
 #                and numpy.amax(logl) < 0.: #latter removes ridiculous bins
 #            allmarglogl[:,:,ii]= marglogl
         #Normalize
-        alogl= marglogl-numpy.amax(marglogl)
+        alogl= marglogl-numpy.nanmax(marglogl)
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
                               origin='lower',cmap='gist_yarg',
@@ -494,7 +494,7 @@ def plotsrsz_single(ii,options,args):
         for jj in range(marglogl.shape[0]):
             for kk in range(marglogl.shape[1]):
                 if options.conditional:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,:,jj,kk,0].flatten())-maxentropy.logsumexp(logl[:,0,0,:,:,kk,0].flatten())
+                    marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,:,jj,kk,0].flatten())-maxentropy.logsumexp(logl[:,0,0,:,:,:,kk,0].flatten())
                 else:
                     marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,:,jj,kk,0].flatten())
         #Normalize
