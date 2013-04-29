@@ -14,6 +14,7 @@ from segueSelect import _ERASESTR
 from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0, \
     setup_potential, setup_aA, setup_dfgrid, nnsmooth
 from calcDerivProps import rawDerived, calcDerivProps
+from plotDensComparisonDFMulti4gridall import getMultiComparisonBins
 from selectFigs import _squeeze
 _NOTDONEYET= True
 #lABELS
@@ -158,6 +159,10 @@ def plotCombinedPDF(options,args):
     afes= pickle.load(savefile)
     savefile.close()
     #First calculate the derivative properties
+    if not options.group is None:
+        gafes, gfehs, legend= getMultiComparisonBins(options)
+    else:
+        legend= None
     if not options.multi is None:
         PDFs= multi.parallel_map((lambda x: calcAllPDFs(x,options,args)),
                                   range(npops),
@@ -171,6 +176,9 @@ def plotCombinedPDF(options,args):
     #Go through and combine
     combined_lnpdf= numpy.zeros((options.nrds,options.nfhs))
     for ii in range(npops):
+        if not options.group is None:
+            if numpy.amin((gfehs-fehs[ii])**2./0.1+(gafes-afes[ii])**2./0.0025) > 0.001:
+                continue
         combined_lnpdf+= PDFs[ii]
     alogl= combined_lnpdf-numpy.nanmax(combined_lnpdf)
     #Now plot
@@ -180,6 +188,9 @@ def plotCombinedPDF(options,args):
                           interpolation='nearest',
                           xrange=[1.9,3.5],yrange=[-1./32.,1.+1./32.],
                           xlabel=r'$R_d\ (\mathrm{kpc})$',ylabel=r'$f_h$')
+    if not legend is None:
+        bovy_plot.bovy_text(legend,top_left=True,
+                            size=14.)
     bovy_plot.bovy_end_print(options.outfilename)
     #Calculate and print derived properties
     derivProps= rawDerived(alogl,options,
@@ -201,7 +212,8 @@ def calcAllPDFs(ii,options,args):
     afes= pickle.load(savefile)
     savefile.close()
     if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+            and (numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5 \
+                     or ii < 6):
         return numpy.zeros((options.nrds,options.nfhs))
     if _NOTDONEYET:
         spl= options.restart.split('.')
