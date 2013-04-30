@@ -1852,10 +1852,10 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
                                              jrs,lzs,jzs,normsrs,normszs,
                                              rgs,kappas,nus,Omegas)
     #tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
-    tnormalization_out= normalization_out*vo**3.
+    tnormalization_out= normalization_out#*vo**3.
     logoutfrac= numpy.log(normalization_qdf/tnormalization_out)
     tnormalization_out= normalization_qdf
-    tnormalization_dout= normalization_dout*vo**3.
+    tnormalization_dout= normalization_dout#*vo**3.
     logdoutfrac= numpy.log(normalization_qdf/tnormalization_dout)
     tnormalization_dout= normalization_qdf
     #Get data ready
@@ -1893,7 +1893,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
             fac= 2.
         data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]= numpy.reshape(logoutfrac+loghalodens\
             -numpy.log(szhalo)-fac*numpy.log(300./_REFV0/vo)\
-            -0.5*(vz**2./szhalo**2.)\
+            -0.5*(vz**2./szhalo**2.+2.*numpy.log(vo))\
             -0.5*numpy.log(2.*math.pi),(ndata,toptions.nmcerr))
         szouts= numpy.exp(numpy.linspace(numpy.log(10.),numpy.log(60.),options.nszouts))/_REFV0/vo
         tdens= logdoutfrac+numpy.log(_DblExpDensity(R*_REFR0*ro,z*_REFR0*ro,[numpy.log(dblexphz/1000.),-numpy.log(dblexphr)]))
@@ -1968,7 +1968,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
                                             _nu=datanus[:,ll,ii,:].flatten(),
                                             _Omega=dataOmegas[:,ll,ii,:].flatten(),
                                             _sigmaR1=datanormsrs.flatten())
-                data_lndf[:,0]= numpy.log(numpy.sum(mdata_df*vzglw,axis=1)*datasz*2.)+3.*numpy.log(vo)
+                data_lndf[:,0]= numpy.log(numpy.sum(mdata_df*vzglw,axis=1)*datasz*2.)+2.*numpy.log(vo)
             elif options.marginalizevt:
                 for ll in range(ndata):
                     mdata_df[ll,:]= qdf((datajrs[ll,ii,:],
@@ -1982,7 +1982,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
                                         _return_actions=False,
                                         _return_freqs=False)
                 data_lndf[:,0]= numpy.log(numpy.sum(mdata_df*vzglw*vRglw*vTglw,
-                                                    axis=1)*datasz*datasr*3.)+3.*numpy.log(vo)
+                                                    axis=1)*datasz*datasr*3.)+numpy.log(vo)
         else:
             data_lndf[:,0:toptions.nmcerr]= numpy.log(qdf.pvz(vz.flatten(),
                                                               R.flatten(),
