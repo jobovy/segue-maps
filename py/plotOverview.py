@@ -13,7 +13,8 @@ import monoAbundanceMW
 from segueSelect import _ERASESTR
 from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0, \
     setup_potential, setup_aA, setup_dfgrid, nnsmooth
-from calcDerivProps import rawDerived, calcSurfErr, calcDerivProps
+from calcDerivProps import rawDerived, calcSurfErr, calcSurfRdCorr, \
+    calcDerivProps
 from plotDensComparisonDFMulti4gridall import getMultiComparisonBins
 from selectFigs import _squeeze
 _NOTDONEYET= True
@@ -107,19 +108,43 @@ def plotbestr(options,args):
             derivProps.append(calcAllSurfErr(ii,options,args))
     #Load into plotthis
     plotthis= numpy.zeros(npops)+numpy.nan
+    plotthis_y= numpy.zeros(npops)+numpy.nan
+    plotthis_y_err= numpy.zeros(npops)+numpy.nan
     for ii in range(npops):
         if options.sample.lower() == 'g' \
                 and (numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5 \
                          or ii < 6):
             continue
         #Determine best-r
-        indx= numpy.argmin(derivProps[ii][:,2]/numpy.fabs(derivProps[ii][:,1]))
+        #indx= numpy.argmin(derivProps[ii][:,2]/numpy.fabs(derivProps[ii][:,1]))
+        indx= numpy.argmin(numpy.fabs(derivProps[ii][:,2]))
         plotthis[ii]= derivProps[ii][indx,0]
+        plotthis_y[ii]= derivProps[ii][indx,1]
+        plotthis_y_err[ii]= derivProps[ii][indx,3]
     #Now plot
     bovy_plot.bovy_print()
     monoAbundanceMW.plotPixelFunc(fehs,afes,plotthis,
                                   zlabel=r'$R_\Sigma\ (\mathrm{kpc})$')
     bovy_plot.bovy_end_print(options.outfilename)
+    bovy_plot.bovy_print()
+    print plotthis, plotthis_y
+    bovy_plot.bovy_plot(plotthis,plotthis_y,'ko',
+                        xlabel=r'$R\ (\mathrm{kpc})$',
+                        ylabel=r'$\Sigma(R,|Z| \leq 1.1\,\mathrm{kpc})\ (M_\odot\,\mathrm{pc}^{-2})$',
+                        xrange=[4.,10.],
+                        yrange=[10,1050.],#,numpy.nanmin(plotthis_y)-10.,
+#                                numpy.nanmax(plotthis_y)+10.],
+                        semilogy=True)
+    pyplot.errorbar(plotthis,
+                    plotthis_y,
+                    yerr=plotthis_y_err,
+                    elinewidth=1.,capsize=3,zorder=0,
+                    color='k',linestyle='none')  
+    trs= numpy.linspace(4.3,9.,1001)
+    pyplot.plot(trs,72.*numpy.exp(-(trs-8.)/3.),'k--')
+    pyplot.plot(trs,72.*numpy.exp(-(trs-8.)/2.),'k-.')
+    pyplot.plot(trs,72.*numpy.exp(-(trs-8.)/4.),'k:')
+    bovy_plot.bovy_end_print(options.outfilename.replace('.png','_rvssurf.png'))
     return None        
     
 def plot2d(options,args):
@@ -283,7 +308,10 @@ def calcAllPDFs(ii,options,args):
     for jj in range(marglogl.shape[0]):
         for kk in range(marglogl.shape[1]):
             marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,0].flatten())
-    return marglogl
+    if marglogl[-1,-1] < -10000000000000.:
+        return numpy.zeros((options.nrds,options.nfhs))
+    else:
+        return marglogl
 
 def calcAllDerivProps(ii,options,args):
     #Go through all of the bins
@@ -322,7 +350,7 @@ def calcAllSurfErr(ii,options,args):
     savefile.close()
     if options.sample.lower() == 'g' \
             and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
-        return numpy.zeros((8,3))
+        return numpy.zeros((101,4))
     if _NOTDONEYET:
         spl= options.restart.split('.')
     else:
@@ -333,14 +361,15 @@ def calcAllSurfErr(ii,options,args):
         if not jj == len(spl)-2: newname+= '.'
     newname+= '_%i.' % ii
     newname+= spl[-1]
-    rs,mean_surfz,std_surfz= calcSurfErr(newname,vo=options.fixvc/_REFV0,
-                                         zh=options.fixzh,
-                                         dlnvcdlnr=options.dlnvcdlnr)
-    if rs is None: return numpy.zeros((8,3))
-    out= numpy.zeros((len(rs),3))
+    rs,mean_surfz, cov, std_surfz= calcSurfRdCorr(newname,vo=options.fixvc/_REFV0,
+                                  zh=options.fixzh,
+                                  dlnvcdlnr=options.dlnvcdlnr)
+    if rs is None: return numpy.zeros((101,4))
+    out= numpy.zeros((len(rs),4))
     out[:,0]= rs
     out[:,1]= mean_surfz
-    out[:,2]= std_surfz
+    out[:,2]= cov
+    out[:,3]= std_surfz
     return out
 
 if __name__ == '__main__':

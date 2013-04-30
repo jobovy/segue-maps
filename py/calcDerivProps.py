@@ -176,3 +176,98 @@ def rawDerived(marglogl,options,zh=400.,vo=1.,dlnvcdlnr=0.):
     out['rd']= mean_rd
     out['rd_err']= std_rd
     return out
+
+def calcSurfErr(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.):
+    options= setup_options(None)
+    options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    options.fitdvt= False
+    savefile= open(savefilename,'rb')
+    try:
+        if not _NOTDONEYET:
+            params= pickle.load(savefile)
+            mlogl= pickle.load(savefile)
+        logl= pickle.load(savefile)
+    except:
+        return (None,None,None)
+    finally:
+        savefile.close()
+    if _NOTDONEYET:
+        logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+    logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+    marglogl= numpy.zeros((logl.shape[0]*logl.shape[3]))
+    nrs= 8
+    rs= numpy.linspace(5.,13.,nrs)
+    dmarglogl= numpy.zeros((logl.shape[0]*logl.shape[3],nrs))
+    rds= numpy.linspace(2.,3.4,8)
+    fhs= numpy.linspace(0.,1.,16)
+    ro= 1.
+    for jj in range(logl.shape[0]):
+        for kk in range(logl.shape[3]):
+            marglogl[jj*logl.shape[3]+kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,0].flatten())
+            #Setup potential to calculate stuff
+            potparams= numpy.array([numpy.log(rds[jj]/8.),vo,numpy.log(zh/8000.),fhs[kk],dlnvcdlnr])
+            try:
+                pot= setup_potential(potparams,options,0,returnrawpot=True)
+            except RuntimeError:
+                continue
+            #First up, total surface density
+            for ll in range(nrs):
+                surfz= 2.*integrate.quad((lambda zz: potential.evaluateDensities(rs[ll]/_REFR0,zz,pot)),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
+                dmarglogl[jj*logl.shape[3]+kk,ll]= surfz
+    #Calculate mean and stddv
+    alogl= marglogl-maxentropy.logsumexp(marglogl.flatten())
+    margp= numpy.exp(alogl)
+    margp= numpy.tile(margp,(nrs,1)).T
+    mean_surfz= numpy.sum(dmarglogl*margp,axis=0)
+    std_surfz= numpy.sqrt(numpy.sum(dmarglogl**2.*margp,axis=0)-mean_surfz**2.)
+    return (rs,mean_surfz,std_surfz)
+
+def calcSurfRdCorr(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.):
+    options= setup_options(None)
+    options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    options.fitdvt= False
+    savefile= open(savefilename,'rb')
+    try:
+        if not _NOTDONEYET:
+            params= pickle.load(savefile)
+            mlogl= pickle.load(savefile)
+        logl= pickle.load(savefile)
+    except:
+        return (None,None,None)
+    finally:
+        savefile.close()
+    if _NOTDONEYET:
+        logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+    logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+    marglogl= numpy.zeros((logl.shape[0]*logl.shape[3]))
+    nrs= 101
+    rs= numpy.linspace(3.,9.,nrs)
+    dmarglogl= numpy.zeros((logl.shape[0]*logl.shape[3],nrs))
+    rds= numpy.linspace(2.,3.4,8)
+    fhs= numpy.linspace(0.,1.,16)
+    ro= 1.
+    for jj in range(logl.shape[0]):
+        for kk in range(logl.shape[3]):
+            marglogl[jj*logl.shape[3]+kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,0].flatten())
+            #Setup potential to calculate stuff
+            potparams= numpy.array([numpy.log(rds[jj]/8.),vo,numpy.log(zh/8000.),fhs[kk],dlnvcdlnr])
+            try:
+                pot= setup_potential(potparams,options,0,returnrawpot=True)
+            except RuntimeError:
+                continue
+            #First up, total surface density
+            for ll in range(nrs):
+                surfz= 2.*integrate.quad((lambda zz: potential.evaluateDensities(rs[ll]/_REFR0,zz,pot)),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
+                dmarglogl[jj*logl.shape[3]+kk,ll]= surfz
+    #Calculate mean and stddv
+    alogl= marglogl-maxentropy.logsumexp(marglogl.flatten())
+    margp= numpy.exp(alogl)
+    rds= numpy.tile(rds,(logl.shape[3],1)).T.flatten()
+    mean_rd= numpy.sum(rds*margp)
+    std_rd= numpy.sqrt(numpy.sum(rds**2.*margp,axis=0)-mean_rd**2.)
+    margp= numpy.tile(margp,(nrs,1)).T
+    mean_surfz= numpy.sum(dmarglogl*margp,axis=0)
+    rds= numpy.tile(rds,(nrs,1)).T
+    cov_surfz= numpy.sum(dmarglogl*rds*margp,axis=0)-mean_surfz*mean_rd
+    std_surfz= numpy.sqrt(numpy.sum(dmarglogl**2.*margp,axis=0)-mean_surfz**2.)
+    return (rs,mean_surfz,cov_surfz/std_rd/std_surfz,std_surfz)
