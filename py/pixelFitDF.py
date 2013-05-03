@@ -169,7 +169,7 @@ def pixelFitDF(options,args,pool=None):
             nabundancebins= len(fehs)
             fehs= numpy.array(fehs)
             afes= numpy.array(afes)
-            if numpy.log(monoAbundanceMW.hr(fehs[0],afes[0],
+        if numpy.log(monoAbundanceMW.hr(fehs[0],afes[0],
                                             k=(options.sample.lower() == 'k'))/8.) > -0.5:
             #Don't run, because we cannot model these populations with our model
             return None
@@ -1386,7 +1386,8 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
     #IF YOU EDIT THIS, ALSO EDIT IT ABOVE
     if toptions.physicaldfparams:
         lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
-                                                            relerr=True)
+                                                            relerr=True,
+                                                            sample=options.sample)
         #if rehr > 0.3: rehr= 0.3 #regularize
         if True: rehr= 0.3 #regularize
         if resr > 0.3: resr= 0.3
@@ -1398,7 +1399,8 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         hrs, srs, szs=  setup_dfgrid(fehs,afes,options)
     elif _NEWDFRANGES:
         lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
-                                                            relerr=True)
+                                                            relerr=True,
+                                                            sample=options.sample)
         #if rehr > 0.3: rehr= 0.3 #regularize
         if True: rehr= 0.3 #regularize
         #if resr > 0.3: resr= 0.3
@@ -1490,7 +1492,8 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
 
 def setup_dfgrid(fehs,afes,options):
     lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
-                                                        relerr=True)
+                                                        relerr=True,
+                                                        sample=options.sample)
     resz= 0.3
     hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
     if _VARYHSZ:
@@ -2159,7 +2162,7 @@ def approxFitResult(feh,afe,relerr=False,sample='g'):
         rehr= monoAbundanceMW.hr(feh,afe,err=True,
                                  k=(sample.lower() == 'k'))[1]/_REFR0/hr #No smoothing for this
         resr= monoAbundanceMW.sigmar(feh,afe,smooth=False,err=True,
-                                     k=(ample.lower() == 'k'))[1]/_REFV0/sr
+                                     k=(sample.lower() == 'k'))[1]/_REFV0/sr
         resz= monoAbundanceMW.sigmaz(feh,afe,smooth=False,err=True,
                                      k=(sample.lower() == 'k'))[1]/_REFV0/sz
     #Special case the two most metal-poor G dwarf bins
@@ -3232,8 +3235,8 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
     args[0]= newname
     if options.gridall and os.path.exists(newname): #Fit is already done
         return None
-    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii])/8.,
-                 k=(options.sample.lower() == 'k')) > -0.5:
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k'))/8.) > -0.5:
         #Don't run, because we cannot model these populations with our model
         return None
     if options.mcsample and not initname is None:
@@ -4406,7 +4409,7 @@ def initialize(options,fehs,afes):
                                      +(afes[ii]-mapafes)**2./0.0025)
             feh, afe= mapfehs[abindx], mapafes[abindx]
             if _INITWESTIMATES:
-                lnhr, lnsr, lnsz= approxFitResult(feh,afe)
+                lnhr, lnsr, lnsz= approxFitResult(feh,afe,sample=options.sample)
                 thishr= numpy.exp(lnhr)*8.
                 thissr= numpy.exp(lnsr)*220.
                 thissz= numpy.exp(lnsz)*220.
