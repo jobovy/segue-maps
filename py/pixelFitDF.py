@@ -318,20 +318,26 @@ def pixelFitDF(options,args,pool=None):
 
 ##DATA
 def read_rawdata(options):
+    if not options.fixdm is None:
+        distfac= 10.**(options.fixdm/5.)
+    else:
+        distfac= None
     if options.sample.lower() == 'g':
         if not options.fakedata is None:
-            raw= read_gdwarfs(options.fakedata,logg=True,ebv=True,sn=options.snmin,nosolar=True,norcut=True)
+            raw= read_gdwarfs(options.fakedata,logg=True,ebv=True,sn=options.snmin,nosolar=True,norcut=True,distfac=distfac)
         elif options.select.lower() == 'program':
-            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
+            raw= read_gdwarfs(_GDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True,distfac=distfac)
         else:
-            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
+            raw= read_gdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True,
+                              distfac=distfac)
     elif options.sample.lower() == 'k':
         if not options.fakedata is None:
-            raw= read_kdwarfs(options.fakedata,logg=True,ebv=True,sn=options.snmin,nosolar=True,norcut=True)
+            raw= read_kdwarfs(options.fakedata,logg=True,ebv=True,sn=options.snmin,nosolar=True,norcut=True,distfac=distfac)
         elif options.select.lower() == 'program':
-            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True)
+            raw= read_kdwarfs(_KDWARFFILE,logg=True,ebv=True,sn=options.snmin,nosolar=True,distfac=distfac)
         else:
-            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True)
+            raw= read_kdwarfs(logg=True,ebv=True,sn=options.snmin,nosolar=True,
+                              distfac=distfac)
     if not options.bmin is None:
         #Cut on |b|
         raw= raw[(numpy.fabs(raw.b) > options.bmin)]
@@ -2934,8 +2940,12 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
             tfehs[kk,:]= numpy.linspace(fehrange[0],fehrange[1],_THISNFEH)
         for kk in range(_THISNFEH):
             tgrs[:,kk]= numpy.linspace(grmin,grmax,_THISNGR)
-        dmin= numpy.amin(_ivezic_dist(tgrs,thisrmin,tfehs))
-        dmax= numpy.amax(_ivezic_dist(tgrs,thisrmax,tfehs))
+        if not options.fixdm is None:
+            distfac= 10.**(options.fixdm/5.)
+        else:
+            distfac= 1.
+        dmin= numpy.amin(_ivezic_dist(tgrs,thisrmin,tfehs))*distfac
+        dmax= numpy.amax(_ivezic_dist(tgrs,thisrmax,tfehs))*distfac
         if options.zmax is None:
             zmax= dmax*numpy.sin(bmax*_DEGTORAD)
         zmin= dmin*numpy.sin(bmin*_DEGTORAD)
@@ -2948,10 +2958,6 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
             thisfehs[kk,:]= numpy.linspace(fehrange[0],fehrange[1],_THISNFEH)
         for kk in range(_THISNFEH):
             thisgrs[:,kk]= numpy.linspace(grmin,grmax,_THISNGR)
-        if not options.fixdm is None:
-            distfac= 10.**(options.fixdm/5.)
-        else:
-            distfac= 1.
         dmin= numpy.amin(_ivezic_dist(thisgrs,thisrmin,thisfehs))*distfac
         dmax= numpy.amax(_ivezic_dist(thisgrs,thisrmax,thisfehs))*distfac
         ds= numpy.linspace(dmin,dmax,_NDS)     
@@ -2979,8 +2985,8 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
                     norm+= colordist(grs[jj])*fehdist(tfehs[kk])
             colorfehfac[pindx,:]= tmpout/norm
             #Calculate (R,z)s
-            XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for kk in range(len(ds))]),
-                                        numpy.array([b for kk in range(len(ds))]),
+            XYZ= bovy_coords.lbd_to_XYZ(numpy.array([l for kk in range(len(tds))]),
+                                        numpy.array([b for kk in range(len(tds))]),
                                         tds,degree=True)
             normR[pindx,:]= ((_REFR0*ro-XYZ[:,0])**2.+XYZ[:,1]**2.)**(0.5)
             normZ[pindx,:]= XYZ[:,2]+_ZSUN
@@ -4167,9 +4173,9 @@ def setup_err_mc(data,options,indx=None):
         dsamples= ivezic_dist_gr(numpy.tile(data[indx].dered_g-data[indx].dered_r,(options.nmcerr,1)).T+rsamples,
                                  rsamples,
                                  numpy.tile(data[indx].feh,(options.nmcerr,1)).T)[0]
-        if not options.fixdm is None:
-            distfac= 10.**(options.fixdm/5.)
-            dsamples*= distfac
+        #if not options.fixdm is None:
+        #    distfac= 10.**(options.fixdm/5.)
+        #    dsamples*= distfac
         #dsamples[(dsamples > 15.)]= 15. #to make sure samples don't go nuts
         #Transform to XYZ
         lb= bovy_coords.radec_to_lb(data[indx].ra,data[indx].dec,degree=True)
@@ -4179,9 +4185,9 @@ def setup_err_mc(data,options,indx=None):
     else: #if nmcerr=1, just use data point
         dsamples= ivezic_dist_gr(data.dered_g,data.dered_r,
                                  data.feh)[0]
-        if not options.fixdm is None:
-            distfac= 10.**(options.fixdm/5.)
-            dsamples*= distfac
+        #if not options.fixdm is None:
+        #    distfac= 10.**(options.fixdm/5.)
+        #    dsamples*= distfac
         #Transform to XYZ
         lb= bovy_coords.radec_to_lb(data.ra,data.dec,degree=True)
         XYZ= bovy_coords.lbd_to_XYZ(lb[:,0],
