@@ -2,9 +2,6 @@
 #
 #for running: python pixelFitDF.py --dfeh=0.25 --dafe=0.2 --novoprior --nmcv=100 --justpot --singles --aAmethod=staeckel -m 7 ../fakeDF/fakeDFFit_dfeh0.25_dafe0.2_q0.7_staeckel_justpot_singles.sav -f ../fakeDF/fakeDF_dfeh0.25_dafe0.2_q0.7_staeckel.fits
 #
-# TO DO:
-#   - add sigmar to monoAbundanceMW
-#
 # ADDING NEW POTENTIAL MODEL:
 #    edit: - logprior_pot
 #          - get_potparams
@@ -172,8 +169,8 @@ def pixelFitDF(options,args,pool=None):
             nabundancebins= len(fehs)
             fehs= numpy.array(fehs)
             afes= numpy.array(afes)
-        if options.sample.lower() == 'g' \
-                and numpy.log(monoAbundanceMW.hr(fehs[0],afes[0])/8.) > -0.5:
+            if numpy.log(monoAbundanceMW.hr(fehs[0],afes[0],
+                                            k=(options.sample.lower() == 'k'))/8.) > -0.5:
             #Don't run, because we cannot model these populations with our model
             return None
     else:
@@ -612,8 +609,8 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                                                  0.,
                                                  None,None,None,None,None,
                                                  None,None,None,None,fqdf=0.)
-        dblexphr= monoAbundanceMW.hr(fehs[0],afes[0])
-        dblexphz= monoAbundanceMW.hz(fehs[0],afes[0])
+        dblexphr= monoAbundanceMW.hr(fehs[0],afes[0],k=(options.sample.lower() == 'k'))
+        dblexphz= monoAbundanceMW.hz(fehs[0],afes[0],k=(options.sample.lower() == 'k'))
         normalization_dout= calc_normint_fixedpot(None,0,normintstuff,
                                                   out_params,
                                                   1,
@@ -1531,8 +1528,8 @@ def setup_dfgrid(fehs,afes,options):
     return (hrs,srs,szs)
 
 def abToIndx(feh,afe,sample='g'):
-    mapfehs= monoAbundanceMW.fehs()
-    mapafes= monoAbundanceMW.afes()
+    mapfehs= monoAbundanceMW.fehs(k=(sample.lower() == 'k'))
+    mapafes= monoAbundanceMW.afes(k=(sample.lower() == 'k'))
     abindx= numpy.argmin((feh-mapfehs)**2./0.01 \
                              +(afe-mapafes)**2./0.0025)
     return abindx
@@ -1879,8 +1876,8 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
-    dblexphr= monoAbundanceMW.hr(fehs[0],afes[0])
-    dblexphz= monoAbundanceMW.hz(fehs[0],afes[0])
+    dblexphr= monoAbundanceMW.hr(fehs[0],afes[0],k=(toptions.sample.lower() == 'k'))
+    dblexphz= monoAbundanceMW.hz(fehs[0],afes[0],k=(toptions.sample.lower() == 'k'))
     #Evaluate outliers
     if options.marginalizevrvt:
         if _INTEGRATEMARGINALIZE:
@@ -2150,21 +2147,25 @@ def logprior_dlnvcdlnr(dlnvcdlnr,options):
             return -numpy.finfo(numpy.dtype(numpy.float64)).max
         return numpy.log((sb-dlnvcdlnr/30.)/sb)-(sb-dlnvcdlnr/30.)/sb
 
-def approxFitResult(feh,afe,relerr=False):
+def approxFitResult(feh,afe,relerr=False,sample='g'):
     """Return the result from the paper I and III fits, smoothed and transformed to DF input parameters
     returns (lnhR,lnSr,lnSz)
     also returns hRerr/hR,sRerr/sR,sZerr/sz if relerr=True (these are not transformed, as the transformation shouldn't change these too much"""
     #Get smoothed monoAbundance results
-    hr= monoAbundanceMW.hr(feh,afe)/_REFR0 #No smoothing for this
-    sr= monoAbundanceMW.sigmar(feh,afe,smooth=True)/_REFV0
-    sz= monoAbundanceMW.sigmaz(feh,afe,smooth=True)/_REFV0
+    hr= monoAbundanceMW.hr(feh,afe,k=(sample.lower() == 'k'))/_REFR0 #No smoothing for this
+    sr= monoAbundanceMW.sigmar(feh,afe,smooth=True,k=(sample.lower() == 'k'))/_REFV0
+    sz= monoAbundanceMW.sigmaz(feh,afe,smooth=True,k=(sample.lower() == 'k'))/_REFV0
     if relerr:
-        rehr= monoAbundanceMW.hr(feh,afe,err=True)[1]/_REFR0/hr #No smoothing for this
-        resr= monoAbundanceMW.sigmar(feh,afe,smooth=False,err=True)[1]/_REFV0/sr
-        resz= monoAbundanceMW.sigmaz(feh,afe,smooth=False,err=True)[1]/_REFV0/sz
+        rehr= monoAbundanceMW.hr(feh,afe,err=True,
+                                 k=(sample.lower() == 'k'))[1]/_REFR0/hr #No smoothing for this
+        resr= monoAbundanceMW.sigmar(feh,afe,smooth=False,err=True,
+                                     k=(ample.lower() == 'k'))[1]/_REFV0/sr
+        resz= monoAbundanceMW.sigmaz(feh,afe,smooth=False,err=True,
+                                     k=(sample.lower() == 'k'))[1]/_REFV0/sz
     #Special case the two most metal-poor G dwarf bins
     if feh < -1.1:
-        sr= monoAbundanceMW.sigmar(-1.05,afe,smooth=True)/_REFV0
+        sr= monoAbundanceMW.sigmar(-1.05,afe,smooth=True,
+                                    k=(options.sample.lower() == 'k'))/_REFV0
     #Load the results from qdfProperties that relates input and output parameters, first the scale length
     savefile= open('hrhrhr.sav','rb')
     hrhrhr= pickle.load(savefile)
@@ -2604,8 +2605,8 @@ def setup_normintstuff(options,raw,binned,fehs,afes,allraw):
         rmin,rmax= 14.5, 19.
     colorrange=[grmin,grmax]
     out= []
-    mapfehs= monoAbundanceMW.fehs()
-    mapafes= monoAbundanceMW.afes()
+    mapfehs= monoAbundanceMW.fehs(k=(options.sample.lower() == 'k'))
+    mapafes= monoAbundanceMW.afes(k=(options.sample.lower() == 'k'))
     if not options.multi is None:
         #Generate list of temporary files
         tmpfiles= []
@@ -2670,8 +2671,10 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         #Find nearest mono-abundance bin that has a measurement
         abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                                  +(afes[ii]-mapafes)**2./0.0025)
-        thishr= monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])
-        thishz= monoAbundanceMW.hz(mapfehs[abindx],mapafes[abindx])/1000.
+        thishr= monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx],
+                                   k=(options.sample.lower() == 'k'))
+        thishz= monoAbundanceMW.hz(mapfehs[abindx],mapafes[abindx],
+                                   k=(options.sample.lower() == 'k'))/1000.
         #Calculate the r-distribution for each plate
         nrs= 1001
         ngr, nfeh= 11, 11 #BOVY: INCREASE?
@@ -2788,7 +2791,8 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         for jj in range(options.nmc):
             sigz= monoAbundanceMW.sigmaz(mapfehs[abindx],
                                          mapafes[abindx],
-                                         r=R[jj])
+                                         r=R[jj],
+                                         k=(options.sample.lower() == 'k'))
             sigr= 2.*sigz #BOVY: FOR NOW
             sigphi= sigr/numpy.sqrt(2.) #BOVY: FOR NOW
             #Estimate asymmetric drift
@@ -2981,8 +2985,10 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         #Find nearest mono-abundance bin that has a measurement
         abindx= numpy.argmin((fehs[ii]-mapfehs)**2./0.01 \
                                  +(afes[ii]-mapafes)**2./0.0025)
-        thishr= monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])
-        thishz= monoAbundanceMW.hz(mapfehs[abindx],mapafes[abindx])/1000.
+        thishr= monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx],
+                                   k=(options.sample.lower() == 'k'))
+        thishz= monoAbundanceMW.hz(mapfehs[abindx],mapafes[abindx],
+                                   k=(options.sample.lower() == 'k'))/1000.
         surfscale= []
         surfds= numpy.linspace(dmin,dmax,11)
         for kk in range(len(plates)):
@@ -3226,8 +3232,8 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
     args[0]= newname
     if options.gridall and os.path.exists(newname): #Fit is already done
         return None
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii])/8.) > -0.5:
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii])/8.,
+                 k=(options.sample.lower() == 'k')) > -0.5:
         #Don't run, because we cannot model these populations with our model
         return None
     if options.mcsample and not initname is None:
@@ -4388,8 +4394,8 @@ def initialize(options,fehs,afes):
         ro= options.fixro
     else:
         ro= 1.
-    mapfehs= monoAbundanceMW.fehs()
-    mapafes= monoAbundanceMW.afes()
+    mapfehs= monoAbundanceMW.fehs(k=(options.sample.lower() == 'k'))
+    mapafes= monoAbundanceMW.afes(k=(options.sample.lower() == 'k'))
     indx= (mapfehs != -0.45)*(mapafes != 0.075) #Pop this one, bc sz is crazy
     mapfehs= mapfehs[indx]
     mapafes= mapafes[indx]
@@ -4406,37 +4412,59 @@ def initialize(options,fehs,afes):
                 thissz= numpy.exp(lnsz)*220.
             elif _SMOOTHDISPS:
                 #Smooth sz
-                up= monoAbundanceMW.sigmaz(feh+0.1,afe)
-                down= monoAbundanceMW.sigmaz(feh-0.1,afe)
-                left= monoAbundanceMW.sigmaz(feh,afe-0.05)
-                right= monoAbundanceMW.sigmaz(feh,afe+0.05)
-                here= monoAbundanceMW.sigmaz(feh,afe)
-                upright= monoAbundanceMW.sigmaz(feh+0.1,afe+0.05)
-                upleft= monoAbundanceMW.sigmaz(feh+0.1,afe-0.05)
-                downright= monoAbundanceMW.sigmaz(feh-0.1,afe+0.05)
-                downleft= monoAbundanceMW.sigmaz(feh-0.1,afe-0.05)
+                up= monoAbundanceMW.sigmaz(feh+0.1,afe,
+                                           k=(options.sample.lower() == 'k'))
+                down= monoAbundanceMW.sigmaz(feh-0.1,afe,
+                                             k=(options.sample.lower() == 'k'))
+                left= monoAbundanceMW.sigmaz(feh,afe-0.05,
+                                             k=(options.sample.lower() == 'k'))
+                right= monoAbundanceMW.sigmaz(feh,afe+0.05,
+                                              k=(options.sample.lower() == 'k'))
+                here= monoAbundanceMW.sigmaz(feh,afe,
+                                             k=(options.sample.lower() == 'k'))
+                upright= monoAbundanceMW.sigmaz(feh+0.1,afe+0.05,
+                                                k=(options.sample.lower() == 'k'))
+                upleft= monoAbundanceMW.sigmaz(feh+0.1,afe-0.05,
+                                               k=(options.sample.lower() == 'k'))
+                downright= monoAbundanceMW.sigmaz(feh-0.1,afe+0.05,
+                                                  k=(options.sample.lower() == 'k'))
+                downleft= monoAbundanceMW.sigmaz(feh-0.1,afe-0.05,
+                                                 k=(options.sample.lower() == 'k'))
                 allsz= numpy.array([here,up,down,left,right,upright,upleft,downright,downleft])
                 indx= True-numpy.isnan(allsz)
                 thissz= numpy.mean(allsz[True-numpy.isnan(allsz)])
                 #Smooth sr
                 feh, afe= mapfehs[abindx], mapafes[abindx]
-                up= monoAbundanceMW.sigmar(feh+0.1,afe)
-                down= monoAbundanceMW.sigmar(feh-0.1,afe)
-                left= monoAbundanceMW.sigmar(feh,afe-0.05)
-                right= monoAbundanceMW.sigmar(feh,afe+0.05)
-                here= monoAbundanceMW.sigmar(feh,afe)
-                upright= monoAbundanceMW.sigmar(feh+0.1,afe+0.05)
-                upleft= monoAbundanceMW.sigmar(feh+0.1,afe-0.05)
-                downright= monoAbundanceMW.sigmar(feh-0.1,afe+0.05)
-                downleft= monoAbundanceMW.sigmar(feh-0.1,afe-0.05)
+                up= monoAbundanceMW.sigmar(feh+0.1,afe,
+                                           k=(options.sample.lower() == 'k'))
+                down= monoAbundanceMW.sigmar(feh-0.1,afe,
+                                             k=(options.sample.lower() == 'k'))
+                left= monoAbundanceMW.sigmar(feh,afe-0.05,
+                                             k=(options.sample.lower() == 'k'))
+                right= monoAbundanceMW.sigmar(feh,afe+0.05,
+                                              k=(options.sample.lower() == 'k'))
+                here= monoAbundanceMW.sigmar(feh,afe,
+                                             k=(options.sample.lower() == 'k'))
+                upright= monoAbundanceMW.sigmar(feh+0.1,afe+0.05,
+                                                k=(options.sample.lower() == 'k'))
+                upleft= monoAbundanceMW.sigmar(feh+0.1,afe-0.05,
+                                               k=(options.sample.lower() == 'k'))
+                downright= monoAbundanceMW.sigmar(feh-0.1,afe+0.05,
+                                                  k=(options.sample.lower() == 'k'))
+                downleft= monoAbundanceMW.sigmar(feh-0.1,afe-0.05,
+                                                 k=(options.sample.lower() == 'k'))
                 allsr= numpy.array([here,up,down,left,right,upright,upleft,downright,downleft])
                 indx= True-numpy.isnan(allsr)
                 thissr= numpy.mean(allsr[True-numpy.isnan(allsr)])
-                thishr= 0.9*monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])
+                thishr= 0.9*monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx],
+                                               k=(options.sample.lower() == 'k'))
             else:
-                thissz= monoAbundanceMW.sigmaz(feh,afe)
-                thissr= monoAbundanceMW.sigmar(feh,afe)
-                thishr= 0.9*monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx])
+                thissz= monoAbundanceMW.sigmaz(feh,afe,
+                                               k=(options.sample.lower() == 'k'))
+                thissr= monoAbundanceMW.sigmar(feh,afe,
+                                               k=(options.sample.lower() == 'k'))
+                thishr= 0.9*monoAbundanceMW.hr(mapfehs[abindx],mapafes[abindx],
+                                               k=(options.sample.lower() == 'k'))
             #Put everthing together
             p.extend([numpy.log(thishr/_REFR0),
                       numpy.log(thissr/_REFV0), #sigmaR
