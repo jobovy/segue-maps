@@ -1,6 +1,8 @@
 #Grab all of the fits, output them as fits
 #Suggested use:
 #python collateFits.py -o ~/Repos/monoAbundanceMW/monoAbundanceMW/data/monoAbundanceResults.fits ../fits/pixelFitG_DblExp_BigPix0.1.sav ../fits/pixelFitG_DblExp_BigPix0.1_1000samples.sav ../fits/pixelFitG_Mass_DblExp_BigPix0.1_simpleage.sav ../fits/pixelFitG_Mass_DblExp_BigPix0.1_simpleage_100samples.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1.sav ../fits/pixelFitG_Vel_HWR_BigPix0.1_10ksamples.sav ../fits/pixelFitG_VelR_HWR_BigPix0.1.sav ../fits/pixelFitG_VelR_HWR_BigPix0.1_10ksamples.sav
+#For K
+#python collateFits.py -o ~/Repos/monoAbundanceMW/monoAbundanceMW/data/monoAbundanceResults_k.fits ../fits/pixelFitK_DblExp_BigPix0.1_minndata50.sav ../fits/pixelFitK_DblExp_BigPix0.1_minndata50_1000samples.sav ../fits/pixelFitG_Mass_DblExp_BigPix0.1_simpleage.sav ../fits/pixelFitG_Mass_DblExp_BigPix0.1_simpleage_100samples.sav ../fits/pixelFitK_Vel_HWR_BigPix0.1_minndata50.sav ../fits/pixelFitK_Vel_HWR_BigPix0.1_minndata50_1000samples.sav ../fits/pixelFitK_VelR_HWR_BigPix0.1_minndata50.sav ../fits/pixelFitK_VelR_HWR_BigPix0.1_minndata50_1000samples.sav --sample=k --select=program --minndata=50
 import os, os.path
 import cPickle as pickle
 from optparse import OptionParser
@@ -145,7 +147,10 @@ def collateFits(options,args):
                 theseerrors.append(0.5*(-numpy.exp(numpy.mean(xs)-numpy.std(xs))+numpy.exp(numpy.mean(xs)+numpy.std(xs))))
                 out[nout]['hr_err']= theseerrors[1]
             #mass
-            out[nout]['mass']= thismass/10.**6.
+            if options.sample.lower() == 'k':
+                out[nout]['mass']= numpy.nan
+            else:
+                out[nout]['mass']= thismass/10.**6.
             #out[nout]['mass_err']= numpy.std(numpy.array(thismasssamples)/10.**6.)
             #Velocities
             if options.velmodel.lower() == 'hwr':

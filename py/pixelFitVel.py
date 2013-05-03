@@ -189,7 +189,7 @@ def pixelFitVel(options,args):
                                                  0.01,
                                                  pdf_func,
                                                  (XYZ,vxvyvz,cov_vxvyvz,R,d,
-                                                  options.vr,options.vrz),
+                                                  options.vr),#options.vrz),
                                                  #create_method=create_method,
                                                  isDomainFinite=isDomainFinite,
                                                  domain=domain,
