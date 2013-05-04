@@ -3276,7 +3276,7 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
         newname+= spl[-1]
         options.restart= newname
     options.singlefeh= fehs[ii]
-    options.singleafe= afes[ii]
+    options.singleafe= afes[ii]   
     #Now run
     cmd= unparse_cmd(options,args)
     print cmd
@@ -3303,8 +3303,8 @@ def run_abundance_singles_single_onCluster(options,args,fehs,afes,ii,savename,
     if options.grid or options.gridall:
         #hold_jid created using qstat | grep bovy | awk '{print "-hold_jid "$1}'
         subprocess.call(["qsub","-w","n","-l","exclusive=true",
-                         "-N",options.clustername,
-                         "-hold_jid",options.clusterholdname,
+                         "-N",options.clustername+'_%i' % ii,
+                         "-hold_jid",options.clusterholdname+'_%i' % ii,
                          "-l","h_rt=24:00:00",cmdfilename])
     else:
         subprocess.call(["qsub","-w","n","-l","exclusive=true",
