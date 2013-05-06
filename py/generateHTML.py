@@ -16,7 +16,7 @@ def generateHTML(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= 54
     if options.sample.lower() == 'g':
         savefile= open('binmapping_g.sav','rb')
     elif options.sample.lower() == 'k':
@@ -34,12 +34,12 @@ def generateHTML(options,args):
                 'rdpout','rdpoutc','fhpoutc','rddvt','srsz','srszc','pout',
                 'loglhist','props']
     types= ['rdfh','rdhr','rdhrc','rdsz',
-            'hszsz','hszszc','pout','hrreal',
+            'hszsz','hszszc','pout',#'hrreal',
             'loglhist','derived','props']
     ntypes= len(types)
     for ii in range(npops):
-        if options.sample.lower() == 'g' \
-                and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii])/8.) > -0.5:
+        if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                        k=(options.sample.lower() == 'k'))/8.) > -0.5:
             continue
         outfile.write('<p style="font-size:xx-large;">%i</p>\n' % ii)
         line= ''
