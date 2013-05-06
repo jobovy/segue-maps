@@ -13,12 +13,13 @@ from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0, \
     setup_potential, setup_aA, setup_dfgrid, nnsmooth
 _NOTDONEYET= True
 _FIXOUTLIERS= False
+_NKPOPS= 54
 def plotRdfh(options,args):
     #Go through all of the bins
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if not options.multi is None:
         dummy= multi.parallel_map((lambda x: plotRdfh_single(x,options,args)),
                                   range(npops),
@@ -39,8 +40,8 @@ def plotRdfh_single(ii,options,args):
     afes= pickle.load(savefile)
     npops= len(fehs)
     savefile.close()
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k'))/8.) > -0.5:
         return None
     if True:
         if _NOTDONEYET:
@@ -124,7 +125,7 @@ def plotRdhr(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if not options.multi is None:
         dummy= multi.parallel_map((lambda x: plotRdhr_single(x,options,args)),
                                   range(npops),
@@ -147,9 +148,9 @@ def plotRdhr_single(ii,options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+        npops= _NKPOPS
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k'))/8.) > -0.5:
         return None
     if True:
         if _NOTDONEYET:
@@ -210,7 +211,7 @@ def plotRdPout(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if not options.multi is None:
         dummy= multi.parallel_map((lambda x: plotRdPout_single(x,options,args)),
                                   range(npops),
@@ -226,9 +227,9 @@ def plotRdPout_single(ii,options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+        npops= _NKPOPS
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k'))/8.) > -0.5:
         return None
     if True:
         if _NOTDONEYET:
@@ -286,7 +287,7 @@ def plotfhPout(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if not options.multi is None:
         dummy= multi.parallel_map((lambda x: plotfhPout_single(x,options,args)),
                                   range(npops),
@@ -302,7 +303,7 @@ def plotfhPout_single(ii,options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if options.sample.lower() == 'g' \
             and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
         return None
@@ -362,7 +363,7 @@ def plotRddvt(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if not options.multi is None:
         dummy= multi.parallel_map((lambda x: plotRddvt_single(x,options,args)),
                                   range(npops),
@@ -378,7 +379,7 @@ def plotRddvt_single(ii,options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if options.sample.lower() == 'g' \
             and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
         return None
@@ -435,7 +436,7 @@ def plothszsz(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if not options.multi is None:
         dummy= multi.parallel_map((lambda x: plothszsz_single(x,options,args)),
                                   range(npops),
@@ -458,9 +459,9 @@ def plothszsz_single(ii,options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+        npops= _NKPOPS
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k'))/8.) > -0.5:
         return None
     if True:
         if _NOTDONEYET:
@@ -522,7 +523,7 @@ def plotRdsz(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if not options.multi is None:
         dummy= multi.parallel_map((lambda x: plotRdsz_single(x,options,args)),
                                   range(npops),
@@ -542,8 +543,8 @@ def plotRdsz_single(ii,options,args):
     fehs= pickle.load(savefile)
     afes= pickle.load(savefile)
     savefile.close()
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k'))/8.) > -0.5:
         return None
     if True:
         if _NOTDONEYET:
@@ -603,7 +604,7 @@ def plotPout(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if not options.multi is None:
         dummy= multi.parallel_map((lambda x: plotPout_single(x,options,args)),
                                   range(npops),
@@ -619,7 +620,7 @@ def plotPout_single(ii,options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     #Go through all of the bins
     if options.sample.lower() == 'g':
         savefile= open('binmapping_g.sav','rb')
@@ -628,8 +629,8 @@ def plotPout_single(ii,options,args):
     fehs= pickle.load(savefile)
     afes= pickle.load(savefile)
     savefile.close()
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k'))/8.) > -0.5:
         return None
     if True:
         if _NOTDONEYET:
@@ -685,7 +686,7 @@ def plothrreal(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if not options.multi is None:
         dummy= multi.parallel_map((lambda x: plothrreal_single(x,options,args)),
                                   range(npops),
@@ -705,11 +706,11 @@ def plothrreal_single(ii,options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     fehs= pickle.load(savefile)
     afes= pickle.load(savefile)
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k'))/8.) > -0.5:
         return None
     if True:
         if _NOTDONEYET:
@@ -783,7 +784,7 @@ def plotdvt(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     for ii in range(npops):
         if _NOTDONEYET:
             spl= options.restart.split('.')
@@ -842,7 +843,7 @@ def plotloglhist(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if not options.multi is None:
         dummy= multi.parallel_map((lambda x: plotloglhist_single(x,options,args)),
                                   range(npops),
@@ -858,7 +859,7 @@ def plotloglhist_single(ii,options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     #Go through all of the bins
     if options.sample.lower() == 'g':
         savefile= open('binmapping_g.sav','rb')
@@ -867,8 +868,8 @@ def plotloglhist_single(ii,options,args):
     fehs= pickle.load(savefile)
     afes= pickle.load(savefile)
     savefile.close()
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k'))/8.) > -0.5:
         return None
     if True:
         if _NOTDONEYET:
@@ -916,7 +917,7 @@ def plotderived(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
     if not options.multi is None:
         dummy= multi.parallel_map((lambda x: plotderived_single(x,options,args)),
                                   range(npops),
@@ -937,8 +938,8 @@ def plotderived_single(ii,options,args):
     afes= pickle.load(savefile)
     npops= len(fehs)
     savefile.close()
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k'))/8.) > -0.5:
         return None
     if True:
         if _NOTDONEYET:
@@ -1057,7 +1058,7 @@ def plotprops(options,args):
         npops= 62
         savefile= open('binmapping_g.sav','rb')
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= _NKPOPS
         savefile= open('binmapping_k.sav','rb')
     fehs= pickle.load(savefile)
     afes= pickle.load(savefile)
