@@ -14,7 +14,7 @@ from segueSelect import _ERASESTR
 from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0, \
     setup_potential, setup_aA, setup_dfgrid, nnsmooth
 from calcDerivProps import rawDerived, calcSurfErr, calcSurfRdCorr, \
-    calcDerivProps
+    calcSurfRdCorrZ, calcSurfErrZ, calcDerivProps
 from plotDensComparisonDFMulti4gridall import getMultiComparisonBins
 from selectFigs import _squeeze
 _NOTDONEYET= True
@@ -48,7 +48,7 @@ def plot1d(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= 54
     if options.sample.lower() == 'g':
         savefile= open('binmapping_g.sav','rb')
     elif options.sample.lower() == 'k':
@@ -70,9 +70,10 @@ def plot1d(options,args):
     #Load into plotthis
     plotthis= numpy.zeros(npops)+numpy.nan
     for ii in range(npops):
-        if options.sample.lower() == 'g' \
-                and (numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5 \
-                         or ii < 6):
+        if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                         k=(options.sample.lower() == 'k')) /8.) > -0.5 \
+                or (options.sample.lower() == 'g' and ii < 6) \
+                or (options.sample.lower() == 'k' and ii < 7):
             continue
         plotthis[ii]= derivProps[ii][options.subtype.lower()]
     #Now plot
@@ -87,7 +88,7 @@ def plotbestr(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= 54
     if options.sample.lower() == 'g':
         savefile= open('binmapping_g.sav','rb')
     elif options.sample.lower() == 'k':
@@ -111,9 +112,10 @@ def plotbestr(options,args):
     plotthis_y= numpy.zeros(npops)+numpy.nan
     plotthis_y_err= numpy.zeros(npops)+numpy.nan
     for ii in range(npops):
-        if options.sample.lower() == 'g' \
-                and (numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5 \
-                         or ii < 6):
+        if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                         k=(options.sample.lower() == 'k')) /8.) > -0.5 \
+                or (options.sample.lower() == 'g' and ii < 6) \
+                or (options.sample.lower() == 'k' and ii < 7):
             continue
         #Determine best-r
         #indx= numpy.argmin(derivProps[ii][:,2]/numpy.fabs(derivProps[ii][:,1]))
@@ -147,12 +149,74 @@ def plotbestr(options,args):
     bovy_plot.bovy_end_print(options.outfilename.replace('.png','_rvssurf.png'))
     return None        
     
+def plotbestz(options,args):
+    """Make a plot of a quantity's best-fit vs. FeH and aFe"""
+    if options.sample.lower() == 'g':
+        npops= 62
+    elif options.sample.lower() == 'k':
+        npops= 54
+    if options.sample.lower() == 'g':
+        savefile= open('binmapping_g.sav','rb')
+    elif options.sample.lower() == 'k':
+        savefile= open('binmapping_k.sav','rb')
+    fehs= pickle.load(savefile)
+    afes= pickle.load(savefile)
+    savefile.close()
+    #First calculate the derivative properties
+    if not options.multi is None:
+        derivProps= multi.parallel_map((lambda x: calcAllSurfErrZ(x,options,args)),
+                                  range(npops),
+                                  numcores=numpy.amin([options.multi,
+                                                       npops,
+                                                       multiprocessing.cpu_count()]))
+    else:
+        derivProps= []
+        for ii in range(npops):
+            derivProps.append(calcAllSurfErrZ(ii,options,args))
+    #Load into plotthis
+    plotthis= numpy.zeros(npops)+numpy.nan
+    plotthis_y= numpy.zeros(npops)+numpy.nan
+    plotthis_y_err= numpy.zeros(npops)+numpy.nan
+    for ii in range(npops):
+        if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                         k=(options.sample.lower() == 'k')) /8.) > -0.5 \
+                or (options.sample.lower() == 'g' and ii < 6) \
+                or (options.sample.lower() == 'k' and ii < 7):
+            continue
+        #Determine best-r
+        #indx= numpy.argmin(derivProps[ii][:,2]/numpy.fabs(derivProps[ii][:,1]))
+        indx= numpy.argmin(numpy.fabs(derivProps[ii][:,2]))
+        plotthis[ii]= derivProps[ii][indx,0]
+        plotthis_y[ii]= derivProps[ii][indx,1]
+        plotthis_y_err[ii]= derivProps[ii][indx,3]
+    #Now plot
+    bovy_plot.bovy_print()
+    print plotthis, plotthis_y
+    bovy_plot.bovy_plot(plotthis,plotthis_y,'ko',
+                        xlabel=r'$Z\ (\mathrm{kpc})$',
+                        ylabel=r'$\Sigma(R_0,|Z|)\ (M_\odot\,\mathrm{pc}^{-2})$',
+                        xrange=[0.,5.],
+                        yrange=[10.,1050.],#,numpy.nanmin(plotthis_y)-10.,
+#                                numpy.nanmax(plotthis_y)+10.],
+                        semilogy=True)
+    pyplot.errorbar(plotthis,
+                    plotthis_y,
+                    yerr=plotthis_y_err,
+                    elinewidth=1.,capsize=3,zorder=0,
+                    color='k',linestyle='none')  
+    #trs= numpy.linspace(4.3,9.,1001)
+    #pyplot.plot(trs,72.*numpy.exp(-(trs-8.)/3.),'k--')
+    #pyplot.plot(trs,72.*numpy.exp(-(trs-8.)/2.),'k-.')
+    #pyplot.plot(trs,72.*numpy.exp(-(trs-8.)/4.),'k:')
+    bovy_plot.bovy_end_print(options.outfilename.replace('.png','_zvssurf.png'))
+    return None        
+    
 def plot2d(options,args):
     """Make a plot of a quantity's best-fit vs. FeH and aFe"""
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= 54
     if options.sample.lower() == 'g':
         savefile= open('binmapping_g.sav','rb')
     elif options.sample.lower() == 'k':
@@ -179,9 +243,10 @@ def plot2d(options,args):
     xprop= options.subtype.split(',')[0]
     yprop= options.subtype.split(',')[1]
     for ii in range(npops):
-        if options.sample.lower() == 'g' \
-                and (numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5 \
-                         or ii < 6):
+        if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                         k=(options.sample.lower() == 'k')) /8.) > -0.5 \
+                or (options.sample.lower() == 'g' and ii < 6) \
+                or (options.sample.lower() == 'k' and ii < 7):
             continue
         plotthis_x[ii]= derivProps[ii][xprop]
         plotthis_y[ii]= derivProps[ii][yprop]
@@ -216,7 +281,7 @@ def plotCombinedPDF(options,args):
     if options.sample.lower() == 'g':
         npops= 62
     elif options.sample.lower() == 'k':
-        npops= 30
+        npops= 54
     if options.sample.lower() == 'g':
         savefile= open('binmapping_g.sav','rb')
     elif options.sample.lower() == 'k':
@@ -277,9 +342,10 @@ def calcAllPDFs(ii,options,args):
     fehs= pickle.load(savefile)
     afes= pickle.load(savefile)
     savefile.close()
-    if options.sample.lower() == 'g' \
-            and (numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5 \
-                     or ii < 6):
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k')) /8.) > -0.5 \
+                or (options.sample.lower() == 'g' and ii < 6) \
+                or (options.sample.lower() == 'k' and ii < 7):
         return numpy.zeros((options.nrds,options.nfhs))
     if _NOTDONEYET:
         spl= options.restart.split('.')
@@ -322,8 +388,8 @@ def calcAllDerivProps(ii,options,args):
     fehs= pickle.load(savefile)
     afes= pickle.load(savefile)
     savefile.close()
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k')) /8.) > -0.5:
         return None
     if _NOTDONEYET:
         spl= options.restart.split('.')
@@ -348,8 +414,8 @@ def calcAllSurfErr(ii,options,args):
     fehs= pickle.load(savefile)
     afes= pickle.load(savefile)
     savefile.close()
-    if options.sample.lower() == 'g' \
-            and numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii]) /8.) > -0.5:
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k')) /8.) > -0.5:
         return numpy.zeros((101,4))
     if _NOTDONEYET:
         spl= options.restart.split('.')
@@ -372,6 +438,40 @@ def calcAllSurfErr(ii,options,args):
     out[:,3]= std_surfz
     return out
 
+def calcAllSurfErrZ(ii,options,args):
+    #Go through all of the bins
+    if options.sample.lower() == 'g':
+        savefile= open('binmapping_g.sav','rb')
+    elif options.sample.lower() == 'k':
+        savefile= open('binmapping_k.sav','rb')
+    fehs= pickle.load(savefile)
+    afes= pickle.load(savefile)
+    savefile.close()
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k')) /8.) > -0.5:
+        return numpy.zeros((101,4))
+    if _NOTDONEYET:
+        spl= options.restart.split('.')
+    else:
+        spl= args[0].split('.')
+    newname= ''
+    for jj in range(len(spl)-1):
+        newname+= spl[jj]
+        if not jj == len(spl)-2: newname+= '.'
+    newname+= '_%i.' % ii
+    newname+= spl[-1]
+    #zs,mean_surfz, cov, std_surfz= calcSurfRdCorrZ(newname,vo=options.fixvc/_REFV0,
+    zs,mean_surfz, std_surfz= calcSurfErrZ(newname,vo=options.fixvc/_REFV0,
+                                              zh=options.fixzh,
+                                  dlnvcdlnr=options.dlnvcdlnr)
+    if zs is None: return numpy.zeros((101,4))
+    out= numpy.zeros((len(zs),4))
+    out[:,0]= zs
+    out[:,1]= mean_surfz
+    out[:,2]= std_surfz/mean_surfz
+    out[:,3]= std_surfz
+    return out
+
 if __name__ == '__main__':
     parser= get_options()
     options,args= parser.parse_args()
@@ -381,5 +481,7 @@ if __name__ == '__main__':
         plot2d(options,args)
     elif options.type.lower() == 'bestr':
         plotbestr(options,args)
+    elif options.type.lower() == 'bestz':
+        plotbestz(options,args)
     elif options.type.lower() == 'combined':
         plotCombinedPDF(options,args)
