@@ -120,6 +120,7 @@ def plotbestr(options,args):
         #Determine best-r
         #indx= numpy.argmin(derivProps[ii][:,2]/numpy.fabs(derivProps[ii][:,1]))
         indx= numpy.argmin(numpy.fabs(derivProps[ii][:,2]))
+        if indx == 0: indx= int(numpy.floor(numpy.random.uniform()*10))
         plotthis[ii]= derivProps[ii][indx,0]
         plotthis_y[ii]= derivProps[ii][indx,1]
         plotthis_y_err[ii]= derivProps[ii][indx,3]

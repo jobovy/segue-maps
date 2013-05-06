@@ -286,7 +286,7 @@ def calcSurfRdCorr(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.):
     logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
     marglogl= numpy.zeros((logl.shape[0]*logl.shape[3]))
     nrs= 101
-    rs= numpy.linspace(4.1,9.,nrs)
+    rs= numpy.linspace(4.5,9.,nrs)
     dmarglogl= numpy.zeros((logl.shape[0]*logl.shape[3],nrs))
     rds= numpy.linspace(2.,3.4,8)
     fhs= numpy.linspace(0.,1.,16)
