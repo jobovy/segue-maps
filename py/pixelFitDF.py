@@ -181,6 +181,7 @@ def pixelFitDF(options,args,pool=None):
         distfac= AnDistance.AnDistance(data.dered_g-data.dered_r,
                                        data.feh)
         options.fixdm= numpy.log10(distfac)*5.
+        options.andistances= False
         #Start over
         pixelFitDF(options,args)
         return None
