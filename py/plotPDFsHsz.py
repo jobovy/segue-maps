@@ -1072,11 +1072,11 @@ def plotprops(options,args):
                             +'\n'
                             r'$N_{\mathrm{data}} = %i$' % (ndatas[ii])
                             +'\n'
-                            r'$\ln h_R / 8\,\mathrm{kpc} = %.1f$' % (numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii])/8.)) 
+                            r'$\ln h_R / 8\,\mathrm{kpc} = %.1f$' % (numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],k=(options.sample.lower() == 'k'))/8.)) 
                             +'\n'
-                            +r'$\ln \sigma_R / 220\,\mathrm{km\,s}^{-1} = %.1f$' % (numpy.log(monoAbundanceMW.sigmar(fehs[ii],afes[ii])/220.))
+                            +r'$\ln \sigma_R / 220\,\mathrm{km\,s}^{-1} = %.1f$' % (numpy.log(monoAbundanceMW.sigmar(fehs[ii],afes[ii],k=(options.sample.lower() == 'k'))/220.))
                             +'\n'
-                            +r'$\ln \sigma_Z / 220\,\mathrm{km\,s}^{-1} = %.1f$' % (numpy.log(monoAbundanceMW.sigmaz(fehs[ii],afes[ii])/220.)),
+                            +r'$\ln \sigma_Z / 220\,\mathrm{km\,s}^{-1} = %.1f$' % (numpy.log(monoAbundanceMW.sigmaz(fehs[ii],afes[ii],k=(options.sample.lower() == 'k'))/220.)),
                             top_left=True,size=16.)
         #Plotname
         spl= options.outfilename.split('.')
