@@ -51,6 +51,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS, _DblExpDensity
 from compareDataModel import _predict_rdist_plate, comparernumberPlate
 from pixelFitDens import pixelAfeFeh
+import AnDistance
 _DEBUG= False
 _REFR0= 8. #kpc
 _REFV0= 220. #km/s
@@ -175,6 +176,14 @@ def pixelFitDF(options,args,pool=None):
             return None
     else:
         allraw= raw
+    if options.andistances:
+        data= binned(fehs[0],afes[0])
+        distfac= AnDistance.AnDistance(data.dered_g-data.dered_r,
+                                       data.feh)
+        options.fixdm= numpy.log10(distfac)*5.
+        #Start over
+        pixelFitDF(options,args)
+        return None
     #thissavefile= open('binmapping_k.sav','wb')
     #pickle.dump(fehs,thissavefile)
     #pickle.dump(afes,thissavefile)
@@ -5103,6 +5112,9 @@ def get_options():
     parser.add_option("--fixdm",dest="fixdm",type='float',
                       default=None,
                       help="If set, fix a distance modulus offset")
+    parser.add_option("--andistances",action="store_true", dest="andistances",
+                      default=False,
+                      help="Use An-ish distances")
     parser.add_option("--fitdvt",action="store_true", dest="fitdvt",
                       default=False,
                       help="If set, fit for a vT offset")
