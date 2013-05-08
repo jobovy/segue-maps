@@ -87,6 +87,7 @@ _NEWSAVE= True
 _INTEGRATEMARGINALIZE= True
 _VARYHSZ= True
 _RESUBMIT= False
+_FIXOUT= False
 #GL
 _DEFAULTNGL=10
 _DEFAULTNGL2=20
@@ -176,15 +177,6 @@ def pixelFitDF(options,args,pool=None):
             return None
     else:
         allraw= raw
-    if options.andistances:
-        data= binned(fehs[0],afes[0])
-        distfac= AnDistance.AnDistance(data.dered_g-data.dered_r,
-                                       data.feh)
-        options.fixdm= numpy.log10(distfac)*5.
-        options.andistances= False
-        #Start over
-        pixelFitDF(options,args)
-        return None
     #thissavefile= open('binmapping_k.sav','wb')
     #pickle.dump(fehs,thissavefile)
     #pickle.dump(afes,thissavefile)
@@ -193,6 +185,18 @@ def pixelFitDF(options,args,pool=None):
     #return None
     if options.singles:
         run_abundance_singles(options,args,fehs,afes)
+        return None
+    if options.andistances:
+        data= binned(fehs[0],afes[0])
+        distfac= AnDistance.AnDistance(data.dered_g-data.dered_r,
+                                       data.feh)
+        if options.fixdm is None:
+            options.fixdm= numpy.log10(distfac)*5.
+        else:
+            options.fixdm= options.fixdm+numpy.log10(distfac)*5.
+        options.andistances= False
+        #Start over
+        pixelFitDF(options,args)
         return None
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
@@ -675,7 +679,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             if _NEWSAVE:
                 out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),
                                   options.nhrs,options.nsrs,options.nszs,
-                                  5)) #latter are nuisance params+1
+                                  4)) #latter are nuisance params+1
             elif options.fitdvt:
                 out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),
                                   options.nhrs,options.nsrs,options.nszs,
@@ -1013,7 +1017,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         toptions.multi= toptions.multi2 #Set multi to the second multi
     if _NEWSAVE:
         out= numpy.zeros((options.nhrs,options.nsrs,options.nszs,
-                          5))-numpy.finfo(numpy.dtype(numpy.float64)).max
+                          4))-numpy.finfo(numpy.dtype(numpy.float64)).max
     elif toptions.fitdvt:
         out= numpy.zeros((options.nhrs,options.nsrs,options.nszs,
                           options.ndvts,options.npouts,1,1))-numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -1820,14 +1824,9 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     tparams[startindx+2]= sz
     #Setup out
     if _NEWSAVE:
-        out= numpy.zeros(5)
-        if toptions.npouts2 == 1: toptions.nszouts= 1
-        tmp_out= numpy.zeros((toptions.ndvts,toptions.npouts,toptions.npouts2,
-                              toptions.nszouts))
-        #tmp_out1= numpy.zeros((toptions.ndvts,toptions.npouts,toptions.npouts2,
-        #                      toptions.nszouts))
-        #tmp_out2= numpy.zeros((toptions.ndvts,toptions.npouts,toptions.npouts2,
-        #                      toptions.nszouts))
+        out= numpy.zeros(4)
+        tmp_out= numpy.zeros((toptions.ndvts,toptions.npouts))
+        tmp_out2= numpy.zeros((toptions.ndvts,toptions.npouts))
     else:
         out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1))
     #Setup everything for fast calculations
@@ -1866,11 +1865,11 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
                                              rgs,kappas,nus,Omegas)
     #tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
     tnormalization_out= normalization_out*vo**3.
-    logoutfrac= numpy.log(normalization_qdf/tnormalization_out)
-    tnormalization_out= normalization_qdf
-    tnormalization_dout= normalization_dout*vo**3.
-    logdoutfrac= numpy.log(normalization_qdf/tnormalization_dout)
-    tnormalization_dout= normalization_qdf
+    if not _FIXOUT:
+        logoutfrac= numpy.log(normalization_qdf/tnormalization_out)
+        tnormalization_out= normalization_qdf
+    else:
+        logoutfrac= 0.
     #Get data ready
     R,vR,vT,z,vz, datasr, datasz, datarhorz= prepare_coordinates(tparams,0,
                                                                  fehs,afes,
@@ -1886,17 +1885,14 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
         z= z[:,0]
         vz= vz[:,0]
     #ndata= datajrs.shape[0]
-    data_lndf= numpy.zeros((ndata,3*toptions.nmcerr))
+    data_lndf= numpy.zeros((ndata,2*toptions.nmcerr))
     if options.marginalizevt:
         mdata_df= numpy.zeros((ndata,toptions.ngl**3))
     else:
         mdata_df= numpy.zeros((ndata,toptions.ngl))
-    odata_lndf= numpy.zeros((ndata,toptions.nmcerr,toptions.nszouts))
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
-    dblexphr= monoAbundanceMW.hr(fehs[0],afes[0],k=(toptions.sample.lower() == 'k'))
-    dblexphz= monoAbundanceMW.hz(fehs[0],afes[0],k=(toptions.sample.lower() == 'k'))
     #Evaluate outliers
     if options.marginalizevrvt:
         if _INTEGRATEMARGINALIZE:
@@ -1908,13 +1904,6 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
             -numpy.log(szhalo)-fac*numpy.log(300./_REFV0/vo)\
             -0.5*(vz**2./szhalo**2.)+2.*numpy.log(vo)\
             -0.5*numpy.log(2.*math.pi),(ndata,toptions.nmcerr))
-        szouts= numpy.exp(numpy.linspace(numpy.log(10.),numpy.log(60.),options.nszouts))/_REFV0/vo
-        tdens= logdoutfrac+numpy.log(_DblExpDensity(R*_REFR0*ro,z*_REFR0*ro,[numpy.log(dblexphz/1000.),-numpy.log(dblexphr)]))
-        for ii in range(toptions.nszouts):
-            odata_lndf[:,:,ii]= numpy.reshape(tdens\
-                -numpy.log(szouts[ii])-2.*numpy.log(300./_REFV0/vo)\
-                -0.5*(vz**2./szouts[ii]**2.)\
-                -0.5*numpy.log(2.*math.pi),(ndata,toptions.nmcerr))
     elif options.marginalizevt:
         if _INTEGRATEMARGINALIZE:
             szhalo= numpy.sqrt(datasz**2.+szhalo**2.)
@@ -1926,24 +1915,18 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
             -numpy.log(srhalo)-numpy.log(szhalo)-fac*numpy.log(300./_REFV0/vo)\
             -0.5*(vz**2./szhalo**2.+vR**2./srhalo**2.)\
             -1.*numpy.log(2.*math.pi),(ndata,toptions.nmcerr))
-        szouts= numpy.exp(numpy.linspace(numpy.log(10.),numpy.log(60.),options.nszouts))/_REFV0/vo
-        tdens= logdoutfrac+numpy.log(_DblExpDensity(R*_REFR0*ro,z*_REFR0*ro,[numpy.log(dblexphz/1000.),-numpy.log(dblexphr)]))
-        for ii in range(toptions.nszouts):
-            odata_lndf[:,:,ii]= numpy.reshape(tdens\
-                -numpy.log(szouts[ii])-2.*numpy.log(300./_REFV0/vo)\
-                -0.5*(vz**2./szouts[ii]**2.)\
-                -0.5*numpy.log(2.*math.pi),(ndata,toptions.nmcerr))
     else:
         data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]= logoutfrac+loghalodens\
             -numpy.log(srhalo)-numpy.log(sphihalo)-numpy.log(szhalo)\
             -0.5*(vR**2./srhalo**2.+vz**2./szhalo**2.+vT**2./sphihalo**2.)\
             -1.5*numpy.log(2.*math.pi)
+    if _FIXOUT:
+        data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(tnormalization_out)
     #Run through the grid
     if _NEWESTDFRANGES:
         dvts= numpy.zeros(1)#numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
         pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-        pouts2= [0.] #numpy.linspace(10.**-5.,.2,options.npouts)
-        data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+        #pouts= pouts/(1.-pouts)
     elif _NEWDFRANGES:
         dvts= numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
         pouts= numpy.linspace(10.**-5.,.5,options.npouts)
@@ -2010,33 +1993,33 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
                                                 _nu=datanus[:,:,ii,:].flatten(),
                                                 _Omega=dataOmegas[:,:,ii,:].flatten(),
                                                 _sigmaR1=datanormsrs.flatten())).reshape((ndata,toptions.nmcerr))+2.*numpy.log(vo)-2.*numpy.log(300./_REFV0/vo)
-        for ll in range(toptions.nszouts):
-            if options.npouts2 != 1:
-                data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]= odata_lndf[:,:,ll]
-            #start= time.time()
-            for jj in range(toptions.npouts):
-                #Sum data and outlier df, for all MC samples
-                data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]+= numpy.log(pouts[jj])
-                for kk in range(toptions.npouts2):
-                    if options.npouts2 != 1:
-                        data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]+= numpy.log(pouts2[kk])
-                    sumdata_lndf= mylogsumexp(data_lndf,axis=1)
-                    tmp_out[ii,jj,kk,ll]= numpy.sum(sumdata_lndf)\
-                        -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out+pouts[kk]*tnormalization_dout)+numpy.log(toptions.nmcerr)) #latter so we can compare
-                    #tmp_out1[ii,jj,kk,ll]= numpy.sum(sumdata_lndf)
-                    #tmp_out2[ii,jj,kk,ll]= -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out+pouts[kk]*tnormalization_dout)+numpy.log(toptions.nmcerr)) #latter so we can compare
-                    if options.npouts2 != 1:
-                        data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]-= numpy.log(pouts2[kk])
-                data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(pouts[jj])
+        if _FIXOUT:
+            data_lndf[:,0:toptions.nmcerr]-= numpy.log(normalization_qdf)
+        for jj in range(toptions.npouts):
+            #Sum data and outlier df, for all MC samples
+            data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]+= numpy.log(pouts[jj])
+            if _FIXOUT:
+                data_lndf[:,0:toptions.nmcerr]+= numpy.log(1.-pouts[jj])
+            sumdata_lndf= mylogsumexp(data_lndf,axis=1)
+            if _FIXOUT:
+                tmp_out[ii,jj]= numpy.sum(sumdata_lndf)
+                poutlier= mylogsumexp(data_lndf[:,toptions.nmcerr:2*toptions.nmcerr],axis=1)-sumdata_lndf
+                tmp_out2[ii,jj]= numpy.sum(numpy.exp(poutlier))/ndata
+            else:
+                tmp_out[ii,jj]= numpy.sum(sumdata_lndf)\
+                    -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out)+numpy.log(toptions.nmcerr)) #latter so we can compare
+            #tmp_out1[ii,jj,kk,ll]= numpy.sum(sumdata_lndf)
+            #tmp_out2[ii,jj,kk,ll]= -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out+pouts[kk]*tnormalization_dout)+numpy.log(toptions.nmcerr)) #latter so we can compare
+            if _FIXOUT:
+                data_lndf[:,0:toptions.nmcerr]-= numpy.log(1.-pouts[jj])
+            data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(pouts[jj])
  #Reset
-            #end= time.time()
-            #print "One inner loop took %f seconds ..." % (end-start)
     out[0]= logsumexp(tmp_out)
     indx= numpy.unravel_index(numpy.argmax(tmp_out),tmp_out.shape)
     out[1]= dvts[indx[0]]
     out[2]= pouts[indx[1]]
-    out[3]= pouts[indx[2]]
-    out[4]= szouts[indx[3]]
+    if _FIXOUT:
+        out[3]= tmp_out2[indx[0],indx[1]]
     #pdb.set_trace()
     return out
 
@@ -2184,7 +2167,7 @@ def approxFitResult(feh,afe,relerr=False,sample='g'):
     #Special case the two most metal-poor G dwarf bins
     if feh < -1.1:
         sr= monoAbundanceMW.sigmar(-1.05,afe,smooth=True,
-                                    k=(options.sample.lower() == 'k'))/_REFV0
+                                    k=(sample.lower() == 'k'))/_REFV0
     #Load the results from qdfProperties that relates input and output parameters, first the scale length
     savefile= open('hrhrhr.sav','rb')
     hrhrhr= pickle.load(savefile)
