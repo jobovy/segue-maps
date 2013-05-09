@@ -679,7 +679,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             if _NEWSAVE:
                 out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),
                                   options.nhrs,options.nsrs,options.nszs,
-                                  4)) #latter are nuisance params+1
+                                  5)) #latter are nuisance params+1
             elif options.fitdvt:
                 out= numpy.zeros((len(rds),len(vcs),len(zhs),len(fhs),
                                   options.nhrs,options.nsrs,options.nszs,
@@ -1017,7 +1017,7 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         toptions.multi= toptions.multi2 #Set multi to the second multi
     if _NEWSAVE:
         out= numpy.zeros((options.nhrs,options.nsrs,options.nszs,
-                          4))-numpy.finfo(numpy.dtype(numpy.float64)).max
+                          5))-numpy.finfo(numpy.dtype(numpy.float64)).max
     elif toptions.fitdvt:
         out= numpy.zeros((options.nhrs,options.nsrs,options.nszs,
                           options.ndvts,options.npouts,1,1))-numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -1824,7 +1824,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     tparams[startindx+2]= sz
     #Setup out
     if _NEWSAVE:
-        out= numpy.zeros(4)
+        out= numpy.zeros(5)
         tmp_out= numpy.zeros((toptions.ndvts,toptions.npouts))
         tmp_out2= numpy.zeros((toptions.ndvts,toptions.npouts))
     else:
