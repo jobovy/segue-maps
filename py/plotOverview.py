@@ -2,7 +2,7 @@ import sys
 import os, os.path
 import cPickle as pickle
 import numpy
-from scipy import maxentropy, integrate
+from scipy import maxentropy, integrate, optimize
 import multiprocessing
 from matplotlib.patches import Ellipse
 from matplotlib import pyplot, cm
@@ -147,9 +147,26 @@ def plotbestr(options,args):
     pyplot.plot(trs,72.*numpy.exp(-(trs-8.)/3.),'k--')
     pyplot.plot(trs,72.*numpy.exp(-(trs-8.)/2.),'k-.')
     pyplot.plot(trs,72.*numpy.exp(-(trs-8.)/4.),'k:')
+    #Fit exponential
+    #indx= (plotthis < 8.)
+    #plotthis= plotthis[indx]
+    #plotthis_y= plotthis_y[indx]
+    #plotthis_y_err= plotthis_y_err[indx]
+    exp_params= optimize.fmin_powell(expcurve,
+                                     numpy.log(numpy.array([72.,2.5])),
+                                     args=(plotthis,plotthis_y,plotthis_y_err))
+    pyplot.plot(trs,numpy.exp(exp_params[0]-(trs-8.)/numpy.exp(exp_params[1])),
+                'k-',lw=2.)
+    print numpy.exp(exp_params)
     bovy_plot.bovy_end_print(options.outfilename.replace('.png','_rvssurf.png'))
     return None        
     
+def expcurve(params,x,y,err):
+    so= numpy.exp(params[0])
+    rd= numpy.exp(params[1])
+    q= 9.
+    return numpy.nansum(q*(y-so*numpy.exp(-(x-8.)/rd))**2./(q*err**2.+(y-so*numpy.exp(-(x-8.)/rd))**2.))
+
 def plotbestz(options,args):
     """Make a plot of a quantity's best-fit vs. FeH and aFe"""
     if options.sample.lower() == 'g':
