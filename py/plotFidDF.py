@@ -39,7 +39,9 @@ def plotFidDF(options,args):
         print params
         savefile.close()
     else:
-        raise IOError("--init with potential parameters needs to be set")
+        options.potential= 'btii'
+        params= None
+#        raise IOError("--init with potential parameters needs to be set")
     try:
         pot= setup_potential(params,options,1)#Assume that the potential parameters come from a file with a single set of df parameters first
     except RuntimeError: #if this set of parameters gives a nonsense potential
@@ -51,8 +53,8 @@ def plotFidDF(options,args):
     options.aAmethod='staeckel'
     aAS= setup_aA(pot,options)
     #Setup DF
-    qdf= quasiisothermaldf(3./8.,0.19,0.125,0.875,0.875,aA=aAS,pot=pot,cutcounter=True)
-    qdfa= quasiisothermaldf(3./8.,0.19,0.125,0.875,0.875,aA=aA,pot=pot,cutcounter=True)
+    qdf= quasiisothermaldf(2./8.,0.35,0.2,1.,0.875,aA=aAS,pot=pot,cutcounter=True)
+    qdfa= quasiisothermaldf(2./8.,0.35,0.2,1.,0.875,aA=aA,pot=pot,cutcounter=True)
     if options.type.lower() == 'lzjr':
         njs= 201
         jrs= numpy.linspace(0.,500.,njs)/ro/vo/_REFR0/_REFV0
