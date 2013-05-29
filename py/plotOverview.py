@@ -6,7 +6,7 @@ from scipy import maxentropy, integrate, optimize
 import multiprocessing
 from matplotlib.patches import Ellipse
 from matplotlib import pyplot, cm
-from galpy.util import bovy_plot, multi
+from galpy.util import bovy_plot, multi, save_pickles
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 from galpy import potential
 import monoAbundanceMW
@@ -20,6 +20,7 @@ from selectFigs import _squeeze
 _NOTDONEYET= True
 #lABELS
 labels= {}
+labels['pout']= r'$P_{\mathrm{out}}$'
 labels['rd']= r'$R_d\ (\mathrm{kpc})$'
 labels['zh']= r'$z_h\ (\mathrm{pc})$'
 labels['vcdvcro']= r'$V_{c,\mathrm{disk}}/V_c\,(R_0)$'
@@ -34,6 +35,7 @@ labels['surfz800']= r'$\Sigma(R_0,|Z|\leq 0.8\,\mathrm{kpc})\ (M_{\odot}\,\mathr
 labels['surfz']= r'$\Sigma(R_0,|Z|\leq 1.1\,\mathrm{kpc})\ (M_{\odot}\,\mathrm{pc}^{-2})$'
 #RANGES
 ranges= {}
+ranges['pout']= [0.,0.5]
 ranges['rd']= [1.9,3.5]
 ranges['surfz']= [50.,100.]
 ranges['surfzdisk']= [20.,90.]
@@ -114,7 +116,7 @@ def plotbestr(options,args):
     for ii in range(npops):
         if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
                                          k=(options.sample.lower() == 'k')) /8.) > -0.5 \
-                or (options.sample.lower() == 'g' and ii < 6) \
+                or (options.sample.lower() == 'g' and (ii < 6 or ii == 50)) \
                 or (options.sample.lower() == 'k' and ii < 7):
             continue
         #Determine best-r
@@ -159,6 +161,9 @@ def plotbestr(options,args):
                 'k-',lw=2.)
     print numpy.exp(exp_params)
     bovy_plot.bovy_end_print(options.outfilename.replace('.png','_rvssurf.png'))
+    #Save
+    save_pickles(options.outfilename.replace('.png','_rvssurf.sav'),
+                 plotthis,plotthis_y,plotthis_y_err)
     return None        
     
 def expcurve(params,x,y,err):
