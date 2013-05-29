@@ -24,7 +24,7 @@ def calcDerivProps(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.):
         logl[(logl == 0.)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
     logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
     marglogl= numpy.zeros((logl.shape[0],logl.shape[3]))
-    nderived= 8
+    nderived= 9
     dmarglogl= numpy.zeros((logl.shape[0],logl.shape[3],nderived))
     rds= numpy.linspace(2.,3.4,8)
     fhs= numpy.linspace(0.,1.,16)
@@ -61,6 +61,9 @@ def calcDerivProps(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.):
             dmarglogl[jj,kk,6]= vcdvc
             #Rd for fun
             dmarglogl[jj,kk,7]= rds[jj]
+            #pout
+            hrindx, srindx, szindx= numpy.unravel_index(numpy.argmax(logl[jj,0,0,kk,:,:,:,0]),(options.nhrs,options.nsrs,options.nszs))
+            dmarglogl[jj,kk,8]= logl[jj,0,0,kk,hrindx,srindx,szindx,2]
     #Calculate mean and stddv
     alogl= marglogl-maxentropy.logsumexp(marglogl.flatten())
     margp= numpy.exp(alogl)
@@ -80,6 +83,11 @@ def calcDerivProps(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.):
     std_vcdvc= numpy.sqrt(numpy.sum(dmarglogl[:,:,6]**2.*margp)-mean_vcdvc**2.)
     mean_rd= numpy.sum(dmarglogl[:,:,7]*margp)
     std_rd= numpy.sqrt(numpy.sum(dmarglogl[:,:,7]**2.*margp)-mean_rd**2.)
+    mean_pout= numpy.sum(dmarglogl[:,:,8]*margp)
+    if numpy.sum(dmarglogl[:,:,8]**2.*margp)-mean_pout**2. > 0.:
+        std_pout= numpy.sqrt(numpy.sum(dmarglogl[:,:,8]**2.*margp)-mean_pout**2.)
+    else:
+        std_pout= 0.
     #load into dictionary
     out= {}
     out['surfz']= mean_surfz
@@ -98,6 +106,8 @@ def calcDerivProps(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.):
     out['vcdvc_err']= std_vcdvc
     out['rd']= mean_rd
     out['rd_err']= std_rd
+    out['pout']= mean_pout
+    out['pout_err']= std_pout
     return out
 
 def rawDerived(marglogl,options,zh=400.,vo=1.,dlnvcdlnr=0.):
