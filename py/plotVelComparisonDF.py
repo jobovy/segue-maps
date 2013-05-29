@@ -9,7 +9,7 @@ from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
 from fitDensz import _ZSUN
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
-from pixelFitDF import _REFR0, _REFV0, _VRSUN, _VTSUN, _VZSUN
+from pixelFitDF import _REFR0, _REFV0, _VRSUN, _VTSUN, _VZSUN, _SZHALO
 from plotDensComparisonDFMulti import getMultiComparisonBins, get_median_potential
 _legendsize= 16
 _NOTDONEYET= True
@@ -62,6 +62,7 @@ def plotVelComparisonDF(options,args):
     if options.singles:
         run_abundance_singles_plotdens(options,args,fehs,afes)
         return None
+    normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
     ##########POTENTIAL PARAMETERS####################
     potparams1= numpy.array([numpy.log(2.6/8.),220./220.,numpy.log(400./8000.),0.2,0.])
     potparams2= numpy.array([numpy.log(2.8/8.),220./220,numpy.log(400./8000.),0.4,0.])
@@ -131,7 +132,8 @@ def plotVelComparisonDF(options,args):
                               lnsr,
                               szs[indx[2]],
                               numpy.log(8./_REFR0),
-                              srs[indx[1]],0.,#pouts[indx[4]],
+                              srs[indx[1]],
+                              logl[3,0,0,3,indx[0],indx[1],indx[2],2],#pouts[indx[4]],
                               0.,0.,0.,0.,0.])
     else:
         tparams= numpy.array([0.,hrs[indx[0]],
@@ -184,7 +186,7 @@ def plotVelComparisonDF(options,args):
             bins= 39
         xlabel=r'$V_T\ [\mathrm{km\,s}^{-1}]$'
     thisdata= binned(fehs[pop],afes[pop])
-    velps[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs)
+    velps[cumulndata:cumulndata+len(thisdata),:]= calc_model(tparams,options,thisdata,vs,normintstuff=normintstuff)
     alts= True
     if alts:
         indx= numpy.unravel_index(numpy.argmax(logl[4,0,0,4,:,:,:,0]),
@@ -328,7 +330,7 @@ def plotVelComparisonDF(options,args):
     bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.type+'dist_szvsz.'+options.ext)
     return None
 
-def calc_model(params,options,data,vs):
+def calc_model(params,options,data,vs,normintstuff=None):
     out= numpy.zeros((len(data),options.nv))
     #Model
     vo= get_vo(params,options,1)
@@ -345,6 +347,16 @@ def calc_model(params,options,data,vs):
         hsz= dfparams[4]/ro
         #Setup
         qdf= quasiisothermaldf(hr,sr,sz,hsr,hsz,pot=pot,aA=aA,cutcounter=True)
+    if not params[6] == 0.:
+        print "Calculating normalization of qdf ..."
+        normalization_qdf= calc_normint(qdf,0,normintstuff,params,1,options,
+                                        -numpy.finfo(numpy.dtype(numpy.float64)).max)
+        print "Calculating normalization of outliers ..."
+        normalization_out= calc_normint(qdf,0,normintstuff,params,1,options,
+                                        0.,fqdf=0.)   
+    else:
+        normalization_qdf= 0.
+        normalization_out= 1.
     #Get coordinates
     R= ((ro*_REFR0-data.xc)**2.+data.yc**2.)**(0.5)/ro/_REFR0
     z= (data.zc+_ZSUN)/ro/_REFR0
@@ -368,7 +380,7 @@ def calc_model(params,options,data,vs):
     else:
         cov_vxvyvz= None # FOR MULTI
     if not options.multi is None:
-        multOut= multi.parallel_map((lambda x: _calc_model_one(x,R,z,vs,qdf,options,data,params,cov_vxvyvz,vo)),
+        multOut= multi.parallel_map((lambda x: _calc_model_one(x,R,z,vs,qdf,options,data,params,cov_vxvyvz,vo,norm=normalization_qdf/normalization_out/12.)),
                                     range(len(data)),
                                     numcores=numpy.amin([len(data),
                                                          multiprocessing.cpu_count(),
@@ -380,6 +392,8 @@ def calc_model(params,options,data,vs):
             if options.type.lower() == 'vz':
                 #thisp= numpy.array([qdf.pvz(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
                 thisp= qdf.pvz(vs/_REFV0/vo,R[ii]+numpy.zeros(len(vs)),z[ii]+numpy.zeros(len(vs)),ngl=options.ngl,gl=True)
+                if not params[6] == 0.:
+                    thisp+= params[6]*normalization_qdf/normalization_out/12./_SZHALO*_REFV0*vo*numpy.exp(-0.5*vs**2./_SZHALO**2.)*vo**2./numpy.sqrt(2.*math.pi)
                 ndimage.filters.gaussian_filter1d(thisp,
                                                   data.vzc_err[ii]/(vs[1]-vs[0]),
                                                   output=thisp)
@@ -400,9 +414,11 @@ def calc_model(params,options,data,vs):
             out[ii,:]= thisp/numpy.sum(thisp)/(vs[1]-vs[0])
     return out
 
-def _calc_model_one(ii,R,z,vs,qdf,options,data,params,cov_vxvyvz,vo):
+def _calc_model_one(ii,R,z,vs,qdf,options,data,params,cov_vxvyvz,vo,norm=0.):
     if options.type.lower() == 'vz':
         thisp= qdf.pvz(vs/_REFV0/vo,R[ii]+numpy.zeros(len(vs)),z[ii]+numpy.zeros(len(vs)),ngl=options.ngl,gl=True)
+        if not params[6] == 0.:
+            thisp+= params[6]*norm/_SZHALO*_REFV0*vo*numpy.exp(-0.5*vs**2./_SZHALO**2.)*vo**2./numpy.sqrt(2.*math.pi)
         #thisp= numpy.array([qdf.pvz(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
         ndimage.filters.gaussian_filter1d(thisp,
                                           data.vzc_err[ii]/(vs[1]-vs[0]),

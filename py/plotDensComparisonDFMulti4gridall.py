@@ -482,7 +482,8 @@ def run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
                 data,
                 colordist,fehdist,fehmin,fehmax,feh,sf,rmin,rmax,grmin,grmax)
 
-def calc_model(params,options,pop,_retsurfz=False):
+def calc_model(params,options,pop,_retsurfz=False,
+               normintstuff=None):
     nrs, nzs= 5, 5#21, 21
     thisrmin, thisrmax= 4./_REFR0, 15./_REFR0
     thiszmin, thiszmax= 0., .8
@@ -513,6 +514,14 @@ def calc_model(params,options,pop,_retsurfz=False):
                                                     numpy.log(surfgrid),
                                                     kx=3,ky=3,
                                                     s=0.)
+    if not params[6] == 0.:
+        print "Calculating normalization of qdf ..."
+        normalization_qdf= calc_normint(qdf,pop,normintstuff,params,1,options,
+                                        -numpy.finfo(numpy.dtype(numpy.float64)).max)
+        print "Calculating normalization of outliers ..."
+        normalization_out= calc_normint(qdf,pop,normintstuff,params,1,options,
+                                        0.,fqdf=0.)
+        return (surfInterp,params[6]*normalization_qdf/normalization_out/12.)
     if _retsurfz:
         return (surfInterp,qdf.surfacemass_z(1.,ngl=options.ngl))
     else:

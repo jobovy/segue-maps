@@ -137,7 +137,8 @@ def plotDensComparisonDF(options,args):
                               lnsr,
                               szs[indx[2]],
                               numpy.log(8./_REFR0),
-                              srs[indx[1]],0.,#pouts[indx[4]],
+                              srs[indx[1]],
+                              logl[3,0,0,3,indx[0],indx[1],indx[2],2],#pouts[indx[4]],
                               0.,0.,0.,0.,0.])
     else:
         tparams= numpy.array([0.,hrs[indx[0]],
@@ -151,9 +152,10 @@ def plotDensComparisonDF(options,args):
     options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
     tparams= set_potparams(potparams1,tparams,options,1)
     #Set up density models and their parameters
-    model1= interpDens
+    model1= interpDenswoutlier
     print "Working on model 1 ..."
-    paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+    paramsInterp= calc_model(tparams,options,0,_retsurfz=False,
+                             normintstuff=normintstuff)
     params1= paramsInterp
     if True:
         indx= numpy.unravel_index(numpy.argmax(logl[4,0,0,4,:,:,:,0]),
@@ -182,7 +184,7 @@ def plotDensComparisonDF(options,args):
         tparams= set_potparams(potparams2,tparams,options,1)
         model2= interpDens
         print "Working on model 2 ..."
-        paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+        paramsInterp= calc_model(tparams,options,0,_retsurfz=False)
         params2= paramsInterp
         indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,8,:,:,:,0]),
                                   logl[3,0,0,8,:,:,:,0].shape)
@@ -209,7 +211,7 @@ def plotDensComparisonDF(options,args):
         tparams= set_potparams(potparams3,tparams,options,1)
         model3= interpDens
         print "Working on model 3 ..."
-        paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+        paramsInterp= calc_model(tparams,options,0,_retsurfz=False)
         params3= paramsInterp
     data= binned(fehs[pop],afes[pop])
     #Setup everything for selection function
