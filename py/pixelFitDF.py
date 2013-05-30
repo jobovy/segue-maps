@@ -87,7 +87,7 @@ _NEWSAVE= True
 _INTEGRATEMARGINALIZE= True
 _VARYHSZ= True
 _RESUBMIT= False
-_FIXOUT= False
+_FIXOUT= True
 #GL
 _DEFAULTNGL=10
 _DEFAULTNGL2=20
@@ -1825,7 +1825,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     #Setup out
     if _NEWSAVE:
         out= numpy.zeros(5)
-        tmp_out= numpy.zeros((toptions.ndvts,toptions.npouts))
+        tmp_out= numpy.zeros((toptions.ndvts,toptions.npouts,toptions.npouts))
         tmp_out2= numpy.zeros((toptions.ndvts,toptions.npouts))
     else:
         out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1))
@@ -1865,6 +1865,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
                                              rgs,kappas,nus,Omegas)
     #tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
     tnormalization_out= normalization_out*vo**3.
+    tnormalization_dout= normalization_dout*vo**3.
     if not _FIXOUT:
         logoutfrac= numpy.log(normalization_qdf/tnormalization_out)
         tnormalization_out= normalization_qdf
@@ -1894,6 +1895,8 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     sphihalo= _SPHIHALO/vo/_REFV0
     szhalo= _SZHALO/vo/_REFV0
     #Evaluate outliers
+    dblexphr= monoAbundanceMW.hr(fehs[0],afes[0],k=(options.sample.lower() == 'k'))
+    dblexphz= monoAbundanceMW.hz(fehs[0],afes[0],k=(options.sample.lower() == 'k'))
     if options.marginalizevrvt:
         if _INTEGRATEMARGINALIZE:
             szhalo= numpy.sqrt(datasz**2.+szhalo**2.)
@@ -1904,6 +1907,10 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
             -numpy.log(szhalo)-fac*numpy.log(300./_REFV0/vo)\
             -0.5*(vz**2./szhalo**2.)+2.*numpy.log(vo)\
             -0.5*numpy.log(2.*math.pi),(ndata,toptions.nmcerr))
+#        data_lndf[:,1*toptions.nmcerr:2*toptions.nmcerr]= numpy.reshape(numpy.log(_DblExpDensity(R*_REFR0*ro,z*_REFR0*ro,[numpy.log(dblexphz/1000.),-numpy.log(dblexphr)]))\
+#            -numpy.log(szhalo)-fac*numpy.log(300./_REFV0/vo)\
+#            -0.5*(vz**2./szhalo**2.)+2.*numpy.log(vo)\
+#            -0.5*numpy.log(2.*math.pi),(ndata,toptions.nmcerr))
     elif options.marginalizevt:
         if _INTEGRATEMARGINALIZE:
             szhalo= numpy.sqrt(datasz**2.+szhalo**2.)
@@ -1922,10 +1929,12 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
             -1.5*numpy.log(2.*math.pi)
     if _FIXOUT:
         data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(tnormalization_out)
+#        data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]-= numpy.log(tnormalization_dout)
     #Run through the grid
     if _NEWESTDFRANGES:
         dvts= numpy.zeros(1)#numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
         pouts= numpy.linspace(10.**-5.,.5,options.npouts)
+#        pouts2= numpy.linspace(10.**-5.,.45,options.npouts)
         #pouts= pouts/(1.-pouts)
     elif _NEWDFRANGES:
         dvts= numpy.linspace(-0.35,0.05,options.ndvts) #could be centered on (0.8Vc-200.)/220.
@@ -1998,29 +2007,59 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
         for jj in range(toptions.npouts):
             #Sum data and outlier df, for all MC samples
             data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]+= numpy.log(pouts[jj])
+#            for kk in range(toptions.npouts):
+                #Sum data and outlier df, for all MC samples
+#                data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]+= numpy.log(pouts2[kk])
             if _FIXOUT:
-                data_lndf[:,0:toptions.nmcerr]+= numpy.log(1.-pouts[jj])
+                data_lndf[:,0:toptions.nmcerr]+= numpy.log(1.-pouts[jj])#-pouts2[kk])
             sumdata_lndf= mylogsumexp(data_lndf,axis=1)
             if _FIXOUT:
                 tmp_out[ii,jj]= numpy.sum(sumdata_lndf)
-                poutlier= mylogsumexp(data_lndf[:,toptions.nmcerr:2*toptions.nmcerr],axis=1)-sumdata_lndf
-                tmp_out2[ii,jj]= numpy.sum(numpy.exp(poutlier))/ndata
+#                    poutlier= mylogsumexp(data_lndf[:,toptions.nmcerr:2*toptions.nmcerr],axis=1)-sumdata_lndf
+#                    tmp_out2[ii,jj]= numpy.sum(numpy.exp(poutlier))/ndata
             else:
                 tmp_out[ii,jj]= numpy.sum(sumdata_lndf)\
                     -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out)+numpy.log(toptions.nmcerr)) #latter so we can compare
             #tmp_out1[ii,jj,kk,ll]= numpy.sum(sumdata_lndf)
             #tmp_out2[ii,jj,kk,ll]= -ndata*(numpy.log(normalization_qdf+pouts[jj]*tnormalization_out+pouts[kk]*tnormalization_dout)+numpy.log(toptions.nmcerr)) #latter so we can compare
             if _FIXOUT:
-                data_lndf[:,0:toptions.nmcerr]-= numpy.log(1.-pouts[jj])
+                data_lndf[:,0:toptions.nmcerr]-= numpy.log(1.-pouts[jj])#-pouts2[kk])
+#            data_lndf[:,2*toptions.nmcerr:3*toptions.nmcerr]-= numpy.log(pouts2[kk])
             data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]-= numpy.log(pouts[jj])
  #Reset
     out[0]= logsumexp(tmp_out)
     indx= numpy.unravel_index(numpy.argmax(tmp_out),tmp_out.shape)
-    out[1]= dvts[indx[0]]
+    out[1]= normalization_qdf*pouts[indx[1]]/tnormalization_out
     out[2]= pouts[indx[1]]
-    if _FIXOUT:
-        out[3]= tmp_out2[indx[0],indx[1]]
-    #pdb.set_trace()
+#    if _FIXOUT:
+#        out[3]= tmp_out2[indx[0],indx[1]]
+    if False:
+        #Calculate outlier probability for best-fit
+        ii= 0
+        for ll in range(options.ngl):
+            mdata_df[:,ll]= qdf.pvz(vzgl[:,ll],
+                                    R.flatten(),
+                                    z.flatten(),
+                                    gl=True,
+                                    ngl=options.ngl,
+                                    _jr=datajrs[:,ll,ii,:].flatten(),
+                                    _lz=datalzs[:,ll,ii,:].flatten(),
+                                    _jz=datajzs[:,ll,ii,:].flatten(),
+                                    _rg=datargs[:,ll,ii,:].flatten(),
+                                    _kappa=datakappas[:,ll,ii,:].flatten(),
+                                    _nu=datanus[:,ll,ii,:].flatten(),
+                                    _Omega=dataOmegas[:,ll,ii,:].flatten(),
+                                    _sigmaR1=datanormsrs.flatten())
+        data_lndf[:,0]= numpy.log(numpy.sum(mdata_df*vzglw,axis=1)*datasz*2.)+2.*numpy.log(vo)
+        if _FIXOUT:
+            data_lndf[:,0:toptions.nmcerr]-= numpy.log(normalization_qdf)
+        data_lndf[:,toptions.nmcerr:2*toptions.nmcerr]+= numpy.log(pouts[indx[1]])
+        data_lndf[:,0:toptions.nmcerr]+= numpy.log(1.-pouts[jj])
+        sumdata_lndf= mylogsumexp(data_lndf,axis=1)
+        if _FIXOUT:
+            tmp_out[ii,jj]= numpy.sum(sumdata_lndf)
+            poutlier= mylogsumexp(data_lndf[:,toptions.nmcerr:2*toptions.nmcerr],axis=1)-sumdata_lndf
+        pdb.set_trace()
     return out
 
 ##PRIORS
@@ -2211,14 +2250,15 @@ def approxFitResult(feh,afe,relerr=False,sample='g'):
         return (lnhrin,lnsrin,lnszin)
     
 ##SETUP AND CALCULATE THE NORMALIZATION INTEGRAL
-def calc_normint(qdf,indx,normintstuff,params,npops,options,logoutfrac):
+def calc_normint(qdf,indx,normintstuff,params,npops,options,logoutfrac,
+                     fqdf=1.):
     """Calculate the normalization integral"""
     if options.mcall or options.mcwdf: #evaluation is the same for these
         return calc_normint_mcall(qdf,indx,normintstuff,params,npops,options,
                                   logoutfrac)
     else:
         return calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,
-                                logoutfrac)
+                                logoutfrac,fqdf=fqdf)
 
 def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     """calculate the normalization integral by monte carlo integrating over everything"""
@@ -2274,7 +2314,8 @@ def calc_normint_mcall(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     #print numpy.log(numpy.mean(out)), numpy.std(out)/numpy.mean(out)/numpy.sqrt(options.nmc)
     return numpy.mean(out)
 
-def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
+def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac,
+                     fqdf=1.):
     """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
     thisnormintstuff= normintstuff[indx]
     if _PRECALCVSAMPLES:
@@ -2288,7 +2329,7 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
     halodens= ro*outDens(1.,0.,None)
     globalInterp= True
     start= time.time()
-    if globalInterp:
+    if globalInterp and not fqdf == 0.:
         nrs, nzs= _SURFNRS, _SURFNZS
         thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
         thiszmin, thiszmax= 0., .8
@@ -2333,10 +2374,12 @@ def calc_normint_mcv(qdf,indx,normintstuff,params,npops,options,logoutfrac):
 #                                                        s=10.*float(nzs*nrs))
     if options.mcvalt:
         #Alternative manner that uses well-tested compareDataModel code
-        if _SURFSUBTRACTEXPON:
+        if _SURFSUBTRACTEXPON and not fqdf == 0.:
             compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0)-x/ro/_REFR0/ehr-numpy.fabs(y)/ehz/ro/_REFR0)+outfrac*halodens
-        else:
+        elif not fqdf == 0.:
             compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0))+outfrac*halodens
+        else:
+            compare_func= lambda x,y,du: outfrac*halodens
         distfac= 10.**(get_dm(params,options)/5.)
         mid= time.time()
         n= comparernumberPlate(compare_func,
@@ -5220,7 +5263,7 @@ def get_options():
                       help="Number of scale lengths to use in grid-based search")
     parser.add_option("--nsrs",dest='nsrs',default=8,type='int',
                       help="Number of radial dispersions to use in grid-based search")
-    parser.add_option("--nszs",dest='nszs',default=8,type='int',
+    parser.add_option("--nszs",dest='nszs',default=16,type='int',
                       help="Number of vertical dispersions to use in grid-based search")
     if _NEWESTDFRANGES:
         parser.add_option("--ndvts",dest='ndvts',default=1,type='int',
