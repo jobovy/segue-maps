@@ -12,15 +12,20 @@ from galpy import potential
 import monoAbundanceMW
 from segueSelect import _ERASESTR
 from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0, \
-    setup_potential, setup_aA, setup_dfgrid, nnsmooth
+    setup_potential, setup_aA, setup_dfgrid, nnsmooth, read_rawdata
 from calcDerivProps import rawDerived, calcSurfErr, calcSurfRdCorr, \
     calcSurfRdCorrZ, calcSurfErrZ, calcDerivProps
 from plotDensComparisonDFMulti4gridall import getMultiComparisonBins
 from selectFigs import _squeeze
+from pixelFitDens import pixelAfeFeh
 _NOTDONEYET= True
 #lABELS
 labels= {}
 labels['pout']= r'$P_{\mathrm{out}}$'
+labels['fracfaint']= r'$\mathrm{Fraction\ on\ faint\ plates}$'
+labels['nfaint']= r'$\mathrm{Number\ on\ faint\ plates}$'
+labels['hz']= r'$h_z\ (\mathrm{pc})$'
+labels['hr']= r'$h_R\ (\mathrm{kpc})$'
 labels['rd']= r'$R_d\ (\mathrm{kpc})$'
 labels['zh']= r'$z_h\ (\mathrm{pc})$'
 labels['vcdvcro']= r'$V_{c,\mathrm{disk}}/V_c\,(R_0)$'
@@ -36,6 +41,10 @@ labels['surfz']= r'$\Sigma(R_0,|Z|\leq 1.1\,\mathrm{kpc})\ (M_{\odot}\,\mathrm{p
 #RANGES
 ranges= {}
 ranges['pout']= [0.,0.5]
+ranges['fracfaint']= [0.,0.5]
+ranges['nfaint']= [0.,200.]
+ranges['hz']= [150.,1000.]
+ranges['hr']= [1.5,5.]
 ranges['rd']= [1.9,3.5]
 ranges['surfz']= [50.,100.]
 ranges['surfzdisk']= [20.,90.]
@@ -258,13 +267,69 @@ def plot2d(options,args):
         derivProps= []
         for ii in range(npops):
             derivProps.append(calcAllDerivProps(ii,options,args))
+    xprop= options.subtype.split(',')[0]
+    yprop= options.subtype.split(',')[1]
+    if xprop == 'fracfaint' or yprop == 'fracfaint':
+        #Read the data
+        print "Reading the data ..."
+        raw= read_rawdata(options)
+        #Bin the data
+        binned= pixelAfeFeh(raw,dfeh=0.1,dafe=0.05)
+        for ii in range(npops):
+            if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                            k=(options.sample.lower() == 'k')) /8.) > -0.5 \
+                                            or (options.sample.lower() == 'g' and ii < 6) \
+                                            or (options.sample.lower() == 'k' and ii < 7):
+                                            continue
+            data= binned(fehs[ii],afes[ii])
+            indx= (data.dered_r > 17.8)
+            derivProps[ii]['fracfaint']= numpy.sum(indx)/float(len(indx))
+            derivProps[ii]['fracfaint_err']= 0.
+    if xprop == 'nfaint' or yprop == 'nfaint':
+        #Read the data
+        print "Reading the data ..."
+        raw= read_rawdata(options)
+        #Bin the data
+        binned= pixelAfeFeh(raw,dfeh=0.1,dafe=0.05)
+        for ii in range(npops):
+            if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                            k=(options.sample.lower() == 'k')) /8.) > -0.5 \
+                                            or (options.sample.lower() == 'g' and ii < 6) \
+                                            or (options.sample.lower() == 'k' and ii < 7):
+                                            continue
+            data= binned(fehs[ii],afes[ii])
+            indx= (data.dered_r > 17.8)
+            derivProps[ii]['nfaint']= numpy.sum(indx)
+            derivProps[ii]['nfaint_err']= 0.
+    if xprop == 'hz' or yprop == 'hz':
+        for ii in range(npops):
+            if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                            k=(options.sample.lower() == 'k')) /8.) > -0.5 \
+                                            or (options.sample.lower() == 'g' and ii < 6) \
+                                            or (options.sample.lower() == 'k' and ii < 7):
+                                            continue
+            hz, hzerr= monoAbundanceMW.hz(fehs[ii],afes[ii],
+                                          k=(options.sample.lower() == 'k'),
+                                          err=True)
+            derivProps[ii]['hz']= hz
+            derivProps[ii]['hz_err']= hzerr    
+    if xprop == 'hr' or yprop == 'hr':
+        for ii in range(npops):
+            if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                            k=(options.sample.lower() == 'k')) /8.) > -0.5 \
+                                            or (options.sample.lower() == 'g' and ii < 6) \
+                                            or (options.sample.lower() == 'k' and ii < 7):
+                                            continue
+            hr, hrerr= monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                          k=(options.sample.lower() == 'k'),
+                                          err=True)
+            derivProps[ii]['hr']= hr
+            derivProps[ii]['hr_err']= hrerr    
     #Load into plotthis
     plotthis_x= numpy.zeros(npops)+numpy.nan
     plotthis_y= numpy.zeros(npops)+numpy.nan
     plotthis_x_err= numpy.zeros(npops)+numpy.nan
     plotthis_y_err= numpy.zeros(npops)+numpy.nan
-    xprop= options.subtype.split(',')[0]
-    yprop= options.subtype.split(',')[1]
     for ii in range(npops):
         if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
                                          k=(options.sample.lower() == 'k')) /8.) > -0.5 \
