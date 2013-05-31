@@ -68,7 +68,7 @@ def plotDensComparisonDF(options,args):
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
     ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(2.6/8.),220./220.,numpy.log(400./8000.),0.2,0.])
+    potparams1= numpy.array([numpy.log(2.6/8.),220./220.,numpy.log(400./8000.),0.66666666666,0.])
     potparams2= numpy.array([numpy.log(2.8/8.),220./220,numpy.log(400./8000.),0.4,0.])
     #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
     potparams3= numpy.array([numpy.log(2.6/8.),220./220.,
@@ -127,8 +127,8 @@ def plotDensComparisonDF(options,args):
     #dvts= numpy.linspace(-0.05,0.05,options.ndvts)
     pouts= numpy.linspace(10.**-5.,.5,options.npouts)
     #indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,:,:,0,0]),
-    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,0]),
-                              logl[3,0,0,3,:,:,:,0].shape)
+    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,10,:,:,:,0]),
+                              logl[3,0,0,10,:,:,:,0].shape)
     #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
     if _VARYHSZ:
         tparams= numpy.array([0.,hrs[indx[0]],
@@ -138,7 +138,7 @@ def plotDensComparisonDF(options,args):
                               szs[indx[2]],
                               numpy.log(8./_REFR0),
                               srs[indx[1]],
-                              logl[3,0,0,3,indx[0],indx[1],indx[2],2],#pouts[indx[4]],
+                              0.06,#logl[3,0,0,10,indx[0],indx[1],indx[2],2],#pouts[indx[4]],
                               0.,0.,0.,0.,0.])
     else:
         tparams= numpy.array([0.,hrs[indx[0]],
