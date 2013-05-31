@@ -48,7 +48,8 @@ import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
     segueSelect, _mr_gi, _gi_gr, _ERASESTR, _append_field_recarray, \
     ivezic_dist_gr
-from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS, _DblExpDensity
+from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS, _DblExpDensity, \
+    _PowerDensity
 from compareDataModel import _predict_rdist_plate, comparernumberPlate
 from pixelFitDens import pixelAfeFeh
 import AnDistance
@@ -1825,7 +1826,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     #Setup out
     if _NEWSAVE:
         out= numpy.zeros(5)
-        tmp_out= numpy.zeros((toptions.ndvts,toptions.npouts,toptions.npouts))
+        tmp_out= numpy.zeros((toptions.ndvts,toptions.npouts))
         tmp_out2= numpy.zeros((toptions.ndvts,toptions.npouts))
     else:
         out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1))
@@ -1865,7 +1866,7 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
                                              rgs,kappas,nus,Omegas)
     #tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
     tnormalization_out= normalization_out*vo**3.
-    tnormalization_dout= normalization_dout*vo**3.
+#    tnormalization_dout= normalization_dout*vo**3.
     if not _FIXOUT:
         logoutfrac= numpy.log(normalization_qdf/tnormalization_out)
         tnormalization_out= normalization_qdf
@@ -1893,10 +1894,11 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
         mdata_df= numpy.zeros((ndata,toptions.ngl))
     srhalo= _SRHALO/vo/_REFV0
     sphihalo= _SPHIHALO/vo/_REFV0
-    szhalo= _SZHALO/vo/_REFV0
+    szhalo= _SZHALO/vo/_REFV0*numpy.exp(-(R-1.)/6.*_REFR0*ro)
     #Evaluate outliers
-    dblexphr= monoAbundanceMW.hr(fehs[0],afes[0],k=(options.sample.lower() == 'k'))
+#    dblexphr= monoAbundanceMW.hr(fehs[0],afes[0],k=(options.sample.lower() == 'k'))
     dblexphz= monoAbundanceMW.hz(fehs[0],afes[0],k=(options.sample.lower() == 'k'))
+    if dblexphz > 500.: szhalo*= 2.
     if options.marginalizevrvt:
         if _INTEGRATEMARGINALIZE:
             szhalo= numpy.sqrt(datasz**2.+szhalo**2.)
