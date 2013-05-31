@@ -3,7 +3,8 @@ import sys
 import numpy
 import cPickle as pickle
 from optparse import OptionParser
-from galpy.potential import LogarithmicHaloPotential, MWPotential
+from galpy.potential import LogarithmicHaloPotential, MWPotential, \
+    evaluateDensities
 from galpy.orbit import Orbit
 from segueSelect import _append_field_recarray, _ERASESTR
 from fitSigz import readData, _APOORFEHRANGE, _ARICHFEHRANGE, _ZSUN
@@ -13,8 +14,8 @@ def calcOrbits(parser):
     #Read data
     XYZ,vxvyvz,cov_vxvyvz,rawdata= readData(metal='allall',
                                             sample=options.sample,
-                                            loggmin=False,
-                                            snmin=False,
+                                            loggmin=4.2,
+                                            snmin=15.,
                                             select=options.select)
     #Define potential
     if options.logp:
@@ -39,6 +40,7 @@ def calcOrbits(parser):
     if not _ORBITSLOADED:
         #First calculate orbits
         es, rmeans, rperis, raps, zmaxs = [], [], [], [], []
+        densrmeans, vzrmeans= [], []
         for ii in range(len(rawdata)):
             sys.stdout.write('\r'+"Working on object %i/%i" % (ii,len(rawdata)))
             sys.stdout.flush()
@@ -52,6 +54,12 @@ def calcOrbits(parser):
             raps.append(o.rap())
             zmaxs.append(o.zmax())
             rmeans.append(0.5*(o.rperi()+o.rap()))
+            Rs= o.R(ts)
+            vz2= o.vz(ts)**2.
+            dens= evaluateDensities(Rs,0.*Rs,pot)
+            densrmeans.append(numpy.sum(dens*Rs)/numpy.sum(dens))
+            vzrmeans.append(numpy.sum(vz2*Rs)/numpy.sum(vz2))
+#            print " ", rmeans[-1], densrmeans[-1], vzrmeans[-1]
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
         es= numpy.array(es)
@@ -64,6 +72,8 @@ def calcOrbits(parser):
         orbits= _append_field_recarray(orbits,'rperi',rperis)
         orbits= _append_field_recarray(orbits,'rap',raps)
         orbits= _append_field_recarray(orbits,'zmax',zmaxs)
+        orbits= _append_field_recarray(orbits,'densrmean',densrmeans)
+        orbits= _append_field_recarray(orbits,'vzrmean',vzrmeans)
         #Pickle
         savefile= open(args[0],'wb')
         pickle.dump(orbits,savefile)
