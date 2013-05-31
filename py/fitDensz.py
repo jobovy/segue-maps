@@ -1210,6 +1210,12 @@ def _DblExpDensity(R,Z,params):
     return 1./2./numpy.exp(params[0])*numpy.exp(-(R-8.)/hR
                       -numpy.fabs(Z)/numpy.exp(params[0]))
     
+def _PowerDensity(R,Z,params):
+    """Power-law density model
+    params= [alpha] in r^-alpha"""
+    r= R*R+Z*Z
+    return r**(-params[0]/2.)
+    
 def _TwoVerticalDensity(R,Z,params):
     """Double exponential disk with two vertical scale-heights
     params= [loghz1,loghz2,loghR,Pbad]"""
