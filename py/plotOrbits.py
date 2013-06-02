@@ -35,6 +35,10 @@ def plotOrbits(parser):
                 continue
             if options.type == 'rmean':
                 vals= data.rmean*8.
+            elif options.type == 'densrmean':
+                vals= data.densrmean*8.
+            elif options.type == 'vzrmean':
+                vals= data.vzrmean*8.
             elif options.type == 'e':
                 vals= data.e
             elif options.type == 'rap':
@@ -56,6 +60,10 @@ def plotOrbits(parser):
     if options.type == 'rmean':
         vmin, vmax= 6., 10.
         zlabel=r'$R_{\mathrm{mean}}\ [\mathrm{kpc}]$'
+    elif  options.type == 'densrmean' \
+            or options.type == 'vzrmean':
+        vmin, vmax= 4., 10.
+        zlabel=r'$R_{\mathrm{mean}}\ [\mathrm{kpc}]$'    
     elif options.type == 'rap':
         vmin, vmax= 6., 10.
         zlabel=r'$R_{\mathrm{apo}}\ [\mathrm{kpc}]$'
