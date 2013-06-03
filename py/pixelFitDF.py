@@ -1552,33 +1552,33 @@ def setup_dfgrid(fehs,afes,options):
     #Further adjustements based on inspection of PDFs
     if options.andistances:
         if options.sample.lower() == 'g':
-        abindx= abToIndx(fehs[0],afes[0],sample=options.sample.lower())
-        if abindx == 0 or abindx == 1 or abindx == 2:
-            szs-= 0.15
-        elif abindx == 4 or abindx == 6:
-            szs-= 0.1
-        elif abindx == 7:
-            szs-= 0.15
-        elif abindx == 9 or abindx == 10:
-            szs-= 0.08
-        elif abindx == 11:
-            szs-= 0.15
-        elif abindx == 12:
-            szs-= 0.1
-        elif abindx == 14:
-            szs-= 0.2
-        elif abindx == 32:
-            szs-= 0.1
-        elif abindx == 39:
-            szs-= 0.15
-        elif abindx == 44:
-            szs+= 0.15
-        elif abindx == 50:
-            szs+= 0.30
-        elif abindx == 57:
-            szs+= 0.2
-        elif abindx == 58 or abindx == 59:
-            szs+= 0.15
+            abindx= abToIndx(fehs[0],afes[0],sample=options.sample.lower())
+            if abindx == 0 or abindx == 1 or abindx == 2:
+                szs-= 0.15
+            elif abindx == 4 or abindx == 6:
+                szs-= 0.1
+            elif abindx == 7:
+                szs-= 0.15
+            elif abindx == 9 or abindx == 10:
+                szs-= 0.08
+            elif abindx == 11:
+                szs-= 0.15
+            elif abindx == 12:
+                szs-= 0.1
+            elif abindx == 14:
+                szs-= 0.2
+            elif abindx == 32:
+                szs-= 0.1
+            elif abindx == 39:
+                szs-= 0.15
+            elif abindx == 44:
+                szs+= 0.15
+            elif abindx == 50:
+                szs+= 0.30
+            elif abindx == 57:
+                szs+= 0.2
+            elif abindx == 58 or abindx == 59:
+                szs+= 0.15
     return (hrs,srs,szs)
 
 def abToIndx(feh,afe,sample='g'):
