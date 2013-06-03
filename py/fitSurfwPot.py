@@ -12,6 +12,7 @@ import bovy_mcmc
 from pixelFitDF import _REFR0, _REFV0, setup_potential, logprior_dlnvcdlnr
 from fitDensz import cb
 from calcDFResults import setup_options
+import readTerminalData
 def fitSurfwPot(options,args):
     #First read the surface densities
     if not options.surffile is None and os.path.exists(options.surffile):
@@ -22,12 +23,21 @@ def fitSurfwPot(options,args):
         surffile.close()
     else:
         raise IOError("-i has to be set")
+    if True:
+        surfrs[24]= numpy.nan
+        surfrs[44]= numpy.nan
     indx= True - numpy.isnan(surfrs)
     surfrs= surfrs[indx]
     surfs= surfs[indx]
     surferrs= surferrs[indx]
     #Read the terminal velocity data if necessary
-    
+    if options.fitterminal:
+        cl_glon, cl_vterm, cl_corr= readTerminalData.readClemens(dsinl=options.termdsinl)
+        mc_glon, mc_vterm, mc_corr= readTerminalData.readMcClureGriffiths(dsinl=options.termdsinl)
+        termdata= (cl_glon,cl_vterm/_REFV0,cl_corr,
+                   mc_glon,mc_vterm/_REFV0,mc_corr)
+    else:
+        termdata= None
     #Setup
     if options.mcsample:
         if not options.initfile is None and os.path.exists(options.initfile):
@@ -37,14 +47,18 @@ def fitSurfwPot(options,args):
         else:
             raise IOError("--init has to be set when MCMC sampling")
     else:
-        init_params= numpy.array([numpy.log(2.5/_REFR0),1.,numpy.log(400./8000.),0.5,0.])
+        init_params= [numpy.log(2.5/_REFR0),1.,numpy.log(400./8000.),0.5,0.]
+        if options.fitterminal: #Add Solar velocity parameters
+            init_params.extend([0.,0.])
+        init_params= numpy.array(init_params)
     #Fit/sample
     potoptions= setup_options(None)
     potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
     potoptions.fitdvt= False
     funcargs= (options,surfrs,surfs,surferrs,potoptions,
                numpy.log(1.5/8.),numpy.log(6./8.),
-               numpy.log(100./8000.),numpy.log(800./8000.))
+               numpy.log(100./8000.),numpy.log(500./8000.),
+               termdata)
     if not options.mcsample:
         #Optimize likelihood
         params= optimize.fmin_powell(like_func,init_params,
@@ -87,6 +101,10 @@ def fitSurfwPot(options,args):
                  [0.,0.],
                  [0.,1.],
                  [0.,0.]]
+        if options.fitterminal:
+            isDomainFinite.extend([[False,False],
+                                   [False,False]])
+            domain.extend([[0.,0.],[0.,0.]])
         thesesamples= bovy_mcmc.markovpy(init_params,
                                          0.01,
                                          pdf_func,
@@ -103,7 +121,8 @@ def fitSurfwPot(options,args):
 def like_func(params,options,surfrs,surfs,surferrs,
               potoptions,
               rdmin,rdmax,
-              zhmin,zhmax):
+              zhmin,zhmax,
+              termdata):
     #Check ranges
     if params[1] < 0.: return numpy.finfo(numpy.dtype(numpy.float64)).max
     if params[3] < 0. or params[3] > 1.: return numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -117,12 +136,33 @@ def like_func(params,options,surfrs,surfs,surferrs,
     #Calculate model surface density at surfrs
     vo= params[1]
     ro= 1.
-    modelsurfs= numpy.zeros_like(surfs)
-    for ii in range(len(surfrs)):
-        modelsurfs[ii]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(surfrs[ii]/_REFR0,zz,pot)),0.,1.1/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
-    out= 0.5*numpy.sum((surfs-modelsurfs)**2./surferrs**2.)
+    if not options.dontfitsurf:
+        modelsurfs= numpy.zeros_like(surfs)
+        for ii in range(len(surfrs)):
+            modelsurfs[ii]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(surfrs[ii]/_REFR0,zz,pot)),0.,1.1/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
+        out= 0.5*numpy.sum((surfs-modelsurfs)**2./surferrs**2.)
+    else:
+        out= 0.
     #Add terminal velocities
-    
+    if options.fitterminal:
+        vrsun= params[5]/vo
+        vtsun= params[6]/vo
+        cl_glon, cl_vterm, cl_corr, mc_glon, mc_vterm, mc_corr= termdata
+        #Calculate terminal velocities at data glon
+        cl_vterm_model= numpy.zeros_like(cl_vterm)
+        for ii in range(len(cl_glon)):
+            cl_vterm_model[ii]= potential.vterm(pot,cl_glon[ii])
+        cl_vterm_model+= vrsun/vo*numpy.cos(cl_glon/180.*numpy.pi)\
+            -vtsun/vo*numpy.sin(cl_glon/180.*numpy.pi)
+        mc_vterm_model= numpy.zeros_like(mc_vterm)
+        for ii in range(len(mc_glon)):
+            mc_vterm_model[ii]= potential.vterm(pot,mc_glon[ii])
+        mc_vterm_model+= vrsun/vo*numpy.cos(mc_glon/180.*numpy.pi)\
+            -vtsun/vo*numpy.sin(mc_glon/180.*numpy.pi)
+        cl_dvterm= (cl_vterm/vo-cl_vterm_model)/options.termsigma*_REFV0*vo
+        mc_dvterm= (mc_vterm/vo-mc_vterm_model)/options.termsigma*_REFV0*vo
+        out+= 0.5*numpy.sum(cl_dvterm*numpy.dot(cl_corr,cl_dvterm))
+        out+= 0.5*numpy.sum(mc_dvterm*numpy.dot(mc_corr,mc_dvterm))
     #Add priors
     if options.bovy09voprior:
         out+= 0.5*(vo-236./_REFV0)**2./(11./_REFV0)**2.
@@ -147,6 +187,18 @@ def get_options():
     #Data options
     parser.add_option("-i",dest='surffile',default=None,
                       help="Name of the file that has the surface densities")
+    parser.add_option("--dontfitsurf",action="store_true", 
+                      dest="dontfitsurf",
+                      default=False,
+                      help="If set, don't fit the surface-density")
+    parser.add_option("--fitterminal",action="store_true", 
+                      dest="fitterminal",
+                      default=False,
+                      help="If set, fit the terminal velocities")
+    parser.add_option("--termdsinl",dest='termdsinl',default=0.125,type='float',
+                      help="Correlation length for terminal velocity residuals")
+    parser.add_option("--termsigma",dest='termsigma',default=7.,type='float',
+                      help="sigma for terminal velocity residuals")
     #Fit options
     parser.add_option("--init",dest='initfile',default=None,
                       help="Name of the file that has the best-fits")

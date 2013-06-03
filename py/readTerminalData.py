@@ -5,7 +5,7 @@ def readClemens(dsinl=0.5/8.):
     glon= data[:,0]
     vterm= data[:,1]
     #Remove l < 30 and l > 80
-    indx= (glon > 30.)*(glon < 80.)
+    indx= (glon > 40.)*(glon < 80.)
     glon= glon[indx]
     vterm= vterm[indx]
     if bin:
@@ -26,7 +26,7 @@ def readMcClureGriffiths(dsinl=0.5/8.,bin=True):
     glon= data[:,0]
     vterm= data[:,1]
     #Remove l > 330 and l > 80
-    indx= (glon < 330.)*(glon > 280.)
+    indx= (glon < 320.)*(glon > 280.)
     glon= glon[indx]
     vterm= vterm[indx]
     if bin:
