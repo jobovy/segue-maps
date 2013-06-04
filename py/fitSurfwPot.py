@@ -13,6 +13,7 @@ from pixelFitDF import _REFR0, _REFV0, setup_potential, logprior_dlnvcdlnr
 from fitDensz import cb
 from calcDFResults import setup_options
 import readTerminalData
+from plotOverview import labels, ranges
 def fitSurfwPot(options,args):
     #First read the surface densities
     if not options.surffile is None and os.path.exists(options.surffile):
@@ -101,12 +102,14 @@ def fitSurfwPot(options,args):
                  [0.,0.],
                  [0.,1.],
                  [0.,0.]]
+        step= [0.2,0.2,0.4,0.2,5.]
         if options.fitterminal:
             isDomainFinite.extend([[False,False],
                                    [False,False]])
             domain.extend([[0.,0.],[0.,0.]])
+            step.extend([0.1,0.1])
         thesesamples= bovy_mcmc.markovpy(init_params,
-                                         0.01,
+                                         step,
                                          pdf_func,
                                          funcargs,
                                          isDomainFinite=isDomainFinite,
@@ -127,7 +130,7 @@ def like_func(params,options,surfrs,surfs,surferrs,
     if params[1] < 0.: return numpy.finfo(numpy.dtype(numpy.float64)).max
     if params[3] < 0. or params[3] > 1.: return numpy.finfo(numpy.dtype(numpy.float64)).max
     if params[0] < rdmin or params[0] > rdmax: return numpy.finfo(numpy.dtype(numpy.float64)).max
-    if params[2] < zhmin or params[2] > zhmax: return numpy.finfo(numpy.dtype(numpy.float64)).max
+    if params[2] < zhmin or params[2] > zhmax: return numpy.finfo(numpy.dtype(numpy.float64)).max   
     #Setup potential
     try:
         pot= setup_potential(params,potoptions,0,returnrawpot=True)
@@ -168,7 +171,8 @@ def like_func(params,options,surfrs,surfs,surferrs,
         out+= 0.5*(vo-236./_REFV0)**2./(11./_REFV0)**2.
     elif options.bovy12voprior:
         out+= 0.5*(vo-218./_REFV0)**2./(6./_REFV0)**2.
-    out-= logprior_dlnvcdlnr(params[4],options)
+    if not options.nodlnvcdlnrprior:
+        out-= logprior_dlnvcdlnr(params[4],options)
     #K dwarfs
     if options.lanprior:
         out+= 0.5*(2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,1.0/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro-67.)**2./36.
@@ -180,6 +184,45 @@ def like_func(params,options,surfrs,surfs,surferrs,
 
 def pdf_func(params,*args):
     return -like_func(params,*args)
+
+def plotStuff(options,args):
+    if options.type == '2d':
+        plot2dStuff(options,args)
+    return None
+
+def plot2dStuff(options,args):
+    """Make MCMC plots"""
+    #First load the chains
+    savefile= open(args[0],'rb')
+    thesesamples= pickle.load(savefile)
+    savefile.close()
+    samples= {}
+    scaleDict= {}
+    paramnames= ['rd','vc','zh','fh','dlnvcdlnr','usun','vsun']
+    scale= [_REFR0,_REFV0,_REFR0,1.,1./30.*_REFV0/_REFR0,_REFV0,_REFV0]
+    for kk in range(len(thesesamples[0])):
+        xs= numpy.array([s[kk] for s in thesesamples])
+        if paramnames[kk] == 'rd' or paramnames[kk] == 'zh':
+            xs= numpy.exp(xs)
+        samples[paramnames[kk]]= xs
+        scaleDict[paramnames[kk]]= scale[kk]
+    #samples['dlnvcdlnr']*= samples['vc']
+    xprop= options.subtype.split(',')[0]
+    yprop= options.subtype.split(',')[1]
+    bovy_plot.bovy_print()
+    bovy_plot.scatterplot(samples[xprop]*scaleDict[xprop],
+                          samples[yprop]*scaleDict[yprop],
+                          'k,',
+                          xlabel=labels[xprop],
+                          ylabel=labels[yprop],
+                          xrange=ranges[xprop],
+                          yrange=ranges[yprop],
+                          bins=16,
+                          contours=True,
+                          onedhists=True,
+                          cmap='gist_yarg')
+    bovy_plot.bovy_end_print(options.plotfile)
+    return None                                  
 
 def get_options():
     usage = "usage: %prog [options] <savefile>\n\nsavefile= name of the file that the fits/samples will be saved to"
@@ -231,10 +274,22 @@ def get_options():
                       dest="lanprior",
                       default=False,
                       help="If set, apply priors from Lan's K dwarf analysis")
+    #plot
+    parser.add_option("--plot",action="store_true", 
+                      dest="plot",
+                      default=False,
+                      help="If set, make a plot")
+    parser.add_option("-t","--type",dest='type',default=None,
+                      help="Type of thing to do")
+    parser.add_option("--subtype",dest='subtype',default=None,
+                      help="Sub-type of thing to do")
     return parser
 
 if __name__ == '__main__':
     parser= get_options()
     options,args= parser.parse_args()
     numpy.random.seed(options.seed)
-    fitSurfwPot(options,args)
+    if options.plot:
+        plotStuff(options,args)
+    else:
+        fitSurfwPot(options,args)
