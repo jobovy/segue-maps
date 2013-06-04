@@ -21,6 +21,8 @@ from pixelFitDens import pixelAfeFeh
 _NOTDONEYET= True
 #lABELS
 labels= {}
+labels['fh']= r'$f_h$'
+labels['vc']= r'$V_c\, (\mathrm{km\,s}^{-1})$'
 labels['pout']= r'$P_{\mathrm{out}}$'
 labels['fracfaint']= r'$\mathrm{Fraction\ on\ faint\ plates}$'
 labels['nfaint']= r'$\mathrm{Number\ on\ faint\ plates}$'
@@ -40,6 +42,8 @@ labels['surfz800']= r'$\Sigma(R_0,|Z|\leq 0.8\,\mathrm{kpc})\ (M_{\odot}\,\mathr
 labels['surfz']= r'$\Sigma(R_0,|Z|\leq 1.1\,\mathrm{kpc})\ (M_{\odot}\,\mathrm{pc}^{-2})$'
 #RANGES
 ranges= {}
+ranges['fh']= [0.,1.]
+ranges['vc']= [150.,270.]
 ranges['pout']= [0.,0.5]
 ranges['fracfaint']= [0.,0.5]
 ranges['nfaint']= [0.,200.]
@@ -52,6 +56,7 @@ ranges['rhodm']= [0.,0.014]
 ranges['rhoo']= [0.,0.2]
 ranges['plhalo']= [0.,2.]
 ranges['massdisk']= [0.,10.]
+ranges['dlnvcdlnr']= [-10.,2.]
 ranges['vcdvc']= [0.,1.]
 ranges['vcdvcro']= [0.,1.]
 def plot1d(options,args):
