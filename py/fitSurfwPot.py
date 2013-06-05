@@ -6,7 +6,8 @@ import pickle
 from scipy import optimize, integrate
 from optparse import OptionParser
 from galpy import potential
-from galpy.util import save_pickles, bovy_plot
+from galpy.util import save_pickles, bovy_plot, multi
+import multiprocessing
 from matplotlib import pyplot
 import bovy_mcmc
 from pixelFitDF import _REFR0, _REFV0, setup_potential, logprior_dlnvcdlnr
@@ -185,6 +186,56 @@ def like_func(params,options,surfrs,surfs,surferrs,
 def pdf_func(params,*args):
     return -like_func(params,*args)
 
+def calcDerived(options,args):
+    """Calculate derived parameters for this best-fit or samples"""
+    if os.path.exists(options.initfile):
+        initfile= open(options.initfile,'rb')
+        init_params= pickle.load(initfile)
+        initfile.close()
+    else:
+        raise IOError("%s not found" % args[0])
+    potoptions= setup_options(None)
+    potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    potoptions.fitdvt= False
+    if options.mcsample:
+        derived_params= multi.parallel_map((lambda x: calcDerivedSingle(init_params[x],options,potoptions)),
+                                           range(len(init_params)),
+                                           numcores=numpy.amin([len(init_params),
+                                                                multiprocessing.cpu_count(),
+                                                                options.multi]))
+        for kk in range(len(derived_params[0])):
+            xs= numpy.array([s[kk] for s in derived_params])
+            print numpy.mean(xs), numpy.std(xs)
+    else:
+        derived_params= calcDerivedSingle(init_params,options,potoptions)
+        print derived_params
+    save_pickles(args[0],derived_params)
+    return None
+
+def calcDerivedSingle(params,options,potoptions):
+    pot= setup_potential(params,potoptions,0,returnrawpot=True)
+    ro= 1.
+    vo= params[1]
+    zh= numpy.exp(params[2])
+    rd= numpy.exp(params[0])
+    #First up, total surface density
+    surfz= 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,1.1/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
+    #Disk density
+    surfzdisk= 2.*pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*zh*ro*_REFR0*1000.
+    #halo density
+    rhodm= pot[1].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+    #total density
+    rhoo= potential.evaluateDensities(1.,0.,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+    #mass of the disk
+    rhod= pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+    massdisk= rhod*2.*zh*numpy.exp(1./rd)*rd**2.*2.*numpy.pi*(ro*_REFR0)**3./10.
+    #pl halo
+    alpha= pot[1].alpha
+    #vcdvc
+    vcdvc= pot[0].vcirc(2.2*rd)/potential.vcirc(pot,2.2*rd)
+    out= [surfz,surfzdisk,rhodm,rhoo,massdisk,alpha,vcdvc]
+    return out
+    
 def plotStuff(options,args):
     if options.type == '2d':
         plot2dStuff(options,args)
@@ -262,7 +313,6 @@ def plotBestfitVterm(options,args):
                         ylabel=r'$\mathrm{Terminal\ velocity}\, (\mathrm{km\,s}^{-1})$',
                         xrange=[-100.,100.],
                         yrange=[-150.,150.])
-    print mc_glon-360.
     bovy_plot.bovy_plot(mc_glon-360.,mc_vterm,'ko',overplot=True)
     ls1= numpy.linspace(-90.,-20.,1001)
     ls2= numpy.linspace(20.,90.,1001)
@@ -283,16 +333,39 @@ def plot2dStuff(options,args):
     savefile= open(args[0],'rb')
     thesesamples= pickle.load(savefile)
     savefile.close()
+    if not options.derivedfile is None:
+        if os.path.exists(options.derivedfile):
+            derivedfile= open(options.derivedfile,'rb')
+            derivedsamples= pickle.load(derivedfile)
+            derivedfile.close()
+        else:
+            raise IOError("--derivedfile given but does not exist ...")
     samples= {}
     scaleDict= {}
     paramnames= ['rd','vc','zh','fh','dlnvcdlnr','usun','vsun']
     scale= [_REFR0,_REFV0,_REFR0,1.,1./30.*_REFV0/_REFR0,_REFV0,_REFV0]
+    if len(thesesamples[0]) == 5:
+        paramnames.pop()
+        paramnames.pop()
+        scale.pop()
+        scale.pop()
+    if not options.derivedfile is None:
+        paramnames.extend(['surfz','surfzdisk','rhodm',
+                           'rhoo','massdisk','plhalo','vcdvc'])
+        scale.extend([1.,1.,1.,1.,1.,1.,1.])
     for kk in range(len(thesesamples[0])):
         xs= numpy.array([s[kk] for s in thesesamples])
         if paramnames[kk] == 'rd' or paramnames[kk] == 'zh':
             xs= numpy.exp(xs)
         samples[paramnames[kk]]= xs
         scaleDict[paramnames[kk]]= scale[kk]
+    if not options.derivedfile is None:
+        for ll in range(len(thesesamples[0]),
+                        len(thesesamples[0])+len(derivedsamples[0])):
+            kk= ll-len(thesesamples[0])
+            xs= numpy.array([s[kk] for s in derivedsamples])
+            samples[paramnames[ll]]= xs
+            scaleDict[paramnames[ll]]= scale[ll]
     #samples['dlnvcdlnr']*= samples['vc']
     xprop= options.subtype.split(',')[0]
     yprop= options.subtype.split(',')[1]
@@ -304,7 +377,7 @@ def plot2dStuff(options,args):
                           ylabel=labels[yprop],
                           xrange=ranges[xprop],
                           yrange=ranges[yprop],
-                          bins=21,
+                          bins=11,
                           contours=True,
                           onedhists=True,
                           cmap='gist_yarg')
@@ -361,6 +434,15 @@ def get_options():
                       dest="lanprior",
                       default=False,
                       help="If set, apply priors from Lan's K dwarf analysis")
+    #calc
+    parser.add_option("--calcderived",action="store_true", 
+                      dest="calcderived",
+                      default=False,
+                      help="If set, calculate derived parameters")
+    parser.add_option("-m","--multi",dest='multi',default=None,type='int',
+                      help="number of cpus to use")
+    parser.add_option("--derivedfile",dest='derivedfile',default=None,
+                      help="Name of the file that has the derived parameters")
     #plot
     parser.add_option("--plot",action="store_true", 
                       dest="plot",
@@ -378,5 +460,7 @@ if __name__ == '__main__':
     numpy.random.seed(options.seed)
     if options.plot:
         plotStuff(options,args)
+    elif options.calcderived:
+        calcDerived(options,args)
     else:
         fitSurfwPot(options,args)
