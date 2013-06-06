@@ -343,7 +343,7 @@ def plot2dStuff(options,args):
     samples= {}
     scaleDict= {}
     paramnames= ['rd','vc','zh','fh','dlnvcdlnr','usun','vsun']
-    scale= [_REFR0,_REFV0,_REFR0,1.,1./30.*_REFV0/_REFR0,_REFV0,_REFV0]
+    scale= [_REFR0,_REFV0,1000.*_REFR0,1.,1./30.*_REFV0/_REFR0,_REFV0,_REFV0]
     if len(thesesamples[0]) == 5:
         paramnames.pop()
         paramnames.pop()
