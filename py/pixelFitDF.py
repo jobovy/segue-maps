@@ -173,7 +173,7 @@ def pixelFitDF(options,args,pool=None):
             fehs= numpy.array(fehs)
             afes= numpy.array(afes)
         if numpy.log(monoAbundanceMW.hr(fehs[0],afes[0],
-                                            k=(options.sample.lower() == 'k'))/8.) > -0.5:
+                                            k=(options.sample.lower() == 'k'))/8.) > -0.5 and not options.conditionalr:
             #Don't run, because we cannot model these populations with our model
             return None
     else:
@@ -623,25 +623,53 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
     #Set up the grid
     if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         out_params= [0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.]
-        normalization_out= calc_normint_fixedpot(None,0,normintstuff,
-                                                 out_params,
-                                                 1,
-                                                 options,
-                                                 0.,
-                                                 None,None,None,None,None,
-                                                 None,None,None,None,fqdf=0.)
+        if options.conditionalr:
+            normalization_out= calc_normint_fixedpot_conditionalr(None,0,
+                                                                  normintstuff,
+                                                                  out_params,
+                                                                  1,
+                                                                  options,
+                                                                  0.,
+                                                                  None,None,
+                                                                  None,None,None,
+                                                                  None,None,None,
+                                                                  None,fqdf=0.)
+        else:
+            normalization_out= calc_normint_fixedpot(None,0,normintstuff,
+                                                     out_params,
+                                                     1,
+                                                     options,
+                                                     0.,
+                                                     None,None,None,None,None,
+                                                     None,None,None,None,fqdf=0.)
         dblexphr= monoAbundanceMW.hr(fehs[0],afes[0],k=(options.sample.lower() == 'k'))
         dblexphz= monoAbundanceMW.hz(fehs[0],afes[0],k=(options.sample.lower() == 'k'))
-        normalization_dout= calc_normint_fixedpot(None,0,normintstuff,
-                                                  out_params,
-                                                  1,
-                                                  options,
-                                                  0.,
-                                                  None,None,None,None,None,
-                                                  None,None,None,None,fqdf=0.,
-                                                  dblexp=True,
-                                                  dblexphr=dblexphr,
-                                                  dblexphz=dblexphz)
+        if options.conditionalr:
+            normalization_dout= calc_normint_fixedpot_conditionalr(None,0,
+                                                                   normintstuff,
+                                                                   out_params,
+                                                                   1,
+                                                                   options,
+                                                                   0.,
+                                                                   None,None,
+                                                                   None,None,None,
+                                                                   None,None,
+                                                                   None,None,
+                                                                   fqdf=0.,
+                                                                   dblexp=True,
+                                                                   dblexphr=dblexphr,
+                                                                   dblexphz=dblexphz)
+        else:
+            normalization_dout= calc_normint_fixedpot(None,0,normintstuff,
+                                                      out_params,
+                                                      1,
+                                                      options,
+                                                      0.,
+                                                      None,None,None,None,None,
+                                                      None,None,None,None,fqdf=0.,
+                                                      dblexp=True,
+                                                      dblexphr=dblexphr,
+                                                      dblexphz=dblexphz)
         vcs= numpy.array([200./_REFV0,220./_REFV0,240./_REFV0])
         zhs= numpy.array([300./1000./_REFR0,400./1000./_REFR0,500./1000./_REFR0])
         print "BOVY: ADJUST VC AND ZH"
@@ -1889,15 +1917,24 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
     #Calculate surface(R=1.) for relative outlier normalization
     #logoutfrac= numpy.log(qdf.surfacemass_z(1.,ngl=toptions.ngl))
     #Calculate normalizations
-    normalization_qdf= calc_normint_fixedpot(qdf,0,normintstuff,tparams,npops,
-                                             toptions,
-                                             -numpy.finfo(numpy.dtype(numpy.float64)).max,
-                                             jrs,lzs,jzs,normsrs,normszs,
-                                             rgs,kappas,nus,Omegas)
+    if options.conditionalr:
+        normalization_qdf= calc_normint_fixedpot_conditionalr(qdf,0,normintstuff,tparams,npops,
+                                                 toptions,
+                                                 -numpy.finfo(numpy.dtype(numpy.float64)).max,
+                                                 jrs,lzs,jzs,normsrs,normszs,
+                                                 rgs,kappas,nus,Omegas)
+    else:
+        normalization_qdf= calc_normint_fixedpot(qdf,0,normintstuff,tparams,npops,
+                                                 toptions,
+                                                 -numpy.finfo(numpy.dtype(numpy.float64)).max,
+                                                 jrs,lzs,jzs,normsrs,normszs,
+                                                 rgs,kappas,nus,Omegas)
     #tnormalization_out= numpy.exp(logoutfrac)*normalization_out*vo**3.
     tnormalization_out= normalization_out*vo**3.
 #    tnormalization_dout= normalization_dout*vo**3.
     if not _FIXOUT:
+        if options.conditionalr:
+            raise NotImplementedError
         logoutfrac= numpy.log(normalization_qdf/tnormalization_out)
         tnormalization_out= normalization_qdf
     else:
@@ -2061,7 +2098,8 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
  #Reset
     out[0]= logsumexp(tmp_out)
     indx= numpy.unravel_index(numpy.argmax(tmp_out),tmp_out.shape)
-    out[1]= normalization_qdf*pouts[indx[1]]/tnormalization_out
+    if not options.conditionalr:
+        out[1]= normalization_qdf*pouts[indx[1]]/tnormalization_out
     out[2]= pouts[indx[1]]
 #    if _FIXOUT:
 #        out[3]= tmp_out2[indx[0],indx[1]]
@@ -2633,6 +2671,115 @@ def calc_normint_mcv_fixedpot(qdf,indx,normintstuff,params,npops,options,
         #                             end-start)
         return numpy.nansum(n)*vo**3.
 
+def calc_normint_fixedpot_conditionalr(qdf,indx,normintstuff,params,npops,
+                                       options,
+                                       logoutfrac,jrs,lzs,jzs,normsrs,normszs,
+                                       rgs,kappas,nus,Omegas,fqdf=1.,
+                                       dblexp=False,dblexphr=None,dblexphz=None):
+    """Calculate the normalization integral"""
+    if options.mcall or options.mcwdf: #evaluation is the same for these
+        raise NotImplementedError("mcall and mcwdf not implemented for fixed potential")
+    else:
+        return calc_normint_mcv_fixedpot_conditionalr(qdf,indx,normintstuff,
+                                                      params,npops,
+                                                      options,
+                                                      logoutfrac,
+                                                      jrs,lzs,jzs,
+                                                      normsrs,normszs,
+                                                      rgs,kappas,nus,Omegas,fqdf,
+                                                      dblexp,dblexphr,dblexphz)
+
+def calc_normint_mcv_fixedpot_conditionalr(qdf,indx,normintstuff,params,npops,
+                                           options,
+                                           logoutfrac,jrs,lzs,jzs,
+                                           normsrs,normszs,
+                                           rgs,kappas,nus,Omegas,fqdf,dblexp,
+                                           dblexphr,dblexphz):
+    """calculate the normalization integral by monte carlo integrating over v, but grid integrating over everything else"""
+    thisnormintstuff= normintstuff[indx]
+    if _PRECALCVSAMPLES:
+        raise NotImplementedError
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac,normR, normZ,surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
+    else:
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac, normR, normZ, conditional_d, conditional_R, conditional_z, conditional_colorfehfac, conditional_rderivd= unpack_normintstuff(thisnormintstuff,options)
+    out= 0.
+    ro= get_ro(params,options)
+#    outfrac= get_outfrac(params,indx,options)
+    outfrac= numpy.exp(logoutfrac)
+    halodens= ro*outDens(1.,0.,None)
+    globalInterp= True
+    #start= time.time()
+    if globalInterp and not fqdf == 0.:
+        nrs, nzs= _SURFNRS, _SURFNZS
+        thisRmin, thisRmax= 4./_REFR0, 15./_REFR0
+        thiszmin, thiszmax= 0., .8
+        Rgrid= numpy.linspace(thisRmin,thisRmax,nrs)
+        zgrid= numpy.linspace(thiszmin,thiszmax,nzs)
+        surfgrid= numpy.empty((nrs,nzs))
+        if not options.multi is None:
+            multOut= multi.parallel_map((lambda x: _calc_surfgrid_actions(Rgrid[x],
+                                                                       zgrid,nzs,
+                                                                       options,qdf,jrs[x,:,:],lzs[x,:,:],jzs[x,:,:],normsrs[x,:],normszs[x,:],
+                                                                          rgs[x,:,:],kappas[x,:,:],nus[x,:,:],Omegas[x,:,:])),
+                                        range(nrs),
+                                        numcores=numpy.amin([nrs,
+                                                             multiprocessing.cpu_count(),
+                                                             options.multi]))
+            for ii in range(nrs):
+                surfgrid[ii,:]= multOut[ii]
+        else:
+            for ii in range(nrs):
+                for jj in range(nzs):
+                    surfgrid[ii,jj]= qdf.density(Rgrid[ii],zgrid[jj],
+                                                 ngl=options.ngl,
+                                                 nmc=options.nmcv,
+                                                 _jr=jrs[ii,jj,:],
+                                                 _lz=lzs[ii,jj,:],
+                                                 _jz=jzs[ii,jj,:],
+                                                 _rg=rgs[ii,jj,:],
+                                                 _kappa=kappas[ii,jj,:],
+                                                 _nu=nus[ii,jj,:],
+                                                 _Omega=Omegas[ii,jj,:],
+                                                 _sigmaR1=normsrs[ii,jj],
+                                                 _sigmaz1=normszs[ii,jj])
+        if _SURFSUBTRACTEXPON:
+            Rs= numpy.tile(Rgrid,(nzs,1)).T
+            Zs= numpy.tile(zgrid,(nrs,1))
+            ehr= qdf.estimate_hr(1.,z=0.125)
+#            ehz= qdf.estimate_hz(1.,zmin=0.5,zmax=0.7)#Get large z behavior right
+            ehz= qdf.estimate_hz(1.,z=0.125)
+            surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
+                                                        numpy.log(surfgrid)
+                                                        +Rs/ehr+numpy.fabs(Zs)/ehz,
+                                                        kx=3,ky=3,
+                                                        s=0.)
+            #s=10.*float(nzs*nrs))
+        else:
+            surfInterp= interpolate.RectBivariateSpline(Rgrid,zgrid,
+                                                        numpy.log(surfgrid),
+                                                        kx=3,ky=3,
+                                                        s=0.)
+#                                                        s=10.*float(nzs*nrs))
+    if options.mcvalt:
+        #Alternative manner that uses well-tested compareDataModel code
+        if _SURFSUBTRACTEXPON and not fqdf == 0.:
+            compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0)-x/ro/_REFR0/ehr-numpy.fabs(y)/ehz/ro/_REFR0)+outfrac*halodens
+        elif not fqdf == 0.:
+            compare_func= lambda x,y,du: numpy.exp(surfInterp.ev(x/ro/_REFR0,numpy.fabs(y)/ro/_REFR0))+outfrac*halodens
+        elif dblexp: #just do the outliers
+            compare_func= lambda x,y,du: outfrac*_DblExpDensity(x,y,[numpy.log(dblexphz/1000.),-numpy.log(dblexphr)])
+        else: #just do the outliers
+            compare_func= lambda x,y,du: outfrac*halodens
+        ndata= conditional_d.shape[0]
+        nplates= conditional_d.shape[1]
+        out= numpy.zeros(ndata)
+        for kk in range(nplates):
+            out+= conditional_d[:,kk]**2.*compare_func(conditional_R,
+                                                       conditional_z[:,kk],
+                                                       None)*conditional_colorfehfac[:,kk]/conditional_rderivd[:,kk]
+        vo= get_vo(params,options,npops)
+        return numpy.reshape(out*vo**3.,(ndata,1))
+
 def _calc_surfgrid_actions(R,zgrid,nzs,options,qdf,
                            jrs,lzs,jzs,normsrs,normszs,
                            rgs,kappas,nus,Omegas):
@@ -3111,6 +3258,67 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
         thisnormintstuff.colorfehfac= colorfehfac
         thisnormintstuff.normR= normR
         thisnormintstuff.normZ= normZ
+        if options.conditionalr:
+            #Pre-calculate for each datapoint and plate what the distance on that plate is for a given R etc.
+            #First calculate R
+            R= numpy.sqrt((_REFR0-data.xc)**2.+data.yc**2.)
+            ndata= len(R)
+            conditional_d= numpy.zeros((ndata,len(plates)))
+            conditional_z= numpy.zeros((ndata,len(plates)))
+            conditional_colorfehfac= numpy.zeros((ndata,len(plates)))
+            conditional_rderivd= numpy.zeros((ndata,len(plates)))
+            for kk in range(len(plates)):
+                #Calculate d, first calculate the Galactocentric azimuth, then 
+                #calculate d
+                thisl= platelb[kk,0]
+                thisb= platelb[kk,0]
+                if thisl >= 90. and thisl <= 270.:
+                    #Outer disk plate
+                    indx= (R < _REFR0) #Not on these plates
+                    conditional_d[indx,kk]= 0.
+                    conditional_z[indx,kk]= 0.
+                    conditional_rderivd[indx,kk]= 1.
+                    conditional_colorfehfac[indx,kk]= 0.
+                elif thisl <= 90. or thisl >= 270.:
+                    minR= _REFR0*numpy.fabs(numpy.sin(thisl*_DEGTORAD))
+                    indx= (R > _REFR0)*(R < minR) #Not on these plates, assumes no stars on other side of Galaxy, fine assumption
+                    conditional_d[indx,kk]= 0.
+                    conditional_z[indx,kk]= 0.
+                    conditional_rderivd[indx,kk]= 1.
+                    conditional_colorfehfac[indx,kk]= 0.
+                indx= True-indx
+                sinphil= _REFR0/R[indx]*numpy.sin(thisl*_DEGTORAD)
+                phil= numpy.arcsin(sinphil) #should be fine, because everything is at this side of the Galaxy
+                d= R[indx]*numpy.sin(phil)/numpy.sin(thisl*_DEGTORAD)
+                conditional_d[indx,kk]= d
+                badindx= ( conditional_d[:,kk] > dmax ) \
+                    * ( conditional_d[:,kk] < dmin )
+                conditional_z[badindx,kk]= 0.
+                conditional_rderivd[badindx,kk]= 1.
+                conditional_colorfehfac[badindx,kk]= 0.
+                indx= True-badindx
+                conditional_rderivd[indx,kk]= 1./R[indx]*(conditional_d[indx,kk] * numpy.cos(thisb*_DEGTORAD)**2.-_REFR0*numpy.cos(thisl*_DEGTORAD)*numpy.cos(thisb*_DEGTORAD))
+                conditional_z[indx,kk]= conditional_d[indx,kk]*numpy.sin(thisb*_DEGTORAD)-_ZSUN
+
+            theselogds= 5.*numpy.log10(conditional_d[indx,kk]/distfac)+10.
+            tmpout= numpy.zeros(len(theselogds))
+            norm= 0.
+            for ll in range(len(tfehs)):
+                for jj in range(len(grs)):
+                    #What rs do these zs correspond to
+                    gi= _gi_gr(grs[jj])
+                    mr= _mr_gi(gi,tfehs[ll])
+                    rs= theselogds+mr
+                    select= numpy.array(sf(sf.plates[pindx],r=rs))
+                    tmpout+= colordist(grs[jj])*fehdist(tfehs[ll])\
+                        *select
+                    norm+= colordist(grs[jj])*fehdist(tfehs[ll])
+            conditional_colorfehfac[indx,kk]= tmpout/norm
+            thisnormintstuff.conditional_d= conditional_d
+            thisnormintstuff.conditional_R= R
+            thisnormintstuff.conditional_z= conditional_z
+            thisnormintstuff.conditional_colorfehfac= conditional_colorfehfac
+            thisnormintstuff.conditional_rderivd= conditional_rderivd
         if _PRECALCVSAMPLES:
             normintparams= initialize(options,fehs,afes)
             normintpot= setup_potential(normintparams,options,len(fehs))
@@ -3202,6 +3410,40 @@ def unpack_normintstuff(normintstuff,options):
                     normintstuff.surfvrs,
                     normintstuff.surfvts,
                     normintstuff.surfvzs)
+        elif options.conditionalr:
+            return (normintstuff.sf,
+                    normintstuff.plates,
+                    normintstuff.platel,
+                    normintstuff.plateb,
+                    normintstuff.platebright,
+                    normintstuff.platefaint,
+                    normintstuff.grmin,
+                    normintstuff.grmax,
+                    normintstuff.rmin,
+                    normintstuff.rmax,
+                    normintstuff.fehmin,
+                    normintstuff.fehmax,
+                    normintstuff.feh,
+                    normintstuff.colordist,
+                    normintstuff.fehdist,
+                    normintstuff.grs,
+                    normintstuff.rhogr,
+                    normintstuff.rhofeh,
+                    normintstuff.mr,
+                    normintstuff.dmin,
+                    normintstuff.dmax,
+                    normintstuff.ds,
+                    normintstuff.surfscale,
+                    normintstuff.hr,
+                    normintstuff.hz,
+                    normintstuff.colorfehfac,
+                    normintstuff.normR,
+                    normintstuff.normZ,
+                    normintstuff.conditional_d,
+                    normintstuff.conditional_R,
+                    normintstuff.conditional_z,
+                    normintstuff.conditional_colorfehfac,
+                    normintstuff.conditional_rderivd)
         else:
             return (normintstuff.sf,
                     normintstuff.plates,
@@ -5339,6 +5581,10 @@ def get_options():
                       dest="fixbadvals",
                       default=False,
                       help="If set, check a previous solution for bad values and re-calculate")
+    parser.add_option("--conditionalr",action="store_true",
+                      dest="conditionalr",
+                      default=False,
+                      help="If set, use the conditional probability, conditioned on R")
     #seed
     parser.add_option("--seed",dest='seed',default=2,type='int',
                       help="seed for random number generator")
