@@ -11,7 +11,7 @@ from matplotlib import pyplot, cm
 _NRDS= 31
 _NFHS= 32
 _ZH= 400.
-_DLNVCDLNR= -2.2
+_DLNVCDLNR= 0.
 _VC= 230.
 def plotSurfRdfh(plotfilename):
     #Calculate the surface density profile for each trial potential, then plot in 2D
