@@ -1570,6 +1570,11 @@ def setup_dfgrid(fehs,afes,options):
         srs= numpy.linspace(numpy.log(0.5),numpy.log(2.),options.nsrs)#hsz now
     else:
         srs= numpy.linspace(lnsr-0.6*resz,lnsr+0.6*resz,options.nsrs)#USE ESZ
+    #Adjustments to hsz
+    if _VARYHSZ and options.sample.lower() == 'g':
+        abindx= abToIndx(fehs[0],afes[0],sample=options.sample.lower())
+        if abindx == 47 or abindx == 52:
+            srs= numpy.linspace(numpy.log(2.),numpy.log(8.),options.nsrs)#hsz now
     szs= numpy.linspace(lnsz-0.6*resz,lnsz+0.6*resz,options.nszs)
     #Adustements based on inspection
     if options.sample.lower() == 'g':
@@ -1909,6 +1914,15 @@ def mmloglike_gridall(fullparams,hr,sr,sz,
         tmp_out2= numpy.zeros((toptions.ndvts,toptions.npouts))
     else:
         out= numpy.zeros((toptions.ndvts,toptions.npouts,1,1))
+    if options.conditionalr: #Don't vary hr
+        dblexphr= monoAbundanceMW.hr(fehs[0],afes[0],k=(options.sample.lower() == 'k'))
+        #Closest hr
+        lnhr= numpy.log(dblexphr/_REFR0)
+        hrsGrid= numpy.linspace(-1.85714286,0.9,options.nhrs)
+        clindx= numpy.argmin(numpy.fabs(lnhr-hrsGrid))
+        if hr != hrsGrid[clindx]:
+            out[0]= -numpy.finfo(numpy.dtype(numpy.float64)).max
+            return out
     #Setup everything for fast calculations
     loghalodens= numpy.log(ro*outDens(1.,0.,None))
     dfparams= get_dfparams(tparams,0,toptions,log=False)
