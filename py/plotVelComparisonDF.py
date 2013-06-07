@@ -64,10 +64,10 @@ def plotVelComparisonDF(options,args):
         return None
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
     ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(2.6/8.),220./220.,numpy.log(400./8000.),0.66666666,0.])
-    potparams2= numpy.array([numpy.log(2.8/8.),220./220,numpy.log(400./8000.),0.4,0.])
+    potparams1= numpy.array([numpy.log(2.6/8.),230./220.,numpy.log(400./8000.),0.266666666,0.])
+    potparams2= numpy.array([numpy.log(2.8/8.),230./220,numpy.log(400./8000.),0.266666666666,0.])
     #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
-    potparams3= numpy.array([numpy.log(2.6/8.),220./220.,
+    potparams3= numpy.array([numpy.log(2.6/8.),230./220.,
                              numpy.log(400./8000.),0.5333333,0.])
     pop= 0 #assume first population
     #Load savefile
@@ -114,7 +114,7 @@ def plotVelComparisonDF(options,args):
         srs= numpy.linspace(numpy.log(0.5),numpy.log(2.),options.nsrs)#hsz now
     else:
         srs= numpy.linspace(lnsr-0.6*resz,lnsr+0.6*resz,options.nsrs)#USE ESZ
-    szs= numpy.linspace(lnsz-0.8*resz,lnsz+0.8*resz,options.nszs)
+    szs= numpy.linspace(lnsz-0.6*resz,lnsz+0.6*resz,options.nszs)
     #hrs= numpy.linspace(lnhr-0.3,lnhr+0.3,options.nhrs)
     #srs= numpy.linspace(lnsr-0.1,lnsr+0.1,options.nsrs)
     #szs= numpy.linspace(lnsz-0.1,lnsz+0.1,options.nszs)
@@ -122,8 +122,8 @@ def plotVelComparisonDF(options,args):
     #dvts= numpy.linspace(-0.05,0.05,options.ndvts)
     pouts= numpy.linspace(10.**-5.,.5,options.npouts)
     #indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,:,:,0,0]),
-    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,10,:,:,:,0]),
-                              logl[3,0,0,10,:,:,:,0].shape)
+    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,:,:,:,0]),
+                              logl[3,0,0,4,:,:,:,0].shape)
     #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
     if _VARYHSZ:
         tparams= numpy.array([0.,hrs[indx[0]],
@@ -133,7 +133,7 @@ def plotVelComparisonDF(options,args):
                               szs[indx[2]],
                               numpy.log(8./_REFR0),
                               srs[indx[1]],
-                              0.06,#logl[3,0,0,10,indx[0],indx[1],indx[2],2],#pouts[indx[4]],
+                              0.0,#logl[3,0,0,10,indx[0],indx[1],indx[2],2],#pouts[indx[4]],
                               0.,0.,0.,0.,0.])
     else:
         tparams= numpy.array([0.,hrs[indx[0]],
@@ -192,7 +192,7 @@ def plotVelComparisonDF(options,args):
         indx= numpy.unravel_index(numpy.argmax(logl[4,0,0,4,:,:,:,0]),
                                   logl[4,0,0,4,:,:,:,0].shape)
         #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
-        if _VARYHSZ:
+        if not _VARYHSZ:
             tparams= numpy.array([0.,hrs[indx[0]],
                                   #srs[indx[1]-1.*(indx[1] != 0)],
                                   #szs[indx[2]-1.*(indx[2] != 0)],
