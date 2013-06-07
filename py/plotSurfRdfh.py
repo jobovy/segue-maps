@@ -97,6 +97,7 @@ def plotSurfRdfh(plotfilename):
                           justcontours=True,
                           contours=True,
                           cntrcolors='w',
+#                          cntrlabel=True,
                           cntrls='--')
     #Add labels
     bovy_plot.bovy_text(r'$\Sigma(R=5\,\mathrm{kpc})$'
