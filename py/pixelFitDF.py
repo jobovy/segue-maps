@@ -370,6 +370,27 @@ def read_rawdata(options):
         raw= raw[(raw.plate == options.plate)]
     elif not options.plate is None:
         raw= raw[(raw.plate != options.plate)]
+    if options.conditionalr and True:
+        #Cut out bright stars on faint plates and vice versa
+        plates= numpy.array(list(set(list(raw.plate))),dtype='int') #Only load plates that we use
+        sf= segueSelect(plates=plates,type_faint='tanhrcut',
+                        sample=options.sample,type_bright='tanhrcut',
+                        sn=options.snmin,select=options.select,
+                        indiv_brightlims=options.indiv_brightlims)
+        indx= []
+        nfaintbright, nbrightfaint= 0, 0
+        for ii in range(len(raw.feh)):
+            if sf.platebright[str(raw[ii].plate)] and raw[ii].dered_r >= 17.8:
+                indx.append(False)
+                nbrightfaint+= 1
+            elif not sf.platebright[str(raw[ii].plate)] and raw[ii].dered_r < 17.8:
+                indx.append(False)
+                nfaintbright+= 1
+            else:
+                indx.append(True)
+        print "nbrightfaint, nfaintbright", nbrightfaint, nfaintbright
+        indx= numpy.array(indx,dtype='bool')
+        raw= raw[indx]       
     return raw
 
 ##LOG LIKELIHOODS
@@ -2772,13 +2793,13 @@ def calc_normint_mcv_fixedpot_conditionalr(qdf,indx,normintstuff,params,npops,
             compare_func= lambda x,y,du: outfrac*halodens
         ndata= conditional_d.shape[0]
         nplates= conditional_d.shape[1]
-        out= numpy.zeros(ndata)
+        out= numpy.zeros((ndata,nplates))
         for kk in range(nplates):
-            out+= conditional_d[:,kk]**2.*compare_func(conditional_R,
-                                                       conditional_z[:,kk],
-                                                       None)*conditional_colorfehfac[:,kk]/conditional_rderivd[:,kk]
+            out[:,kk]= conditional_d[:,kk]**2.*compare_func(conditional_R,
+                                                            conditional_z[:,kk],
+                                                            None)*conditional_colorfehfac[:,kk]/conditional_rderivd[:,kk]
         vo= get_vo(params,options,npops)
-        return numpy.reshape(out*vo**3.,(ndata,1))
+        return numpy.reshape(numpy.nansum(out,axis=1)*vo**3.,(ndata,1))
 
 def _calc_surfgrid_actions(R,zgrid,nzs,options,qdf,
                            jrs,lzs,jzs,normsrs,normszs,
@@ -3263,57 +3284,69 @@ def indiv_setup_normintstuff(ii,options,raw,binned,fehs,afes,plates,sf,platelb,
             #First calculate R
             R= numpy.sqrt((_REFR0-data.xc)**2.+data.yc**2.)
             ndata= len(R)
-            conditional_d= numpy.zeros((ndata,len(plates)))
+            conditional_d= numpy.zeros((ndata,len(plates)))+numpy.nan
             conditional_z= numpy.zeros((ndata,len(plates)))
             conditional_colorfehfac= numpy.zeros((ndata,len(plates)))
             conditional_rderivd= numpy.zeros((ndata,len(plates)))
             for kk in range(len(plates)):
                 #Calculate d, first calculate the Galactocentric azimuth, then 
                 #calculate d
-                thisl= platelb[kk,0]
-                thisb= platelb[kk,0]
-                if thisl >= 90. and thisl <= 270.:
-                    #Outer disk plate
-                    indx= (R < _REFR0) #Not on these plates
-                    conditional_d[indx,kk]= 0.
-                    conditional_z[indx,kk]= 0.
-                    conditional_rderivd[indx,kk]= 1.
-                    conditional_colorfehfac[indx,kk]= 0.
-                elif thisl <= 90. or thisl >= 270.:
-                    minR= _REFR0*numpy.fabs(numpy.sin(thisl*_DEGTORAD))
-                    indx= (R > _REFR0)*(R < minR) #Not on these plates, assumes no stars on other side of Galaxy, fine assumption
-                    conditional_d[indx,kk]= 0.
-                    conditional_z[indx,kk]= 0.
-                    conditional_rderivd[indx,kk]= 1.
-                    conditional_colorfehfac[indx,kk]= 0.
-                indx= True-indx
-                sinphil= _REFR0/R[indx]*numpy.sin(thisl*_DEGTORAD)
-                phil= numpy.arcsin(sinphil) #should be fine, because everything is at this side of the Galaxy
-                d= R[indx]*numpy.sin(phil)/numpy.sin(thisl*_DEGTORAD)
+                thisl= platelb[kk,0]*numpy.ones(ndata)
+                thisb= platelb[kk,1]*numpy.ones(ndata)
+                #If this is the plate a star is on, use the star's l
+                indx= (data.plate == plates[kk])
+                thisl[indx]= data[indx].l
+                thisb[indx]= data[indx].b
+                #Outer disk plates do not have R < R_0
+                oindx= (thisl >= 90.)*(thisl <= 270.)*(R < _REFR0)
+                #Outer disk plate
+                conditional_d[oindx,kk]= 0.
+                conditional_z[oindx,kk]= 0.
+                conditional_rderivd[oindx,kk]= 1.
+                conditional_colorfehfac[oindx,kk]= 0.
+                #Inner disk plates do not have R > R_0 or R < Rmin
+                minR= _REFR0*numpy.fabs(numpy.sin(thisl*_DEGTORAD))
+                oindx= (True-(thisl > 90.)*(thisl < 270.))*(R > _REFR0)
+                conditional_d[oindx,kk]= 0.
+                conditional_z[oindx,kk]= 0.
+                conditional_rderivd[oindx,kk]= 1.
+                conditional_colorfehfac[oindx,kk]= 0.
+                oindx= (True-(thisl > 90.)*(thisl < 270.))*(R < minR)
+                conditional_d[oindx,kk]= 0.
+                conditional_z[oindx,kk]= 0.
+                conditional_rderivd[oindx,kk]= 1.
+                conditional_colorfehfac[oindx,kk]= 0.
+                indx= numpy.isnan(conditional_d[:,kk])
+                sinphil= _REFR0/R[indx]*numpy.sin(thisl[indx]*_DEGTORAD)
+                phil= numpy.arcsin(sinphil)
+                phi= numpy.pi-phil-thisl[indx]*_DEGTORAD
+                d= R[indx]*numpy.sin(phi)/numpy.sin(thisl[indx]*_DEGTORAD)
+                #For safety, also copy in the distances from the data if this is the data's plate
+                plateindx= (data.plate == plates[kk])
                 conditional_d[indx,kk]= d
-                badindx= ( conditional_d[:,kk] > dmax ) \
-                    * ( conditional_d[:,kk] < dmin )
+                conditional_d[plateindx,kk]= data[plateindx].dist
+                indx= ( conditional_d[:,kk] <= dmax ) \
+                    * ( conditional_d[:,kk] >= dmin )
+                badindx= True-indx
                 conditional_z[badindx,kk]= 0.
                 conditional_rderivd[badindx,kk]= 1.
                 conditional_colorfehfac[badindx,kk]= 0.
-                indx= True-badindx
-                conditional_rderivd[indx,kk]= 1./R[indx]*(conditional_d[indx,kk] * numpy.cos(thisb*_DEGTORAD)**2.-_REFR0*numpy.cos(thisl*_DEGTORAD)*numpy.cos(thisb*_DEGTORAD))
-                conditional_z[indx,kk]= conditional_d[indx,kk]*numpy.sin(thisb*_DEGTORAD)-_ZSUN
-
-            theselogds= 5.*numpy.log10(conditional_d[indx,kk]/distfac)+10.
-            tmpout= numpy.zeros(len(theselogds))
-            norm= 0.
-            for ll in range(len(tfehs)):
-                for jj in range(len(grs)):
-                    #What rs do these zs correspond to
-                    gi= _gi_gr(grs[jj])
-                    mr= _mr_gi(gi,tfehs[ll])
-                    rs= theselogds+mr
-                    select= numpy.array(sf(sf.plates[pindx],r=rs))
-                    tmpout+= colordist(grs[jj])*fehdist(tfehs[ll])\
-                        *select
-                    norm+= colordist(grs[jj])*fehdist(tfehs[ll])
-            conditional_colorfehfac[indx,kk]= tmpout/norm
+                conditional_rderivd[indx,kk]= numpy.fabs(1./R[indx]*(conditional_d[indx,kk] * numpy.cos(thisb[indx]*_DEGTORAD)**2.-_REFR0*numpy.cos(thisl[indx]*_DEGTORAD)*numpy.cos(thisb[indx]*_DEGTORAD)))
+                conditional_z[indx,kk]= conditional_d[indx,kk]*numpy.sin(thisb[indx]*_DEGTORAD)-_ZSUN
+                theselogds= 5.*numpy.log10(conditional_d[indx,kk]/distfac)+10.
+                tmpout= numpy.zeros(len(theselogds))
+                norm= 0.
+                for ll in range(len(tfehs)):
+                    for jj in range(len(grs)):
+                        #What rs do these zs correspond to
+                        gi= _gi_gr(grs[jj])
+                        mr= _mr_gi(gi,tfehs[ll])
+                        rs= theselogds+mr
+                        select= numpy.array(sf(plates[kk],r=rs))
+                        tmpout+= colordist(grs[jj])*fehdist(tfehs[ll])\
+                            *select
+                        norm+= colordist(grs[jj])*fehdist(tfehs[ll])
+                conditional_colorfehfac[indx,kk]= tmpout/norm
             thisnormintstuff.conditional_d= conditional_d
             thisnormintstuff.conditional_R= R
             thisnormintstuff.conditional_z= conditional_z
