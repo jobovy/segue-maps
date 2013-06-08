@@ -23,7 +23,7 @@ def plotPriorSurf(plotfilename):
         fhs= numpy.linspace(0.,1.,16)
         surfz= numpy.zeros((len(rs),len(rds)*len(fhs)))+numpy.nan
         ro= 1.
-        vo= 1.#230./220.
+        vo= 230./220.
         dlnvcdlnr= 0.
         zh= 400.
         for jj in range(len(rds)):
