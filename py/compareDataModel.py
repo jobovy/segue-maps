@@ -246,7 +246,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                       rmin=14.5,rmax=20.2,grmin=0.48,grmax=0.55,fehmin=-0.4,
                       fehmax=0.5,feh=-0.15,
                       convolve=0.,xrange=None,yrange=None,
-                      overplot=False,bins=21,color='k',ls='-',
+                      overplot=False,bins=21,color='k',ls='-',distfac=1.,
                       Rmin=None,Rmax=None,
                       left_legend=None,right_legend=None):
     """
@@ -335,8 +335,8 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
         grs[:,ii]= numpy.linspace(grmin,grmax,_NGR)
     sys.stdout.write('\r'+"Determining minimal and maximal distance")
     sys.stdout.flush()
-    dmin= numpy.amin(_ivezic_dist(grs,thisrmin,fehs))
-    dmax= numpy.amax(_ivezic_dist(grs,thisrmax,fehs))
+    dmin= numpy.amin(_ivezic_dist(grs,thisrmin,fehs))*distfac
+    dmax= numpy.amax(_ivezic_dist(grs,thisrmax,fehs))*distfac
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     zmin, zmax= dmin*numpy.sin(bmin*_DEGTORAD), dmax*numpy.sin(bmax*_DEGTORAD)
@@ -362,6 +362,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
                                             plateb,grmin,grmax,
                                             fehmin,fehmax,
                                             feh,colordist,fehdist,sf,p,
+                                            distfac,
                                             Rmin=Rmin,Rmax=Rmax)
             zdist+= thiszdist
         sys.stdout.write('\r'+_ERASESTR+'\r')
@@ -403,7 +404,7 @@ def comparezdistPlate(densfunc,params,sf,colordist,fehdist,data,plate,
         hist= bovy_plot.bovy_hist(data_z,
                                   normed=True,bins=bins,ec='k',
                                   histtype='step',
-                                  overplot=True,range=[zmin,zmax])
+                                  overplot=True,range=[zmin,5.])
         if not right_legend is None:
             bovy_plot.bovy_text(right_legend,top_right=True,size=_legendsize)
         if len(plate) > 1 and len(plate) < 9:
@@ -1392,7 +1393,7 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                            fehmin=-0.4,fehmax=0.5,feh=-0.15,
                            convolve=0.,xrange=None,yrange=None,
                            overplot=False,bins=21,color='k',ls='-',
-                           left_legend=None,right_legend=None,
+                           left_legend=None,right_legend=None,distfac=None,
                            numcores=None):
     """
     NAME:
@@ -1428,6 +1429,8 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
        2012-12-21 - Adapted for multiple populations - Bovy (IAS)
     """
     M= len(densfunc)
+    if distfac is None:
+        distfac= numpy.ones(M)
     #Set up plates
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                      degree=True)
@@ -1483,8 +1486,8 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
             grs[jj,:,ii]= numpy.linspace(grmin,grmax,_NGR)
     sys.stdout.write('\r'+"Determining minimal and maximal distance")
     sys.stdout.flush()
-    dmin= numpy.array([numpy.amin(_ivezic_dist(grs[jj,:,:],thisrmin,fehs[jj,:,:])) for jj in range(M)])
-    dmax= numpy.array([numpy.amax(_ivezic_dist(grs[jj,:,:],thisrmax,fehs[jj,:,:])) for jj in range(M)])
+    dmin= numpy.array([numpy.amin(_ivezic_dist(grs[jj,:,:],thisrmin,fehs[jj,:,:]))*distfac[jj] for jj in range(M)])
+    dmax= numpy.array([numpy.amax(_ivezic_dist(grs[jj,:,:],thisrmax,fehs[jj,:,:]))*distfac[jj] for jj in range(M)])
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     zmin, zmax= dmin*numpy.sin(bmin*_DEGTORAD), dmax*numpy.sin(bmax*_DEGTORAD)
@@ -1506,7 +1509,7 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                                                                                      grmin,grmax,
                                                                                      fehmin[jj],fehmax[jj],
                                                                                      feh[jj],colordist[jj],
-                                                                                     fehdist[jj],sf)),
+                                                                                     fehdist[jj],sf,distfac[jj])),
                                                            
                                                            range(len(plate)),numcores=numcores))
                 for ii in range(len(plate)):
@@ -1539,7 +1542,7 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                                                     plateb,grmin,grmax,
                                                     fehmin[jj],fehmax[jj],
                                                     feh[jj],colordist[jj],
-                                                    fehdist[jj],sf,p)
+                                                    fehdist[jj],sf,p,distfac[jj])
                     zdist[jj,:]+= thiszdist
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
@@ -1703,7 +1706,7 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
 #For multi evaluation of previous    
 def _calc_zdists_multi(p,platelb,zs,densfunc,params,rmin,rmax,
                        grmin,grmax,fehmin,fehmax,
-                       feh,colordist,fehdist,sf):
+                       feh,colordist,fehdist,sf,distfac):
     #l and b?
     pindx= (sf.plates == p)
     platel= platelb[pindx,0][0]
@@ -1714,7 +1717,7 @@ def _calc_zdists_multi(p,platelb,zs,densfunc,params,rmin,rmax,
                                     plateb,grmin,grmax,
                                     fehmin,fehmax,
                                     feh,colordist,
-                                    fehdist,sf,p)
+                                    fehdist,sf,p,distfac)
     return thiszdist
 
 ###############################################################################

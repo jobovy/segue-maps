@@ -2,6 +2,7 @@ import os, os.path
 import tempfile
 import copy
 import numpy
+from scipy.maxentropy import logsumexp
 import cPickle as pickle
 from optparse import OptionParser
 import multiprocessing
@@ -11,6 +12,7 @@ import compareDataModel
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
     segueSelect, _ERASESTR
 from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
+import AnDistance
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
@@ -18,16 +20,25 @@ _NOTDONEYET= True
 def getMultiComparisonBins(options):
     if options.sample.lower() == 'g':
         if options.group == 'aenhanced':
-            gfehs= [-0.85,-0.75,-0.65,-0.55, #-0.95
-                     -0.85,-0.75,-0.65,-0.55,-0.45, #-0.95
-                     -0.85,-0.75,-0.65,-0.55] #-0.95
-            gafes= [0.425,0.425,0.425,0.425, #0.425
-                    0.375,0.375,0.375,0.375,0.375, #0.375
-                    0.325,0.325,0.325,0.325] #0.325
+            gfehs= [-1.25,-1.15,-1.05,-1.05,
+                     -0.95,-0.95,-0.95,-0.95,
+                     -0.85,-0.85,-0.85,-0.85,
+                     -0.75,-0.75,-0.75,-0.75,
+                     -0.65,-0.65,-0.65,
+                     -0.55,-0.55,-0.55,
+                     -0.45,-0.45]
+            gafes= [0.425,0.425,0.375,0.425,
+                    0.325,0.375,0.425,0.475,
+                    0.325,0.375,0.425,0.475,
+                    0.325,0.375,0.425,0.475,
+                    0.325,0.375,0.425,
+                    0.325,0.375,0.425,
+                    0.325,0.375,
+                    0.325]
             left_legend= r'$\alpha\!-\!\mathrm{old\ populations}$'
         elif options.group == 'apoor':
-            gafes= [0.125,0.075,0.075,0.025,0.025,0.025,0.025]
-            gfehs= [-0.05,-0.05,0.05,-0.05,0.05,0.15,0.25]
+            gfehs= [-0.05,-0.05,-0.05,0.05,0.05,0.15,0.25]
+            gafes= [0.025,0.075,0.125,0.025,0.075,0.025,0.025]
             left_legend= r'$\alpha\!-\!\mathrm{young}$'+'\n'+r'$\mathrm{populations}$'
         elif options.group == 'apoorfpoor':
             gafes= [0.025,0.075,0.075,0.075,0.075,
@@ -40,12 +51,10 @@ def getMultiComparisonBins(options):
                      -0.55,-0.65,-0.75]
             left_legend= r'$\alpha\!-\!\mathrm{young},$'+'\n'+r'$\mathrm{[Fe/H]\!-\!poor}$'+'\n'+r'$\mathrm{populations}$'
         elif options.group == 'aintermediate':
-            gafes= [0.275,0.275,0.275,0.275,0.275,0.275,
-                    0.225,0.225,0.225,
-                    0.175,0.175]
-            gfehs= [-0.75,-0.65,-0.55,-0.45,-0.35,-0.25,
-                     -0.45,-0.35,-0.25,
-                     -0.25,-0.15]
+            gfehs= [-0.85,-0.75,-0.65,-0.55,-0.45,-0.45,
+                     -0.35,-0.35,-0.25,-0.25,-0.15,-0.15]
+            gafes= [0.275,0.275,0.275,0.275,0.225,0.275,
+                    0.225,0.275,0.175,0.225,0.125,0.175]
             left_legend= r'$\alpha\!-\!\mathrm{intermediate}$'+'\n'+r'$\mathrm{populations}$'
     elif options.sample.lower() == 'k':
         if options.group == 'aenhanced':
@@ -97,16 +106,42 @@ def plotDensComparisonDFMulti(options,args):
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
     gafes, gfehs, left_legend= getMultiComparisonBins(options)
+    M= len(gfehs)
+    if options.andistances:
+        binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
+        distancefacs= numpy.zeros_like(fehs)
+        gdistancefacs= numpy.zeros_like(gfehs)
+        for jj in range(M):
+            #Find pop corresponding to this bin
+            ii= numpy.argmin((gfehs[jj]-fehs)**2./0.1+(gafes[jj]-afes)**2./0.0025)
+            print ii
+            #Get the relevant data
+            data= binned(fehs[ii],afes[ii])
+            distancefacs[ii]= AnDistance.AnDistance(data.dered_g-data.dered_r,
+                                                    data.feh)
+            gdistancefacs[jj]= distancefacs[ii]
+            options.fixdm= numpy.log10(distancefacs[ii])*5.
+            #Apply distance factor to the data
+            newraw= read_rawdata(options)
+            newbinned= pixelAfeFeh(newraw,dfeh=options.dfeh,dafe=options.dafe)
+            thisdataIndx= binned.callIndx(fehs[ii],afes[ii])
+            binned.data.xc[thisdataIndx]= newbinned.data.xc[thisdataIndx]
+            binned.data.yc[thisdataIndx]= newbinned.data.yc[thisdataIndx]
+            binned.data.zc[thisdataIndx]= newbinned.data.zc[thisdataIndx]
+    else:
+        distancefacs=numpy.ones_like(fehs)
+        gdistancefacs=numpy.ones_like(gfehs)
     ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
-    potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
-    #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
-    potparams3= numpy.array([numpy.log(2.5/8.),235./220.,
+    potparams1= numpy.array([numpy.log(2.5/8.),230./220.,
                              numpy.log(400./8000.),0.2,0.])
+    potparams2= numpy.array([numpy.log(2.5/8.),230./220.,
+                             numpy.log(400./8000.),0.8,0.])
+    potparams3= numpy.array([numpy.log(2.5/8.),230./220.,
+                             numpy.log(400./8000.),0.2,0.])
+    options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,gfehs,gafes,raw)
-    M= len(gfehs)
     #Check whether fits exist, if not, pop
     removeBins= numpy.ones(M,dtype='bool')
     for jj in range(M):
@@ -133,6 +168,7 @@ def plotDensComparisonDFMulti(options,args):
         #Some bins have not been fit yet, and have to be removed
         gfehs= list((numpy.array(gfehs))[removeBins])
         gafes= list((numpy.array(gafes))[removeBins])
+        gdistancefacs= gdistancefacs[removeBins]
         print "Only using %i bins out of %i ..." % (numpy.sum(removeBins),M)
         M= len(gfehs)
     model1s= []
@@ -148,11 +184,6 @@ def plotDensComparisonDFMulti(options,args):
     fehmaxs= []
     cfehs= []
     #######DF PARAMETER RANGES###########
-    hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
-    srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
-    szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
-    dvts= numpy.linspace(-0.1,0.1,5)
-    pouts= numpy.linspace(10.**-5.,.3,31)
     if not options.multi is None:
         #Generate list of temporary files
         tmpfiles= []
@@ -165,8 +196,8 @@ def plotDensComparisonDFMulti(options,args):
                                                                       gfehs,gafes,
                                                                       fehs,afes,
                                                                       options,
-                                                                      hrs,srs,szs,dvts,pouts,
                                                                       potparams1,potparams2,potparams3,
+                                                                      distancefacs,
                                                                       binned,normintstuff,
                                                                       True,tmpfiles)),
                                       range(M),
@@ -215,8 +246,7 @@ def plotDensComparisonDFMulti(options,args):
         for jj in range(M):
             try:
                 model1,tparams1,model2,tparams2,model3,tparams3,tdata,colordist,fehdist,fehmin,fehmax,feh, sf, rmin, rmax, grmin, grmax= run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
-                                                                                                                                hrs,srs,szs,dvts,pouts,
-                                                                                                                                potparams1,potparams2,potparams3,
+                                                                                                                                                                                                                 potparams1,potparams2,potparams3,distancefacs,
                                                                                                                                 binned,normintstuff,
                                                                                                                                 False,None)
             except TypeError:
@@ -274,7 +304,8 @@ def plotDensComparisonDFMulti(options,args):
                      fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                      xrange=xrange,
                      bins=bins[ii],ls='-',left_legend=thisleft_legend,
-                     right_legend=thisright_legend,numcores=numcores)
+                     right_legend=thisright_legend,numcores=numcores,
+                     distfac=gdistancefacs)
         if not params2[0] is None:
             compare_func(model2s,params2,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins[ii],
@@ -282,7 +313,8 @@ def plotDensComparisonDFMulti(options,args):
                          grmin=grmin,grmax=grmax,
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
-                         overplot=True,ls='--',numcores=numcores)
+                         overplot=True,ls='--',numcores=numcores,
+                     distfac=gdistancefacs)
         if not params3[0] is None:
             compare_func(model3s,params3,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins[ii],
@@ -290,7 +322,8 @@ def plotDensComparisonDFMulti(options,args):
                          grmin=grmin,grmax=grmax,
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
-                         overplot=True,ls=':',numcores=numcores)
+                         overplot=True,ls=':',numcores=numcores,
+                         distfac=gdistancefacs)
         if options.type == 'r':
             bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+plate+'.'+options.ext)
         else:
@@ -311,7 +344,8 @@ def plotDensComparisonDFMulti(options,args):
                      grmax=grmax,
                      fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                      xrange=xrange,
-                     bins=bins,ls='-',numcores=numcores)
+                     bins=bins,ls='-',numcores=numcores,
+                     distfac=gdistancefacs)
         if not params2[0] is None:
             compare_func(model2s,params2,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins,
@@ -320,7 +354,8 @@ def plotDensComparisonDFMulti(options,args):
                          grmax=grmax,
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
-                         overplot=True,ls='--',numcores=numcores)
+                         overplot=True,ls='--',numcores=numcores,
+                         distfac=gdistancefacs)
         if not params3[0] is None:
             compare_func(model3s,params3,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins,
@@ -329,7 +364,8 @@ def plotDensComparisonDFMulti(options,args):
                          grmax=grmax,
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
-                         overplot=True,ls=':',numcores=numcores)
+                         overplot=True,ls=':',numcores=numcores,
+                         distfac=gdistancefacs)
         if options.type == 'r':
             bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+'l%i_b%i_bright.' % (ls[ii],bs[ii])+options.ext)
         else:
@@ -346,7 +382,8 @@ def plotDensComparisonDFMulti(options,args):
                      grmax=grmax,
                      fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                      xrange=xrange,
-                     bins=bins,ls='-',numcores=numcores)
+                     bins=bins,ls='-',numcores=numcores,
+                     distfac=gdistancefacs)
         if not params2[0] is None:
             compare_func(model2s,params2,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins,
@@ -354,7 +391,8 @@ def plotDensComparisonDFMulti(options,args):
                          grmax=grmax,
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
-                         overplot=True,ls='--',numcores=numcores)
+                         overplot=True,ls='--',numcores=numcores,
+                         distfac=gdistancefacs)
         if not params3[0] is None:
             compare_func(model3s,params3,sf,colordists,fehdists,
                          data,plate,color='k',bins=bins,
@@ -363,7 +401,8 @@ def plotDensComparisonDFMulti(options,args):
                          fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                          xrange=xrange,
                          overplot=True,ls=':',
-                         numcores=numcores)
+                         numcores=numcores,
+                         distfac=gdistancefacs)
         if options.type == 'r':
             bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+'l%i_b%i_faint.' % (ls[ii],bs[ii])+options.ext)
         else:
@@ -371,13 +410,16 @@ def plotDensComparisonDFMulti(options,args):
     return None
 
 def run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
-                         hrs,srs,szs,dvts,pouts,
                          potparams1,potparams2,potparams3,
+                         distancefacs,
                          binned,normintstuff,
                          savetopickle,tmpfiles):
     print "Working on group %i / %i ..." % (jj+1,M)
     #Find pop corresponding to this bin
     pop= numpy.argmin((gfehs[jj]-fehs)**2./0.1+(gafes[jj]-afes)**2./0.0025)
+    #Apply distance factor
+    if options.andistances:
+        options.fixdm= numpy.log10(distancefacs[pop])*5.
     #Load savefile
     if not options.init is None:
         #Load initial parameters from file
@@ -405,39 +447,55 @@ def run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
             savefile.close()
     else:
         raise IOError("base filename not specified ...")
-    #Set DF parameters as the maximum at R_d=2.5, f_h=0.4
-    indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,3,:,:,:,1:4,:,0,0]),
-                              (8,8,8,3,31))
-    tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
-                          szs[indx[2]],numpy.log(8./_REFR0),
-                          numpy.log(7./_REFR0),pouts[indx[4]],
-                          0.,0.,0.,0.,0.])
-    options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
+    #First model is best-fit for this particular bin
+    marglogl= numpy.zeros((8,16))
+    for ll in range(8):
+        for kk in range(16):
+            marglogl[ll,kk]= logsumexp(logl[ll,0,0,kk,:,:,:,0])
+    indx= numpy.unravel_index(numpy.nanargmax(marglogl),(8,16))
+    print "Maximum at %i,%i" % (indx[0],indx[1])
+    rds= numpy.linspace(1.8,3.2,options.nrds)/_REFR0
+    rds= numpy.log(rds)
+    fhs= numpy.linspace(0.,1.,options.nfhs)
+    potparams1[0]= rds[indx[0]]
+    potparams1[3]= fhs[indx[1]]
+    #######DF PARAMETER RANGES###########
+    hrs, srs, szs=  setup_dfgrid([gfehs[jj]],[gafes[jj]],options)
+    dfindx= numpy.unravel_index(numpy.argmax(logl[indx[0],0,0,indx[1],:,:,:,0]),
+                                (8,8,16))
+    tparams= initialize(options,[gfehs[jj]],[gafes[jj]])
+    startindx= 0
+    if options.fitdvt: startindx+= 1
+    tparams[startindx]= hrs[dfindx[0]]
+    tparams[startindx+4]= srs[dfindx[1]]
+    tparams[startindx+2]= szs[dfindx[2]]
+    tparams[startindx+5]= 0. #outlier fraction
     tparams= set_potparams(potparams1,tparams,options,1)
     #Set up density models and their parameters
     model1= interpDens
     print "Working on model 1 ..."
     paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
     params1= paramsInterp
-    if True:
-        tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],
-                              srs[indx[1]-(indx[1] != 0)],
-                              szs[indx[2]-(indx[2] != 0)],
-                              numpy.log(8./_REFR0),
-                              numpy.log(7./_REFR0),pouts[indx[4]],
-                              0.,0.,0.,0.,0.,0.])
-        #options.potential= 'dpdiskplhalodarkdiskfixbulgeflatwgasalt'
-        options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    if False:
+        indx0= numpy.argmin((potparams2[0]-rds)**2.)
+        indx1= numpy.argmin((potparams2[3]-fhs)**2.)
+        dfindx= numpy.unravel_index(numpy.argmax(logl[indx0,0,0,indx1,:,:,:,0]),
+                                    (8,8,16))
+        tparams[startindx]= hrs[dfindx[0]]
+        tparams[startindx+4]= srs[dfindx[1]]
+        tparams[startindx+2]= szs[dfindx[2]]
         tparams= set_potparams(potparams2,tparams,options,1)
         model2= interpDens
         print "Working on model 2 ..."
         paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
         params2= paramsInterp
-        tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
-                              szs[indx[2]],numpy.log(8./_REFR0),
-                              numpy.log(7./_REFR0),pouts[indx[4]],
-                              0.,0.,0.,0.,0.])
-        options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+        indx0= numpy.argmin((potparams3[0]-rds)**2.)
+        indx1= numpy.argmin((potparams3[3]-fhs)**2.)
+        dfindx= numpy.unravel_index(numpy.argmax(logl[indx0,0,0,indx1,:,:,:,0]),
+                                    (8,8,16))
+        tparams[startindx]= hrs[dfindx[0]]
+        tparams[startindx+4]= srs[dfindx[1]]
+        tparams[startindx+2]= szs[dfindx[2]]
         tparams= set_potparams(potparams3,tparams,options,1)
         model3= interpDens
         print "Working on model 3 ..."
