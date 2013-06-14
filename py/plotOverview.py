@@ -50,6 +50,7 @@ ranges['nfaint']= [0.,200.]
 ranges['hz']= [150.,1000.]
 ranges['hr']= [1.5,5.]
 ranges['rd']= [1.9,3.5]
+ranges['zh']= [100.,500.]
 ranges['surfz']= [50.,100.]
 ranges['surfzdisk']= [20.,90.]
 ranges['rhodm']= [0.,0.014]
@@ -130,7 +131,7 @@ def plotbestr(options,args):
     for ii in range(npops):
         if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
                                          k=(options.sample.lower() == 'k')) /8.) > -0.5 \
-                or (options.sample.lower() == 'g' and (ii < 6 or ii == 50)) \
+                or (options.sample.lower() == 'g' and (ii < 0 or ii == 50)) \
                 or (options.sample.lower() == 'k' and ii < 7):
             continue
         #Determine best-r
