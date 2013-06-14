@@ -24,7 +24,9 @@ def plotSurf(savefilename,plotfilename):
         savefile= open('binmapping_k.sav','rb')
     fehs= pickle.load(savefile)
     afes= pickle.load(savefile)
-    indx= True - numpy.isnan(surfrs)
+    indx= numpy.isnan(surfrs)
+    indx[50]= True
+    indx= True - indx
     surfrs= surfrs[indx]
     surfs= surfs[indx]
     surferrs= surferrs[indx]
