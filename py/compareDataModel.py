@@ -791,7 +791,7 @@ def compareRdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                            fehmin=-0.4,fehmax=0.5,feh=-0.15,
                            convolve=0.05,xrange=None,yrange=None,
                            overplot=False,bins=21,color='k',ls='-',
-                           left_legend=None,right_legend=None,
+                           left_legend=None,right_legend=None,distfac=None,
                            numcores=None):
     """
     NAME:
@@ -827,6 +827,8 @@ def compareRdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
        2013-03-21 - Adapted for multiple populations - Bovy (IAS)
     """
     M= len(densfunc)
+    if distfac is None:
+        distfac= numpy.ones(M)
     #Set up plates
     platelb= bovy_coords.radec_to_lb(sf.platestr.ra,sf.platestr.dec,
                                      degree=True)
@@ -882,8 +884,8 @@ def compareRdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                 grs[jj,:,ii]= numpy.linspace(grmin,grmax,_NGR)
     sys.stdout.write('\r'+"Determining minimal and maximal distance")
     sys.stdout.flush()
-    dmin= numpy.array([numpy.amin(_ivezic_dist(grs[jj,:,:],thisrmin,fehs[jj,:,:])) for jj in range(M)])
-    dmax= numpy.array([numpy.amax(_ivezic_dist(grs[jj,:,:],thisrmax,fehs[jj,:,:])) for jj in range(M)])
+    dmin= numpy.array([numpy.amin(_ivezic_dist(grs[jj,:,:],thisrmin,fehs[jj,:,:]))*distfac[jj] for jj in range(M)])
+    dmax= numpy.array([numpy.amax(_ivezic_dist(grs[jj,:,:],thisrmax,fehs[jj,:,:]))*distfac[jj] for jj in range(M)])
     sys.stdout.write('\r'+_ERASESTR+'\r')
     sys.stdout.flush()
     Rmin, Rmax= 5., 14. #BOVY: HARD-CODED
@@ -905,7 +907,7 @@ def compareRdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                                                                                      grmin,grmax,
                                                                                      fehmin[jj],fehmax[jj],
                                                                                      feh[jj],colordist[jj],
-                                                                                     fehdist[jj],sf)),
+                                                                                     fehdist[jj],sf,distfac[jj])),
                                                            
                                                            range(len(plate)),numcores=numcores))
                 for ii in range(len(plate)):
@@ -938,7 +940,8 @@ def compareRdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                                                     plateb,grmin,grmax,
                                                     fehmin[jj],fehmax[jj],
                                                     feh[jj],colordist[jj],
-                                                    fehdist[jj],sf,p)
+                                                    fehdist[jj],sf,p,
+                                                    distfac[jj])
                     Rdist[jj,:]+= thisRdist
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
@@ -947,7 +950,7 @@ def compareRdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
         obsnumbers= numpy.array([len(data[jj]) for jj in range(M)])
         relamp= obsnumbers/prednumbers
         for jj in range(M):
-            Rdist[jj:]*= relamp[jj]
+            Rdist[jj,:]*= relamp[jj]
         Rdist= numpy.nansum(Rdist,axis=0)
         norm= numpy.nansum(Rdist*(Rs[1]-Rs[0]))
         Rdist/= norm
@@ -1102,7 +1105,7 @@ def compareRdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
 #For multi evaluation of previous    
 def _calc_Rdists_multi(p,platelb,Rs,densfunc,params,rmin,rmax,
                        grmin,grmax,fehmin,fehmax,
-                       feh,colordist,fehdist,sf):
+                       feh,colordist,fehdist,sf,distfac):
     #l and b?
     pindx= (sf.plates == p)
     platel= platelb[pindx,0][0]
@@ -1113,7 +1116,7 @@ def _calc_Rdists_multi(p,platelb,Rs,densfunc,params,rmin,rmax,
                                     plateb,grmin,grmax,
                                     fehmin,fehmax,
                                     feh,colordist,
-                                    fehdist,sf,p)
+                                    fehdist,sf,p,distfac)
     return thisRdist
 
 def comparernumberPlate(densfunc,params,sf,colordist,fehdist,data,plate,
@@ -1394,6 +1397,7 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                            convolve=0.,xrange=None,yrange=None,
                            overplot=False,bins=21,color='k',ls='-',
                            left_legend=None,right_legend=None,distfac=None,
+                           Rmin=None,Rmax=None,
                            numcores=None):
     """
     NAME:
@@ -1509,7 +1513,7 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                                                                                      grmin,grmax,
                                                                                      fehmin[jj],fehmax[jj],
                                                                                      feh[jj],colordist[jj],
-                                                                                     fehdist[jj],sf,distfac[jj])),
+                                                                                     fehdist[jj],sf,distfac[jj],Rmin,Rmax)),
                                                            
                                                            range(len(plate)),numcores=numcores))
                 for ii in range(len(plate)):
@@ -1542,7 +1546,8 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                                                     plateb,grmin,grmax,
                                                     fehmin[jj],fehmax[jj],
                                                     feh[jj],colordist[jj],
-                                                    fehdist[jj],sf,p,distfac[jj])
+                                                    fehdist[jj],sf,p,distfac[jj],
+                                                    Rmin=Rmin,Rmax=Rmax)
                     zdist[jj,:]+= thiszdist
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
@@ -1551,7 +1556,7 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
         obsnumbers= numpy.array([len(data[jj]) for jj in range(M)])
         relamp= obsnumbers/prednumbers
         for jj in range(M):
-            zdist[jj:]*= relamp[jj]
+            zdist[jj,:]*= relamp[jj]
         zdist= numpy.nansum(zdist,axis=0)
         norm= numpy.nansum(zdist*(zs[1]-zs[0]))
         zdist/= norm
@@ -1577,8 +1582,19 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
         #Plot the data
         data_z= []
         for jj in range(M):
+            if not Rmin is None or not Rmax is None:
+                tdata_R= numpy.sqrt((8.-data[jj].xc)**2.+data[jj].yc**2.)
             for p in plate:
-                data_z.extend(numpy.fabs(data[jj][(data[jj].plate == p)].zc))
+                if Rmin is None and not Rmax is None:
+                    data_z.extend(numpy.fabs(data[jj][(data[jj].plate == p)*(tdata_R < Rmax) ].zc))
+                elif Rmax is None and not Rmin is None:
+                    data_z.extend(numpy.fabs(data[jj][(data[jj].plate == p)*(tdata_R >= Rmin)].zc))
+                elif not Rmax is None and not Rmin is None:
+                    data_z.extend(numpy.fabs(data[jj][(data[jj].plate == p)*(tdata_R >= Rmin)*(tdata_R < Rmax)].zc))
+                else:
+                    data_z.extend(numpy.fabs(data[jj][(data[jj].plate == p)].zc))
+#            for p in plate:
+#                data_z.extend(numpy.fabs(data[jj][(data[jj].plate == p)].zc))
         if len(data_z) > 0:
             hist= bovy_plot.bovy_hist(data_z,
                                       normed=True,bins=bins,ec='k',
@@ -1706,7 +1722,7 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
 #For multi evaluation of previous    
 def _calc_zdists_multi(p,platelb,zs,densfunc,params,rmin,rmax,
                        grmin,grmax,fehmin,fehmax,
-                       feh,colordist,fehdist,sf,distfac):
+                       feh,colordist,fehdist,sf,distfac,Rmin,Rmax):
     #l and b?
     pindx= (sf.plates == p)
     platel= platelb[pindx,0][0]
@@ -1717,7 +1733,8 @@ def _calc_zdists_multi(p,platelb,zs,densfunc,params,rmin,rmax,
                                     plateb,grmin,grmax,
                                     fehmin,fehmax,
                                     feh,colordist,
-                                    fehdist,sf,p,distfac)
+                                    fehdist,sf,p,distfac=distfac,
+                                    Rmin=Rmin,Rmax=Rmax)
     return thiszdist
 
 ###############################################################################
@@ -1894,7 +1911,7 @@ def _predict_zdist_plate(zs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
 
 def _predict_Rdist_plate(Rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
                          fehmin,fehmax,
-                         feh,colordist,fehdist,sf,plate):
+                         feh,colordist,fehdist,sf,plate,distfac=1.):
     """Predict the R distribution for a plate"""
     #BOVY: APPROXIMATELY INTEGRATE OVER GR
     ngr, nfeh= 11, 11
@@ -1927,7 +1944,7 @@ def _predict_Rdist_plate(Rs,densfunc,params,rmin,rmax,l,b,grmin,grmax,
             #What rs do these Rs correspond to
             gi= _gi_gr(grs[jj])
             mr= _mr_gi(gi,fehs[kk])
-            rs= 5.*numpy.log10(ds)+10.+mr
+            rs= 5.*numpy.log10(ds/distfac)+10.+mr
             select= numpy.array(sf(plate,r=rs))
             out+= colordist(grs[jj])*select*fehdist(fehs[kk])
             norm+= colordist(grs[jj])*fehdist(fehs[kk])
