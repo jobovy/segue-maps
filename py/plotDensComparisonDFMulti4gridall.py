@@ -17,6 +17,7 @@ from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
 _NOTDONEYET= True
+_RRANGES= False
 def getMultiComparisonBins(options):
     if options.sample.lower() == 'g':
         if options.group == 'aenhanced':
@@ -39,6 +40,8 @@ def getMultiComparisonBins(options):
         elif options.group == 'apoor':
             gfehs= [-0.05,-0.05,-0.05,0.05,0.05,0.15,0.25]
             gafes= [0.025,0.075,0.125,0.025,0.075,0.025,0.025]
+            gfehs= [gfehs[6]]
+            gafes= [gafes[6]]
             left_legend= r'$\alpha\!-\!\mathrm{young}$'+'\n'+r'$\mathrm{populations}$'
         elif options.group == 'apoorfpoor':
             gafes= [0.025,0.075,0.075,0.075,0.075,
@@ -86,6 +89,7 @@ def getMultiComparisonBins(options):
                      -0.45]
             left_legend= r'$\alpha\!-\!\mathrm{intermediate}$'+'\n'+r'$\mathrm{populations}$'
     return (gafes,gfehs,left_legend)
+
 def plotDensComparisonDFMulti(options,args):
     #Read data etc.
     print "Reading the data ..."
@@ -108,7 +112,6 @@ def plotDensComparisonDFMulti(options,args):
     gafes, gfehs, left_legend= getMultiComparisonBins(options)
     M= len(gfehs)
     if options.andistances:
-        binned= pixelAfeFeh(raw,dfeh=options.dfeh,dafe=options.dafe)
         distancefacs= numpy.zeros_like(fehs)
         gdistancefacs= numpy.zeros_like(gfehs)
         for jj in range(M):
@@ -128,16 +131,18 @@ def plotDensComparisonDFMulti(options,args):
             binned.data.xc[thisdataIndx]= newbinned.data.xc[thisdataIndx]
             binned.data.yc[thisdataIndx]= newbinned.data.yc[thisdataIndx]
             binned.data.zc[thisdataIndx]= newbinned.data.zc[thisdataIndx]
+            binned.data.plate[thisdataIndx]= newbinned.data.plate[thisdataIndx]
+            binned.data.dered_r[thisdataIndx]= newbinned.data.dered_r[thisdataIndx]
     else:
         distancefacs=numpy.ones_like(fehs)
         gdistancefacs=numpy.ones_like(gfehs)
     ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(2.5/8.),230./220.,
+    potparams1= numpy.array([numpy.log(2.5/8.),options.fixvc/220.,
                              numpy.log(400./8000.),0.2,0.])
-    potparams2= numpy.array([numpy.log(2.5/8.),230./220.,
+    potparams2= numpy.array([numpy.log(3./8.),options.fixvc/220.,
+                             numpy.log(400./8000.),0.466666666,0.])
+    potparams3= numpy.array([numpy.log(2.5/8.),options.fixvc/220.,
                              numpy.log(400./8000.),0.8,0.])
-    potparams3= numpy.array([numpy.log(2.5/8.),230./220.,
-                             numpy.log(400./8000.),0.2,0.])
     options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
@@ -281,10 +286,61 @@ def plotDensComparisonDFMulti(options,args):
         compare_func= compareDataModel.comparezdistPlateMulti
     elif options.type == 'R':
         compare_func= compareDataModel.compareRdistPlateMulti
+    numcores= options.multi
+    #First do R ranges for z
+    if options.type.lower() == 'z' and _RRANGES:
+        bins=21
+        Rmins= [None,7.,9.]
+        Rmaxs= [7.,9.,None]
+        nameRmins= [4,7,9]
+        nameRmaxs= [7,9,13]
+        for ii in range(len(Rmins)):
+            plate= 'all'
+            if Rmins[ii] is None:
+                thisleft_legend= r'$R \leq 7\,\mathrm{kpc\ plates}$'
+            elif Rmins[ii] == 7.:
+                thisleft_legend= r'$7\,\mathrm{kpc} < R \leq 9\,\mathrm{kpc\ plates}$'
+            elif Rmaxs[ii] is None:
+                thisleft_legend= r'$R \geq 9\,\mathrm{kpc\ plates}$'
+            thisright_legend= None
+            bovy_plot.bovy_print()
+            compare_func(model1s,params1,sf,colordists,fehdists,
+                         data,plate,color='k',
+                         rmin=14.5,rmax=rmax,
+                         grmin=grmin,grmax=grmax,
+                         fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                         xrange=xrange,numcores=numcores,
+                         bins=bins,ls='-',left_legend=thisleft_legend,
+                         right_legend=thisright_legend,
+                         Rmin=Rmins[ii],Rmax=Rmaxs[ii],
+                         distfac=gdistancefacs)
+            if not params2[0] is None:
+                compare_func(model2s,params2,sf,colordists,fehdists,
+                             data,plate,color='k',bins=bins,
+                             rmin=14.5,rmax=rmax,
+                             grmin=grmin,grmax=grmax,
+                             fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                             xrange=xrange,numcores=numcores,
+                             overplot=True,ls='--',
+                             Rmin=Rmins[ii],Rmax=Rmaxs[ii],
+                             distfac=gdistancefacs)
+            if not params3[0] is None:
+                compare_func(model3s,params3,sf,colordists,fehdists,
+                             data,plate,color='k',bins=bins,
+                             rmin=14.5,rmax=rmax,
+                             grmin=grmin,grmax=grmax,
+                             fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                             xrange=xrange,numcores=numcores,
+                             overplot=True,ls=':',
+                             Rmin=Rmins[ii],Rmax=Rmaxs[ii],
+                             distfac=gdistancefacs)
+            if options.type == 'r':
+                bovy_plot.bovy_end_print(args[0]+'model_data_g_%iR%i' % (nameRmins[ii],nameRmaxs[ii])+'.'+options.ext)
+            else:
+                bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_%iR%i' % (nameRmins[ii],nameRmaxs[ii])+'.'+options.ext)
     #all, faint, bright
     bins= [31,31,31]
     plates= ['all','bright','faint']
-    numcores= options.multi
     for ii in range(len(plates)):
         plate= plates[ii]
         print "Working on %s plates" % plate
@@ -418,8 +474,9 @@ def run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
     #Find pop corresponding to this bin
     pop= numpy.argmin((gfehs[jj]-fehs)**2./0.1+(gafes[jj]-afes)**2./0.0025)
     #Apply distance factor
+    toptions= copy.copy(options)
     if options.andistances:
-        options.fixdm= numpy.log10(distancefacs[pop])*5.
+        toptions.fixdm= numpy.log10(distancefacs[pop])*5.
     #Load savefile
     if not options.init is None:
         #Load initial parameters from file
@@ -453,41 +510,45 @@ def run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
         for kk in range(16):
             marglogl[ll,kk]= logsumexp(logl[ll,0,0,kk,:,:,:,0])
     indx= numpy.unravel_index(numpy.nanargmax(marglogl),(8,16))
-    print "Maximum at %i,%i" % (indx[0],indx[1])
-    rds= numpy.linspace(1.8,3.2,options.nrds)/_REFR0
+    print "Maximum for %i at %i,%i" % (pop,indx[0],indx[1])
+    rds= numpy.linspace(2.0,3.4,options.nrds)/_REFR0
     rds= numpy.log(rds)
     fhs= numpy.linspace(0.,1.,options.nfhs)
     potparams1[0]= rds[indx[0]]
     potparams1[3]= fhs[indx[1]]
     #######DF PARAMETER RANGES###########
-    hrs, srs, szs=  setup_dfgrid([gfehs[jj]],[gafes[jj]],options)
-    dfindx= numpy.unravel_index(numpy.argmax(logl[indx[0],0,0,indx[1],:,:,:,0]),
+    hrs, srs, szs=  setup_dfgrid([gfehs[jj]],[gafes[jj]],toptions)
+    dfindx= numpy.unravel_index(numpy.nanargmax(logl[indx[0],0,0,indx[1],:,:,:,0]),
                                 (8,8,16))
-    tparams= initialize(options,[gfehs[jj]],[gafes[jj]])
+    print "Maximum for %i at %i,%i,%i" % (pop,dfindx[0],dfindx[1],dfindx[2])
+    tparams= initialize(toptions,[gfehs[jj]],[gafes[jj]])
     startindx= 0
     if options.fitdvt: startindx+= 1
     tparams[startindx]= hrs[dfindx[0]]
     tparams[startindx+4]= srs[dfindx[1]]
     tparams[startindx+2]= szs[dfindx[2]]
     tparams[startindx+5]= 0. #outlier fraction
-    tparams= set_potparams(potparams1,tparams,options,1)
+    tparams= set_potparams(potparams1,tparams,toptions,1)
     #Set up density models and their parameters
     model1= interpDens
     print "Working on model 1 ..."
-    paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+    paramsInterp, surfz= calc_model(tparams,toptions,0,_retsurfz=True)
     params1= paramsInterp
     if False:
         indx0= numpy.argmin((potparams2[0]-rds)**2.)
         indx1= numpy.argmin((potparams2[3]-fhs)**2.)
+        #indx0= indx[0]
+        #indx1= indx[1]
         dfindx= numpy.unravel_index(numpy.argmax(logl[indx0,0,0,indx1,:,:,:,0]),
                                     (8,8,16))
         tparams[startindx]= hrs[dfindx[0]]
         tparams[startindx+4]= srs[dfindx[1]]
         tparams[startindx+2]= szs[dfindx[2]]
-        tparams= set_potparams(potparams2,tparams,options,1)
+        #print "BOVY: YOU HAVE MESSED WITH MODEL 2"
+        tparams= set_potparams(potparams2,tparams,toptions,1)
         model2= interpDens
         print "Working on model 2 ..."
-        paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+        paramsInterp, surfz= calc_model(tparams,toptions,0,_retsurfz=True)
         params2= paramsInterp
         indx0= numpy.argmin((potparams3[0]-rds)**2.)
         indx1= numpy.argmin((potparams3[3]-fhs)**2.)
@@ -496,10 +557,10 @@ def run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
         tparams[startindx]= hrs[dfindx[0]]
         tparams[startindx+4]= srs[dfindx[1]]
         tparams[startindx+2]= szs[dfindx[2]]
-        tparams= set_potparams(potparams3,tparams,options,1)
+        tparams= set_potparams(potparams3,tparams,toptions,1)
         model3= interpDens
         print "Working on model 3 ..."
-        paramsInterp, surfz= calc_model(tparams,options,0,_retsurfz=True)
+        paramsInterp, surfz= calc_model(tparams,toptions,0,_retsurfz=True)
         params3= paramsInterp
     else:
         model2= None
@@ -510,9 +571,9 @@ def run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
     #Setup everything for selection function
     thisnormintstuff= normintstuff[jj]
     if _PRECALCVSAMPLES:
-        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac,normR, normZ,surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,options)
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac,normR, normZ,surfnrs, surfnzs, surfRgrid, surfzgrid, surfvrs, surfvts, surfvzs= unpack_normintstuff(thisnormintstuff,toptions)
     else:
-        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac, normR, normZ= unpack_normintstuff(thisnormintstuff,options)
+        sf, plates,platel,plateb,platebright,platefaint,grmin,grmax,rmin,rmax,fehmin,fehmax,feh,colordist,fehdist,gr,rhogr,rhofeh,mr,dmin,dmax,ds, surfscale, hr, hz, colorfehfac, normR, normZ= unpack_normintstuff(thisnormintstuff,toptions)
     if True:
         #Cut out bright stars on faint plates and vice versa
         indx= []
@@ -542,7 +603,7 @@ def run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
 
 def calc_model(params,options,pop,_retsurfz=False,
                normintstuff=None):
-    nrs, nzs= 5, 5#21, 21
+    nrs, nzs= 16, 16 #5,5
     thisrmin, thisrmax= 4./_REFR0, 15./_REFR0
     thiszmin, thiszmax= 0., .8
     Rgrid= numpy.linspace(thisrmin,thisrmax,nrs)
