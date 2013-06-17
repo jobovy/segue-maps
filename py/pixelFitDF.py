@@ -1631,8 +1631,10 @@ def setup_dfgrid(fehs,afes,options):
             elif abindx == 50:
                 szs+= 0.30
             elif abindx == 57:
-                szs+= 0.2
-            elif abindx == 58 or abindx == 59:
+                szs+= 0.8
+            elif abindx == 58:
+                szs+= 0.15
+            elif abindx == 59:
                 szs+= 0.15
     return (hrs,srs,szs)
 
