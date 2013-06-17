@@ -497,7 +497,7 @@ def plothszsz_single(ii,options,args):
         #Normalize
         alogl= marglogl-numpy.amax(marglogl)
         #Get ranges
-        hrs, srs, szs=  setup_dfgrid(fehs,afes,options)
+        hrs, srs, szs=  setup_dfgrid([fehs[ii]],[afes[ii]],options)
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
                               origin='lower',cmap='gist_yarg',
