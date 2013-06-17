@@ -5,6 +5,7 @@ from scipy import ndimage
 import cPickle as pickle
 from optparse import OptionParser
 from galpy.util import bovy_plot, bovy_coords, multi
+from matplotlib import pyplot
 import segueSelect
 import compareDataModel
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
@@ -13,7 +14,7 @@ from fitDensz import cb, _ZSUN, DistSpline, _ivezic_dist, _NDS
 from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0, _VRSUN, _VTSUN, _VZSUN
-from plotDensComparisonDFMulti import getMultiComparisonBins, get_median_potential
+from plotDensComparisonDFMulti4gridall import getMultiComparisonBins
 _legendsize= 16
 _NOTDONEYET= True
 def plotVelComparisonDFMulti(options,args):
@@ -36,13 +37,40 @@ def plotVelComparisonDFMulti(options,args):
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
     gafes, gfehs, left_legend= getMultiComparisonBins(options)
-    ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
-    potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.2,0.])
-    #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
-    potparams3= numpy.array([numpy.log(2.5/8.),235./220.,
-                             numpy.log(400./8000.),0.2,0.])
     M= len(gfehs)
+    if options.andistances:
+        distancefacs= numpy.zeros_like(fehs)
+        gdistancefacs= numpy.zeros_like(gfehs)
+        for jj in range(M):
+            #Find pop corresponding to this bin
+            ii= numpy.argmin((gfehs[jj]-fehs)**2./0.1+(gafes[jj]-afes)**2./0.0025)
+            print ii
+            #Get the relevant data
+            data= binned(fehs[ii],afes[ii])
+            distancefacs[ii]= AnDistance.AnDistance(data.dered_g-data.dered_r,
+                                                    data.feh)
+            gdistancefacs[jj]= distancefacs[ii]
+            options.fixdm= numpy.log10(distancefacs[ii])*5.
+            #Apply distance factor to the data
+            newraw= read_rawdata(options)
+            newbinned= pixelAfeFeh(newraw,dfeh=options.dfeh,dafe=options.dafe)
+            thisdataIndx= binned.callIndx(fehs[ii],afes[ii])
+            binned.data.xc[thisdataIndx]= newbinned.data.xc[thisdataIndx]
+            binned.data.yc[thisdataIndx]= newbinned.data.yc[thisdataIndx]
+            binned.data.zc[thisdataIndx]= newbinned.data.zc[thisdataIndx]
+            binned.data.plate[thisdataIndx]= newbinned.data.plate[thisdataIndx]
+            binned.data.dered_r[thisdataIndx]= newbinned.data.dered_r[thisdataIndx]
+    else:
+        distancefacs=numpy.ones_like(fehs)
+        gdistancefacs=numpy.ones_like(gfehs)
+    ##########POTENTIAL PARAMETERS####################
+    potparams1= numpy.array([numpy.log(2.5/8.),options.fixvc/220.,
+                             numpy.log(400./8000.),0.2,0.])
+    potparams2= numpy.array([numpy.log(3./8.),options.fixvc/220.,
+                             numpy.log(400./8000.),0.466666666,0.])
+    potparams3= numpy.array([numpy.log(2.5/8.),options.fixvc/220.,
+                             numpy.log(400./8000.),0.8,0.])
+    options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
     #Check whether fits exist, if not, pop
     removeBins= numpy.ones(M,dtype='bool')
     for jj in range(M):
@@ -80,12 +108,6 @@ def plotVelComparisonDFMulti(options,args):
     velps3= numpy.zeros((len(binned.data),options.nv))
     velps3[:,:]= numpy.nan
     cumulndata= 0
-    #######DF PARAMETER RANGES###########
-    hrs= numpy.log(numpy.linspace(1.5,5.,options.nhrs)/_REFR0)
-    srs= numpy.log(numpy.linspace(25.,70.,options.nsrs)/_REFV0)
-    szs= numpy.log(numpy.linspace(15.,60.,options.nszs)/_REFV0)
-    dvts= numpy.linspace(-0.1,0.1,5)
-    pouts= numpy.linspace(10.**-5.,.3,31)
     if options.type.lower() == 'vz':
         if options.group == 'aenhanced':
             vs= numpy.linspace(-180.,180.,options.nv)
@@ -116,7 +138,7 @@ def plotVelComparisonDFMulti(options,args):
             xrange=[0.,350.]
             bins= 39
         xlabel=r'$V_T\ [\mathrm{km\,s}^{-1}]$'
-    alts= True
+    alts= False
     if not options.multi is None:
         #Generate list of temporary files
         tmpfiles= []
@@ -126,8 +148,9 @@ def plotVelComparisonDFMulti(options,args):
             tmpfiles.append(tmpfile)
         try:
             dummy= multi.parallel_map((lambda x: run_calc_model_multi(x,M,gfehs,gafes,fehs,afes,options,
-                                                                      hrs,srs,szs,dvts,pouts,vs,
+                                                                      vs,
                                                                       potparams1,potparams2,potparams3,
+                                                                      distancefacs,
                                                                       binned,alts,True,tmpfiles)),
                                       range(M),
                                       numcores=numpy.amin([M,
@@ -144,10 +167,10 @@ def plotVelComparisonDFMulti(options,args):
                 data.extend(pickle.load(tmpfile))
                 zs.extend(pickle.load(tmpfile))
                 tndata= pickle.load(tmpfile)
-                cumulndata+= tndata
                 velps[cumulndata:cumulndata+tndata,:]= tvelps
                 velps2[cumulndata:cumulndata+tndata,:]= tvelps2
                 velps3[cumulndata:cumulndata+tndata,:]= tvelps3
+                cumulndata+= tndata
                 tmpfile.close()
         finally:
             for jj in range(M):
@@ -156,8 +179,9 @@ def plotVelComparisonDFMulti(options,args):
         for jj in range(M):
             try:
                 tvelps, tvelps2, tvelps3, tdata, tzs, tndata= run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
-                                                                                                                                hrs,srs,szs,dvts,pouts,vs,
+                                                                                   vs,
                                                                                                                                 potparams1,potparams2,potparams3,
+                                                                      distancefacs,
                                                                                                                                 binned,alts,
                                                                                                                                 False,None)
             except TypeError:
@@ -172,7 +196,7 @@ def plotVelComparisonDFMulti(options,args):
     bovy_plot.bovy_hist(data,bins=26,normed=True,color='k',
                         histtype='step',
                         xrange=xrange,xlabel=xlabel)
-    plotp= numpy.nansum(velps,axis=0)/cumulndata
+    plotp= numpy.nansum(velps[:cumulndata,:],axis=0)/cumulndata
     print numpy.sum(plotp)*(vs[1]-vs[0])
     bovy_plot.bovy_plot(vs,plotp,'k-',overplot=True)
     if alts:
@@ -190,22 +214,44 @@ def plotVelComparisonDFMulti(options,args):
     bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_all.'+options.ext)
     if options.all: return None
     #Plot zranges
-    zranges= [0.5,1.,1.5,2.,3.,4.]
-    nzranges= len(zranges)-1
+    #First determine the ranges that have nstars in them
+    rranges_nstars= 1000
     zs= numpy.array(zs)
     data= numpy.array(data)
+    tdata_z= sorted(numpy.fabs(zs))
+    nbins= numpy.ceil(len(tdata_z)/float(rranges_nstars))
+    rranges_nstars= int(numpy.floor(float(len(tdata_z))/nbins))
+    accum= rranges_nstars
+    zranges= [0.0]
+    while accum < len(tdata_z):
+        zranges.append(tdata_z[accum])
+        accum+= rranges_nstars
+    zranges.append(5.0)
+    print zranges
+    #zranges= [0.5,1.,1.5,2.,3.,4.]
+    nzranges= len(zranges)-1
+    sigzsd= numpy.empty(nzranges)
+    esigzsd= numpy.empty(nzranges)
+    sigzs1= numpy.empty(nzranges)
+    sigzs2= numpy.empty(nzranges)
+    sigzs3= numpy.empty(nzranges)
     for ii in range(nzranges):
         indx= (numpy.fabs(zs) >= zranges[ii])*(numpy.fabs(zs) < zranges[ii+1])
         bovy_plot.bovy_print()
         bovy_plot.bovy_hist(data[indx],bins=26,normed=True,color='k',
                             histtype='step',
                             xrange=xrange,xlabel=xlabel)
+        sigzsd[ii]= numpy.std(data[indx][(numpy.fabs(data[indx]) < 100.)])
+        esigzsd[ii]= sigzsd[ii]/numpy.sqrt(float(len(data[indx][(numpy.fabs(data[indx]) < 100.)])))
         plotp= numpy.nansum(velps[indx,:],axis=0)/numpy.sum(indx)
+        sigzs1[ii]= numpy.sqrt(numpy.sum(vs**2.*plotp)/numpy.sum(plotp)-(numpy.sum(vs*plotp)/numpy.sum(plotp))**2.)
         bovy_plot.bovy_plot(vs,plotp,'k-',overplot=True)
         if alts:
             plotp= numpy.nansum(velps2[indx,:],axis=0)/numpy.sum(indx)
+            sigzs2[ii]= numpy.sqrt(numpy.sum(vs**2.*plotp)/numpy.sum(plotp)-(numpy.sum(vs*plotp)/numpy.sum(plotp))**2.)
             bovy_plot.bovy_plot(vs,plotp,'k--',overplot=True)
             plotp= numpy.nansum(velps3[indx,:],axis=0)/numpy.sum(indx)
+            sigzs3[ii]= numpy.sqrt(numpy.sum(vs**2.*plotp)/numpy.sum(plotp)-(numpy.sum(vs*plotp)/numpy.sum(plotp))**2.)
             bovy_plot.bovy_plot(vs,plotp,'k:',overplot=True)
         bovy_plot.bovy_text(r'$ %i\ \mathrm{pc} \leq |Z| < %i\ \mathrm{pc}$' % (int(1000*zranges[ii]),int(1000*zranges[ii+1]))
                             +'\n'+
@@ -213,15 +259,37 @@ def plotVelComparisonDFMulti(options,args):
                             (numpy.sum(indx)),top_right=True,
                             size=_legendsize)
         bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_z%.1f_z%.1f.' % (zranges[ii],zranges[ii+1])+options.ext)
+    #Plot velocity dispersion as a function of |Z|
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_plot((((numpy.roll(zranges,-1)+zranges)/2.)[:-1]),sigzsd,
+                        'ko',
+                        xlabel=r'$|Z|\ (\mathrm{kpc})$',
+                        ylabel=r'$\sigma_z\ (\mathrm{km\,s}^{-1})$',
+                        xrange=[0.,4.],
+                        yrange=[0.,60.])
+    pyplot.errorbar(((numpy.roll(zranges,-1)+zranges)/2.)[:-1],sigzsd,
+                    yerr=esigzsd,
+                    marker='o',color='k',linestyle='none')
+    bovy_plot.bovy_plot((((numpy.roll(zranges,-1)+zranges)/2.)[:-1]),sigzs1,
+                        'r+',overplot=True,ms=10.)
+    bovy_plot.bovy_plot((((numpy.roll(zranges,-1)+zranges)/2.)[:-1]),sigzs2,
+                        'cx',overplot=True,ms=10.)
+    bovy_plot.bovy_plot((((numpy.roll(zranges,-1)+zranges)/2.)[:-1]),sigzs3,
+                        'gd',overplot=True,ms=10.)
+    bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_szvsz.' +options.ext)
     return None
 
 def run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
-                         hrs,srs,szs,dvts,pouts,vs,
-                         potparams1,potparams2,potparams3,
+                         vs,
+                         potparams1,potparams2,potparams3,distancefacs,
                          binned,alts,savetopickle,tmpfiles):
     print "Working on group %i / %i ..." % (jj+1,M)
     #Find pop corresponding to this bin
     pop= numpy.argmin((gfehs[jj]-fehs)**2./0.1+(gafes[jj]-afes)**2./0.0025)
+    #Apply distance factor
+    toptions= copy.copy(options)
+    if options.andistances:
+        toptions.fixdm= numpy.log10(distancefacs[pop])*5.
     #Load initial parameters from file
     if not options.init is None:
         savename= options.init
@@ -248,37 +316,60 @@ def run_calc_model_multi(jj,M,gfehs,gafes,fehs,afes,options,
             savefile.close()
     else:
         raise IOError("base filename not specified ...")
-    #Set DF parameters as the maximum at R_d=2.5, f_h=0.4
-    indx= numpy.unravel_index(numpy.argmax(logl[5,0,0,3,:,:,:,1:4,:,0,0]),
-                              (8,8,8,3,31))
-    tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
-                          szs[indx[2]],numpy.log(8./_REFR0),
-                          numpy.log(7./_REFR0),pouts[indx[4]],
-                          0.,0.,0.,0.,0.])
-    options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
-    tparams= set_potparams(potparams1,tparams,options,1)
+    #First model is best-fit for this particular bin
+    marglogl= numpy.zeros((8,16))
+    for ll in range(8):
+        for kk in range(16):
+            marglogl[ll,kk]= logsumexp(logl[ll,0,0,kk,:,:,:,0])
+    indx= numpy.unravel_index(numpy.nanargmax(marglogl),(8,16))
+    print "Maximum for %i at %i,%i" % (pop,indx[0],indx[1])
+    rds= numpy.linspace(2.0,3.4,options.nrds)/_REFR0
+    rds= numpy.log(rds)
+    fhs= numpy.linspace(0.,1.,options.nfhs)
+    potparams1[0]= rds[indx[0]]
+    potparams1[3]= fhs[indx[1]]
+    #######DF PARAMETER RANGES###########
+    hrs, srs, szs=  setup_dfgrid([gfehs[jj]],[gafes[jj]],toptions)
+    dfindx= numpy.unravel_index(numpy.nanargmax(logl[indx[0],0,0,indx[1],:,:,:,0]),
+                                (8,8,16))
+    print "Maximum for %i at %i,%i,%i" % (pop,dfindx[0],dfindx[1],dfindx[2])
+    tparams= initialize(toptions,[gfehs[jj]],[gafes[jj]])
+    startindx= 0
+    if options.fitdvt: startindx+= 1
+    tparams[startindx]= hrs[dfindx[0]]
+    tparams[startindx+4]= srs[dfindx[1]]
+    tparams[startindx+2]= szs[dfindx[2]]
+    tparams[startindx+5]= 0. #outlier fraction
+    tparams= set_potparams(potparams1,tparams,toptions,1)
     thisdata= binned(fehs[pop],afes[pop])
     velps= calc_model(tparams,options,thisdata,vs)
     if alts:
-        tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],
-                              srs[indx[1]-(indx[1] != 0)],
-                              szs[indx[2]-(indx[2] != 0)],
-                              numpy.log(8./_REFR0),
-                              numpy.log(7./_REFR0),pouts[indx[4]],
-                              0.,0.,0.,0.,0.,0.])
-        #options.potential= 'dpdiskplhalodarkdiskfixbulgeflatwgasalt'
-        options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
-        tparams= set_potparams(potparams2,tparams,options,1)
+        indx0= numpy.argmin((potparams2[0]-rds)**2.)
+        indx1= numpy.argmin((potparams2[3]-fhs)**2.)
+        #indx0= indx[0]
+        #indx1= indx[1]
+        dfindx= numpy.unravel_index(numpy.argmax(logl[indx0,0,0,indx1,:,:,:,0]),
+                                    (8,8,16))
+        tparams[startindx]= hrs[dfindx[0]]
+        tparams[startindx+4]= srs[dfindx[1]]
+        tparams[startindx+2]= szs[dfindx[2]]
+        #print "BOVY: YOU HAVE MESSED WITH MODEL 2"
+        tparams= set_potparams(potparams2,tparams,toptions,1)
         print "Working on model 2 ..."
         velps2=  calc_model(tparams,options,thisdata,vs)
-        tparams= numpy.array([dvts[1+indx[3]],hrs[indx[0]],srs[indx[1]],
-                              szs[indx[2]],numpy.log(8./_REFR0),
-                              numpy.log(7./_REFR0),pouts[indx[4]],
-                              0.,0.,0.,0.,0.])
-        options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
-        tparams= set_potparams(potparams3,tparams,options,1)
+        indx0= numpy.argmin((potparams3[0]-rds)**2.)
+        indx1= numpy.argmin((potparams3[3]-fhs)**2.)
+        dfindx= numpy.unravel_index(numpy.argmax(logl[indx0,0,0,indx1,:,:,:,0]),
+                                    (8,8,16))
+        tparams[startindx]= hrs[dfindx[0]]
+        tparams[startindx+4]= srs[dfindx[1]]
+        tparams[startindx+2]= szs[dfindx[2]]
+        tparams= set_potparams(potparams3,tparams,toptions,1)
         print "Working on model 3 ..."
         velps3= calc_model(tparams,options,thisdata,vs)
+    else:
+        velps2= None
+        velps3= None
     #Also add the correct data
     ro= get_ro(tparams,options)
     if 'vr' in options.type.lower() or 'vt' in options.type.lower():
@@ -342,7 +433,7 @@ def calc_model(params,options,data,vs):
             cov_vxvyvz[rr,0:2,0:2]= sRT
     for ii in range(len(data)):
         if options.type.lower() == 'vz':
-            thisp= numpy.array([qdf.pvz(v/_REFV0/vo,R[ii],z[ii],ngl=options.ngl,gl=True) for v in vs])
+            thisp= qdf.pvz(vs/_REFV0/vo,R[ii]+numpy.zeros(len(vs)),z[ii]+numpy.zeros(len(vs)),ngl=options.ngl,gl=True)
             ndimage.filters.gaussian_filter1d(thisp,
                                               data.vzc_err[ii]/(vs[1]-vs[0]),
                                               output=thisp)
