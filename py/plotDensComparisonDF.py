@@ -14,7 +14,7 @@ from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
 from plotDensComparisonDFMulti4gridall import calc_model
 _NOTDONEYET= True
-_RRANGES= True
+_RRANGES= False
 _VARYHSZ= True
 def plotDensComparisonDF(options,args):
     #Read data etc.
@@ -64,15 +64,29 @@ def plotDensComparisonDF(options,args):
     if options.singles:
         run_abundance_singles_plotdens(options,args,fehs,afes)
         return None
+    if options.andistances:
+        data= binned(fehs[0],afes[0])
+        distfac= AnDistance.AnDistance(data.dered_g-data.dered_r,
+                                       data.feh)
+        if options.fixdm is None:
+            options.fixdm= numpy.log10(distfac)*5.
+        else:
+            options.fixdm= options.fixdm+numpy.log10(distfac)*5.
+        options.andistances= False
+        #Start over
+        plotDensComparisonDF(options,args)
+        return None
     #Setup everything for the selection function
     print "Setting up stuff for the normalization integral ..."
     normintstuff= setup_normintstuff(options,raw,binned,fehs,afes,allraw)
     ##########POTENTIAL PARAMETERS####################
-    potparams1= numpy.array([numpy.log(2.6/8.),230./220.,numpy.log(400./8000.),0.26666666666,0.])
-    potparams2= numpy.array([numpy.log(2.8/8.),230./220,numpy.log(400./8000.),0.26666666,0.])
-    #potparams2= numpy.array([numpy.log(2.5/8.),1.,numpy.log(400./8000.),0.466666,0.,2.])
-    potparams3= numpy.array([numpy.log(2.6/8.),230./220.,
-                             numpy.log(400./8000.),0.5333333,0.])
+    potparams1= numpy.array([numpy.log(2.5/8.),options.fixvc/220.,
+                             numpy.log(400./8000.),0.2,0.])
+    potparams2= numpy.array([numpy.log(3./8.),options.fixvc/220.,
+                             numpy.log(400./8000.),0.466666666,0.])
+    potparams3= numpy.array([numpy.log(2.5/8.),options.fixvc/220.,
+                             numpy.log(400./8000.),0.8,0.])
+    options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
     #Set up density models and their parameters
     pop= 0 #assume first population
     #Load savefile
@@ -102,54 +116,30 @@ def plotDensComparisonDF(options,args):
             savefile.close()
     else:
         raise IOError("base filename not specified ...")
-    logl[numpy.isnan(logl)]= -numpy.finfo(numpy.dtype(numpy.float64)).max
-    #Set DF parameters as the maximum at R_d=2.4, f_h=0.4
+    #First model is best-fit for this particular bin
+    marglogl= numpy.zeros((8,16))
+    for ll in range(8):
+        for kk in range(16):
+            marglogl[ll,kk]= logsumexp(logl[ll,0,0,kk,:,:,:,0])
+    indx= numpy.unravel_index(numpy.nanargmax(marglogl),(8,16))
+    print "Maximum for %i at %i,%i" % (pop,indx[0],indx[1])
+    rds= numpy.linspace(2.0,3.4,options.nrds)/_REFR0
+    rds= numpy.log(rds)
+    fhs= numpy.linspace(0.,1.,options.nfhs)
+    potparams1[0]= rds[indx[0]]
+    potparams1[3]= fhs[indx[1]]
     #######DF PARAMETER RANGES###########
-    lnhr, lnsr, lnsz, rehr, resr, resz= approxFitResult(fehs[0],afes[0],
-                                                        relerr=True)
-    #if rehr > 0.3: rehr= 0.3 #regularize
-    if True: rehr= 0.3 #regularize
-    #if resr > 0.3: resr= 0.3
-    #if resz > 0.3: resz= 0.3
-    if True: resr= 0.3
-    if True: resz= 0.3
-    hrs= numpy.linspace(-1.85714286,0.9,options.nhrs)
-    #hrs= numpy.linspace(lnhr-1.5*rehr,lnhr+1.5*rehr,options.nhrs)
-    if _VARYHSZ:
-        srs= numpy.linspace(numpy.log(0.5),numpy.log(2.),options.nsrs)#hsz now
-    else:
-        srs= numpy.linspace(lnsr-0.6*resz,lnsr+0.6*resz,options.nsrs)#USE ESZ
-    szs= numpy.linspace(lnsz-0.6*resz,lnsz+0.6*resz,options.nszs)
-    #hrs= numpy.linspace(lnhr-0.3,lnhr+0.3,options.nhrs)
-    #srs= numpy.linspace(lnsr-0.1,lnsr+0.1,options.nsrs)
-    #szs= numpy.linspace(lnsz-0.1,lnsz+0.1,options.nszs)
-    dvts= numpy.linspace(-0.35,0.05,options.ndvts)
-    #dvts= numpy.linspace(-0.05,0.05,options.ndvts)
-    pouts= numpy.linspace(10.**-5.,.5,options.npouts)
-    #indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,3,:,:,:,:,:,0,0]),
-    indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,4,:,:,:,0]),
-                              logl[3,0,0,4,:,:,:,0].shape)
-    #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
-    if _VARYHSZ:
-        tparams= numpy.array([0.,hrs[indx[0]],
-                              #srs[indx[1]-2.*(indx[1] != 0)],
-                              #szs[indx[2]-2.*(indx[2] != 0)],
-                              lnsr,
-                              szs[indx[2]],
-                              numpy.log(8./_REFR0),
-                              srs[indx[1]],
-                              0.0,#logl[3,0,0,10,indx[0],indx[1],indx[2],2],#pouts[indx[4]],
-                              0.,0.,0.,0.,0.])
-    else:
-        tparams= numpy.array([0.,hrs[indx[0]],
-                              #srs[indx[1]-2.*(indx[1] != 0)],
-                              #szs[indx[2]-2.*(indx[2] != 0)],
-                              srs[indx[1]],
-                              szs[indx[2]],
-                              numpy.log(8./_REFR0),
-                              numpy.log(7./_REFR0),0.,#pouts[indx[4]],
-                              0.,0.,0.,0.,0.])
-    options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
+    hrs, srs, szs=  setup_dfgrid(fehs,afes,options)
+    dfindx= numpy.unravel_index(numpy.nanargmax(logl[indx[0],0,0,indx[1],:,:,:,0]),
+                                (8,8,16))
+    print "Maximum for %i at %i,%i,%i" % (pop,dfindx[0],dfindx[1],dfindx[2])
+    tparams= initialize(options,fehs,afes)
+    startindx= 0
+    if options.fitdvt: startindx+= 1
+    tparams[startindx]= hrs[dfindx[0]]
+    tparams[startindx+4]= srs[dfindx[1]]
+    tparams[startindx+2]= szs[dfindx[2]]
+    tparams[startindx+5]= 0. #outlier fraction
     tparams= set_potparams(potparams1,tparams,options,1)
     #Set up density models and their parameters
     model1= interpDens#woutlier
@@ -157,62 +147,39 @@ def plotDensComparisonDF(options,args):
     paramsInterp= calc_model(tparams,options,0,_retsurfz=False,
                              normintstuff=normintstuff)
     params1= paramsInterp
-    if True:
-        indx= numpy.unravel_index(numpy.argmax(logl[4,0,0,4,:,:,:,0]),
-                                  logl[4,0,0,4,:,:,:,0].shape)
-        #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
-        if _VARYHSZ:
-            tparams= numpy.array([0.,hrs[indx[0]],
-                                  #srs[indx[1]-2.*(indx[1] != 0)],
-                                  #szs[indx[2]-2.*(indx[2] != 0)],
-                                  lnsr,
-                                  szs[indx[2]],
-                                  numpy.log(8./_REFR0),
-                                  srs[indx[1]],0.,#pouts[indx[4]],
-                                  0.,0.,0.,0.,0.,0.])
-        else:
-            tparams= numpy.array([0.,hrs[indx[0]],
-                                  #srs[indx[1]-2.*(indx[1] != 0)],
-                                  #szs[indx[2]-2.*(indx[2] != 0)],
-                                  srs[indx[1]],
-                                  szs[indx[2]],
-                                  numpy.log(8./_REFR0),
-                                  numpy.log(7./_REFR0),0.,#pouts[indx[4]],
-                                  0.,0.,0.,0.,0.,0.])
-        #options.potential= 'dpdiskplhalodarkdiskfixbulgeflatwgasalt'
-        options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
-        tparams= set_potparams(potparams2,tparams,options,1)
+    if False:
+        indx0= numpy.argmin((potparams2[0]-rds)**2.)
+        indx1= numpy.argmin((potparams2[3]-fhs)**2.)
+        #indx0= indx[0]
+        #indx1= indx[1]
+        dfindx= numpy.unravel_index(numpy.argmax(logl[indx0,0,0,indx1,:,:,:,0]),
+                                    (8,8,16))
+        tparams[startindx]= hrs[dfindx[0]]
+        tparams[startindx+4]= srs[dfindx[1]]
+        tparams[startindx+2]= szs[dfindx[2]]
+        #print "BOVY: YOU HAVE MESSED WITH MODEL 2"
+        tparams= set_potparams(potparams2,tparams,toptions,1)
         model2= interpDens
         print "Working on model 2 ..."
-        paramsInterp= calc_model(tparams,options,0,_retsurfz=False)
+        paramsInterp, surfz= calc_model(tparams,toptions,0,_retsurfz=True)
         params2= paramsInterp
-        indx= numpy.unravel_index(numpy.argmax(logl[3,0,0,8,:,:,:,0]),
-                                  logl[3,0,0,8,:,:,:,0].shape)
-        #tparams= numpy.array([dvts[indx[3]],hrs[indx[0]],
-        if _VARYHSZ:
-            tparams= numpy.array([0.,hrs[indx[0]],
-                                  #srs[indx[1]-2.*(indx[1] != 0)],
-                                  #szs[indx[2]-2.*(indx[2] != 0)],
-                                  lnsr,
-                                  szs[indx[2]],
-                                  numpy.log(8./_REFR0),
-                                  srs[indx[1]],0.,#pouts[indx[4]],
-                                  0.,0.,0.,0.,0.])
-        else:
-            tparams= numpy.array([0.,hrs[indx[0]],
-                                  #srs[indx[1]-2.*(indx[1] != 0)],
-                                  #szs[indx[2]-2.*(indx[2] != 0)],
-                                  srs[indx[1]],
-                                  szs[indx[2]],
-                                  numpy.log(8./_REFR0),
-                                  numpy.log(7./_REFR0),0.,#pouts[indx[4]],
-                                  0.,0.,0.,0.,0.])
-        options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
-        tparams= set_potparams(potparams3,tparams,options,1)
+        indx0= numpy.argmin((potparams3[0]-rds)**2.)
+        indx1= numpy.argmin((potparams3[3]-fhs)**2.)
+        dfindx= numpy.unravel_index(numpy.argmax(logl[indx0,0,0,indx1,:,:,:,0]),
+                                    (8,8,16))
+        tparams[startindx]= hrs[dfindx[0]]
+        tparams[startindx+4]= srs[dfindx[1]]
+        tparams[startindx+2]= szs[dfindx[2]]
+        tparams= set_potparams(potparams3,tparams,toptions,1)
         model3= interpDens
         print "Working on model 3 ..."
-        paramsInterp= calc_model(tparams,options,0,_retsurfz=False)
+        paramsInterp, surfz= calc_model(tparams,toptions,0,_retsurfz=True)
         params3= paramsInterp
+    else:
+        model2= None
+        params2= None
+        model3= None
+        params3= None
     data= binned(fehs[pop],afes[pop])
     #Setup everything for selection function
     thisnormintstuff= normintstuff[pop]
@@ -482,14 +449,13 @@ def run_abundance_singles_plotdens(options,args,fehs,afes):
 def run_abundance_singles_plotdens_single(options,args,fehs,afes,ii,savename,
                                           initname,
                                           normname):
+    if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
+                                    k=(options.sample.lower() == 'k'))/8.) > -0.5 and not options.conditionalr:
+            #We didn't run, because we cannot model these populations with our model
+        return None
     #Prepare args and options
     spl= savename.split('.')
-    newname= ''
-    for jj in range(len(spl)-1):
-        newname+= spl[jj]
-        if not jj == len(spl)-2: newname+= '.'
-    newname+= '_%i.' % ii
-    newname+= spl[-1]
+    newname= savename+'%i_' % ii
     args[0]= newname
     if not initname is None:
         #Do the same for init
