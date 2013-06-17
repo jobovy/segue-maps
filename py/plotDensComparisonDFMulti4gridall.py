@@ -17,7 +17,7 @@ from pixelFitDens import pixelAfeFeh
 from pixelFitDF import *
 from pixelFitDF import _SURFNRS, _SURFNZS, _PRECALCVSAMPLES, _REFR0, _REFV0
 _NOTDONEYET= True
-_RRANGES= False
+_RRANGES= True
 def getMultiComparisonBins(options):
     if options.sample.lower() == 'g':
         if options.group == 'aenhanced':
@@ -40,8 +40,8 @@ def getMultiComparisonBins(options):
         elif options.group == 'apoor':
             gfehs= [-0.05,-0.05,-0.05,0.05,0.05,0.15,0.25]
             gafes= [0.025,0.075,0.125,0.025,0.075,0.025,0.025]
-            gfehs= [gfehs[6]]
-            gafes= [gafes[6]]
+            gfehs= [-0.05,-0.05,0.05,0.05,0.15,0.25] #drop 57
+            gafes= [0.025,0.075,0.025,0.075,0.025,0.025]
             left_legend= r'$\alpha\!-\!\mathrm{young}$'+'\n'+r'$\mathrm{populations}$'
         elif options.group == 'apoorfpoor':
             gafes= [0.025,0.075,0.075,0.075,0.075,
@@ -289,19 +289,38 @@ def plotDensComparisonDFMulti(options,args):
     numcores= options.multi
     #First do R ranges for z
     if options.type.lower() == 'z' and _RRANGES:
-        bins=21
-        Rmins= [None,7.,9.]
-        Rmaxs= [7.,9.,None]
-        nameRmins= [4,7,9]
-        nameRmaxs= [7,9,13]
+        #First determine the ranges that have nstars in them
+        rranges_nstars= 1000
+        data_R= []
+        for jj in range(M):
+            tdata_R= numpy.sqrt((8.-data[jj].xc)**2.+data[jj].yc**2.)
+            data_R.extend(tdata_R)
+        tdata_R= sorted(data_R)
+        nbins= numpy.ceil(len(tdata_R)/float(rranges_nstars))
+        rranges_nstars= int(numpy.floor(float(len(tdata_R))/nbins))
+        accum= rranges_nstars
+        Rmins= [None]
+        Rmaxs= []
+        nameRmins= [4]
+        nameRmaxs= []
+        while accum < len(tdata_R):
+            Rmins.append(tdata_R[accum])
+            Rmaxs.append(tdata_R[accum]) 
+            nameRmins.append(round(tdata_R[accum]*10.)/10.)
+            nameRmaxs.append(round(tdata_R[accum]*10.)/10.)
+            accum+= rranges_nstars
+        Rmaxs.append(None)
+        nameRmaxs.append(13.0)
+        print Rmins, Rmaxs
+        bins=31
         for ii in range(len(Rmins)):
             plate= 'all'
             if Rmins[ii] is None:
-                thisleft_legend= r'$R \leq 7\,\mathrm{kpc\ plates}$'
-            elif Rmins[ii] == 7.:
-                thisleft_legend= r'$7\,\mathrm{kpc} < R \leq 9\,\mathrm{kpc\ plates}$'
+                thisleft_legend= r'$R \leq %.1f\,\mathrm{kpc\ plates}$' % (nameRmaxs[ii])
             elif Rmaxs[ii] is None:
-                thisleft_legend= r'$R \geq 9\,\mathrm{kpc\ plates}$'
+                thisleft_legend= r'$R \geq %.1f\,\mathrm{kpc\ plates}$' % (nameRmins[ii])
+            else:
+                thisleft_legend= r'$%.1f\,\mathrm{kpc} < R \leq %.1f\,\mathrm{kpc\ plates}$' % (nameRmins[ii],nameRmaxs[ii])
             thisright_legend= None
             bovy_plot.bovy_print()
             compare_func(model1s,params1,sf,colordists,fehdists,
@@ -313,7 +332,7 @@ def plotDensComparisonDFMulti(options,args):
                          bins=bins,ls='-',left_legend=thisleft_legend,
                          right_legend=thisright_legend,
                          Rmin=Rmins[ii],Rmax=Rmaxs[ii],
-                         distfac=gdistancefacs)
+                         distfac=gdistancefacs,convolve=0.1)
             if not params2[0] is None:
                 compare_func(model2s,params2,sf,colordists,fehdists,
                              data,plate,color='k',bins=bins,
@@ -323,7 +342,7 @@ def plotDensComparisonDFMulti(options,args):
                              xrange=xrange,numcores=numcores,
                              overplot=True,ls='--',
                              Rmin=Rmins[ii],Rmax=Rmaxs[ii],
-                             distfac=gdistancefacs)
+                             distfac=gdistancefacs,convolve=0.1)
             if not params3[0] is None:
                 compare_func(model3s,params3,sf,colordists,fehdists,
                              data,plate,color='k',bins=bins,
@@ -333,11 +352,11 @@ def plotDensComparisonDFMulti(options,args):
                              xrange=xrange,numcores=numcores,
                              overplot=True,ls=':',
                              Rmin=Rmins[ii],Rmax=Rmaxs[ii],
-                             distfac=gdistancefacs)
+                             distfac=gdistancefacs,convolve=0.1)
             if options.type == 'r':
-                bovy_plot.bovy_end_print(args[0]+'model_data_g_%iR%i' % (nameRmins[ii],nameRmaxs[ii])+'.'+options.ext)
+                bovy_plot.bovy_end_print(args[0]+'model_data_g_%.1fR%.1f' % (nameRmins[ii],nameRmaxs[ii])+'.'+options.ext)
             else:
-                bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_%iR%i' % (nameRmins[ii],nameRmaxs[ii])+'.'+options.ext)
+                bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_%.1fR%.1f' % (nameRmins[ii],nameRmaxs[ii])+'.'+options.ext)
     #all, faint, bright
     bins= [31,31,31]
     plates= ['all','bright','faint']
