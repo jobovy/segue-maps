@@ -66,10 +66,21 @@ def plotVelComparisonDFMulti(options,args):
     ##########POTENTIAL PARAMETERS####################
     potparams1= numpy.array([numpy.log(2.5/8.),options.fixvc/220.,
                              numpy.log(400./8000.),0.2,0.])
-    potparams2= numpy.array([numpy.log(3./8.),options.fixvc/220.,
-                             numpy.log(400./8000.),0.466666666,0.])
-    potparams3= numpy.array([numpy.log(2.5/8.),options.fixvc/220.,
-                             numpy.log(400./8000.),0.8,0.])
+    if options.group.lower() == 'aenhanced':
+        potparams2= numpy.array([numpy.log(2.8/8.),options.fixvc/220.,
+                                 numpy.log(400./8000.),0.266666666,0.])
+        potparams3= numpy.array([numpy.log(2.8/8.),options.fixvc/220.,
+                                 numpy.log(400./8000.),0.8,0.])
+    elif options.group.lower() == 'aintermediate':
+        potparams2= numpy.array([numpy.log(3.0/8.),options.fixvc/220.,
+                                 numpy.log(400./8000.),0.3333333333333,0.])
+        potparams3= numpy.array([numpy.log(3.0/8.),options.fixvc/220.,
+                                 numpy.log(400./8000.),0.933333333333,0.])
+    elif options.group.lower() == 'apoor':
+        potparams2= numpy.array([numpy.log(2.6/8.),options.fixvc/220.,
+                                 numpy.log(400./8000.),0.4,0.])
+        potparams3= numpy.array([numpy.log(2.6/8.),options.fixvc/220.,
+                                 numpy.log(400./8000.),1.0,0.])
     options.potential=  'dpdiskplhalofixbulgeflatwgasalt'
     #Check whether fits exist, if not, pop
     removeBins= numpy.ones(M,dtype='bool')
@@ -115,7 +126,7 @@ def plotVelComparisonDFMulti(options,args):
             bins= 39
         else: # options.group == 'aenhanced':
             vs= numpy.linspace(-120.,120.,options.nv)
-            xrange=[-120.,120.]
+            xrange=[-140.,140.]
             bins= 26
         xlabel=r'$V_Z\ [\mathrm{km\,s}^{-1}]$'
     elif options.type.lower() == 'vr':
@@ -138,7 +149,7 @@ def plotVelComparisonDFMulti(options,args):
             xrange=[0.,350.]
             bins= 39
         xlabel=r'$V_T\ [\mathrm{km\,s}^{-1}]$'
-    alts= False
+    alts= True
     if not options.multi is None:
         #Generate list of temporary files
         tmpfiles= []
@@ -253,10 +264,10 @@ def plotVelComparisonDFMulti(options,args):
             plotp= numpy.nansum(velps3[indx,:],axis=0)/numpy.sum(indx)
             sigzs3[ii]= numpy.sqrt(numpy.sum(vs**2.*plotp)/numpy.sum(plotp)-(numpy.sum(vs*plotp)/numpy.sum(plotp))**2.)
             bovy_plot.bovy_plot(vs,plotp,'k:',overplot=True)
-        bovy_plot.bovy_text(r'$ %i\ \mathrm{pc} \leq |Z| < %i\ \mathrm{pc}$' % (int(1000*zranges[ii]),int(1000*zranges[ii+1]))
-                            +'\n'+
-                            '$%i \ \ \mathrm{stars}$' % 
-                            (numpy.sum(indx)),top_right=True,
+        bovy_plot.bovy_text(r'$ %i\ \mathrm{pc} \leq |Z| < %i\ \mathrm{pc}$' % (int(1000*zranges[ii]),int(1000*zranges[ii+1])),
+#                            +'\n'+
+#                            '$%i \ \ \mathrm{stars}$' % (numpy.sum(indx)),
+                            top_right=True,
                             size=_legendsize)
         bovy_plot.bovy_end_print(args[0]+'model_data_g_'+options.group+'_'+options.type+'dist_z%.1f_z%.1f.' % (zranges[ii],zranges[ii+1])+options.ext)
     #Plot velocity dispersion as a function of |Z|
