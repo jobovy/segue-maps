@@ -1601,52 +1601,53 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                                       histtype='step',
                                       overplot=True,
                                       range=xrange)#[numpy.amin(zmin),numpy.amax(zmax)])
-        if not right_legend is None:
-            bovy_plot.bovy_text(right_legend,top_right=True,size=_legendsize)
-        elif not right_legend == 'none':
+        if right_legend == 'none':
             pass
-        if len(plate) > 1 and len(plate) < 9:
-            platestr= '\mathrm{plates}\ \ '
-            for ii in range(len(plate)-1):
-                platestr= platestr+'%i, ' % plate[ii]
-            platestr+= '%i' % plate[-1]
-            lbstr= '$l = %i^\circ \pm %i^\circ$' % (int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
-                +'$b = %i^\circ \pm %i^\circ$' % (int(numpy.mean(platebs)),
-            int(numpy.std(platebs)))
-        elif allplates:
-            platestr= '\mathrm{all\ plates}'
-            if right_legend is None:
-                bovy_plot.bovy_text(r'$'+platestr+'$'
+        elif not right_legend is None:
+            bovy_plot.bovy_text(right_legend,top_right=True,size=_legendsize)
+        if right_legend != 'none':
+            if len(plate) > 1 and len(plate) < 9:
+                platestr= '\mathrm{plates}\ \ '
+                for ii in range(len(plate)-1):
+                    platestr= platestr+'%i, ' % plate[ii]
+                platestr+= '%i' % plate[-1]
+                lbstr= '$l = %i^\circ \pm %i^\circ$' % (int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
+                    +'$b = %i^\circ \pm %i^\circ$' % (int(numpy.mean(platebs)),
+                                                      int(numpy.std(platebs)))
+            elif allplates:
+                platestr= '\mathrm{all\ plates}'
+                if right_legend is None:
+                    bovy_plot.bovy_text(r'$'+platestr+'$'
+                                        +'\n'+
+                                        '$%i \ \ \mathrm{stars}$' % 
+                                        len(data_z),top_right=True,
+                                        size=_legendsize)
+            elif brightplates:
+                platestr= '\mathrm{bright\ plates}'
+                if right_legend is None:
+                    bovy_plot.bovy_text(r'$'+platestr+'$'
                                     +'\n'+
-                                    '$%i \ \ \mathrm{stars}$' % 
-                                    len(data_z),top_right=True,
-                                    size=_legendsize)
-        elif brightplates:
-            platestr= '\mathrm{bright\ plates}'
-            if right_legend is None:
-                bovy_plot.bovy_text(r'$'+platestr+'$'
-                                    +'\n'+
-                                    '$%i \ \ \mathrm{stars}$' % 
-                                    len(data_z),top_right=True,
-                                    size=_legendsize)
-        elif faintplates:
-            platestr= '\mathrm{faint\ plates}'
-            if right_legend is None:
-                bovy_plot.bovy_text(r'$'+platestr+'$'
-                                    +'\n'+
-                                    '$%i \ \ \mathrm{stars}$' % 
-                                    len(data_z),top_right=True,
-                                    size=_legendsize)
-        elif len(plate) >= 9:
-            platestr= '%i\ \mathrm{plates}' % len(plate)
-            lbstr= '$l = %i^\circ \pm %i^\circ$' % (
-                int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
-                +'$b = %i^\circ\pm%i^\circ$' % (int(numpy.mean(platebs)),
-            int(numpy.std(platebs)))
-        else:
-            platestr= '\mathrm{plate}\ \ %i' % plate[0]
-            lbstr= '$l = %i^\circ$' % int(platel)+'\n'\
-                +'$b = %i^\circ$' % int(plateb)           
+                                        '$%i \ \ \mathrm{stars}$' % 
+                                        len(data_z),top_right=True,
+                                        size=_legendsize)
+            elif faintplates:
+                platestr= '\mathrm{faint\ plates}'
+                if right_legend is None:
+                    bovy_plot.bovy_text(r'$'+platestr+'$'
+                                        +'\n'+
+                                        '$%i \ \ \mathrm{stars}$' % 
+                                        len(data_z),top_right=True,
+                                        size=_legendsize)
+            elif len(plate) >= 9:
+                platestr= '%i\ \mathrm{plates}' % len(plate)
+                lbstr= '$l = %i^\circ \pm %i^\circ$' % (
+                    int(numpy.mean(platels)),int(numpy.std(platels)))+'\n'\
+                    +'$b = %i^\circ\pm%i^\circ$' % (int(numpy.mean(platebs)),
+                                                    int(numpy.std(platebs)))
+            else:
+                platestr= '\mathrm{plate}\ \ %i' % plate[0]
+                lbstr= '$l = %i^\circ$' % int(platel)+'\n'\
+                    +'$b = %i^\circ$' % int(plateb)           
         if not (allplates or brightplates or faintplates):
             if right_legend is None:
                 bovy_plot.bovy_text(r'$'+platestr+'$'
