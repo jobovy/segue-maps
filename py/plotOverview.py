@@ -284,7 +284,7 @@ def plot2d(options,args):
         for ii in range(npops):
             if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
                                             k=(options.sample.lower() == 'k')) /8.) > -0.5 \
-                                            or (options.sample.lower() == 'g' and ii < 6) \
+                                            or (options.sample.lower() == 'g' and (ii == 50 or ii == 57)) \
                                             or (options.sample.lower() == 'k' and ii < 7):
                                             continue
             data= binned(fehs[ii],afes[ii])
