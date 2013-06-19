@@ -351,6 +351,7 @@ def plotDensComparisonDFMulti(options,args):
                              grmin=grmin,grmax=grmax,
                              fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
                              xrange=xrange,numcores=numcores,
+                             right_legend=thisright_legend,
                              overplot=True,ls='--',
                              Rmin=Rmins[ii],Rmax=Rmaxs[ii],
                              distfac=gdistancefacs,convolve=0.1)
@@ -360,6 +361,7 @@ def plotDensComparisonDFMulti(options,args):
                              rmin=14.5,rmax=rmax,
                              grmin=grmin,grmax=grmax,
                              fehmin=fehmins,fehmax=fehmaxs,feh=cfehs,
+                             right_legend=thisright_legend,
                              xrange=xrange,numcores=numcores,
                              overplot=True,ls=':',
                              Rmin=Rmins[ii],Rmax=Rmaxs[ii],
