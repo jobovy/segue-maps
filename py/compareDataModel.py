@@ -1603,6 +1603,8 @@ def comparezdistPlateMulti(densfunc,params,sf,colordist,fehdist,data,plate,
                                       range=xrange)#[numpy.amin(zmin),numpy.amax(zmax)])
         if not right_legend is None:
             bovy_plot.bovy_text(right_legend,top_right=True,size=_legendsize)
+        elif not right_legend == 'none':
+            pass
         if len(plate) > 1 and len(plate) < 9:
             platestr= '\mathrm{plates}\ \ '
             for ii in range(len(plate)-1):
