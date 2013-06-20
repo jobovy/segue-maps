@@ -103,12 +103,19 @@ def plotRdfh_single(ii,options,args):
         bovy_plot.bovy_plot(numpy.linspace(2.,3.4,logl.shape[0]),
                             condfh,color='0.75',marker='o',
                             s=s,scatter=True,overplot=True,zorder=10)
-        maxindx= numpy.argmax(s)
-        bovy_plot.bovy_plot(numpy.linspace(2.0,3.4,logl.shape[0])[maxindx],
-                            condfh[maxindx],color='blue',marker='o',
-                            ls='none',
-                            ms=8.,mec='none',
-                            overplot=True,zorder=13)
+        bovy_plot.bovy_text(r'$[\mathrm{Fe/H}] = %.2f$' % (fehs[ii])
+                            +'\n'
+                            r'$[\alpha/\mathrm{Fe}] = %.3f$' % (afes[ii]),
+#                            +'\n'
+#                            r'$N_{\mathrm{data}} = %i$' % (ndatas[ii]),
+                            size=16.,bottom_right=True)
+#        bovy_plot.bovy_plot(numpy.linspace(2.0,3.4,logl.shape[0])[maxindx],
+#                            condfh[maxindx],color='blue',marker='o',
+#                            ls='none',
+#                            ms=8.,mec='none',
+#                            overplot=True,zorder=13)
+        #Add bin
+        
         #Plotname
         spl= options.outfilename.split('.')
         newname= ''
