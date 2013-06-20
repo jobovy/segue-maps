@@ -26,8 +26,8 @@ def fitSurfwPot(options,args):
     else:
         raise IOError("-i has to be set")
     if True:
-        surfrs[24]= numpy.nan
-        surfrs[44]= numpy.nan
+        surfrs[50]= numpy.nan
+        surfrs[57]= numpy.nan
     indx= True - numpy.isnan(surfrs)
     surfrs= surfrs[indx]
     surfs= surfs[indx]
@@ -66,7 +66,6 @@ def fitSurfwPot(options,args):
         params= optimize.fmin_powell(like_func,init_params,
                                      args=funcargs,
                                      callback=cb)
-        print params
         save_pickles(args[0],params)
         #Make a plot
         if True:
@@ -178,9 +177,9 @@ def like_func(params,options,surfrs,surfs,surferrs,
     if options.lanprior:
         out+= 0.5*(2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,1.0/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro-67.)**2./36.
         out+= 0.5*(2.*pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*numpy.exp(params[2])*ro*_REFR0*1000.-42.)**2./36.
-        print 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,1.0/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro, \
-            2.*pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*numpy.exp(params[2])*ro*_REFR0*1000.
-    print params, out
+#        print 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,1.0/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro, \
+#            2.*pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*numpy.exp(params[2])*ro*_REFR0*1000.
+    #print params, out
     return out
 
 def pdf_func(params,*args):
@@ -256,6 +255,13 @@ def plotBestfitSurf(options,args):
         surffile.close()
     else:
         raise IOError("-i has to be set")
+    if True:
+        surfrs[50]= numpy.nan
+        surfrs[57]= numpy.nan
+    indx= True - numpy.isnan(surfrs)
+    surfrs= surfrs[indx]
+    surfs= surfs[indx]
+    surferrs= surferrs[indx]
     if os.path.exists(args[0]):
         initfile= open(args[0],'rb')
         init_params= pickle.load(initfile)
