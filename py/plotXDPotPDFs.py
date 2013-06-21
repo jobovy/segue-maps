@@ -12,6 +12,7 @@ from galpy.util import save_pickles, bovy_plot, multi
 import multiprocessing
 from matplotlib import pyplot
 from matplotlib.lines import Line2D
+from matplotlib.patches import FancyArrowPatch
 from pixelFitDF import _REFR0, _REFV0, setup_potential, logprior_dlnvcdlnr
 from plotOverview import labels, ranges
 from fitSurfwPot import get_options
@@ -114,6 +115,16 @@ def plotXDPotPDFs_RD(options,args):
                   numpoints=2,
                   prop={'size':14},
                   frameon=False)
+    bovy_plot.bovy_plot([xs[0],xs[-1]],[0.75,0.75],'-',color='0.6',
+                        overplot=True,lw=2.)
+    bovy_plot.bovy_plot([xs[0],xs[-1]],[0.95,0.95],'-',color='0.6',
+                        overplot=True,lw=2.)
+    ax= pyplot.gca()
+    ax.add_patch(FancyArrowPatch((3.1,0.75),(3.1,0.95),
+                                 arrowstyle='<->',mutation_scale=20,fill=True,
+                                 lw=1.25,color='0.6'))
+    bovy_plot.bovy_text(3.2,.79,r'$\mathrm{Maximal}$'+'\n'+r'$\mathrm{disk}$',
+                        size=18.,color='0.35')
     bovy_plot.bovy_end_print(options.plotfile)
     return None
 
