@@ -69,8 +69,37 @@ def XDPotPDFs(options,args):
         vcdxcovar[ii,1,1]= numpy.var(ydata[:,1])
     extreme_deconvolution.extreme_deconvolution(ydata,ycovar,
                                                 vcdxamp,vcdxmean,vcdxcovar)
-    save_pickles(options.plotfile,vcdxamp,vcdxmean,vcdxcovar)
-    print vcdxamp, vcdxmean[0,:], vcdxmean[1,:]
+    #2) alpha_dm vs. rho_dm
+    ydata= numpy.zeros((len(samples['rhodm']),2))
+    ycovar= numpy.zeros((len(samples['rhodm']),2))
+    ydata[:,0]= numpy.log(samples['rhodm'])
+    ydata[:,1]= special.logit(samples['plhalo']/3.)
+    rhodmxamp= numpy.ones(options.g)/options.g
+    rhodmxmean= numpy.zeros((options.g,2))
+    rhodmxcovar= numpy.zeros((options.g,2,2))
+    for ii in range(options.g):
+        rhodmxmean[ii,:]= numpy.mean(ydata,axis=0)+numpy.std(ydata,axis=0)*numpy.random.normal(size=(2))/4.
+        rhodmxcovar[ii,0,0]= numpy.var(ydata[:,0])
+        rhodmxcovar[ii,1,1]= numpy.var(ydata[:,1])
+    extreme_deconvolution.extreme_deconvolution(ydata,ycovar,
+                                                rhodmxamp,rhodmxmean,rhodmxcovar)
+    #3) dlnvcdlnr vs. vc
+    ydata= numpy.zeros((len(samples['vc']),2))
+    ycovar= numpy.zeros((len(samples['vc']),2))
+    ydata[:,0]= numpy.log(samples['vc'])
+    ydata[:,1]= samples['dlnvcdlnr']
+    vcxamp= numpy.ones(options.g)/options.g
+    vcxmean= numpy.zeros((options.g,2))
+    vcxcovar= numpy.zeros((options.g,2,2))
+    for ii in range(options.g):
+        vcxmean[ii,:]= numpy.mean(ydata,axis=0)+numpy.std(ydata,axis=0)*numpy.random.normal(size=(2))/4.
+        vcxcovar[ii,0,0]= numpy.var(ydata[:,0])
+        vcxcovar[ii,1,1]= numpy.var(ydata[:,1])
+    extreme_deconvolution.extreme_deconvolution(ydata,ycovar,
+                                                vcxamp,vcxmean,vcxcovar)
+    save_pickles(options.plotfile,vcdxamp,vcdxmean,vcdxcovar,
+                 rhodmxamp,rhodmxmean,rhodmxcovar,
+                 vcxamp,vcxmean,vcxcovar)
     return None
 
 if __name__ == '__main__':
