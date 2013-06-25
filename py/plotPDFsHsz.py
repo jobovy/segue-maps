@@ -92,7 +92,9 @@ def plotRdfh_single(ii,options,args):
                               origin='lower',cmap='gist_yarg',
                               interpolation='nearest',
                               xrange=[1.9,3.5],yrange=[-1./32.,1.+1./32.],
-                              xlabel=r'$R_d\ (\mathrm{kpc})$',ylabel=r'$f_h$')
+                              xlabel=r'$\mathrm{disk\ scale\ length}\,(\mathrm{kpc})$',
+                              ylabel=r'$\mathrm{relative\ halo\ contribution\ to}\ V^2_c(R_0)$')
+#                              xlabel=r'$R_d\ (\mathrm{kpc})$',ylabel=r'$f_h$')
         s= 2.*condlogp
         s-= numpy.amax(s)
         s+= 16.
