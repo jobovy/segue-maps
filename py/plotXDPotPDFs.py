@@ -1,4 +1,5 @@
 import os, os.path
+import copy
 import sys
 import math
 import numpy
@@ -308,6 +309,29 @@ def plotXDPotPDFs_vc(options,args):
                           levels= special.erf(numpy.arange(1,nlevels+1)/numpy.sqrt(2.)),
                           justcontours=True,cntrmass=True,cntrcolors='y',
                           cntrlw=2.,retCont=True)
+    if os.path.exists(args[3]):
+        savefile= open(args[3],'rb')
+        vcdxamp= pickle.load(savefile)
+        vcdxmean= pickle.load(savefile)
+        vcdxcovar= pickle.load(savefile)
+        savefile.close()
+    else:
+        raise IOError("At least one input file has to exist ...")
+    pdf= _eval_gauss_grid(XDxs,XDys,vcdxamp,vcdxmean,vcdxcovar)
+    pdf-= numpy.amax(pdf)
+    pdf= numpy.exp(pdf)
+    #Multiply in Jacobian
+    for ii in range(nx):
+        pdf[ii,:]*= 1./xs[ii]
+    c4= bovy_plot.bovy_dens2d(pdf.T,origin='lower',cmap='gist_yarg',
+                              xrange=[xs[0]-(xs[1]-xs[0])/2.,xs[-1]+(xs[1]-xs[0])/2.],
+                              yrange=[ys[0]-(ys[1]-ys[0])/2.,ys[-1]+(ys[1]-ys[0])/2.],
+                              overplot=True,
+                              contours=True,
+                              levels= special.erf(numpy.arange(1,nlevels+1)/numpy.sqrt(2.)),
+                              justcontours=True,cntrmass=True,
+                              cntrlw=2.,retCont=True,
+                              cntrls='--',cntrcolors='0.5')
     if os.path.exists(args[2]):
         savefile= open(args[2],'rb')
         dum= pickle.load(savefile)
@@ -336,14 +360,28 @@ def plotXDPotPDFs_vc(options,args):
                           levels= special.erf(numpy.arange(1,nlevels+1)/numpy.sqrt(2.)),
                           justcontours=True,cntrmass=True,
                           cntrlw=2.,retCont=True)
+    pdf3= copy.copy(pdf)
+    #pdf*= pdf3
+    #pdf/= numpy.amax(pdf)
+    #c5= bovy_plot.bovy_dens2d(pdf.T,origin='lower',cmap='gist_yarg',
+    #                          xrange=[xs[0]-(xs[1]-xs[0])/2.,xs[-1]+(xs[1]-xs[0])/2.],
+    #                          yrange=[ys[0]-(ys[1]-ys[0])/2.,ys[-1]+(ys[1]-ys[0])/2.],
+    #                          overplot=True,
+    #                          contours=True,
+    #                          levels= special.erf(numpy.arange(1,nlevels+1)/numpy.sqrt(2.)),
+    #                          justcontours=True,cntrmass=True,
+    #                          cntrlw=2.,retCont=True,
+    #                          cntrls='--',cntrcolors='c')
     #Proxies
     c1= Line2D([0.],[0.],ls='-',lw=2.,color='r')
     c2= Line2D([0.],[0.],ls='-',lw=2.,color='y')
     c3= Line2D([0.],[0.],ls='-',lw=2.,color='k')
-    pyplot.legend((c1,c2,c3),
+    c4= Line2D([0.],[0.],ls='--',lw=2.,color='0.5')
+    pyplot.legend((c1,c2,c3,c4),
                   (r'$\Sigma_{1.1}(R)\ \&\ \Sigma(R_0,Z)$',
                    r'$V_\mathrm{term}\ \mathrm{only}$',
-                   r'$\mathrm{Combined}\ \&\ \mathrm{d} \ln V_c / \mathrm{d} \ln R$'),
+                   r'$\mathrm{Combined}\ \&\ \mathrm{d} \ln V_c / \mathrm{d} \ln R$',
+                   r'$\mathrm{APOGEE}\ V_c(R)\ \mathrm{(for\ comparison)}$'),
                   loc='upper left',#bbox_to_anchor=(.91,.375),
                   numpoints=2,
                   prop={'size':14},
