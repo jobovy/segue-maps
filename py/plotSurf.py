@@ -6,6 +6,7 @@ import pickle
 from galpy.util import bovy_plot
 from matplotlib import pyplot, cm
 from selectFigs import _squeeze
+import bovy_mcmc
 from plotOverview import expcurve
 def plotSurf(savefilename,plotfilename):
     #Read surface densities
@@ -26,6 +27,7 @@ def plotSurf(savefilename,plotfilename):
     afes= pickle.load(savefile)
     indx= numpy.isnan(surfrs)
     indx[50]= True
+    indx[57]= True
     indx= True - indx
     surfrs= surfrs[indx]
     surfs= surfs[indx]
@@ -59,6 +61,21 @@ def plotSurf(savefilename,plotfilename):
     pyplot.plot(trs,numpy.exp(exp_params[0]-(trs-8.)/numpy.exp(exp_params[1])),
                 '-',color='0.5',lw=1.,zorder=0)
     print numpy.exp(exp_params)
+    step= [0.1,0.1]
+    pdf_func= lambda x,y,z,u: - expcurve(x,y,z,u)
+    funcargs= (surfrs,surfs,surferrs)
+    isDomainFinite= [[False,False],[False,False]]
+    domain= [[0.,0.],[0.,0.]]
+    thesesamples= bovy_mcmc.markovpy(exp_params,
+                                     step,
+                                     pdf_func,
+                                     funcargs,
+                                     isDomainFinite=isDomainFinite,
+                                     domain=domain,
+                                     nsamples=10000)
+    for kk in range(len(exp_params)):
+        xs= numpy.array([s[kk] for s in thesesamples])
+        print numpy.mean(xs), numpy.std(xs)
     bovy_plot.bovy_end_print(plotfilename)
 
 if __name__ == '__main__':
