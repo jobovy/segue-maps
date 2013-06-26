@@ -16,7 +16,6 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import FancyArrowPatch
 from pixelFitDF import _REFR0, _REFV0, setup_potential, logprior_dlnvcdlnr
 from plotOverview import labels, ranges
-from fitSurfwPot import get_options
 _SQRTTWOPI= -0.5*numpy.log(2.*numpy.pi)
 def plotXDPotPDFs_RD(options,args):
     #Read all XDs
@@ -412,6 +411,7 @@ def _eval_gauss_grid(x,y,xamp,xmean,xcovar):
     return out
 
 if __name__ == '__main__':
+    from fitSurfwPot import get_options
     parser= get_options()
     options,args= parser.parse_args()
     numpy.random.seed(options.seed)
