@@ -15,6 +15,7 @@ from fitDensz import cb
 from calcDFResults import setup_options
 import readTerminalData
 from plotOverview import labels, ranges
+from plotXDPotPDFs import _eval_gauss_grid
 def fitSurfwPot(options,args):
     #First read the surface densities
     if not options.surffile is None and os.path.exists(options.surffile):
@@ -40,6 +41,19 @@ def fitSurfwPot(options,args):
                    mc_glon,mc_vterm/_REFV0,mc_corr)
     else:
         termdata= None
+    #Read the APOGEE PDF if necessary
+    apogeefile= '../potential-fits/apogee_XD.sav'
+    if options.apogeeprior and os.path.exists(apogeefile):
+        savefile= open(apogeefile,'rb')
+        apogee_vcdxamp= pickle.load(savefile)
+        apogee_vcdxmean= pickle.load(savefile)
+        apogee_vcdxcovar= pickle.load(savefile)
+        savefile.close()
+        apogeeprior= (apogee_vcdxamp,apogee_vcdxmean,apogee_vcdxcovar)
+    elif not os.path.exists(apogeefile):
+        raise IOError("At least one input file has to exist ...")
+    else:
+        apogeeprior= None
     #Setup
     if options.mcsample:
         if not options.initfile is None and os.path.exists(options.initfile):
@@ -60,7 +74,7 @@ def fitSurfwPot(options,args):
     funcargs= (options,surfrs,surfs,surferrs,potoptions,
                numpy.log(1.5/8.),numpy.log(6./8.),
                numpy.log(100./8000.),numpy.log(500./8000.),
-               termdata)
+               termdata,apogeeprior)
     if not options.mcsample:
         #Optimize likelihood
         params= optimize.fmin_powell(like_func,init_params,
@@ -125,7 +139,7 @@ def like_func(params,options,surfrs,surfs,surferrs,
               potoptions,
               rdmin,rdmax,
               zhmin,zhmax,
-              termdata):
+              termdata,apogeeprior):
     #Check ranges
     if params[1] < 0.: return numpy.finfo(numpy.dtype(numpy.float64)).max
     if params[3] < 0. or params[3] > 1.: return numpy.finfo(numpy.dtype(numpy.float64)).max
@@ -171,7 +185,7 @@ def like_func(params,options,surfrs,surfs,surferrs,
         out+= 0.5*(vo-236./_REFV0)**2./(11./_REFV0)**2.
     elif options.bovy12voprior:
         out+= 0.5*(vo-218./_REFV0)**2./(6./_REFV0)**2.
-    if not options.nodlnvcdlnrprior:
+    if not options.nodlnvcdlnrprior and not options.apogeeprior: #don't double
         out-= logprior_dlnvcdlnr(params[4],options)
     #K dwarfs
     if options.lanprior:
@@ -179,7 +193,8 @@ def like_func(params,options,surfrs,surfs,surferrs,
         out+= 0.5*(2.*pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*numpy.exp(params[2])*ro*_REFR0*1000.-42.)**2./36.
 #        print 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,1.0/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro, \
 #            2.*pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*numpy.exp(params[2])*ro*_REFR0*1000.
-    #print params, out
+    if options.apogeeprior:
+        out-= _eval_gauss_grid([numpy.log(vo)],[params[4]],*apogeeprior)[0,0]
     return out
 
 def pdf_func(params,*args):
@@ -440,6 +455,10 @@ def get_options():
                       dest="lanprior",
                       default=False,
                       help="If set, apply priors from Lan's K dwarf analysis")
+    parser.add_option("--apogeeprior",action="store_true", 
+                      dest="apogeeprior",
+                      default=False,
+                      help="If set, apply priors on Vc and dlnvcdlnr from my APOGEE analysis")
     #calc
     parser.add_option("--calcderived",action="store_true", 
                       dest="calcderived",
@@ -458,6 +477,9 @@ def get_options():
                       help="Type of thing to do")
     parser.add_option("--subtype",dest='subtype',default=None,
                       help="Sub-type of thing to do")
+    #Gaussians
+    parser.add_option("-g",dest='g', default=2,type='int',
+                      help="Number of Gaussians to fit the samples with")    
     return parser
 
 if __name__ == '__main__':
