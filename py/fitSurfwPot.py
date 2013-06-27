@@ -23,6 +23,8 @@ def fitSurfwPot(options,args):
         surfrs= pickle.load(surffile)
         surfs= pickle.load(surffile)
         surferrs= pickle.load(surffile)
+        kzs= pickle.load(surffile)
+        kzerrs= pickle.load(surffile)
         surffile.close()
     else:
         raise IOError("-i has to be set")
@@ -33,6 +35,11 @@ def fitSurfwPot(options,args):
     surfrs= surfrs[indx]
     surfs= surfs[indx]
     surferrs= surferrs[indx]
+    kzs= kzs[indx]
+    kzerrs= kzerrs[indx]
+    if options.surfaskz:
+        surfs= kzs
+        surferrs= kzerrs
     #Read the terminal velocity data if necessary
     if options.fitterminal:
         cl_glon, cl_vterm, cl_corr= readTerminalData.readClemens(dsinl=options.termdsinl)
@@ -157,7 +164,7 @@ def like_func(params,options,surfrs,surfs,surferrs,
         modelsurfs= numpy.zeros_like(surfs)
         for ii in range(len(surfrs)):
             if options.surfaskz:
-                modelsurfs[ii]= potential.evaluatezforces(surfrs[ii]/_REFR0,1.1/_REFR0,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi
+                modelsurfs[ii]= -potential.evaluatezforces(surfrs[ii]/_REFR0,1.1/_REFR0,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi
             else:
                 modelsurfs[ii]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(surfrs[ii]/_REFR0,zz,pot)),0.,1.1/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
         out= 0.5*numpy.sum((surfs-modelsurfs)**2./surferrs**2.)

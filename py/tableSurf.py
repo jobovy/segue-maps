@@ -15,6 +15,8 @@ def tableSurf(savefilename,outfilename):
         surfrs= pickle.load(surffile)
         surfs= pickle.load(surffile)
         surferrs= pickle.load(surffile)
+        kzs= pickle.load(surffile)
+        kzerrs= pickle.load(surffile)
         surffile.close()
     else:
         raise IOError("savefilename with surface-densities has to exist")
@@ -26,10 +28,13 @@ def tableSurf(savefilename,outfilename):
     afes= pickle.load(savefile)
     indx= numpy.isnan(surfrs)
     indx[50]= True
+    indx[57]= True
     indx= True - indx
     surfrs= surfrs[indx]
     surfs= surfs[indx]
     surferrs= surferrs[indx]
+    kzs= kzs[indx]
+    kzerrs= kzerrs[indx]
     fehs= fehs[indx]
     afes= afes[indx]
     #Now table
@@ -45,6 +50,10 @@ def tableSurf(savefilename,outfilename):
         printline+= '%.1f' % surfs[ii]
         printline+= ' & '
         printline+= '%.1f' % surferrs[ii]
+        printline+= ' & '
+        printline+= '%.1f' % kzs[ii]
+        printline+= ' & '
+        printline+= '%.1f' % kzerrs[ii]
         printline+= '\\\\'
         outfile.write(printline+'\n')
     outfile.write('\\enddata\n')

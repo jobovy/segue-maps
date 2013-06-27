@@ -9,6 +9,7 @@ from matplotlib import pyplot, cm
 from galpy.util import bovy_plot, multi, save_pickles
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 from galpy import potential
+import bovy_mcmc
 import monoAbundanceMW
 from segueSelect import _ERASESTR
 from pixelFitDF import get_options, approxFitResult, _REFV0, _REFR0, \
@@ -124,10 +125,28 @@ def plotbestr(options,args):
         derivProps= []
         for ii in range(npops):
             derivProps.append(calcAllSurfErr(ii,options,args))
+    #If a second argument is given, this gives a set of rs at which also to calculate the surface density
+    if len(args) > 1:
+        if os.path.exists(args[1]):
+            surffile= open(args[1],'rb')
+            altsurfrs= pickle.load(surffile)
+            surffile.close()
+            calcExtra= True
+        else:
+            raise IOError("extra savefilename with surface-densities has to exist when it is specified")
+    else:
+        calcExtra= False
     #Load into plotthis
     plotthis= numpy.zeros(npops)+numpy.nan
     plotthis_y= numpy.zeros(npops)+numpy.nan
     plotthis_y_err= numpy.zeros(npops)+numpy.nan
+    plotthiskz_y= numpy.zeros(npops)+numpy.nan
+    plotthiskz_y_err= numpy.zeros(npops)+numpy.nan
+    altplotthis= numpy.zeros(npops)+numpy.nan
+    altplotthis_y= numpy.zeros(npops)+numpy.nan
+    altplotthis_y_err= numpy.zeros(npops)+numpy.nan
+    altplotthiskz_y= numpy.zeros(npops)+numpy.nan
+    altplotthiskz_y_err= numpy.zeros(npops)+numpy.nan
     for ii in range(npops):
         if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
                                          k=(options.sample.lower() == 'k')) /8.) > -0.5 \
@@ -141,6 +160,15 @@ def plotbestr(options,args):
         plotthis[ii]= derivProps[ii][indx,0]
         plotthis_y[ii]= derivProps[ii][indx,1]
         plotthis_y_err[ii]= derivProps[ii][indx,3]
+        plotthiskz_y[ii]= derivProps[ii][indx,4]
+        plotthiskz_y_err[ii]= derivProps[ii][indx,5]
+        if calcExtra:
+            indx= numpy.argmin(numpy.fabs(derivProps[ii][:,0]-altsurfrs[ii]))
+            altplotthis[ii]= derivProps[ii][indx,0]
+            altplotthis_y[ii]= derivProps[ii][indx,1]
+            altplotthis_y_err[ii]= derivProps[ii][indx,3]           
+            altplotthiskz_y[ii]= derivProps[ii][indx,4]
+            altplotthiskz_y_err[ii]= derivProps[ii][indx,5]           
     #Now plot
     bovy_plot.bovy_print()
     monoAbundanceMW.plotPixelFunc(fehs,afes,plotthis,
@@ -174,11 +202,19 @@ def plotbestr(options,args):
                                      args=(plotthis,plotthis_y,plotthis_y_err))
     pyplot.plot(trs,numpy.exp(exp_params[0]-(trs-8.)/numpy.exp(exp_params[1])),
                 'k-',lw=2.)
-    print numpy.exp(exp_params)
+    print numpy.exp(exp_params) 
     bovy_plot.bovy_end_print(options.outfilename.replace('.png','_rvssurf.png'))
     #Save
-    save_pickles(options.outfilename.replace('.png','_rvssurf.sav'),
-                 plotthis,plotthis_y,plotthis_y_err)
+    if calcExtra:
+        save_pickles(options.outfilename.replace('.png','_rvssurf.sav'),
+                     plotthis,plotthis_y,plotthis_y_err,
+                     plotthiskz_y,plotthiskz_y_err,
+                     altplotthis,altplotthis_y,altplotthis_y_err,
+                     altplotthiskz_y,altplotthiskz_y_err)
+    else:
+        save_pickles(options.outfilename.replace('.png','_rvssurf.sav'),
+                     plotthis,plotthis_y,plotthis_y_err,
+                     plotthiskz_y,plotthiskz_y_err)
     return None        
     
 def expcurve(params,x,y,err):
@@ -510,7 +546,7 @@ def calcAllSurfErr(ii,options,args):
     savefile.close()
     if numpy.log(monoAbundanceMW.hr(fehs[ii],afes[ii],
                                     k=(options.sample.lower() == 'k')) /8.) > -0.5:
-        return numpy.zeros((101,4))
+        return numpy.zeros((101,6))
     if _NOTDONEYET:
         spl= options.restart.split('.')
     else:
@@ -521,15 +557,17 @@ def calcAllSurfErr(ii,options,args):
         if not jj == len(spl)-2: newname+= '.'
     newname+= '_%i.' % ii
     newname+= spl[-1]
-    rs,mean_surfz, cov, std_surfz= calcSurfRdCorr(newname,vo=options.fixvc/_REFV0,
+    rs,mean_surfz, cov, std_surfz, mean_kz, std_kz= calcSurfRdCorr(newname,vo=options.fixvc/_REFV0,
                                   zh=options.fixzh,
                                   dlnvcdlnr=options.dlnvcdlnr)
-    if rs is None: return numpy.zeros((101,4))
-    out= numpy.zeros((len(rs),4))
+    if rs is None: return numpy.zeros((101,6))
+    out= numpy.zeros((len(rs),6))
     out[:,0]= rs
     out[:,1]= mean_surfz
     out[:,2]= cov
     out[:,3]= std_surfz
+    out[:,4]= mean_kz
+    out[:,5]= std_kz
     return out
 
 def calcAllSurfErrZ(ii,options,args):

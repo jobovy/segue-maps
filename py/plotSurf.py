@@ -8,7 +8,7 @@ from matplotlib import pyplot, cm
 from selectFigs import _squeeze
 import bovy_mcmc
 from plotOverview import expcurve
-def plotSurf(savefilename,plotfilename):
+def plotSurf(savefilename,plotfilename,kz=False):
     #Read surface densities
     #First read the surface densities
     if os.path.exists(savefilename):
@@ -16,6 +16,8 @@ def plotSurf(savefilename,plotfilename):
         surfrs= pickle.load(surffile)
         surfs= pickle.load(surffile)
         surferrs= pickle.load(surffile)
+        kzs= pickle.load(surffile)
+        kzerrs= pickle.load(surffile)
         surffile.close()
     else:
         raise IOError("savefilename with surface-densities has to exist")
@@ -32,6 +34,14 @@ def plotSurf(savefilename,plotfilename):
     surfrs= surfrs[indx]
     surfs= surfs[indx]
     surferrs= surferrs[indx]
+    kzs= kzs[indx]
+    kzerrs= kzerrs[indx]
+    if kz:
+        surfs= kzs
+        surferrs= kzerrs
+        ylabel=r'$K_{Z}(R,|Z| = 1.1\,\mathrm{kpc})\ (2\pi G\,M_\odot\,\mathrm{pc}^{-2})$'
+    else:
+        ylabel=r'$\Sigma(R,|Z| \leq 1.1\,\mathrm{kpc})\ (M_\odot\,\mathrm{pc}^{-2})$'
     fehs= fehs[indx]
     afes= afes[indx]
     #Plot
@@ -39,7 +49,7 @@ def plotSurf(savefilename,plotfilename):
     bovy_plot.bovy_print()
     bovy_plot.bovy_plot(surfrs,surfs,c=afes,marker='o',scatter=True,
                         xlabel=r'$R\ (\mathrm{kpc})$',cmap='jet',
-                        ylabel=r'$\Sigma(R,|Z| \leq 1.1\,\mathrm{kpc})\ (M_\odot\,\mathrm{pc}^{-2})$',
+                        ylabel=ylabel,
                         xrange=[4.,10.],
                         yrange=[10,1050.],
                         semilogy=True,
@@ -79,4 +89,4 @@ def plotSurf(savefilename,plotfilename):
     bovy_plot.bovy_end_print(plotfilename)
 
 if __name__ == '__main__':
-    plotSurf(sys.argv[1],sys.argv[2])
+    plotSurf(sys.argv[1],sys.argv[2],kz=len(sys.argv) == 4)
