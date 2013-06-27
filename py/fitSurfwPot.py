@@ -156,7 +156,10 @@ def like_func(params,options,surfrs,surfs,surferrs,
     if not options.dontfitsurf:
         modelsurfs= numpy.zeros_like(surfs)
         for ii in range(len(surfrs)):
-            modelsurfs[ii]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(surfrs[ii]/_REFR0,zz,pot)),0.,1.1/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
+            if options.surfaskz:
+                modelsurfs[ii]= potential.evaluatezforces(surfrs[ii]/_REFR0,1.1/_REFR0,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi
+            else:
+                modelsurfs[ii]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(surfrs[ii]/_REFR0,zz,pot)),0.,1.1/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
         out= 0.5*numpy.sum((surfs-modelsurfs)**2./surferrs**2.)
     else:
         out= 0.
@@ -423,6 +426,10 @@ def get_options():
                       help="Correlation length for terminal velocity residuals")
     parser.add_option("--termsigma",dest='termsigma',default=7.,type='float',
                       help="sigma for terminal velocity residuals")
+    parser.add_option("--surfaskz",action="store_true", 
+                      dest="surfaskz",
+                      default=False,
+                      help="If set, treat the surface-density measurements as measurements of kz")
     #Fit options
     parser.add_option("--init",dest='initfile',default=None,
                       help="Name of the file that has the best-fits")
