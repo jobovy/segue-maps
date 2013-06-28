@@ -43,15 +43,15 @@ def plotFidDF(options,args):
     options.aAmethod='staeckel'
     aAS= setup_aA(pot,options)
     #Setup DF
-    qdf= quasiisothermaldf(2./8.,0.35,0.2,1.,0.875,aA=aAS,pot=pot,cutcounter=True)
-    qdfa= quasiisothermaldf(2./8.,0.35,0.2,1.,0.875,aA=aA,pot=pot,cutcounter=True)
+    qdf= quasiisothermaldf(2./8.,0.25,0.3,1.,0.875,aA=aAS,pot=pot,cutcounter=True)
+    qdfa= quasiisothermaldf(2./8.,0.25,0.3,1.,0.875,aA=aA,pot=pot,cutcounter=True)
     if options.type.lower() == 'lzjr':
         njs= 201
         jrs= numpy.linspace(0.,500.,njs)/ro/vo/_REFR0/_REFV0
-        lzs= numpy.linspace(0.,3600.,njs)/ro/vo/_REFR0/_REFV0
-        plotthis= qdf((numpy.tile(jrs,(njs,1)),
-                       numpy.tile(lzs,(njs,1)).T,
-                       numpy.zeros((njs,njs))))
+        lzs= numpy.linspace(0.0,3600.,njs)/ro/vo/_REFR0/_REFV0
+        plotthis= qdf((numpy.tile(jrs,(njs,1)).flatten(),
+                       numpy.tile(lzs,(njs,1)).T.flatten(),
+                       numpy.zeros((njs,njs)).flatten())).reshape((njs,njs))
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='gist_yarg',
                               xlabel=r'$L_z\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
@@ -66,9 +66,9 @@ def plotFidDF(options,args):
         njs= 201
         jrs= numpy.linspace(0.,500.,njs)/ro/vo/_REFR0/_REFV0
         jzs= numpy.linspace(0.,250.,njs)/ro/vo/_REFR0/_REFV0
-        plotthis= qdf((numpy.tile(jrs,(njs,1)).T,
-                       numpy.ones((njs,njs)),
-                       numpy.tile(jzs,(njs,1))))
+        plotthis= qdf((numpy.tile(jrs,(njs,1)).T.flatten(),
+                       0.9*numpy.ones((njs,njs)).flatten(),
+                       numpy.tile(jzs,(njs,1)).flatten())).reshape((njs,njs))
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='gist_yarg',
                               xlabel=r'$J_R\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
