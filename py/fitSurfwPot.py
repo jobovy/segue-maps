@@ -77,6 +77,7 @@ def fitSurfwPot(options,args):
     #Fit/sample
     potoptions= setup_options(None)
     potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    #potoptions.potential= 'dpdiskplhalofixcutbulgeflatwgasalt'
     potoptions.fitdvt= False
     funcargs= (options,surfrs,surfs,surferrs,potoptions,
                numpy.log(1.5/8.),numpy.log(6./8.),
@@ -220,6 +221,7 @@ def calcDerived(options,args):
         raise IOError("%s not found" % args[0])
     potoptions= setup_options(None)
     potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    #potoptions.potential= 'dpdiskplhalofixcutbulgeflatwgasalt'
     potoptions.fitdvt= False
     if options.mcsample:
         derived_params= multi.parallel_map((lambda x: calcDerivedSingle(init_params[x],options,potoptions)),
