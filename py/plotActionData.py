@@ -50,27 +50,22 @@ def plotActionData(options,args):
     fehs= numpy.array(fehs)
     afes= numpy.array(afes)
     #print numpy.argmin((fehs+0.25)**2.+(afes-0.175)**2.)
-    #Load potential parameters
-    if not options.init is None and os.path.exists(options.init):
-        #Load initial parameters from file
-        print "Loading parameters for file "+options.init
-        savefile= open(options.init,'rb')
-        params= pickle.load(savefile)
-        print params
-        savefile.close()
-    else:
-        raise IOError("--init with potential parameters needs to be set")
+    #Setup potential
+    params= numpy.array([-1.33663190049,0.998420232634,-3.49031638164,0.31949840593,-1.63965169376])
     try:
-        pot= setup_potential(params,options,1)#Assume that the potential parameters come from a file with a single set of df parameters first
+        pot= setup_potential(params,options,0)#Assume that the potential parameters come from a file with a single set of df parameters first
     except RuntimeError: #if this set of parameters gives a nonsense potential
         raise
-    ro= get_ro(params,options)
-    vo= get_vo(params,options,1)
+    ro= 1.
+    vo= params[1]
     aA= setup_aA(pot,options)
     jr, lz, jz= [], [], []
     #Get data ready
+    params= [None,None,None,None,None,None,params[0],params[1],params[2],params[3],params[4]]
     for indx in range(len(fehs)):
-        R,vR,vT,z,vz= prepare_coordinates(params,indx,fehs,afes,binned,
+        if numpy.log(monoAbundanceMW.hr(fehs[indx],afes[indx],k=(options.sample.lower() == 'k'))/8.) > -0.5 :
+            continue
+        R,vR,vT,z,vz,e,ee,eee= prepare_coordinates(params,indx,fehs,afes,binned,
                                           errstuff,
                                           options,1)
         tjr, tlz, tjz= aA(R.flatten(),vR.flatten(),vT.flatten(),z.flatten(),vz.flatten())
@@ -78,11 +73,11 @@ def plotActionData(options,args):
         lz.extend(list(tlz))
         jz.extend(list(tjz))
     #Now plot
-    jr= numpy.array(jr)*ro*vo*_REFR0*_REFV0
-    lz= numpy.array(lz)*ro*vo*_REFR0*_REFV0
-    jz= numpy.array(jz)*ro*vo*_REFR0*_REFV0
+    jr= numpy.array(jr).flatten()*ro*vo*_REFR0*_REFV0
+    lz= numpy.array(lz).flatten()*ro*vo*_REFR0*_REFV0
+    jz= numpy.array(jz).flatten()*ro*vo*_REFR0*_REFV0
     bovy_plot.bovy_print()
-    levels= special.erf(0.5*numpy.arange(1,4))
+    levels= special.erf(numpy.sqrt(0.5)*numpy.arange(1,4))
     levels= list(levels)
     levels.append(1.01)
     print len(jr)
@@ -93,6 +88,7 @@ def plotActionData(options,args):
                               xrange=[0.,3600.],
                               yrange=[0.,500.],
                               onedhists=True,
+                              bins=51,
                               levels=levels)
     elif options.type.lower() == 'jrjz':
         bovy_plot.scatterplot(jr,jz,color='k',marker=',',ls='none',
@@ -102,10 +98,10 @@ def plotActionData(options,args):
                               yrange=[0.,250.],
                               onedhists=True,
                               levels=levels)
-    if options.sample == 'g':
-        bovy_plot.bovy_text(r'$\mathrm{G\!-\!type\ dwarfs}$',top_right=True,size=16.)
-    elif options.sample == 'k':
-        bovy_plot.bovy_text(r'$\mathrm{K\!-\!type\ dwarfs}$',top_right=True,size=16.)
+    #if options.sample == 'g':
+    #    bovy_plot.bovy_text(r'$\mathrm{G\!-\!type\ dwarfs}$',top_right=True,size=16.)
+    #elif options.sample == 'k':
+    #    bovy_plot.bovy_text(r'$\mathrm{K\!-\!type\ dwarfs}$',top_right=True,size=16.)
     bovy_plot.bovy_end_print(options.outfilename)
     return None
 
