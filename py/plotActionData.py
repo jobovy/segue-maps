@@ -77,25 +77,26 @@ def plotActionData(options,args):
     lz= numpy.array(lz).flatten()*ro*vo*_REFR0*_REFV0
     jz= numpy.array(jz).flatten()*ro*vo*_REFR0*_REFV0
     bovy_plot.bovy_print()
-    levels= special.erf(numpy.sqrt(0.5)*numpy.arange(1,4))
+    levels= special.erf(numpy.sqrt(0.5)*numpy.arange(1,3))
     levels= list(levels)
     levels.append(1.01)
     print len(jr)
     if options.type.lower() == 'lzjr':
-        bovy_plot.scatterplot(lz,jr,',',
-                              xlabel=r'$L_z\ [\mathrm{km\,s}^{-1}\,\mathrm{kpc}]$',
-                              ylabel=r'$J_R\ [\mathrm{km\,s}^{-1}\,\mathrm{kpc}]$',
-                              xrange=[0.,3600.],
-                              yrange=[0.,500.],
+        bovy_plot.scatterplot(lz/220.,jr/220.,',',
+                              xlabel=r'$L_z\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
+                              ylabel=r'$J_R\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
+                              xrange=[0.,3600./220.],
+                              yrange=[0.,500./220.],
                               onedhists=True,
-                              bins=51,
+                              bins=41,
                               levels=levels)
     elif options.type.lower() == 'jrjz':
-        bovy_plot.scatterplot(jr,jz,color='k',marker=',',ls='none',
-                              xlabel=r'$J_R\ [\mathrm{km\,s}^{-1}\,\mathrm{kpc}]$',
-                              ylabel=r'$J_Z\ [\mathrm{km\,s}^{-1}\,\mathrm{kpc}]$',
-                              xrange=[0.,500.],
-                              yrange=[0.,250.],
+        bovy_plot.scatterplot(jr/220.,jz/220.,color='k',marker=',',ls='none',
+                              xlabel=r'$J_R\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
+                              ylabel=r'$J_Z\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
+                              xrange=[0.,500./220.],
+                              yrange=[0.,250./220.],
+                              bins=41,
                               onedhists=True,
                               levels=levels)
     #if options.sample == 'g':

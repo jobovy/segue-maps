@@ -30,24 +30,14 @@ from pixelFitDF import _REFR0, _REFV0
 from matplotlib import pyplot
 from matplotlib.ticker import NullFormatter
 def plotFidDF(options,args):
-    #Load potential parameters
-    if not options.init is None and os.path.exists(options.init):
-        #Load initial parameters from file
-        print "Loading parameters for file "+options.init
-        savefile= open(options.init,'rb')
-        params= pickle.load(savefile)
-        print params
-        savefile.close()
-    else:
-        options.potential= 'btii'
-        params= None
-#        raise IOError("--init with potential parameters needs to be set")
+    #Setup potential
+    params= numpy.array([-1.33663190049,0.998420232634,-3.49031638164,0.31949840593,-1.63965169376])
     try:
-        pot= setup_potential(params,options,1)#Assume that the potential parameters come from a file with a single set of df parameters first
+        pot= setup_potential(params,options,0)#Assume that the potential parameters come from a file with a single set of df parameters first
     except RuntimeError: #if this set of parameters gives a nonsense potential
         raise
-    ro= get_ro(params,options)
-    vo= get_vo(params,options,1)
+    ro= 1.
+    vo= params[1]
     options.aAmethod='adiabatic'
     aA= setup_aA(pot,options)
     options.aAmethod='staeckel'
@@ -64,10 +54,10 @@ def plotFidDF(options,args):
                        numpy.zeros((njs,njs))))
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='gist_yarg',
-                              xlabel=r'$L_z\ [\mathrm{km\,s}^{-1}\,\mathrm{kpc}]$',
-                              ylabel=r'$J_R\ [\mathrm{km\,s}^{-1}\,\mathrm{kpc}]$',
-                              xrange=[0.,3600.],
-                              yrange=[0.,500.],
+                              xlabel=r'$L_z\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
+                              ylabel=r'$J_R\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
+                              xrange=[0.,3600./220.],
+                              yrange=[0.,500./220.],
                               onedhists=True,
                               interpolation='nearest',
                               cntrmass=True,contours=True,
@@ -81,10 +71,10 @@ def plotFidDF(options,args):
                        numpy.tile(jzs,(njs,1))))
         bovy_plot.bovy_print()
         bovy_plot.bovy_dens2d(plotthis.T,origin='lower',cmap='gist_yarg',
-                              xlabel=r'$J_R\ [\mathrm{km\,s}^{-1}\,\mathrm{kpc}]$',
-                              ylabel=r'$J_Z\ [\mathrm{km\,s}^{-1}\,\mathrm{kpc}]$',
-                              xrange=[0.,500.],
-                              yrange=[0.,250.],
+                              xlabel=r'$J_R\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
+                              ylabel=r'$J_Z\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
+                              xrange=[0.,500./220.],
+                              yrange=[0.,250./220.],
                               onedhists=True,
                               interpolation='nearest',
                               cntrmass=True,contours=True,
@@ -94,8 +84,8 @@ def plotFidDF(options,args):
         tilt= numpy.array([qdf.tilt(1.,z/ro/_REFR0,gl=True) for z in zs])
         bovy_plot.bovy_print()
         line1= bovy_plot.bovy_plot(zs,tilt,'k-',
-                                   xlabel=r'$Z\ [\mathrm{kpc}]$',
-                                   ylabel=r'$\mathrm{tilt\ of\ the\ velocity\ ellipsoid}\ [\mathrm{deg}]$',
+                                   xlabel=r'$Z\ (\mathrm{kpc})$',
+                                   ylabel=r'$\mathrm{tilt\ of\ the\ velocity\ ellipsoid}\ (\mathrm{deg})$',
                                    xrange=[0.,5.],
                                    yrange=[-5.,30.])
         line2= bovy_plot.bovy_plot(zs,zs*0.,'k--',overplot=True)
@@ -120,8 +110,8 @@ def plotFidDF(options,args):
         sigz2a= numpy.array([qdfa.sigmaz2(1.,z/ro/_REFR0,gl=True) for z in zs])
         bovy_plot.bovy_print()
         line1= bovy_plot.bovy_plot(zs,numpy.sqrt(sigz2)*vo*_REFV0,'k-',
-                                   xlabel=r'$Z\ [\mathrm{kpc}]$',
-                                   ylabel=r'$\sigma_Z(Z)\ [\mathrm{km\,s}^{-1}]$',
+                                   xlabel=r'$Z\ (\mathrm{kpc})$',
+                                   ylabel=r'$\sigma_Z(Z)\ (\mathrm{km\,s}^{-1})$',
                                    xrange=[0.,5.],
                                    yrange=[0.,60.])
         line2= bovy_plot.bovy_plot(zs,numpy.sqrt(sigz2a)*vo*_REFV0,
@@ -139,7 +129,7 @@ def plotFidDF(options,args):
         densza= numpy.array([qdfa.density(1.,z/ro/_REFR0,gl=True) for z in zs])
         bovy_plot.bovy_print()
         line1= bovy_plot.bovy_plot(zs,densz/densz[0],'k-',
-                                   xlabel=r'$Z\ [\mathrm{kpc}]$',
+                                   xlabel=r'$Z\ (\mathrm{kpc})$',
                                    ylabel=r'$\nu_*(R_0,Z)/\nu_*(R_0,0)$',
                                    xrange=[0.,5.],
                                    semilogy=True)
@@ -175,7 +165,7 @@ def plotFidDF(options,args):
         densra= numpy.array([qdfa.density(r/ro/_REFR0,1./ro/_REFR0,gl=True) for r in rs])
         bovy_plot.bovy_print()
         line1= bovy_plot.bovy_plot(rs,densr/densr[numpy.argmin((rs-8.)**2.)],'k-',
-                                   xlabel=r'$R\ [\mathrm{kpc}]$',
+                                   xlabel=r'$R\ (\mathrm{kpc})$',
                                    ylabel=r'$\nu_*(R,1\,\mathrm{kpc})/\nu_*(R_0,1\,\mathrm{kpc})$',
                                    xrange=[4.,15.],
                                    semilogy=True)
