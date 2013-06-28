@@ -170,7 +170,7 @@ def plotFidDF(options,args):
                                    xrange=[4.,15.],
                                    semilogy=True)
         line2= bovy_plot.bovy_plot(rs,densra/densra[numpy.argmin((rs-8.)**2.)],'k--',overplot=True)
-        line3= bovy_plot.bovy_plot(rs,numpy.exp(-(rs-8.)/3.),'-',
+        line3= bovy_plot.bovy_plot(rs,numpy.exp(-(rs-8.)/2.),'-',
                                    overplot=True,
                                    color='0.65') 
         #pyplot.legend((line1[0],line2[0]),
