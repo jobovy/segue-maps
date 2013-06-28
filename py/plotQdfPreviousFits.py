@@ -25,7 +25,7 @@ def plotQdfPreviousFits(options,args):
     bovy_plot.bovy_print()
     monoAbundanceMW.plotPixelFunc(fehs,afes,numpy.exp(lnhrin)*8.,
                                   vmin=1.5,vmax=4.5,
-                                  zlabel=r'$\mathrm{Input\ radial\ scale\ length\ [kpc]}$')
+                                  zlabel=r'$\mathrm{Input\ radial\ scale\ length\ (kpc)}$')
     #Plotname
     spl= options.outfilename.split('.')
     newname= ''
@@ -39,7 +39,7 @@ def plotQdfPreviousFits(options,args):
     bovy_plot.bovy_print()
     monoAbundanceMW.plotPixelFunc(fehs,afes,numpy.exp(lnsrin)*220.,
                                   vmin=30.,vmax=60.,
-                                  zlabel=r'$\mathrm{Input\ radial\ velocity\ dispersion\ [km\,s}^{-1}]$')
+                                  zlabel=r'$\mathrm{Input\ radial\ velocity\ dispersion\ (km\,s}^{-1})$')
     #Plotname
     spl= options.outfilename.split('.')
     newname= ''
@@ -53,7 +53,7 @@ def plotQdfPreviousFits(options,args):
     bovy_plot.bovy_print()
     monoAbundanceMW.plotPixelFunc(fehs,afes,numpy.exp(lnszin)*220.,
                                   vmin=10.,vmax=80.,
-                                  zlabel=r'$\mathrm{Input\ vertical\ velocity\ dispersion\ [km\,s}^{-1}]$')
+                                  zlabel=r'$\mathrm{Input\ vertical\ velocity\ dispersion\ (km\,s}^{-1})$')
     #Plotname
     spl= options.outfilename.split('.')
     newname= ''

@@ -98,7 +98,7 @@ def plot_hrhrvshr(options,args):
     map.set_clim(vmin=numpy.amin(srs[0,:]),vmax=numpy.amax(srs[0,:]))
     cbar= pyplot.colorbar(map,fraction=0.15)
     cbar.set_clim(numpy.amin(srs[0,:]),numpy.amax(srs[0,:]))
-    cbar.set_label(r'$\sigma_R \,[\mathrm{km\,s}^{-1}]$')
+    cbar.set_label(r'$\sigma_R \,(\mathrm{km\,s}^{-1})$')
     bovy_plot.bovy_end_print(options.plotfilename)
 
 def plot_szszvssz(options,args):
@@ -193,7 +193,7 @@ def plot_szszvssz(options,args):
     map.set_clim(vmin=numpy.amin(hrs[0,:]),vmax=numpy.amax(hrs[0,:]))
     cbar= pyplot.colorbar(map,fraction=0.15)
     cbar.set_clim(numpy.amin(hrs[0,:]),numpy.amax(hrs[0,:]))
-    cbar.set_label(r'$h_R\, [\mathrm{kpc}]$')
+    cbar.set_label(r'$h_R\, (\mathrm{kpc})$')
     bovy_plot.bovy_end_print(options.plotfilename)
 
 def plot_hzszq(options,args):
