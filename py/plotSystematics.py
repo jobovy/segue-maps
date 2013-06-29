@@ -128,11 +128,11 @@ def plotSystematics(plotfilename):
     #                    overplot=True,color='0.35',
     #                    zorder=10)
     thisax= pyplot.gca()
-    bovy_plot._add_ticks()
     nullfmt   = NullFormatter()         # no labels
     thisax.xaxis.set_major_formatter(nullfmt)
     thisax.set_ylim(-0.29,0.29)
     thisax.set_xlim(4.,10.)
+    bovy_plot._add_ticks()
     left, bottom, width, height= 0.1, 0.9-2.*dx, 0.8, dx
     thisax= pyplot.axes([left,bottom,width,height])
     allaxes.append(thisax)
