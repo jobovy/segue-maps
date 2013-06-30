@@ -57,7 +57,7 @@ def fitSurfwPot(options,args):
         apogee_vcdxcovar= pickle.load(savefile)
         savefile.close()
         apogeeprior= (apogee_vcdxamp,apogee_vcdxmean,apogee_vcdxcovar)
-    elif not os.path.exists(apogeefile):
+    elif options.apogeeprior and not os.path.exists(apogeefile):
         raise IOError("At least one input file has to exist ...")
     else:
         apogeeprior= None
@@ -76,8 +76,8 @@ def fitSurfwPot(options,args):
         init_params= numpy.array(init_params)
     #Fit/sample
     potoptions= setup_options(None)
-    potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
-    #potoptions.potential= 'dpdiskplhalofixcutbulgeflatwgasalt'
+    #potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    potoptions.potential= 'dpdiskplhalofixcutbulgeflatwgasalt'
     potoptions.fitdvt= False
     funcargs= (options,surfrs,surfs,surferrs,potoptions,
                numpy.log(1.5/8.),numpy.log(6./8.),
@@ -200,7 +200,10 @@ def like_func(params,options,surfrs,surfs,surferrs,
         out-= logprior_dlnvcdlnr(params[4],options)
     #K dwarfs
     if options.lanprior:
-        out+= 0.5*(2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,1.0/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro-67.)**2./36.
+        if options.surfaskz:
+            out+= 0.5*(-potential.evaluatezforces(1.,1.1/_REFR0,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi-67.)**2./36.
+        else:
+            out+= 0.5*(2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,1.0/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro-67.)**2./36.
         out+= 0.5*(2.*pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*numpy.exp(params[2])*ro*_REFR0*1000.-42.)**2./36.
 #        print 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,1.0/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro, \
 #            2.*pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*numpy.exp(params[2])*ro*_REFR0*1000.
@@ -220,8 +223,8 @@ def calcDerived(options,args):
     else:
         raise IOError("%s not found" % args[0])
     potoptions= setup_options(None)
-    potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
-    #potoptions.potential= 'dpdiskplhalofixcutbulgeflatwgasalt'
+    #potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    potoptions.potential= 'dpdiskplhalofixcutbulgeflatwgasalt'
     potoptions.fitdvt= False
     if options.mcsample:
         derived_params= multi.parallel_map((lambda x: calcDerivedSingle(init_params[x],options,potoptions)),
@@ -267,6 +270,8 @@ def plotStuff(options,args):
         plot2dStuff(options,args)
     elif options.type == 'bestfitsurf':
         plotBestfitSurf(options,args)
+    elif options.type == 'bestfitkz':
+        plotBestfitSurf(options,args)
     elif options.type == 'bestfitvterm':
         plotBestfitVterm(options,args)
     return None
@@ -279,6 +284,8 @@ def plotBestfitSurf(options,args):
         surfrs= pickle.load(surffile)
         surfs= pickle.load(surffile)
         surferrs= pickle.load(surffile)
+        kzs= pickle.load(surffile)
+        kzerrs= pickle.load(surffile)
         surffile.close()
     else:
         raise IOError("-i has to be set")
@@ -289,6 +296,8 @@ def plotBestfitSurf(options,args):
     surfrs= surfrs[indx]
     surfs= surfs[indx]
     surferrs= surferrs[indx]
+    kzs= kzs[indx]
+    kzerrs= kzerrs[indx]
     if os.path.exists(args[0]):
         initfile= open(args[0],'rb')
         init_params= pickle.load(initfile)
@@ -297,13 +306,20 @@ def plotBestfitSurf(options,args):
         raise IOError("%s not found" % args[0])
     #Setup potential
     potoptions= setup_options(None)
-    potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    #potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    potoptions.potential= 'dpdiskplhalofixcutbulgeflatwgasalt'
     potoptions.fitdvt= False
     pot= setup_potential(init_params,potoptions,0,returnrawpot=True)
+    if options.type == 'bestfitkz':
+        surfs= kzs
+        surferrs= kzerrs
+        ylabel=r'$K_{Z}(R,|Z| = 1.1\,\mathrm{kpc})\ (2\pi G\,M_\odot\,\mathrm{pc}^{-2})$'
+    else:
+        ylabel=r'$\Sigma(R,|Z| \leq 1.1\,\mathrm{kpc})\ (M_\odot\,\mathrm{pc}^{-2})$'
     bovy_plot.bovy_print()
     bovy_plot.bovy_plot(surfrs,surfs,'ko',
                         xlabel=r'$R\ (\mathrm{kpc})$',
-                        ylabel=r'$\Sigma(R,|Z| \leq 1.1\,\mathrm{kpc})\ (M_\odot\,\mathrm{pc}^{-2})$',
+                        ylabel=ylabel,
                         xrange=[4.,10.],
                         yrange=[10,1050.],
                         semilogy=True)
@@ -315,12 +331,15 @@ def plotBestfitSurf(options,args):
     pyplot.errorbar([8.],[69.],yerr=[6.],marker='d',
                     elinewidth=1.,capsize=3,zorder=0,
                     color='k',linestyle='none')  
-    rs= numpy.linspace(4.5,9.,21)/8.
+    rs= numpy.linspace(4.5,9.,21)/_REFR0
     msurfs= numpy.zeros_like(rs)
     ro= 1.
     vo= init_params[1]
     for ii in range(len(rs)):
-        msurfs[ii]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(rs[ii],zz,pot)),0.,1.1/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro            
+        if options.type == 'bestfitkz':
+            msurfs[ii]= -potential.evaluatezforces(rs[ii],1.1/_REFR0,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi
+        else:
+            msurfs[ii]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(rs[ii],zz,pot)),0.,1.1/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro            
     pyplot.plot(rs*8.,msurfs,'k-')
     bovy_plot.bovy_end_print(options.plotfile)
 
@@ -336,7 +355,8 @@ def plotBestfitVterm(options,args):
         raise IOError("%s not found" % args[0])
     #Setup potential
     potoptions= setup_options(None)
-    potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    #potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    potoptions.potential= 'dpdiskplhalofixcutbulgeflatwgasalt'
     potoptions.fitdvt= False
     pot= setup_potential(init_params,potoptions,0,returnrawpot=True)
     vo= init_params[1]
@@ -437,7 +457,7 @@ def get_options():
                       help="sigma for terminal velocity residuals")
     parser.add_option("--surfaskz",action="store_true", 
                       dest="surfaskz",
-                      default=False,
+                      default=True,
                       help="If set, treat the surface-density measurements as measurements of kz")
     #Fit options
     parser.add_option("--init",dest='initfile',default=None,
