@@ -47,6 +47,7 @@ def plotRbestvsRmean(savefilename,plotfilename):
     #Plot
     indx= numpy.isnan(surfrs)
     indx[50]= True
+    indx[57]= True
     indx= True - indx
     surfrs= surfrs[indx]
     rmean= rmean[indx]
