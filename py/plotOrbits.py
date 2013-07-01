@@ -62,7 +62,7 @@ def plotOrbits(parser):
         zlabel=r'$R_{\mathrm{mean}}\ [\mathrm{kpc}]$'
     elif  options.type == 'densrmean' \
             or options.type == 'vzrmean':
-        vmin, vmax= 4., 10.
+        vmin, vmax= 4.5, 10.
         zlabel=r'$R_{\mathrm{mean}}\ [\mathrm{kpc}]$'    
     elif options.type == 'rap':
         vmin, vmax= 6., 10.
