@@ -27,13 +27,14 @@ def predictDiskMass(modelfunc,params,sf,cdist,fehdist,fehmin,fehmax,feh,
                     data,grmin,grmax,agemin,agemax,normalize='Z',
                     imfmodel='lognormalChabrier2001',
                     justnumber=False):
-    n,d,x= compareDataModel.comparernumberPlate(modelfunc,params,sf,
-                                                cdist,fehdist,data,
-                                                'all',
-                                                fehmin=fehmin,
-                                                fehmax=fehmax,
-                                                feh=feh,
-                                                noplot=True)
+    n= compareDataModel.comparernumberPlate(modelfunc,params,sf,
+                                            cdist,fehdist,data,
+                                            'all',
+                                            fehmin=fehmin,
+                                            fehmax=fehmax,
+                                            feh=feh,
+                                            noplot=True,
+                                            nodata=True)
     if not normalize.lower() == 'z':
         #Normalization of model
         norm= integrate.dblquad(lambda r,f: r**2*numpy.sin(f)*modelfunc(r*numpy.sin(f),

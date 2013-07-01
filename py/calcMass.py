@@ -5,7 +5,7 @@ import math
 import numpy
 import cPickle as pickle
 from optparse import OptionParser
-from extreme_deconvolution import extreme_deconvolution
+#from extreme_deconvolution import extreme_deconvolution
 from galpy.util import bovy_coords, bovy_plot, save_pickles
 from matplotlib import pyplot, cm
 from matplotlib.ticker import FuncFormatter, MultipleLocator
@@ -144,6 +144,7 @@ def calcMass(options,args):
                 #Loop over samples
                 thissamples= denssamples[afeindx+fehindx*binned.npixafe()]
                 if options.nsamples < len(thissamples):
+                    print "Taking random ..."
                     #Random permutation
                     thissamples= numpy.random.permutation(thissamples)[0:options.nsamples]
                 thismasssamples= []
