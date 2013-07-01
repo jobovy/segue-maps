@@ -1,12 +1,14 @@
+import re
 import os, os.path
 import sys
 import math
 import numpy
 import pickle
-from scipy import optimize, integrate
+from scipy import optimize, integrate, special
 from optparse import OptionParser
 from galpy import potential
 from galpy.util import save_pickles, bovy_plot, multi
+from matplotlib import rc
 import multiprocessing
 from matplotlib import pyplot
 import bovy_mcmc
@@ -208,7 +210,10 @@ def like_func(params,options,surfrs,surfs,surferrs,
 #        print 2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,1.0/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro, \
 #            2.*pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*numpy.exp(params[2])*ro*_REFR0*1000.
     if options.apogeeprior:
-        out-= _eval_gauss_grid([numpy.log(vo)],[params[4]],*apogeeprior)[0,0]
+        out+= 0.5*(potential.vcirc(pot,1.)*vo*_REFV0-218.)**2./36.
+        out+= 0.5*(potential.vcirc(pot,.5)*vo*_REFV0-218.)**2./9.
+        out+= 0.5*(potential.vcirc(pot,1.5)*vo*_REFV0-218.)**2./100.
+        #out-= _eval_gauss_grid([numpy.log(vo)],[params[4]],*apogeeprior)[0,0]
     return out
 
 def pdf_func(params,*args):
@@ -265,6 +270,43 @@ def calcDerivedSingle(params,options,potoptions):
     out= [surfz,surfzdisk,rhodm,rhoo,massdisk,alpha,vcdvc]
     return out
     
+def calcRotcurves(options,args):
+    """Calculate rotation curves for this best-fit or samples"""
+    if os.path.exists(options.initfile):
+        initfile= open(options.initfile,'rb')
+        init_params= pickle.load(initfile)
+        initfile.close()
+    else:
+        raise IOError("%s not found" % args[0])
+    potoptions= setup_options(None)
+    #potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    potoptions.potential= 'dpdiskplhalofixcutbulgeflatwgasalt'
+    potoptions.fitdvt= False
+    if options.mcsample:
+        rotcurves= multi.parallel_map((lambda x: calcRotcurvesSingle(init_params[x],options,potoptions)),
+                                           range(len(init_params)),
+                                           numcores=numpy.amin([len(init_params),
+                                                                multiprocessing.cpu_count(),
+                                                                options.multi]))
+    else:
+        rotcurves= calcRotcurvesSingle(init_params,options,potoptions)
+    save_pickles(args[0],rotcurves)
+    return None
+
+def calcRotcurvesSingle(params,options,potoptions):
+    pot= setup_potential(params,potoptions,0,returnrawpot=True)
+    ro= 1.
+    vo= params[1]
+    rs= numpy.linspace(0.0001,2.,101)
+    out= []
+    #First full
+    out.append(vo*potential.calcRotcurve(pot,rs))
+    #Disk
+    out.append(vo*potential.calcRotcurve(pot[0],rs))
+    #Halo
+    out.append(vo*potential.calcRotcurve(pot[1],rs))
+    return out
+    
 def plotStuff(options,args):
     if options.type == '2d':
         plot2dStuff(options,args)
@@ -274,6 +316,126 @@ def plotStuff(options,args):
         plotBestfitSurf(options,args)
     elif options.type == 'bestfitvterm':
         plotBestfitVterm(options,args)
+    elif options.type == 'rotcurves':
+        plotRotcurves(options,args)
+    return None
+
+def plotRotcurves(options,args):
+    """Plot the rotation curves"""
+    #Load the best-fit rotcurves
+    if os.path.exists(options.initfile):
+        savefile= open(options.initfile,'rb')
+        rotcurves_bf= pickle.load(savefile)
+        savefile.close()
+    else:
+        raise IOError("initfile must be set to best-fit rotation curves ...")
+    rs= numpy.linspace(0.0001,2.,101)
+    if True:
+        #Now plot the uncertainty
+        if os.path.exists(args[0]):
+            savefile= open(args[0],'rb')
+            rotcurves_samples= pickle.load(savefile)
+            savefile.close()
+        else:
+            raise IOError("args[0] must be set to sample rotation curves ...")
+        #Total
+        nsamples= len(rotcurves_samples[0][0])
+        allrcs= numpy.zeros((len(rs),nsamples))
+        for ii in range(nsamples):
+            allrcs[:,ii]= rotcurves_samples[ii][0]
+        #Determine range and plot
+        nsigs= 1
+        rcsigs= numpy.zeros((len(rs),2*nsigs))
+        for ii in range(nsigs):
+            for jj in range(len(rs)):
+                thisf= sorted(allrcs[jj,:])
+                thiscut= 0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                thiscut= 0.25#0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                rcsigs[jj,2*ii]= thisf[int(math.floor(thiscut*nsamples))]
+                thiscut= 1.-thiscut
+                rcsigs[jj,2*ii+1]= thisf[int(math.floor(thiscut*nsamples))]
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_plot(rs*_REFR0,numpy.median(allrcs,axis=1)*_REFV0,
+                            'k-',lw=2.,
+                            xrange=[0.,10],
+                            yrange=[0.,280.],
+                            xlabel=r'$R\ (\mathrm{kpc})$',
+                            ylabel=r'$V_c(R)\ (\mathrm{km\,s}^{-1})$',
+                            zorder=10)
+        colord, cc= (1.-0.75)/(nsigs+1.), 1
+        nsigma= nsigs
+        p= pyplot.fill_between(rs*_REFR0,_REFV0*rcsigs[:,0],_REFV0*rcsigs[:,1],
+                               color='k',rasterized=True)
+        p.set_facecolors("none")
+        ax1= pyplot.gca()
+        from matplotlib.patches import PathPatch
+        for path in p.get_paths():
+            p1 = PathPatch(path, fc="none",ec='0.5', hatch="x")
+            ax1.add_patch(p1)
+            p1.set_zorder(p.get_zorder()-0.1)
+        #Disk
+        nsamples= len(rotcurves_samples[0][0])
+        allrcs= numpy.zeros((len(rs),nsamples))
+        for ii in range(nsamples):
+            allrcs[:,ii]= rotcurves_samples[ii][1]
+        bovy_plot.bovy_plot(rs*_REFR0,numpy.median(allrcs,axis=1)*_REFV0,
+                            'k-',lw=2.,
+                            overplot=True)
+        #Determine range and plot
+        rcsigs= numpy.zeros((len(rs),2*nsigs))
+        for ii in range(nsigs):
+            for jj in range(len(rs)):
+                thisf= sorted(allrcs[jj,:])
+                thiscut= 0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                thiscut= 0.25#0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                rcsigs[jj,2*ii]= thisf[int(math.floor(thiscut*nsamples))]
+                thiscut= 1.-thiscut
+                rcsigs[jj,2*ii+1]= thisf[int(math.floor(thiscut*nsamples))]
+        colord, cc= (1.-0.75)/(nsigs+1.), 1
+        nsigma= nsigs
+        p= pyplot.fill_between(rs*_REFR0,_REFV0*rcsigs[:,0],_REFV0*rcsigs[:,1],
+                            color='k',rasterized=True)
+        p.set_facecolors("none")
+        ax1= pyplot.gca()
+        from matplotlib.patches import PathPatch
+        for path in p.get_paths():
+            p1 = PathPatch(path, fc="none",ec='0.5',
+                           hatch="\\")
+            ax1.add_patch(p1)
+            p1.set_zorder(p.get_zorder()-0.1)
+        #Halo
+        nsamples= len(rotcurves_samples[0][0])
+        allrcs= numpy.zeros((len(rs),nsamples))
+        for ii in range(nsamples):
+            allrcs[:,ii]= rotcurves_samples[ii][2]
+        bovy_plot.bovy_plot(rs*_REFR0,numpy.median(allrcs,axis=1)*_REFV0,
+                            'k-',lw=2.,
+                            overplot=True)
+        #Determine range and plot
+        rcsigs= numpy.zeros((len(rs),2*nsigs))
+        for ii in range(nsigs):
+            for jj in range(len(rs)):
+                thisf= sorted(allrcs[jj,:])
+                thiscut= 0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                thiscut= 0.25#0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                rcsigs[jj,2*ii]= thisf[int(math.floor(thiscut*nsamples))]
+                thiscut= 1.-thiscut
+                rcsigs[jj,2*ii+1]= thisf[int(math.floor(thiscut*nsamples))]
+        colord, cc= (1.-0.75)/(nsigs+1.), 1
+        nsigma= nsigs
+        p= pyplot.fill_between(rs*_REFR0,_REFV0*rcsigs[:,0],_REFV0*rcsigs[:,1],
+                               color='k',rasterized=True)
+        p.set_facecolors("none")
+        ax1= pyplot.gca()
+        from matplotlib.patches import PathPatch
+        for path in p.get_paths():
+            p1 = PathPatch(path, fc="none",ec='0.5', hatch="/")
+            ax1.add_patch(p1)
+            p1.set_zorder(p.get_zorder()-0.1)
+    bovy_plot.bovy_text(8.5,175,r'$\mathrm{Disk}$',size=16.)
+    bovy_plot.bovy_text(8.5,100.,r'$\mathrm{Halo}$',size=16.)
+    pyplot.savefig(options.plotfile,format=re.split(r'\.',options.plotfile)[-1],
+                   dpi=100)
     return None
 
 def plotBestfitSurf(options,args):
@@ -504,6 +666,10 @@ def get_options():
                       help="number of cpus to use")
     parser.add_option("--derivedfile",dest='derivedfile',default=None,
                       help="Name of the file that has the derived parameters")
+    parser.add_option("--calcrotcurves",action="store_true", 
+                      dest="calcrotcurves",
+                      default=False,
+                      help="If set, calculate rotation curves")
     #plot
     parser.add_option("--plot",action="store_true", 
                       dest="plot",
@@ -526,5 +692,7 @@ if __name__ == '__main__':
         plotStuff(options,args)
     elif options.calcderived:
         calcDerived(options,args)
+    elif options.calcrotcurves:
+        calcRotcurves(options,args)
     else:
         fitSurfwPot(options,args)
