@@ -267,7 +267,10 @@ def calcDerivedSingle(params,options,potoptions):
     alpha= pot[1].alpha
     #vcdvc
     vcdvc= pot[0].vcirc(2.2*rd)/potential.vcirc(pot,2.2*rd)
-    out= [surfz,surfzdisk,rhodm,rhoo,massdisk,alpha,vcdvc]
+    #mass of the disk
+    rhod= pot[3].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
+    massgasdisk= rhod*2.*130./8000.*numpy.exp(1./rd/2.)*rd**2.*4.*2.*numpy.pi*(ro*_REFR0)**3./10.*(1.+3./_REFR0)*numpy.exp(-3./_REFR0/2./rd)#cut out central 3 kpc
+    out= [surfz,surfzdisk,rhodm,rhoo,massdisk,alpha,vcdvc,massdisk+massgasdisk]
     return out
     
 def calcRotcurves(options,args):

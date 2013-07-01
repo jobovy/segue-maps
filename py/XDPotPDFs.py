@@ -49,7 +49,7 @@ def XDPotPDFs(options,args):
         scaleDict[paramnames[kk]]= scale[kk]
     if not options.derivedfile is None:
         for ll in range(len(thesesamples[0]),
-                        len(thesesamples[0])+len(derivedsamples[0])):
+                        len(thesesamples[0])+7):#len(derivedsamples[0])):
             kk= ll-len(thesesamples[0])
             xs= numpy.array([s[kk] for s in derivedsamples])
             samples[paramnames[ll]]= xs
