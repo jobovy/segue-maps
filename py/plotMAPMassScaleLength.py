@@ -103,7 +103,7 @@ def plotMAPMassScaleLength(plotfilename):
         nsigma-= 1
     #pyplot.fill_between(rs,numpy.amin(rds,axis=1),numpy.amax(rds,axis=1),
     #                    color='0.50')
-    pyplot.errorbar([7.],[2.22],
+    pyplot.errorbar([7.],[2.15],
                     xerr=[2.],
                     yerr=[0.14],
                     elinewidth=1.,capsize=3,
