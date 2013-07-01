@@ -124,6 +124,10 @@ def plotVelComparisonDFMulti(options,args):
             vs= numpy.linspace(-180.,180.,options.nv)
             xrange=[-180.,180.]
             bins= 39
+        elif options.group == 'aintermediate':
+            vs= numpy.linspace(-150.,150.,options.nv)
+            xrange=[-150.,150.]
+            bins= 33
         else: # options.group == 'aenhanced':
             vs= numpy.linspace(-120.,120.,options.nv)
             xrange=[-140.,140.]
@@ -248,13 +252,15 @@ def plotVelComparisonDFMulti(options,args):
     sigzs3= numpy.empty(nzranges)
     for ii in range(nzranges):
         indx= (numpy.fabs(zs) >= zranges[ii])*(numpy.fabs(zs) < zranges[ii+1])
+        plotp= numpy.nansum(velps[indx,:],axis=0)/numpy.sum(indx)
+        yrange= [0.,1.35*numpy.nanmax(plotp)]
         bovy_plot.bovy_print()
         bovy_plot.bovy_hist(data[indx],bins=26,normed=True,color='k',
                             histtype='step',
+                            yrange=yrange,
                             xrange=xrange,xlabel=xlabel)
         sigzsd[ii]= numpy.std(data[indx][(numpy.fabs(data[indx]) < 100.)])
         esigzsd[ii]= sigzsd[ii]/numpy.sqrt(float(len(data[indx][(numpy.fabs(data[indx]) < 100.)])))
-        plotp= numpy.nansum(velps[indx,:],axis=0)/numpy.sum(indx)
         sigzs1[ii]= numpy.sqrt(numpy.sum(vs**2.*plotp)/numpy.sum(plotp)-(numpy.sum(vs*plotp)/numpy.sum(plotp))**2.)
         bovy_plot.bovy_plot(vs,plotp,'k-',overplot=True)
         if alts:
