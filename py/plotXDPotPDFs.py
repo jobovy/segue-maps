@@ -108,8 +108,8 @@ def plotXDPotPDFs_RD(options,args):
     c2= Line2D([0.],[0.],ls='-',lw=2.,color='y')
     c3= Line2D([0.],[0.],ls='-',lw=2.,color='k')
     pyplot.legend((c1,c2,c3),
-                  (r'$\Sigma_{1.1}(R)\ \mathrm{only}$',
-                   r'$V_\mathrm{term}, \Sigma(R_0,Z), \&\ \mathrm{d} \ln V_c / \mathrm{d} \ln R$',
+                  (r'$K_{Z,1.1}(R)\ \mathrm{only}$',
+                   r'$V_\mathrm{term}, \Sigma_{\mathrm{disk}}(R_0), \&\ \mathrm{d} \ln V_c / \mathrm{d} \ln R$',
                    r'$\mathrm{Combined}$'),
                   loc='lower left',#bbox_to_anchor=(.91,.375),
                   numpoints=2,
@@ -228,7 +228,7 @@ def plotXDPotPDFs_rhodm(options,args):
     c2= Line2D([0.],[0.],ls='-',lw=2.,color='y')
     c3= Line2D([0.],[0.],ls='-',lw=2.,color='k')
     pyplot.legend((c1,c2,c3),
-                  (r'$\Sigma_{1.1}(R)\ \&\ \Sigma(R_0,Z)$',
+                  (r'$K_{Z,1.1}(R)\ \&\ \Sigma_{\mathrm{disk}}(R_0)$',
                    r'$V_\mathrm{term}\ \&\ \mathrm{d} \ln V_c / \mathrm{d} \ln R$',
                    r'$\mathrm{Combined}$'),
                   loc='upper right',#bbox_to_anchor=(.91,.375),
@@ -377,7 +377,7 @@ def plotXDPotPDFs_vc(options,args):
     c3= Line2D([0.],[0.],ls='-',lw=2.,color='k')
     c4= Line2D([0.],[0.],ls='--',lw=2.,color='0.5')
     pyplot.legend((c1,c2,c3,c4),
-                  (r'$\Sigma_{1.1}(R)\ \&\ \Sigma(R_0,Z)$',
+                  (r'$K_{Z,1.1}(R)\ \&\ \Sigma_{\mathrm{disk}}(R_0)$',
                    r'$V_\mathrm{term}\ \mathrm{only}$',
                    r'$\mathrm{Combined}\ \&\ \mathrm{d} \ln V_c / \mathrm{d} \ln R$',
                    r'$\mathrm{APOGEE}\ V_c(R)\ \mathrm{(for\ comparison)}$'),
