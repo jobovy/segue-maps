@@ -755,7 +755,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             smooth_marglogl, dev_marglogl= nnsmooth(marglogl)
             badvals[(numpy.fabs(marglogl-smooth_marglogl) > 5.*dev_marglogl)]= True
             #badvals[(marglogl == -numpy.finfo(numpy.dtype(numpy.float64)).max)]= False #These aren't bad
-            #badvals[5,2]= True
+            #badvals[7,2]= True
             print "Found %i bad values" % (numpy.sum(badvals))
             #Reset to go through everything
             if os.path.exists(options.restart+'.fix'):
@@ -1098,13 +1098,13 @@ def loglike_gridall(params,fehs,afes,binned,options,normintstuff,errstuff,
         else:
             out[:,:,:,:,:,:,:]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         return out
-    logpotprior= logprior_pot(tparams,toptions,len(fehs))
-    if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
-        if _NEWSAVE:
-            out[:,:,:,:]= logpotprior
-        else:
-            out[:,:,:,:,:,:,:]= logpotprior
-        return out
+    #logpotprior= logprior_pot(tparams,toptions,len(fehs))
+    #if logpotprior == -numpy.finfo(numpy.dtype(numpy.float64)).max:
+    #    if _NEWSAVE:
+    #        out[:,:,:,:]= logpotprior
+    #    else:
+    #        out[:,:,:,:,:,:,:]= logpotprior
+    #    return out
     #Set up potential and actionAngle
     if _DEBUG:
         print tparams
