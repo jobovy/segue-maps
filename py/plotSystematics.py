@@ -15,6 +15,7 @@ def plotSystematics(plotfilename):
     #hard-code these paths 
     savefilename= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc230_an_margvrvt_staeckel_singles_bestr_rvssurf.sav'
     savefilename_vo250= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc250_an_margvrvt_staeckel_singles_bestr_rvssurf.sav'
+    savefilename_zh200= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc230_an_zh200_margvrvt_staeckel_singles_bestr_rvssurf.sav'
     savefilename_dvcm3= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc230_an_dlnvcdlnr-3_margvrvt_staeckel_singles_bestr_rvssurf.sav'
     #Read surface densities
     if os.path.exists(savefilename):
@@ -40,6 +41,22 @@ def plotSystematics(plotfilename):
         altsurferrs_vo250= pickle.load(surffile)
         altkzs_vo250= pickle.load(surffile)
         altkzerrs_vo250= pickle.load(surffile)
+        surffile.close()
+    else:
+        raise IOError("savefilename with surface-densities has to exist")
+    #Read surface densities
+    if os.path.exists(savefilename_zh200):
+        surffile= open(savefilename_zh200,'rb')
+        surfrs_zh200= pickle.load(surffile)
+        surfs_zh200= pickle.load(surffile)
+        surferrs_zh200= pickle.load(surffile)
+        kzs_zh200= pickle.load(surffile)
+        kzerrs_zh200= pickle.load(surffile)
+        altsurfrs_zh200= pickle.load(surffile)
+        altsurfs_zh200= pickle.load(surffile)
+        altsurferrs_zh200= pickle.load(surffile)
+        altkzs_zh200= pickle.load(surffile)
+        altkzerrs_zh200= pickle.load(surffile)
         surffile.close()
     else:
         raise IOError("savefilename with surface-densities has to exist")
@@ -85,6 +102,17 @@ def plotSystematics(plotfilename):
     altsurferrs_vo250= altsurferrs_vo250[indx]
     altkzs_vo250= altkzs_vo250[indx]
     altkzerrs_vo250= altkzerrs_vo250[indx]
+    #zh200
+    surfrs_zh200= surfrs_zh200[indx]
+    surfs_zh200= surfs_zh200[indx]
+    surferrs_zh200= surferrs_zh200[indx]
+    kzs_zh200= kzs_zh200[indx]
+    kzerrs_zh200= kzerrs_zh200[indx]
+    altsurfrs_zh200= altsurfrs_zh200[indx]
+    altsurfs_zh200= altsurfs_zh200[indx]
+    altsurferrs_zh200= altsurferrs_zh200[indx]
+    altkzs_zh200= altkzs_zh200[indx]
+    altkzerrs_zh200= altkzerrs_zh200[indx]
     #dvc-3
     surfrs_dvcm3= surfrs_dvcm3[indx]
     surfs_dvcm3= surfs_dvcm3[indx]
@@ -101,6 +129,7 @@ def plotSystematics(plotfilename):
     #Plot
     bovy_plot.bovy_print(fig_height=9.,fig_width=7.)
     dx= 0.8/6.
+    #vo250
     left, bottom, width, height= 0.1, 0.9-dx, 0.8, dx
     axTop= pyplot.axes([left,bottom,width,height])
     allaxes= [axTop]
@@ -133,7 +162,36 @@ def plotSystematics(plotfilename):
     thisax.set_ylim(-0.29,0.29)
     thisax.set_xlim(4.,10.)
     bovy_plot._add_ticks()
+    #zh200
     left, bottom, width, height= 0.1, 0.9-2.*dx, 0.8, dx
+    axTop= pyplot.axes([left,bottom,width,height])
+    allaxes= [axTop]
+    fig= pyplot.gcf()
+    fig.sca(axTop)
+    bovy_plot.bovy_plot(surfrs,numpy.log(altsurfs_zh200/surfs),'ko',
+                        overplot=True,
+                        zorder=10)
+    pyplot.errorbar(surfrs,numpy.log(altsurfs_zh200/surfs),
+                    yerr=surferrs/surfs,
+                    elinewidth=1.,capsize=3,
+                    linestyle='none',zorder=5,
+                    color='k')
+    pyplot.plot([4.,10.],
+                [0.,0.],'-',
+                color='0.5',lw=2.)
+    bovy_plot.bovy_text(8.5,0.18,r'$z_h = 200\,\mathrm{pc}$',
+                        size=14.)
+    #bovy_plot.bovy_plot(surfrs,numpy.log(altkzs_zh200/kzs),'kd',
+    #                    overplot=True,color='0.35',
+    #                    zorder=10)
+    thisax= pyplot.gca()
+    nullfmt   = NullFormatter()         # no labels
+    thisax.xaxis.set_major_formatter(nullfmt)
+    thisax.set_ylim(-0.29,0.29)
+    thisax.set_xlim(4.,10.)
+    bovy_plot._add_ticks()
+    #dvcm3
+    left, bottom, width, height= 0.1, 0.9-3.*dx, 0.8, dx
     thisax= pyplot.axes([left,bottom,width,height])
     allaxes.append(thisax)
     fig.sca(thisax)    
