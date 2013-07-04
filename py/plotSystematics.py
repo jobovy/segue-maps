@@ -137,8 +137,6 @@ def plotSystematics(plotfilename):
     fig.sca(axTop)
     bovy_plot.bovy_plot(surfrs,numpy.log(altsurfs_vo250/surfs),'ko',
                         overplot=True,
-                        xlabel=r'$R\ (\mathrm{kpc})$',
-                        ylabel=r'$\ln \Sigma_{1.1}^{\mathrm{alt}} / \Sigma_{1.1}^{\mathrm{fid}}$',
                         zorder=10)
     pyplot.errorbar(surfrs,numpy.log(altsurfs_vo250/surfs),
                     yerr=surferrs/surfs,
@@ -162,8 +160,39 @@ def plotSystematics(plotfilename):
     thisax.set_ylim(-0.29,0.29)
     thisax.set_xlim(4.,10.)
     bovy_plot._add_ticks()
-    #zh200
+    #vo210
     left, bottom, width, height= 0.1, 0.9-2.*dx, 0.8, dx
+    axTop= pyplot.axes([left,bottom,width,height])
+    allaxes= [axTop]
+    fig= pyplot.gcf()
+    fig.sca(axTop)
+    bovy_plot.bovy_plot(surfrs,numpy.log(altsurfs_vo250/surfs),'ko',
+                        overplot=True,
+                        zorder=10)
+    pyplot.errorbar(surfrs,numpy.log(altsurfs_vo250/surfs),
+                    yerr=surferrs/surfs,
+                    elinewidth=1.,capsize=3,
+                    linestyle='none',zorder=5,
+                    color='k')
+    pyplot.plot([4.,10.],
+                [numpy.log((210./230.)**2.),numpy.log((210./230.)**2.)],'--',
+                color='0.5',lw=2.)
+    pyplot.plot([4.,10.],
+                [0.,0.],'-',
+                color='0.5',lw=2.)
+    bovy_plot.bovy_text(8.5,0.18,r'$V_c = 210\,\mathrm{km\,s}^{-1}$',
+                        size=14.)
+    #bovy_plot.bovy_plot(surfrs,numpy.log(altkzs_vo210/kzs),'kd',
+    #                    overplot=True,color='0.35',
+    #                    zorder=10)
+    thisax= pyplot.gca()
+    nullfmt   = NullFormatter()         # no labels
+    thisax.xaxis.set_major_formatter(nullfmt)
+    thisax.set_ylim(-0.29,0.29)
+    thisax.set_xlim(4.,10.)
+    bovy_plot._add_ticks()
+    #zh200
+    left, bottom, width, height= 0.1, 0.9-3.*dx, 0.8, dx
     axTop= pyplot.axes([left,bottom,width,height])
     allaxes= [axTop]
     fig= pyplot.gcf()
@@ -189,9 +218,10 @@ def plotSystematics(plotfilename):
     thisax.xaxis.set_major_formatter(nullfmt)
     thisax.set_ylim(-0.29,0.29)
     thisax.set_xlim(4.,10.)
+    pyplot.ylabel(r'$\ln \Sigma_{1.1}^{\mathrm{alt}} / \Sigma_{1.1}^{\mathrm{fid}}$')
     bovy_plot._add_ticks()
     #dvcm3
-    left, bottom, width, height= 0.1, 0.9-3.*dx, 0.8, dx
+    left, bottom, width, height= 0.1, 0.9-4.*dx, 0.8, dx
     thisax= pyplot.axes([left,bottom,width,height])
     allaxes.append(thisax)
     fig.sca(thisax)    
@@ -223,6 +253,38 @@ def plotSystematics(plotfilename):
     bovy_plot._add_ticks()
     nullfmt   = NullFormatter()         # no labels
     thisax.xaxis.set_major_formatter(nullfmt)
+    #dvcp3
+    left, bottom, width, height= 0.1, 0.9-5.*dx, 0.8, dx
+    thisax= pyplot.axes([left,bottom,width,height])
+    allaxes.append(thisax)
+    fig.sca(thisax)    
+    bovy_plot.bovy_plot(surfrs,numpy.log(altsurfs_dvcm3/surfs),'ko',
+                        overplot=True,
+                        zorder=10)
+    pyplot.errorbar(surfrs,numpy.log(altsurfs_dvcm3/surfs),
+                    yerr=surferrs/surfs,
+                    elinewidth=1.,capsize=3,
+                    linestyle='none',zorder=5,
+                    color='k')
+    xs= numpy.linspace(4.,10.,1001)
+    ys= numpy.log((69.*numpy.exp(-(xs-8.)/2.5)+67*(8./xs)**2.*(+0.1))/
+                  (69.*numpy.exp(-(xs-8.)/2.5)))
+    pyplot.plot(xs,ys,'--',color='0.5',lw=2.)
+    pyplot.plot([4.,10.],
+                [0.,0.],'-',
+                color='0.5',lw=2.)
+    bovy_plot.bovy_plot(surfrs,numpy.log(altkzs_dvcm3/kzs),'kd',
+                        overplot=True,color='0.35',
+                        xrange=[4.,10.],
+                        yrange=[-0.41,0.41],zorder=10)
+    bovy_plot.bovy_text(7.65,0.18,
+                        r'$\mathrm{d} \ln V_c(R_0) / \mathrm{d} \ln R = 0.1$',
+                        size=14.)
+    thisax= pyplot.gca()
+    thisax.set_ylim(-0.29,0.29)
+    pyplot.xlim(4.,10.)
+    bovy_plot._add_ticks()
+    pyplot.xlabel(r'$R\ (\mathrm{kpc})$')
     bovy_plot.bovy_end_print(plotfilename)
 
 def plotDistanceSystematics(plotfilename):
@@ -309,5 +371,5 @@ if __name__ == '__main__':
     if sys.argv[1].lower() == 'distance':
         plotDistanceSystematics(sys.argv[2])
     else:
-        plotSystematics(sys.argv[1])
+        plotSystematics(sys.argv[2])
         
