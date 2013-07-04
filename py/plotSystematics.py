@@ -127,8 +127,8 @@ def plotSystematics(plotfilename):
     fehs= fehs[indx]
     afes= afes[indx]
     #Plot
-    bovy_plot.bovy_print(fig_height=9.,fig_width=7.)
-    dx= 0.8/6.
+    bovy_plot.bovy_print(fig_height=8.,fig_width=7.)
+    dx= 0.8/5.
     #vo250
     left, bottom, width, height= 0.1, 0.9-dx, 0.8, dx
     axTop= pyplot.axes([left,bottom,width,height])
