@@ -15,8 +15,10 @@ def plotSystematics(plotfilename):
     #hard-code these paths 
     savefilename= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc230_an_margvrvt_staeckel_singles_bestr_rvssurf.sav'
     savefilename_vo250= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc250_an_margvrvt_staeckel_singles_bestr_rvssurf.sav'
+    savefilename_vo210= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc250_an_margvrvt_staeckel_singles_bestr_rvssurf.sav'
     savefilename_zh200= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc230_an_zh200_margvrvt_staeckel_singles_bestr_rvssurf.sav'
     savefilename_dvcm3= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc230_an_dlnvcdlnr-3_margvrvt_staeckel_singles_bestr_rvssurf.sav'
+    savefilename_dvcp3= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc230_an_dlnvcdlnr3_margvrvt_staeckel_singles_bestr_rvssurf.sav'
     #Read surface densities
     if os.path.exists(savefilename):
         surffile= open(savefilename,'rb')
@@ -41,6 +43,22 @@ def plotSystematics(plotfilename):
         altsurferrs_vo250= pickle.load(surffile)
         altkzs_vo250= pickle.load(surffile)
         altkzerrs_vo250= pickle.load(surffile)
+        surffile.close()
+    else:
+        raise IOError("savefilename with surface-densities has to exist")
+    #Read surface densities
+    if os.path.exists(savefilename_vo210):
+        surffile= open(savefilename_vo210,'rb')
+        surfrs_vo210= pickle.load(surffile)
+        surfs_vo210= pickle.load(surffile)
+        surferrs_vo210= pickle.load(surffile)
+        kzs_vo210= pickle.load(surffile)
+        kzerrs_vo210= pickle.load(surffile)
+        altsurfrs_vo210= pickle.load(surffile)
+        altsurfs_vo210= pickle.load(surffile)
+        altsurferrs_vo210= pickle.load(surffile)
+        altkzs_vo210= pickle.load(surffile)
+        altkzerrs_vo210= pickle.load(surffile)
         surffile.close()
     else:
         raise IOError("savefilename with surface-densities has to exist")
@@ -76,6 +94,22 @@ def plotSystematics(plotfilename):
         surffile.close()
     else:
         raise IOError("savefilename with surface-densities has to exist")
+    #Read surface densities
+    if os.path.exists(savefilename_dvcp3):
+        surffile= open(savefilename_dvcp3,'rb')
+        surfrs_dvcp3= pickle.load(surffile)
+        surfs_dvcp3= pickle.load(surffile)
+        surferrs_dvcp3= pickle.load(surffile)
+        kzs_dvcp3= pickle.load(surffile)
+        kzerrs_dvcp3= pickle.load(surffile)
+        altsurfrs_dvcp3= pickle.load(surffile)
+        altsurfs_dvcp3= pickle.load(surffile)
+        altsurferrs_dvcp3= pickle.load(surffile)
+        altkzs_dvcp3= pickle.load(surffile)
+        altkzerrs_dvcp3= pickle.load(surffile)
+        surffile.close()
+    else:
+        raise IOError("savefilename with surface-densities has to exist")
     if True:#options.sample.lower() == 'g':
         savefile= open('binmapping_g.sav','rb')
     elif False:#options.sample.lower() == 'k':
@@ -102,6 +136,17 @@ def plotSystematics(plotfilename):
     altsurferrs_vo250= altsurferrs_vo250[indx]
     altkzs_vo250= altkzs_vo250[indx]
     altkzerrs_vo250= altkzerrs_vo250[indx]
+    #vo210
+    surfrs_vo210= surfrs_vo210[indx]
+    surfs_vo210= surfs_vo210[indx]
+    surferrs_vo210= surferrs_vo210[indx]
+    kzs_vo210= kzs_vo210[indx]
+    kzerrs_vo210= kzerrs_vo210[indx]
+    altsurfrs_vo210= altsurfrs_vo210[indx]
+    altsurfs_vo210= altsurfs_vo210[indx]
+    altsurferrs_vo210= altsurferrs_vo210[indx]
+    altkzs_vo210= altkzs_vo210[indx]
+    altkzerrs_vo210= altkzerrs_vo210[indx]
     #zh200
     surfrs_zh200= surfrs_zh200[indx]
     surfs_zh200= surfs_zh200[indx]
@@ -124,6 +169,17 @@ def plotSystematics(plotfilename):
     altsurferrs_dvcm3= altsurferrs_dvcm3[indx]
     altkzs_dvcm3= altkzs_dvcm3[indx]
     altkzerrs_dvcm3= altkzerrs_dvcm3[indx]
+    #dvc+3
+    surfrs_dvcp3= surfrs_dvcp3[indx]
+    surfs_dvcp3= surfs_dvcp3[indx]
+    surferrs_dvcp3= surferrs_dvcp3[indx]
+    kzs_dvcp3= kzs_dvcp3[indx]
+    kzerrs_dvcp3= kzerrs_dvcp3[indx]
+    altsurfrs_dvcp3= altsurfrs_dvcp3[indx]
+    altsurfs_dvcp3= altsurfs_dvcp3[indx]
+    altsurferrs_dvcp3= altsurferrs_dvcp3[indx]
+    altkzs_dvcp3= altkzs_dvcp3[indx]
+    altkzerrs_dvcp3= altkzerrs_dvcp3[indx]
     fehs= fehs[indx]
     afes= afes[indx]
     #Plot
@@ -166,10 +222,10 @@ def plotSystematics(plotfilename):
     allaxes= [axTop]
     fig= pyplot.gcf()
     fig.sca(axTop)
-    bovy_plot.bovy_plot(surfrs,numpy.log(altsurfs_vo250/surfs),'ko',
+    bovy_plot.bovy_plot(surfrs,numpy.log(altsurfs_vo210/surfs),'ko',
                         overplot=True,
                         zorder=10)
-    pyplot.errorbar(surfrs,numpy.log(altsurfs_vo250/surfs),
+    pyplot.errorbar(surfrs,numpy.log(altsurfs_vo210/surfs),
                     yerr=surferrs/surfs,
                     elinewidth=1.,capsize=3,
                     linestyle='none',zorder=5,
@@ -258,10 +314,10 @@ def plotSystematics(plotfilename):
     thisax= pyplot.axes([left,bottom,width,height])
     allaxes.append(thisax)
     fig.sca(thisax)    
-    bovy_plot.bovy_plot(surfrs,numpy.log(altsurfs_dvcm3/surfs),'ko',
+    bovy_plot.bovy_plot(surfrs,numpy.log(altsurfs_dvcp3/surfs),'ko',
                         overplot=True,
                         zorder=10)
-    pyplot.errorbar(surfrs,numpy.log(altsurfs_dvcm3/surfs),
+    pyplot.errorbar(surfrs,numpy.log(altsurfs_dvcp3/surfs),
                     yerr=surferrs/surfs,
                     elinewidth=1.,capsize=3,
                     linestyle='none',zorder=5,
@@ -273,7 +329,7 @@ def plotSystematics(plotfilename):
     pyplot.plot([4.,10.],
                 [0.,0.],'-',
                 color='0.5',lw=2.)
-    bovy_plot.bovy_plot(surfrs,numpy.log(altkzs_dvcm3/kzs),'kd',
+    bovy_plot.bovy_plot(surfrs,numpy.log(altkzs_dvcp3/kzs),'kd',
                         overplot=True,color='0.35',
                         xrange=[4.,10.],
                         yrange=[-0.41,0.41],zorder=10)
