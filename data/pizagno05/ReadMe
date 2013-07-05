@@ -1,0 +1,62 @@
+J/ApJ/633/844       Stellar mass in disk-dominated galaxies     (Pizagno+, 2005)
+================================================================================
+Dark matter and stellar mass in the luminous regions of disk galaxies.
+    Pizagno J., Prada F., Weinberg D.H., Rix H.-W., Harbeck D., Grebel E.K.,
+    Bell E.F., Brinkmann J., Holtzman J., West A.
+   <Astrophys. J., 633, 844-856 (2005)>
+   =2005ApJ...633..844P
+================================================================================
+ADC_Keywords: Galaxies, spectra ; Galaxies, rotation
+Keywords: dark matter - galaxies: kinematics and dynamics - galaxies: photometry
+
+Abstract:
+    We investigate the correlations among stellar mass (M*), disk scale
+    length (R_d_), and rotation velocity at 2.2 disk scale lengths
+    (V_2.2_) for a sample of 81 disk-dominated galaxies (disk/total>=0.9)
+    selected from the SDSS. We measure V_2.2_ from long-slit H{alpha}
+    rotation curves and infer M* from galaxy i-band luminosities (L_i_)
+    and g-r colors.
+
+Description:
+    In a series of observing runs between 2001 June and 2004 April, we
+    obtained long-slit spectra covering the H{alpha} wavelength region for
+    a total of 234 galaxies in the velocity and absolute magnitude ranges
+    described above, using the TWIN spectrograph on the Calar Alto 3.5m
+    telescope (189 galaxies) and the CCDS on the MDM 2.4m telescope (45
+    galaxies).
+
+File Summary:
+--------------------------------------------------------------------------------
+ FileName   Lrecl  Records   Explanations
+--------------------------------------------------------------------------------
+ReadMe         80        .   This file
+table1.dat     92       81   Galaxy Properties
+--------------------------------------------------------------------------------
+
+See also:
+    http://www.sdss.org/ : SDSS Home Page
+
+Byte-by-byte Description of file: table1.dat
+--------------------------------------------------------------------------------
+   Bytes Format Units         Label   Explanations
+--------------------------------------------------------------------------------
+   1- 19  A19   ---           SDSS    SDSS name
+  21- 26  F6.2  Mpc           Dist    Distance
+  28- 31  F4.2  Mpc         e_Dist    Error on Dist
+  33- 37  F5.2 10+10solLum    Li      SDSS i-band luminosity
+  39- 42  F4.2 10+10solLum  e_Li      Error in Li
+  44- 47  F4.2  mag           g-r     g-r color index
+  49- 52  F4.2  mag         e_g-r     Error in g-r
+  54- 58  F5.2 10+10solMass   Mass    Stellar mass
+  60- 63  F4.2 10+10solMass e_Mass    Error in Mass
+  65- 68  F4.2  ---           fd      GALFIT disk fraction
+  70- 74  F5.2  kpc           Rd      Disk exponential scale length
+  76- 79  F4.2  kpc         e_Rd      Error in Rd
+  81- 86  F6.2  km/s          V2.2    Rotation velocity at 2.2 disk scale length
+  88- 92  F5.2  km/s        e_V2.2    Error in V2.2
+--------------------------------------------------------------------------------
+
+History:
+    From electronic version of the journal
+================================================================================
+(End)                                       Marianne Brouty [CDS]    26-Jul-2006
