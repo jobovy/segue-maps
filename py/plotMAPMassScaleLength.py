@@ -125,3 +125,5 @@ def plotMAPMassScaleLength(plotfilename):
                 
 if __name__ == '__main__':
     plotMAPMassScaleLength(sys.argv[1])
+if __name__ == '__main__':
+    plotMAPMassScaleLength(sys.argv[1])

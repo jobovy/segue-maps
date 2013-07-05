@@ -609,11 +609,11 @@ def gridLike(fehs,afes,binned,options,normintstuff,errstuff):
                             out[ii,jj,kk,ll]= optout[0]
                             dfparams[ii,jj,kk,ll,:]= optout[1:len(optout)+1]
                     kk+= 1
-                    if not options.restart is None:
-                        save_pickles(options.restart,
-                                     out,dfparams,ii,jj,kk)
                 kk= 0
                 jj+= 1
+                if not options.restart is None:
+                    save_pickles(options.restart,
+                                 out,dfparams,ii,jj,kk)
             jj= 0
             ii+= 1          
         return (out,dfparams,rds,vcs,zhs,fhs)
@@ -755,7 +755,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             smooth_marglogl, dev_marglogl= nnsmooth(marglogl)
             badvals[(numpy.fabs(marglogl-smooth_marglogl) > 5.*dev_marglogl)]= True
             #badvals[(marglogl == -numpy.finfo(numpy.dtype(numpy.float64)).max)]= False #These aren't bad
-            #badvals[7,2]= True
+            #badvals[5,3]= True
             print "Found %i bad values" % (numpy.sum(badvals))
             #Reset to go through everything
             if os.path.exists(options.restart+'.fix'):
