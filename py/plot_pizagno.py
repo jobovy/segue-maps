@@ -28,7 +28,7 @@ def plot_vcdvc_mstar(plotfilename):
         vo= piz['V2.2'][ii]/_REFV0
         rhod= pot.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
         massdisk= rhod*2.*zh*numpy.exp(_RDFAC*2.2)*(1./_RDFAC/2.2)**2.*2.*numpy.pi*(ro*_REFR0)**3./10.
-        frac= piz['Mass'][ii]/massdisk
+        frac= piz['Mass'][ii]/massdisk*0.8
         vcdvc[ii]= numpy.sqrt(frac)
     bovy_plot.bovy_print(fig_width=6.)
     plotrd= piz['Rd']/_RDFAC
@@ -72,7 +72,7 @@ def plot_vcdvc_surfstar(plotfilename):
         vo= piz['V2.2'][ii]/_REFV0
         rhod= pot.dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
         massdisk= rhod*2.*zh*numpy.exp(_RDFAC*2.2)*(1./_RDFAC/2.2)**2.*2.*numpy.pi*(ro*_REFR0)**3./10.
-        frac= piz['Mass'][ii]/massdisk
+        frac= piz['Mass'][ii]/massdisk*0.8
         vcdvc[ii]= numpy.sqrt(frac)
     bovy_plot.bovy_print(fig_width=6.)
     plotrd= piz['Rd']/_RDFAC

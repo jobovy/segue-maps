@@ -15,7 +15,7 @@ def plotSystematics(plotfilename):
     #hard-code these paths 
     savefilename= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc230_an_margvrvt_staeckel_singles_bestr_rvssurf.sav'
     savefilename_vo250= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc250_an_margvrvt_staeckel_singles_bestr_rvssurf.sav'
-    savefilename_vo210= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc250_an_margvrvt_staeckel_singles_bestr_rvssurf.sav'
+    savefilename_vo210= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc210_an_margvrvt_staeckel_singles_bestr_rvssurf.sav'
     savefilename_zh200= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc230_an_zh200_margvrvt_staeckel_singles_bestr_rvssurf.sav'
     savefilename_dvcm3= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc230_an_dlnvcdlnr-3_margvrvt_staeckel_singles_bestr_rvssurf.sav'
     savefilename_dvcp3= '../pdfs_margvrvt_gl_hsz/realDFFit_dfeh0.1_dafe0.05_dpdiskplhalofixbulgeflatwgasalt_gridall_fixvc230_an_dlnvcdlnr3_margvrvt_staeckel_singles_bestr_rvssurf.sav'
@@ -353,6 +353,8 @@ def plotDistanceSystematics(plotfilename):
         surfrs= pickle.load(surffile)
         surfs= pickle.load(surffile)
         surferrs= pickle.load(surffile)
+        kzs= pickle.load(surffile)
+        kzerrs= pickle.load(surffile)
         surffile.close()
     else:
         raise IOError("savefilename with surface-densities has to exist")
@@ -362,9 +364,13 @@ def plotDistanceSystematics(plotfilename):
         surfrs_iv= pickle.load(surffile)
         surfs_iv= pickle.load(surffile)
         surferrs_iv= pickle.load(surffile)
+        kzs_iv= pickle.load(surffile)
+        kzerrs_iv= pickle.load(surffile)
         altsurfrs_iv= pickle.load(surffile)
         altsurfs_iv= pickle.load(surffile)
         altsurferrs_iv= pickle.load(surffile)
+        altkzs_iv= pickle.load(surffile)
+        altkzerrs_iv= pickle.load(surffile)
         surffile.close()
     else:
         raise IOError("savefilename with surface-densities has to exist")
@@ -381,13 +387,19 @@ def plotDistanceSystematics(plotfilename):
     surfrs= surfrs[indx]
     surfs= surfs[indx]
     surferrs= surferrs[indx]
+    kzs= kzs[indx]
+    kzerrs= kzerrs[indx]
     #vo250
     surfrs_iv= surfrs_iv[indx]
     surfs_iv= surfs_iv[indx]
     surferrs_iv= surferrs_iv[indx]
+    kzs_iv= kzs_iv[indx]
+    kzerrs_iv= kzerrs_iv[indx]
     altsurfrs_iv= altsurfrs_iv[indx]
     altsurfs_iv= altsurfs_iv[indx]
     altsurferrs_iv= altsurferrs_iv[indx]
+    altkzs_iv= altkzs_iv[indx]
+    altkzerrs_iv= altkzerrs_iv[indx]
     fehs= fehs[indx]
     afes= afes[indx]
     #Plot
@@ -396,7 +408,7 @@ def plotDistanceSystematics(plotfilename):
                         xlabel=r'$R\ (\mathrm{kpc})$',
                         ylabel=r'$\ln \Sigma_{1.1}^{\mathrm{Ivezic}} / \Sigma_{1.1}^{\mathrm{An}}$',
                         xrange=[4.,10.],
-                        yrange=[-0.41,0.41],zorder=10)
+                        yrange=[-0.29,0.29],zorder=10)
     pyplot.errorbar(surfrs,numpy.log(altsurfs_iv/surfs),
                     yerr=surferrs/surfs,
                     elinewidth=1.,capsize=3,

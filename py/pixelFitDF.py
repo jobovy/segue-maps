@@ -755,7 +755,7 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
             smooth_marglogl, dev_marglogl= nnsmooth(marglogl)
             badvals[(numpy.fabs(marglogl-smooth_marglogl) > 5.*dev_marglogl)]= True
             #badvals[(marglogl == -numpy.finfo(numpy.dtype(numpy.float64)).max)]= False #These aren't bad
-            #badvals[5,3]= True
+            #badvals[7,1]= True
             print "Found %i bad values" % (numpy.sum(badvals))
             #Reset to go through everything
             if os.path.exists(options.restart+'.fix'):
