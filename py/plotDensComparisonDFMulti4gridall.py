@@ -327,11 +327,11 @@ def plotDensComparisonDFMulti(options,args):
         for ii in range(len(Rmins)):
             plate= 'all'
             if Rmins[ii] is None:
-                thisleft_legend= r'$R \leq %.1f\,\mathrm{kpc\ plates}$' % (nameRmaxs[ii])
+                thisleft_legend= r'$R \leq %.1f\,\mathrm{kpc}$' % (nameRmaxs[ii])
             elif Rmaxs[ii] is None:
-                thisleft_legend= r'$R \geq %.1f\,\mathrm{kpc\ plates}$' % (nameRmins[ii])
+                thisleft_legend= r'$R \geq %.1f\,\mathrm{kpc}$' % (nameRmins[ii])
             else:
-                thisleft_legend= r'$%.1f\,\mathrm{kpc} < R \leq %.1f\,\mathrm{kpc\ plates}$' % (nameRmins[ii],nameRmaxs[ii])
+                thisleft_legend= r'$%.1f\,\mathrm{kpc} < R \leq %.1f\,\mathrm{kpc}$' % (nameRmins[ii],nameRmaxs[ii])
             thisright_legend= 'none'
             bovy_plot.bovy_print()
             compare_func(model1s,params1,sf,colordists,fehdists,
