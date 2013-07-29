@@ -540,9 +540,9 @@ def plotBestfitSurf(options,args):
                     yerr=surferrs,
                     elinewidth=1.,capsize=3,zorder=0,
                     color='k',linestyle='none')  
-    pyplot.errorbar([8.],[69.],yerr=[6.],marker='d',
-                    elinewidth=1.,capsize=3,zorder=0,
-                    color='k',linestyle='none')  
+    pyplot.errorbar([8.],[69.],yerr=[6.],marker='d',ms=10.,
+                    elinewidth=1.,capsize=3,zorder=10,
+                    color='0.4',linestyle='none')  
     rs= numpy.linspace(4.5,9.,21)/_REFR0
     msurfs= numpy.zeros_like(rs)
     ro= 1.
