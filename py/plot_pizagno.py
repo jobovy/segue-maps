@@ -12,7 +12,7 @@ import AnDistance
 from pixelFitDF import _REFV0, _REFR0, setup_potential, read_rawdata
 from pixelFitDens import pixelAfeFeh
 from calcDFResults import setup_options
-from matplotlib import pyplot
+from matplotlib import pyplot, cm
 _RDFAC= 1.10
 def plot_vcdvc_mstar(plotfilename):
     #Read pizagno data
@@ -47,8 +47,10 @@ def plot_vcdvc_mstar(plotfilename):
                         xlabel=r'$\mathrm{stellar\ disk\ mass}\,(M_\odot)$',
 
                         ylabel=r'$\mathrm{disk\ maximality}\equiv V_{c,\mathrm{disk}}/V_c$')
+    colormap = cm.jet
     pyplot.errorbar([4.6*10.**10.],[0.83],yerr=[0.04],
-                    color='k',marker='d',ms=10.,mec='none')
+                    color=colormap((2.15-1.)/5.),
+                    marker='d',ms=14.,mec='none')
     bovy_plot.bovy_text(4.*10**9.,0.05,r'$\mathrm{data\ from\ Pizagno\ et\ al.\ (2005)}$'
                         +'\n'+
                         r'$\mathrm{Milky\!-\!Way\ (this\ paper)}$',
@@ -90,7 +92,11 @@ def plot_vcdvc_surfstar(plotfilename):
                                xrange=[10.**2,10.**4.5],
                                xlabel=r'$\mathrm{stellar\ surface\ density}\,(M_\odot\,\mathrm{pc}^{-2})$',
                                ylabel=r'$\mathrm{disk\ maximality}\equiv V_{c,\mathrm{disk}}/V_c$')
-    pyplot.errorbar([4.6*10.**4./2.15**2.],[0.83],yerr=[0.04],color='k',marker='d',ms=10.,mec='none')
+    colormap = cm.jet
+    
+    pyplot.errorbar([4.6*10.**4./2.15**2.],[0.83],yerr=[0.04],
+                    color=colormap((2.15-1.)/5.),
+                    marker='d',ms=14.,mec='none')
     bovy_plot.bovy_text(300.,0.05,r'$\mathrm{data\ from\ Pizagno\ et\ al.\ (2005)}$'
                         +'\n'+
                         r'$\mathrm{Milky\!-\!Way\ (this\ paper)}$',
