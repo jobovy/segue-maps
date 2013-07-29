@@ -19,6 +19,7 @@ from galpy.actionAngle import actionAngleStaeckel
 from galpy.actionAngle import actionAngleStaeckelGrid
 from galpy.df_src.quasiisothermaldf import quasiisothermaldf
 from galpy.util import save_pickles
+from matplotlib import pyplot
 import monoAbundanceMW
 from segueSelect import read_gdwarfs, read_kdwarfs, _GDWARFFILE, _KDWARFFILE, \
     segueSelect, _mr_gi, _gi_gr, _ERASESTR, _append_field_recarray, \
@@ -82,14 +83,32 @@ def plotActionData(options,args):
     levels.append(1.01)
     print len(jr)
     if options.type.lower() == 'lzjr':
-        bovy_plot.scatterplot(lz/220.,jr/220.,',',
+        axScatter, axHistx,axHisty= bovy_plot.scatterplot(lz/220.,jr/220.,',',
                               xlabel=r'$L_z\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
                               ylabel=r'$J_R\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
                               xrange=[0.,3600./220.],
                               yrange=[0.,500./220.],
                               onedhists=True,
                               bins=41,
-                              levels=levels)
+                              levels=levels,retAxes=True)
+        axScatter.set_xlim(0.,3600./220.)
+        axScatter.set_ylim(0.,500./220.)
+        axHistx.set_xlim( axScatter.get_xlim() )
+        axHisty.set_ylim( axScatter.get_ylim() )
+        #Calculate locus of 6 kpc pericenter
+        nlzs= 1001
+        plzs= numpy.linspace(0.,6./8.,nlzs)
+        pjrs= numpy.zeros(nlzs)
+        for ii in range(nlzs):
+            pjrs[ii]= aA(6./8.,0.,plzs[ii]/6.*8.,0.,0.)[0]*ro*vo*_REFR0*_REFV0
+        bovy_plot.bovy_plot(plzs*ro*vo*_REFR0*_REFV0/220.,
+                            pjrs/220.,'k--',overplot=True)
+        plzs= numpy.linspace(11./8.,2.,nlzs)
+        pjrs= numpy.zeros(nlzs)
+        for ii in range(nlzs):
+            pjrs[ii]= aA(11./8.,0.,plzs[ii]/11.*8.,0.,0.)[0]*ro*vo*_REFR0*_REFV0
+        bovy_plot.bovy_plot(plzs*ro*vo*_REFR0*_REFV0/220.,
+                            pjrs/220.,'k--',overplot=True)
     elif options.type.lower() == 'jrjz':
         bovy_plot.scatterplot(jr/220.,jz/220.,color='k',marker=',',ls='none',
                               xlabel=r'$J_R\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
