@@ -19,7 +19,7 @@ def plotMAPMassScaleLength(plotfilename):
     #Load the samples of masses and scale lengths
     #Savefile
     denssamplesfile= '../fits/pixelFitG_DblExp_BigPix0.1_1000samples.sav'
-    masssamplesfile= '../fits/pixelFitG_Mass_DblExp_BigPix0.1_simpleage_100samples.sav'
+    masssamplesfile= '../fits/pixelFitG_Mass_DblExp_BigPix0.1_simpleage_1000samples.sav'
     if os.path.exists(denssamplesfile):
         savefile= open(denssamplesfile,'rb')
         denssamples= pickle.load(savefile)
