@@ -132,7 +132,7 @@ def plotVelComparisonDFMulti(options,args):
             vs= numpy.linspace(-120.,120.,options.nv)
             xrange=[-140.,140.]
             bins= 26
-        xlabel=r'$V_Z\ [\mathrm{km\,s}^{-1}]$'
+        xlabel=r'$V_Z\ (\mathrm{km\,s}^{-1})$'
     elif options.type.lower() == 'vr':
         if options.group == 'aenhanced':
             vs= numpy.linspace(-220.,220.,options.nv)
@@ -142,7 +142,7 @@ def plotVelComparisonDFMulti(options,args):
             vs= numpy.linspace(-150.,150.,options.nv)
             xrange=[-150.,150.]
             bins= 26
-        xlabel=r'$V_R\ [\mathrm{km\,s}^{-1}]$'
+        xlabel=r'$V_R\ (\mathrm{km\,s}^{-1})$'
     elif options.type.lower() == 'vt':
         if options.group == 'aenhanced':
             vs= numpy.linspace(0.01,350.,options.nv)
@@ -152,7 +152,7 @@ def plotVelComparisonDFMulti(options,args):
             vs= numpy.linspace(0.01,350.,options.nv)
             xrange=[0.,350.]
             bins= 39
-        xlabel=r'$V_T\ [\mathrm{km\,s}^{-1}]$'
+        xlabel=r'$V_T\ (\mathrm{km\,s}^{-1})$'
     alts= True
     if not options.multi is None:
         #Generate list of temporary files
