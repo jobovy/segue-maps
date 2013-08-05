@@ -93,6 +93,8 @@ def plotActionData(options,args):
                               levels=levels,retAxes=True)
         axScatter.set_xlim(0.,3600./220.)
         axScatter.set_ylim(0.,500./220.)
+        axScatter.set_xlabel(r'$L_z\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$')
+        axScatter.set_ylabel(r'$J_R\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$')
         axHistx.set_xlim( axScatter.get_xlim() )
         axHisty.set_ylim( axScatter.get_ylim() )
         #Calculate locus of 6 kpc pericenter
@@ -110,14 +112,21 @@ def plotActionData(options,args):
         bovy_plot.bovy_plot(plzs*ro*vo*_REFR0*_REFV0/220.,
                             pjrs/220.,'k--',overplot=True)
     elif options.type.lower() == 'jrjz':
-        bovy_plot.scatterplot(jr/220.,jz/220.,color='k',marker=',',ls='none',
+        axScatter, axHistx, axHisty= bovy_plot.scatterplot(jr/220.,jz/220.,color='k',marker=',',ls='none',
                               xlabel=r'$J_R\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
                               ylabel=r'$J_Z\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$',
                               xrange=[0.,500./220.],
                               yrange=[0.,250./220.],
                               bins=41,
                               onedhists=True,
-                              levels=levels)
+                              levels=levels,
+                                                           retAxes=True)
+        axScatter.set_xlim(0.,500./220.)
+        axScatter.set_ylim(0.,250./220.)
+        axScatter.set_ylabel(r'$J_Z\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$')
+        axScatter.set_xlabel(r'$J_R\ (220\,\mathrm{km\,s}^{-1}\,\mathrm{kpc})$')
+        axHistx.set_xlim( axScatter.get_xlim() )
+        axHisty.set_ylim( axScatter.get_ylim() )
     #if options.sample == 'g':
     #    bovy_plot.bovy_text(r'$\mathrm{G\!-\!type\ dwarfs}$',top_right=True,size=16.)
     #elif options.sample == 'k':
