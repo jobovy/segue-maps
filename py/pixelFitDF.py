@@ -554,16 +554,20 @@ def indiv_optimize_pot_mloglike(params,fehs,afes,binned,options,
 #Grid-based approach
 def gridLike(fehs,afes,binned,options,normintstuff,errstuff):
     #Set up the grid
+    if not options.fixro is None:
+        ro= options.fixro
+    else:
+        ro= 1.
     if options.potential.lower() == 'dpdiskplhalofixbulgeflatwgasalt':
         vcs= numpy.array([200./_REFV0,220./_REFV0,240./_REFV0])
         zhs= numpy.array([300./1000./_REFR0,400./1000./_REFR0,500./1000./_REFR0])
         print "BOVY: ADJUST VC AND ZH"
         vcs= numpy.array([options.fixvc/_REFV0])
-        zhs= numpy.array([options.fixzh/1000./_REFR0])
+        zhs= numpy.array([options.fixzh/1000./_REFR0/ro])
         if _NEWRDRANGE:
-            rds= numpy.linspace(1.8,3.2,options.nrds)/_REFR0
+            rds= numpy.linspace(1.8,3.2,options.nrds)/_REFR0/ro
         else:
-            rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
+            rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0/ro
         fhs= numpy.linspace(0.,1.,options.nfhs)
         #print "BOVY: ADJUST RDS AND FHS"
         #rds= numpy.array([3.])/_REFR0
@@ -694,17 +698,21 @@ def gridallLike(fehs,afes,binned,options,normintstuff,errstuff):
                                                       dblexp=True,
                                                       dblexphr=dblexphr,
                                                       dblexphz=dblexphz)
+        if not options.fixro is None:
+            ro= options.fixro
+        else:
+            ro= 1.
         vcs= numpy.array([200./_REFV0,220./_REFV0,240./_REFV0])
         zhs= numpy.array([300./1000./_REFR0,400./1000./_REFR0,500./1000./_REFR0])
         print "BOVY: ADJUST VC AND ZH"
         vcs= numpy.array([options.fixvc/_REFV0])
-        zhs= numpy.array([options.fixzh/1000./_REFR0])
+        zhs= numpy.array([options.fixzh/1000./_REFR0/ro])
         if _NEWRDRANGE:
-            rds= numpy.linspace(2.0,3.4,options.nrds)/_REFR0
+            rds= numpy.linspace(2.0,3.4,options.nrds)/_REFR0/ro
             #rds= rds[3:]
             #print "BOVY: YOU ARE CHANGING THE RD RANGE FOR TESTING"
         else:
-            rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0
+            rds= numpy.linspace(1.5,4.5,options.nrds)/_REFR0/ro
         fhs= numpy.linspace(0.,1.,options.nfhs)
         #rds= rds[3:]
         #fhs= fhs[8:]

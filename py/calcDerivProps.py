@@ -277,7 +277,8 @@ def calcSurfErrZ(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.):
     std_surfz= numpy.sqrt(numpy.sum(dmarglogl**2.*margp,axis=0)-mean_surfz**2.)
     return (zs,mean_surfz,std_surfz)
 
-def calcSurfRdCorr(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.,extendedr=False):
+def calcSurfRdCorr(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.,extendedr=False,
+                   ro=1.):
     options= setup_options(None)
     options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
     options.fitdvt= False
@@ -304,21 +305,20 @@ def calcSurfRdCorr(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.,extendedr=False):
     dmargloglkz= numpy.zeros((logl.shape[0]*logl.shape[3],nrs))
     rds= numpy.linspace(2.,3.4,8)
     fhs= numpy.linspace(0.,1.,16)
-    ro= 1.
     for jj in range(logl.shape[0]):
         for kk in range(logl.shape[3]):
             marglogl[jj*logl.shape[3]+kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,0].flatten())
             #Setup potential to calculate stuff
-            potparams= numpy.array([numpy.log(rds[jj]/8.),vo,numpy.log(zh/8000.),fhs[kk],dlnvcdlnr])
+            potparams= numpy.array([numpy.log(rds[jj]/_REFR0),vo,numpy.log(zh/8000.),fhs[kk],dlnvcdlnr])
             try:
                 pot= setup_potential(potparams,options,0,returnrawpot=True)
             except RuntimeError:
                 continue
             #First up, total surface density
             for ll in range(nrs):
-                surfz= 2.*integrate.quad((lambda zz: potential.evaluateDensities(rs[ll]/_REFR0,zz,pot)),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
+                surfz= 2.*integrate.quad((lambda zz: potential.evaluateDensities(rs[ll]/_REFR0/ro,zz,pot)),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
                 dmarglogl[jj*logl.shape[3]+kk,ll]= surfz
-                kz= -potential.evaluatezforces(rs[ll]/_REFR0,options.height/_REFR0/ro,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi
+                kz= -potential.evaluatezforces(rs[ll]/_REFR0/ro,options.height/_REFR0/ro,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi
                 dmargloglkz[jj*logl.shape[3]+kk,ll]= kz
     #Calculate mean and stddv
     alogl= marglogl-maxentropy.logsumexp(marglogl.flatten())
