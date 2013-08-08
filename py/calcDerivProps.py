@@ -309,7 +309,7 @@ def calcSurfRdCorr(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.,extendedr=False,
         for kk in range(logl.shape[3]):
             marglogl[jj*logl.shape[3]+kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,0].flatten())
             #Setup potential to calculate stuff
-            potparams= numpy.array([numpy.log(rds[jj]/_REFR0),vo,numpy.log(zh/8000.),fhs[kk],dlnvcdlnr])
+            potparams= numpy.array([numpy.log(rds[jj]/_REFR0/ro),vo,numpy.log(zh/1000./_REFR0/ro),fhs[kk],dlnvcdlnr])
             try:
                 pot= setup_potential(potparams,options,0,returnrawpot=True)
             except RuntimeError:
