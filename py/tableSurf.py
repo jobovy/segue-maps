@@ -7,6 +7,7 @@ from galpy.util import bovy_plot
 from matplotlib import pyplot, cm
 from selectFigs import _squeeze
 from plotOverview import expcurve
+_INCLUDEDR= True
 def tableSurf(savefilename,outfilename):
     #Read surface densities
     #First read the surface densities
@@ -50,6 +51,8 @@ def tableSurf(savefilename,outfilename):
         printline+= '%.1f' % surfs[ii]
         printline+= ' & '
         printline+= '%.1f' % surferrs[ii]
+        printline+= ' & '
+        printline+= '%.2f' % (8.-surfrs[ii])
         printline+= ' & '
         printline+= '%.1f' % kzs[ii]
         printline+= ' & '
