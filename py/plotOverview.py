@@ -136,6 +136,26 @@ def plotbestr(options,args):
             raise IOError("extra savefilename with surface-densities has to exist when it is specified")
     else:
         calcExtra= False
+    if not calcExtra: #Fiducial, for which we also calculate everything at the mean radius of each MAP
+        #Load g orbits
+        orbitsfile= 'gOrbitsNew.sav'
+        savefile= open(orbitsfile,'rb')
+        orbits= pickle.load(savefile)
+        savefile.close()
+        #Cut to S/N, logg, and EBV
+        indx= (orbits.sna > 15.)*(orbits.logga > 4.2)*(orbits.ebv < 0.3)
+        orbits= orbits[indx]
+        #Load the orbits into the pixel structure
+        pix= pixelAfeFeh(orbits,dfeh=0.1,dafe=0.05)
+        #Now calculate meanr
+        rmean= numpy.zeros(npops)
+        for ii in range(npops):
+            data= pix(fehs[ii],afes[ii])
+            vals= data.densrmean*8.
+            if False:#True:
+                rmean[ii]= numpy.mean(vals)
+            else:
+                rmean[ii]= numpy.median(vals)
     #Load into plotthis
     plotthis= numpy.zeros(npops)+numpy.nan
     plotthis_y= numpy.zeros(npops)+numpy.nan
@@ -164,6 +184,13 @@ def plotbestr(options,args):
         plotthiskz_y_err[ii]= derivProps[ii][indx,5]
         if calcExtra:
             indx= numpy.argmin(numpy.fabs(derivProps[ii][:,0]-altsurfrs[ii]))
+            altplotthis[ii]= derivProps[ii][indx,0]
+            altplotthis_y[ii]= derivProps[ii][indx,1]
+            altplotthis_y_err[ii]= derivProps[ii][indx,3]           
+            altplotthiskz_y[ii]= derivProps[ii][indx,4]
+            altplotthiskz_y_err[ii]= derivProps[ii][indx,5]           
+        else:
+            indx= numpy.argmin(numpy.fabs(derivProps[ii][:,0]-rmean[ii]))
             altplotthis[ii]= derivProps[ii][indx,0]
             altplotthis_y[ii]= derivProps[ii][indx,1]
             altplotthis_y_err[ii]= derivProps[ii][indx,3]           
@@ -214,7 +241,9 @@ def plotbestr(options,args):
     else:
         save_pickles(options.outfilename.replace('.png','_rvssurf.sav'),
                      plotthis,plotthis_y,plotthis_y_err,
-                     plotthiskz_y,plotthiskz_y_err)
+                     plotthiskz_y,plotthiskz_y_err,
+                     altplotthis,altplotthis_y,altplotthis_y_err,
+                     altplotthiskz_y,altplotthiskz_y_err)
     return None        
     
 def expcurve(params,x,y,err):

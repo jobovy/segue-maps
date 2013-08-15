@@ -8,7 +8,8 @@ from matplotlib import pyplot, cm
 from selectFigs import _squeeze
 import bovy_mcmc
 from plotOverview import expcurve
-def plotSurf(savefilename,plotfilename,kz=False):
+def plotSurf(savefilename,plotfilename,kz=False,
+             atrmean=False):
     #Read surface densities
     #First read the surface densities
     if os.path.exists(savefilename):
@@ -18,6 +19,11 @@ def plotSurf(savefilename,plotfilename,kz=False):
         surferrs= pickle.load(surffile)
         kzs= pickle.load(surffile)
         kzerrs= pickle.load(surffile)
+        altsurfrs= pickle.load(surffile)
+        altsurfs= pickle.load(surffile)
+        altsurferrs= pickle.load(surffile)
+        altkzs= pickle.load(surffile)
+        altkzerrs= pickle.load(surffile)
         surffile.close()
     else:
         raise IOError("savefilename with surface-densities has to exist")
@@ -36,9 +42,19 @@ def plotSurf(savefilename,plotfilename,kz=False):
     surferrs= surferrs[indx]
     kzs= kzs[indx]
     kzerrs= kzerrs[indx]
+    altsurfrs= altsurfrs[indx]
+    altsurfs= altsurfs[indx]
+    altsurferrs= altsurferrs[indx]
+    altkzs= altkzs[indx]
+    altkzerrs= altkzerrs[indx]
     if kz:
-        surfs= kzs
-        surferrs= kzerrs
+        if atrmean:          
+            surfrs= altsurfrs
+            surfs= altkzs
+            surferrs= altkzerrs
+        else:
+            surfs= kzs
+            surferrs= kzerrs
         ylabel=r'$K_{Z}(R,|Z| = 1.1\,\mathrm{kpc})\ (2\pi G\,M_\odot\,\mathrm{pc}^{-2})$'
     else:
         ylabel=r'$\Sigma(R,|Z| \leq 1.1\,\mathrm{kpc})\ (M_\odot\,\mathrm{pc}^{-2})$'
@@ -89,4 +105,5 @@ def plotSurf(savefilename,plotfilename,kz=False):
     bovy_plot.bovy_end_print(plotfilename)
 
 if __name__ == '__main__':
-    plotSurf(sys.argv[1],sys.argv[2],kz=len(sys.argv) == 4)
+    plotSurf(sys.argv[1],sys.argv[2],kz=len(sys.argv) >= 4,
+             atrmean=len(sys.argv) >= 5)
