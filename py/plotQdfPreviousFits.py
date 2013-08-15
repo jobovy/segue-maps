@@ -24,7 +24,7 @@ def plotQdfPreviousFits(options,args):
     #Now plot: hR
     bovy_plot.bovy_print()
     monoAbundanceMW.plotPixelFunc(fehs,afes,numpy.exp(lnhrin)*8.,
-                                  vmin=1.5,vmax=4.5,
+                                  vmin=1.5,vmax=4.86,
                                   zlabel=r'$\mathrm{Input\ radial\ scale\ length\ (kpc)}$')
     #Plotname
     spl= options.outfilename.split('.')
