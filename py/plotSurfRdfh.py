@@ -40,7 +40,10 @@ def plotSurfRdfh(plotfilename):
                 except RuntimeError:
                     continue
                 for ii in range(len(rs)):
-                    surfz[ii,jj,kk]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(rs[ii]/8.,zz,pot)),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
+                    if False:
+                        surfz[ii,jj,kk]= -potential.evaluatezforces(rs[ii]/_REFR0,options.height/_REFR0/ro,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi
+                    else:
+                        surfz[ii,jj,kk]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(rs[ii]/8.,zz,pot)),0.,options.height/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
         #Save
         save_pickles(savefilename,rs,rds,fhs,surfz)
     else:
