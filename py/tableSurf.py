@@ -8,6 +8,7 @@ from matplotlib import pyplot, cm
 from selectFigs import _squeeze
 from plotOverview import expcurve
 _INCLUDEDR= True
+_CSV= True
 def tableSurf(savefilename,outfilename):
     #Read surface densities
     #First read the surface densities
@@ -41,23 +42,26 @@ def tableSurf(savefilename,outfilename):
     #Now table
     cmdline= '%python tableSurf.py '+savefilename+' '+outfilename
     outfile= open(outfilename,'w')
+    delimiter= ' & '
+    if _CSV: delimiter= ','
     for ii in range(len(fehs)):
         printline= '%.2f' % fehs[ii]
-        printline+= ' & '
+        printline+= delimiter
         printline+= '%.3f' % afes[ii]
-        printline+= ' & '
+        printline+= delimiter
         printline+= '%.2f' % surfrs[ii]
-        printline+= ' & '
+        printline+= delimiter
         printline+= '%.1f' % surfs[ii]
-        printline+= ' & '
+        printline+= delimiter
         printline+= '%.1f' % surferrs[ii]
-        printline+= ' & '
+        printline+= delimiter
         printline+= '%.2f' % (8.-surfrs[ii])
-        printline+= ' & '
+        printline+= delimiter
         printline+= '%.1f' % kzs[ii]
-        printline+= ' & '
+        printline+= delimiter
         printline+= '%.1f' % kzerrs[ii]
-        printline+= '\\\\'
+        if not _CSV:
+            printline+= '\\\\'
         outfile.write(printline+'\n')
     outfile.write('\\enddata\n')
     outfile.write(cmdline+'\n')
