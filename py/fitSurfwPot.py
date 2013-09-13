@@ -1,3 +1,4 @@
+#export PYTHONPATH=~/Repos/extreme-deconvolution-ngerrors/py:$PYTHONPATH
 import re
 import os, os.path
 import sys
@@ -80,6 +81,7 @@ def fitSurfwPot(options,args):
     potoptions= setup_options(None)
     #potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
     potoptions.potential= 'dpdiskplhalofixcutbulgeflatwgasalt'
+    potoptions.ro= options.ro
     potoptions.fitdvt= False
     funcargs= (options,surfrs,surfs,surferrs,potoptions,
                numpy.log(1.5/8.),numpy.log(6./8.),
@@ -109,7 +111,7 @@ def fitSurfwPot(options,args):
                             color='k',linestyle='none')  
             rs= numpy.linspace(4.5,9.,21)/8.
             msurfs= numpy.zeros_like(rs)
-            ro= 1.
+            ro= options.ro
             vo= params[1]
             for ii in range(len(rs)):
                 msurfs[ii]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(rs[ii],zz,pot)),0.,1.1/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro            
@@ -162,17 +164,47 @@ def like_func(params,options,surfrs,surfs,surferrs,
         return numpy.finfo(numpy.dtype(numpy.float64)).max
     #Calculate model surface density at surfrs
     vo= params[1]
-    ro= 1.
+    ro= options.ro
     if not options.dontfitsurf:
         modelsurfs= numpy.zeros_like(surfs)
         for ii in range(len(surfrs)):
             if options.surfaskz:
-                modelsurfs[ii]= -potential.evaluatezforces(surfrs[ii]/_REFR0,1.1/_REFR0,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi
+                modelsurfs[ii]= -potential.evaluatezforces((surfrs[ii]+ro*_REFR0-_REFR0)/_REFR0/ro,1.1/_REFR0/ro,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi
             else:
                 modelsurfs[ii]= 2.*integrate.quad((lambda zz: potential.evaluateDensities(surfrs[ii]/_REFR0,zz,pot)),0.,1.1/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro
         out= 0.5*numpy.sum((surfs-modelsurfs)**2./surferrs**2.)
     else:
         out= 0.
+    if options.simulatekz2:
+        kz_sim= numpy.array([ 174.18150542,  159.58268322,  113.03887889,  191.62756714,
+        189.77283767,  194.099383  ,  188.959876  ,  269.59353188,
+         91.74695728,  141.75678914,  124.04418425,  120.69900535,
+        194.54341779,  101.95363797,  132.9994155 ,  105.9104183 ,
+        118.90328041,   95.50914944,   82.06312126,  111.13069026,
+        111.71858284,   99.16022414,   95.231596  ,  107.70878227,
+        111.94037148,  129.99798029,  108.31376433,  125.57669991,
+        110.47896706,  190.39379472,   87.36444244,  116.0331996 ,
+        136.62771727,   80.67013004,  111.22420434,   76.9248815 ,
+        145.16041964,  114.41359543,   92.18998455,   73.76903729,
+         89.39307008,  149.25123878,  157.64909484])
+        kzerr_sim= numpy.array([ 40.07171688,  33.45236284,  26.07853875,  33.59104962,
+        42.81852806,  30.73041237,  25.80878778,  33.55744612,
+        17.80812298,  23.03100187,  14.29570739,  13.04545928,
+        31.97373304,  17.44361627,  15.93027308,   8.67242324,
+        10.61320147,  23.36652115,  15.84786188,  10.14177951,
+        10.33841369,  15.37377585,  10.86032101,   8.4722236 ,
+         9.05734992,  20.92978674,  10.24728671,  12.01645118,
+         9.93090843,  20.42427064,  11.15484933,  10.91975199,
+        18.15117833,   9.9792092 ,  11.38083172,   9.58490215,
+        16.98585868,  16.23936587,   8.42164264,   6.4145673 ,
+         9.6335548 ,  20.36969524,  35.01855949])
+        modelsurfs2= numpy.zeros_like(surfs)
+        for ii in range(len(surfrs)):
+            if options.surfaskz:
+                modelsurfs2[ii]= -potential.evaluatezforces((surfrs[ii]+ro*_REFR0-_REFR0)/_REFR0/ro,2.1/_REFR0/ro,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi
+            else:
+                raise NotImplementedError("not using the data as kz not implemented")
+        out+= 0.5*numpy.sum((kz_sim-modelsurfs2)**2./kzerr_sim**2.)
     #Add terminal velocities
     if options.fitterminal:
         vrsun= params[5]/vo
@@ -203,7 +235,7 @@ def like_func(params,options,surfrs,surfs,surferrs,
     #K dwarfs
     if options.lanprior:
         if options.surfaskz:
-            out+= 0.5*(-potential.evaluatezforces(1.,1.1/_REFR0,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi-67.)**2./36.
+            out+= 0.5*(-potential.evaluatezforces(1.,1.1/_REFR0/ro,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro/2./numpy.pi-67.)**2./36.
         else:
             out+= 0.5*(2.*integrate.quad((lambda zz: potential.evaluateDensities(1.,zz,pot)),0.,1.0/_REFR0/ro)[0]*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*_REFR0*ro-67.)**2./36.
         out+= 0.5*(2.*pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.*numpy.exp(params[2])*ro*_REFR0*1000.-42.)**2./36.
@@ -214,6 +246,8 @@ def like_func(params,options,surfrs,surfs,surferrs,
         out+= 0.5*(potential.vcirc(pot,.5)*vo*_REFV0-218.)**2./9.
         out+= 0.5*(potential.vcirc(pot,1.5)*vo*_REFV0-218.)**2./100.
         #out-= _eval_gauss_grid([numpy.log(vo)],[params[4]],*apogeeprior)[0,0]
+    if options.localdensprior:
+        out+= 0.5*(potential.evaluateDensities(1.,0.,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.-0.102)**2./0.01**2.
     return out
 
 def pdf_func(params,*args):
@@ -248,7 +282,7 @@ def calcDerived(options,args):
 
 def calcDerivedSingle(params,options,potoptions):
     pot= setup_potential(params,potoptions,0,returnrawpot=True)
-    ro= 1.
+    ro= options.ro
     vo= params[1]
     zh= numpy.exp(params[2])
     rd= numpy.exp(params[0])
@@ -262,14 +296,14 @@ def calcDerivedSingle(params,options,potoptions):
     rhoo= potential.evaluateDensities(1.,0.,pot)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
     #mass of the disk
     rhod= pot[0].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
-    massdisk= rhod*2.*zh*numpy.exp(1./rd)*rd**2.*2.*numpy.pi*(ro*_REFR0)**3./10.
+    massdisk= rhod*2.*zh*numpy.exp(1./rd*ro)*rd**2./ro**2.*2.*numpy.pi*(ro*_REFR0)**3./10.
     #pl halo
     alpha= pot[1].alpha
     #vcdvc
-    vcdvc= pot[0].vcirc(2.2*rd)/potential.vcirc(pot,2.2*rd)
+    vcdvc= pot[0].vcirc(2.2*rd/ro)/potential.vcirc(pot,2.2*rd/ro)
     #mass of the disk
     rhod= pot[3].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
-    massgasdisk= rhod*2.*130./8000.*numpy.exp(1./rd/2.)*rd**2.*4.*2.*numpy.pi*(ro*_REFR0)**3./10.*(1.+3./_REFR0)*numpy.exp(-3./_REFR0/2./rd)#cut out central 3 kpc
+    massgasdisk= rhod*2.*130./8000.*numpy.exp(1./rd/2.*ro)*rd**2./ro**2.*4.*2.*numpy.pi*(ro*_REFR0)**3./10.*(1.+3./_REFR0)*numpy.exp(-3./_REFR0/2./rd*ro)#cut out central 3 kpc
     out= [surfz,surfzdisk,rhodm,rhoo,massdisk,alpha,vcdvc,massdisk+massgasdisk]
     return out
     
@@ -298,7 +332,7 @@ def calcRotcurves(options,args):
 
 def calcRotcurvesSingle(params,options,potoptions):
     pot= setup_potential(params,potoptions,0,returnrawpot=True)
-    ro= 1.
+    ro= options.ro
     vo= params[1]
     rs= numpy.linspace(0.0001,2.,1001)
     out= []
@@ -545,7 +579,7 @@ def plotBestfitSurf(options,args):
                     color='0.4',linestyle='none')
     rs= numpy.linspace(4.5,9.,21)/_REFR0
     msurfs= numpy.zeros_like(rs)
-    ro= 1.
+    ro= options.ro
     vo= init_params[1]
     for ii in range(len(rs)):
         if options.type == 'bestfitkz':
@@ -674,6 +708,8 @@ def get_options():
     #Fit options
     parser.add_option("--init",dest='initfile',default=None,
                       help="Name of the file that has the best-fits")
+    parser.add_option("--ro",dest='ro',default=1.,type='float',
+                      help="Use a different value for R_0")
     #Plot
     parser.add_option("-o",dest='plotfile',default=None,
                       help="Name of the file that has the plot")
@@ -703,10 +739,18 @@ def get_options():
                       dest="lanprior",
                       default=False,
                       help="If set, apply priors from Lan's K dwarf analysis")
+    parser.add_option("--localdensprior",action="store_true", 
+                      dest="localdensprior",
+                      default=False,
+                      help="If set, apply prior on the local density from Holmberg & Flynn (2000)")
     parser.add_option("--apogeeprior",action="store_true", 
                       dest="apogeeprior",
                       default=False,
                       help="If set, apply priors on Vc and dlnvcdlnr from my APOGEE analysis")
+    parser.add_option("--simulatekz2",action="store_true", 
+                      dest="simulatekz2",
+                      default=False,
+                      help="If set, use a simulated data set of KZ at Z=2.1 kpc to see whether that measures alpha_DM")
     #calc
     parser.add_option("--calcderived",action="store_true", 
                       dest="calcderived",

@@ -62,7 +62,12 @@ def plot_hrhrvshr(options,args):
         #Save
         save_pickles(args[0],plotthis,hrs,srs)
     #Now plot
-    bovy_plot.bovy_print(fig_width=6.)
+    bovy_plot.bovy_print(fig_width=6.,
+                         text_fontsize=20.,
+                         legend_fontsize=24.,
+                         xtick_labelsize=18.,
+                         ytick_labelsize=18.,
+                         axes_labelsize=24.)
     indx= 0
     lines= []
     colors= [cm.jet(ii/float(options.nsr-1.)*1.+0.) for ii in range(options.nsr)]
@@ -163,7 +168,12 @@ def plot_szszvssz(options,args):
         #Save
         save_pickles(args[0],plotthis,szs,hrs)
     #Now plot
-    bovy_plot.bovy_print(fig_width=6.)
+    bovy_plot.bovy_print(fig_width=6.,
+                         text_fontsize=20.,
+                         legend_fontsize=24.,
+                         xtick_labelsize=18.,
+                         ytick_labelsize=18.,
+                         axes_labelsize=24.)
     indx= 0
     lines= []
     colors= [cm.jet(ii/float(options.nhr-1.)*1.+0.) for ii in range(options.nhr)]
@@ -240,7 +250,12 @@ def plot_hzszq(options,args):
         qs2d[(hzsgrid < hzs[0,ii]),ii]= numpy.nan
         qs2d[(hzsgrid > hzs[-1,ii]),ii]= numpy.nan
     #Now plot
-    bovy_plot.bovy_print(fig_width=6.)
+    bovy_plot.bovy_print(fig_width=6.,
+                         text_fontsize=20.,
+                         legend_fontsize=24.,
+                         xtick_labelsize=18.,
+                         ytick_labelsize=18.,
+                         axes_labelsize=24.)
     bovy_plot.bovy_dens2d(qs2d.T,origin='lower',cmap='jet',
                           interpolation='gaussian',
 #                          interpolation='nearest',

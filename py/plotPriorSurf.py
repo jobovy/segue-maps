@@ -57,6 +57,8 @@ def plotPriorSurf(plotfilename):
                         semilogy=True)
     pyplot.fill_between(rs,minsurfz,maxsurfz,
                         color='0.50')
+    bovy_plot.bovy_text(8.,68.,r'$\odot$',size=16.,verticalalignment='center',
+                        horizontalalignment='center')
     bovy_plot.bovy_end_print(plotfilename)
     return None
 

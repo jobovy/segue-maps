@@ -278,10 +278,12 @@ def calcSurfErrZ(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.):
     return (zs,mean_surfz,std_surfz)
 
 def calcSurfRdCorr(savefilename,vo=1.,zh=400.,dlnvcdlnr=0.,extendedr=False,
-                   ro=1.):
+                   ro=1.,z=None):
     options= setup_options(None)
     options.potential= 'dpdiskplhalofixbulgeflatwgasalt'
     options.fitdvt= False
+    if not z is None:
+        options.height= z
     savefile= open(savefilename,'rb')
     try:
         if not _NOTDONEYET:

@@ -87,13 +87,17 @@ def plotRdfh_single(ii,options,args):
             marglogl= nns
             marglogl[indx]= -1000000000000.
         alogl= marglogl-numpy.nanmax(marglogl)
-        bovy_plot.bovy_print()
+        bovy_plot.bovy_print(text_fontsize=20.,
+                             legend_fontsize=24.,
+                             xtick_labelsize=18.,
+                             ytick_labelsize=18.,
+                             axes_labelsize=24.)
         bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
                               origin='lower',cmap='gist_yarg',
                               interpolation='nearest',
                               xrange=[1.9,3.5],yrange=[-1./32.,1.+1./32.],
                               xlabel=r'$\mathrm{disk\ scale\ length}\,(\mathrm{kpc})$',
-                              ylabel=r'$\mathrm{relative\ halo\ contribution\ to}\ V^2_c(R_0)$')
+                              ylabel=r'$\mathrm{relative\ halo\ contribution\ to}\ V^2_c$')
 #                              xlabel=r'$R_d\ (\mathrm{kpc})$',ylabel=r'$f_h$')
         s= 2.*condlogp
         s-= numpy.amax(s)
@@ -507,7 +511,11 @@ def plothszsz_single(ii,options,args):
         alogl= marglogl-numpy.amax(marglogl)
         #Get ranges
         hrs, srs, szs=  setup_dfgrid([fehs[ii]],[afes[ii]],options)
-        bovy_plot.bovy_print()
+        bovy_plot.bovy_print(text_fontsize=20.,
+                             legend_fontsize=24.,
+                             xtick_labelsize=18.,
+                             ytick_labelsize=18.,
+                             axes_labelsize=24.)
         bovy_plot.bovy_dens2d(numpy.exp(alogl).T,
                               origin='lower',cmap='gist_yarg',
                               interpolation='nearest',

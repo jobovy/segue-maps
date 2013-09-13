@@ -82,7 +82,11 @@ def plotFidDF(options,args):
     elif options.type.lower() == 'tilt':
         zs= numpy.linspace(0.,5.,101)
         tilt= numpy.array([qdf.tilt(1.,z/ro/_REFR0,gl=True) for z in zs])
-        bovy_plot.bovy_print()
+        bovy_plot.bovy_print(text_fontsize=20.,
+                             legend_fontsize=24.,
+                             xtick_labelsize=18.,
+                             ytick_labelsize=18.,
+                             axes_labelsize=24.)
         line1= bovy_plot.bovy_plot(zs,tilt,'k-',
                                    xlabel=r'$Z\ (\mathrm{kpc})$',
                                    ylabel=r'$\mathrm{tilt\ of\ the\ velocity\ ellipsoid}\ (\mathrm{deg})$',
@@ -94,7 +98,7 @@ def plotFidDF(options,args):
                        r'$\mathrm{Adiabatic\ actions}$'),
                       loc='upper left',#bbox_to_anchor=(.91,.375),
                       numpoints=2,
-                      prop={'size':16},
+                      prop={'size':18},
                       frameon=False)
         bovy_plot.bovy_plot(zs,numpy.arctan(zs/ro/_REFR0)/numpy.pi*180.,
                             '-',color='0.65',
@@ -108,7 +112,11 @@ def plotFidDF(options,args):
         zs= numpy.linspace(0.,5.,101)
         sigz2= numpy.array([qdf.sigmaz2(1.,z/ro/_REFR0,gl=True) for z in zs])
         sigz2a= numpy.array([qdfa.sigmaz2(1.,z/ro/_REFR0,gl=True) for z in zs])
-        bovy_plot.bovy_print()
+        bovy_plot.bovy_print(text_fontsize=20.,
+                             legend_fontsize=24.,
+                             xtick_labelsize=18.,
+                             ytick_labelsize=18.,
+                             axes_labelsize=24.)
         line1= bovy_plot.bovy_plot(zs,numpy.sqrt(sigz2)*vo*_REFV0,'k-',
                                    xlabel=r'$Z\ (\mathrm{kpc})$',
                                    ylabel=r'$\sigma_Z(Z)\ (\mathrm{km\,s}^{-1})$',
@@ -127,7 +135,11 @@ def plotFidDF(options,args):
         zs= numpy.linspace(0.,5.,101)
         densz= numpy.array([qdf.density(1.,z/ro/_REFR0,gl=True) for z in zs])
         densza= numpy.array([qdfa.density(1.,z/ro/_REFR0,gl=True) for z in zs])
-        bovy_plot.bovy_print()
+        bovy_plot.bovy_print(text_fontsize=20.,
+                             legend_fontsize=24.,
+                             xtick_labelsize=18.,
+                             ytick_labelsize=18.,
+                             axes_labelsize=24.)
         line1= bovy_plot.bovy_plot(zs,densz/densz[0],'k-',
                                    xlabel=r'$Z\ (\mathrm{kpc})$',
                                    ylabel=r'$\nu_*(R_0,Z)/\nu_*(R_0,0)$',
@@ -139,12 +151,12 @@ def plotFidDF(options,args):
                        r'$\mathrm{Adiabatic\ actions}$'),
                       loc='upper right',#bbox_to_anchor=(.91,.375),
                       numpoints=2,
-                      prop={'size':16},
+                      prop={'size':18},
                       frameon=False)
         #Create inset with profile at different R
         denszr12= numpy.array([qdf.density(11./8.,z/ro/_REFR0,gl=True) for z in zs])
         denszr4= numpy.array([qdf.density(5./8.,z/ro/_REFR0,gl=True) for z in zs])
-        insetAxes= pyplot.axes([0.15,0.12,0.3,0.4])
+        insetAxes= pyplot.axes([0.15,0.12,0.4,0.4])
         line1= insetAxes.semilogy(zs,densz/densz[0],'k-')
         line2= insetAxes.semilogy(zs,denszr12/denszr12[0],'k:')
         line3= insetAxes.semilogy(zs,denszr4/denszr4[0],'k--')
@@ -157,13 +169,17 @@ def plotFidDF(options,args):
                        r'$R = 11\,\mathrm{kpc}$'),
                       loc='lower left',#bbox_to_anchor=(.91,.375),
                       numpoints=2,
-                      prop={'size':10},
+                      prop={'size':12},
                       frameon=False)
     elif options.type.lower() == 'densr':
         rs= numpy.linspace(4.,15.,101)
         densr= numpy.array([qdf.density(r/ro/_REFR0,1./ro/_REFR0,gl=True) for r in rs])
         densra= numpy.array([qdfa.density(r/ro/_REFR0,1./ro/_REFR0,gl=True) for r in rs])
-        bovy_plot.bovy_print()
+        bovy_plot.bovy_print(text_fontsize=20.,
+                             legend_fontsize=24.,
+                             xtick_labelsize=18.,
+                             ytick_labelsize=18.,
+                             axes_labelsize=24.)
         line1= bovy_plot.bovy_plot(rs,densr/densr[numpy.argmin((rs-8.)**2.)],'k-',
                                    xlabel=r'$R\ (\mathrm{kpc})$',
                                    ylabel=r'$\nu_*(R,1\,\mathrm{kpc})/\nu_*(R_0,1\,\mathrm{kpc})$',

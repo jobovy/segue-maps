@@ -109,6 +109,15 @@ def plotSurfRdfh(plotfilename):
                         bottom_left=True,size=14.)
     bovy_plot.bovy_plot([2.575,2.8],[0.15,0.31],'-',color='0.5',overplot=True)
     bovy_plot.bovy_plot([2.625,2.95],[0.06,0.1525],'-',color='0.5',overplot=True)
+    #overplot actual gridpoints
+    gridrds= numpy.linspace(2.,3.4,8)
+    gridfhs= numpy.linspace(0.,1.,16)
+    for ii in range(len(gridrds)):
+        bovy_plot.bovy_plot(gridrds[ii]+numpy.zeros(len(gridfhs)),
+                            gridfhs,
+                            's',
+                            color='w',ms=3.,overplot=True,
+                            markeredgecolor='none')
     bovy_plot.bovy_end_print(plotfilename)
     return None
 
