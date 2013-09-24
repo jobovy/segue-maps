@@ -4029,8 +4029,8 @@ def setup_potential(params,options,npops,
         ro= get_ro(params,options)
         vo= get_vo(params,options,npops)
         dlnvcdlnr= potparams[4]/30.
-        #ampb= _GMBULGECUT/2./numpy.pi/_RCBULGE**(3.-_PLBULGE/2.)/special.gamma(3.-_PLBULGE)*(_REFR0*ro)**(2.-_PLBULGE)/_REFV0**2./vo**2.
-        ampb= _GMBULGECUT/_REFR0/ro/_REFV0**2./vo**2. #Good enough approximation
+        ampb= _GMBULGECUT/2./numpy.pi/_RCBULGE**(3.-_PLBULGE/2.)/special.gamma(3.-_PLBULGE)*(_REFR0*ro)**(2.-_PLBULGE)/_REFV0**2./vo**2.
+        #ampb= _GMBULGECUT/_REFR0/ro/_REFV0**2./vo**2. #Good enough approximation; this actually gives 10^10, but we used the above in the paper, which gives ~6x10^9
         bp= potential.PowerSphericalPotentialwCutoff(alpha=_PLBULGE,rc=_RCBULGE/_REFR0/ro,normalize=ampb)
         #Also add 13 Msol/pc^2 with a scale height of 130 pc, and a scale length of ?
         gp= potential.DoubleExponentialDiskPotential(hr=2.*numpy.exp(potparams[0])/ro,
