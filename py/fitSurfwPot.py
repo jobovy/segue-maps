@@ -8,7 +8,7 @@ import pickle
 from scipy import optimize, integrate, special
 from optparse import OptionParser
 from galpy import potential
-from galpy.util import save_pickles, bovy_plot, multi
+from galpy.util import save_pickles, bovy_plot, multi, bovy_conversion
 from matplotlib import rc
 import multiprocessing
 from matplotlib import pyplot, cm
@@ -344,6 +344,53 @@ def calcRotcurvesSingle(params,options,potoptions):
     out.append(vo*potential.calcRotcurve(pot[1],rs))
     return out
     
+def calcDensities(options,args):
+    """Calculate (mid-plane) densities for this best-fit or samples"""
+    if os.path.exists(options.initfile):
+        initfile= open(options.initfile,'rb')
+        init_params= pickle.load(initfile)
+        initfile.close()
+    else:
+        raise IOError("%s not found" % args[0])
+    potoptions= setup_options(None)
+    #potoptions.potential= 'dpdiskplhalofixbulgeflatwgasalt'
+    potoptions.potential= 'dpdiskplhalofixcutbulgeflatwgasalt'
+    potoptions.fitdvt= False
+    if options.mcsample:
+        densities= multi.parallel_map((lambda x: calcDensitiesSingle(init_params[x],options,potoptions)),
+                                           range(len(init_params)),
+                                           numcores=numpy.amin([len(init_params),
+                                                                multiprocessing.cpu_count(),
+                                                                options.multi]))
+    else:
+        densities= calcDensitiesSingle(init_params,options,potoptions)
+    save_pickles(args[0],densities)
+    return None
+
+def calcDensitiesSingle(params,options,potoptions):
+    rs= numpy.linspace(0.0001,2.,1001)
+    try:
+        pot= setup_potential(params,potoptions,0,returnrawpot=True)
+    except RuntimeError: #Fix bad halos
+        out= []
+        out.append(rs+numpy.nan)
+        out.append(rs+numpy.nan)
+        out.append(rs+numpy.nan)
+        return out
+    ro= options.ro
+    vo= params[1]
+    out= []
+    #First full
+    out.append(potential.evaluateDensities(rs,0.,pot)\
+                   *bovy_conversion.dens_in_msolpc3(vo*_REFV0,ro*_REFR0))
+    #Disk
+    out.append(potential.evaluateDensities(rs,0.,pot[0])\
+                   *bovy_conversion.dens_in_msolpc3(vo*_REFV0,ro*_REFR0))
+    #Halo
+    out.append(potential.evaluateDensities(rs,0.,pot[1])\
+                   *bovy_conversion.dens_in_msolpc3(vo*_REFV0,ro*_REFR0))
+    return out
+    
 def plotStuff(options,args):
     if options.type == '2d':
         plot2dStuff(options,args)
@@ -357,6 +404,8 @@ def plotStuff(options,args):
         plotRotcurves(options,args)
     elif options.type == 'rotcurvessamples':
         plotRotcurvesSamples(options,args)
+    elif options.type == 'densities':
+        plotDensities(options,args)
     return None
 
 def plotRotcurvesSamples(options,args):
@@ -519,6 +568,124 @@ def plotRotcurves(options,args):
         bovy_plot.bovy_text(r'$+\mathrm{APOGEE}\ V_c(R)$',
                             top_right=True,size=16.)
     pyplot.savefig(options.plotfile,format=re.split(r'\.',options.plotfile)[-1],
+                   dpi=100)
+    return None
+
+def plotDensities(options,args):
+    """Plot the density curves"""
+    #Load the best-fit densities
+    if os.path.exists(options.initfile):
+        savefile= open(options.initfile,'rb')
+        densities_bf= pickle.load(savefile)
+        savefile.close()
+    else:
+        raise IOError("initfile must be set to best-fit density curves ...")
+    if True:
+        #Now plot the uncertainty
+        if os.path.exists(args[0]):
+            savefile= open(args[0],'rb')
+            densities_samples= pickle.load(savefile)
+            savefile.close()
+        else:
+            raise IOError("args[0] must be set to sample density curves ...")
+        #Total
+        nsamples= len(densities_samples)
+        nrs= len(densities_samples[0][0])
+        rs= numpy.linspace(0.0001,2.,nrs)
+        #Disk
+        allrcs= numpy.zeros((len(rs),nsamples))
+        for ii in range(nsamples):
+            allrcs[:,ii]= densities_samples[ii][1]
+        allrcs= allrcs[:,True-numpy.isnan(allrcs[0,:])]
+        rindx= rs > 2./_REFR0
+        #Determine range and plot
+        nsigs= 1
+        rcsigs= numpy.zeros((len(rs),2*nsigs))
+        for ii in range(nsigs):
+            for jj in range(len(rs)):
+                thisf= sorted(allrcs[jj,:])
+                thiscut= 0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                #thiscut= 0.25#0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                rcsigs[jj,2*ii]= thisf[int(math.floor(thiscut*nsamples))]
+                thiscut= 1.-thiscut
+                rcsigs[jj,2*ii+1]= thisf[int(math.floor(thiscut*nsamples))]
+        bovy_plot.bovy_print()
+        bovy_plot.bovy_plot(rs[rindx]*_REFR0,numpy.median(allrcs,axis=1)[rindx],
+                            'k-',lw=2.,
+                            xrange=[0.,10],
+                            yrange=[0.001,10.],
+                            xlabel=r'$R\ (\mathrm{kpc})$',
+                            ylabel=r'$\rho(R,|Z|=0)\ (M_\odot\,\mathrm{pc}^{-3})$',
+                            zorder=10,semilogy=True)
+        colord, cc= (1.-0.75)/(nsigs+1.), 1
+        nsigma= nsigs
+        p= pyplot.fill_between(rs[rindx]*_REFR0,rcsigs[rindx,0],rcsigs[rindx,1],
+                               color='k',rasterized=True)
+        p.set_facecolors("none")
+        ax1= pyplot.gca()
+        from matplotlib.patches import PathPatch
+        for path in p.get_paths():
+            p1 = PathPatch(path, fc="none",ec='0.5', hatch="x")
+            ax1.add_patch(p1)
+            p1.set_zorder(p.get_zorder()-0.1)
+        #Halo
+        allrcs= numpy.zeros((len(rs),nsamples))
+        for ii in range(nsamples):
+            allrcs[:,ii]= densities_samples[ii][2]
+        allrcs= allrcs[:,True-numpy.isnan(allrcs[0,:])]
+        bovy_plot.bovy_plot(rs[rindx]*_REFR0,numpy.median(allrcs,axis=1)[rindx],
+                            'k-',lw=2.,
+                            overplot=True)
+        #Determine range and plot
+        rcsigs= numpy.zeros((len(rs),2*nsigs))
+        for ii in range(nsigs):
+            for jj in range(len(rs)):
+                thisf= sorted(allrcs[jj,:])
+                thiscut= 0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                #thiscut= 0.25#0.5*special.erfc((ii+1.)/math.sqrt(2.))
+                rcsigs[jj,2*ii]= thisf[int(math.floor(thiscut*nsamples))]
+                thiscut= 1.-thiscut
+                rcsigs[jj,2*ii+1]= thisf[int(math.floor(thiscut*nsamples))]
+        colord, cc= (1.-0.75)/(nsigs+1.), 1
+        nsigma= nsigs
+        p= pyplot.fill_between(rs[rindx]*_REFR0,rcsigs[rindx,0],rcsigs[rindx,1],
+                            color='k',rasterized=True)
+        p.set_facecolors("none")
+        ax1= pyplot.gca()
+        from matplotlib.patches import PathPatch
+        for path in p.get_paths():
+            p1 = PathPatch(path, fc="none",ec='0.5',
+                           hatch="\\")
+            ax1.add_patch(p1)
+            p1.set_zorder(p.get_zorder()-0.1)
+        pyplot.plot(rs*_REFR0,(rs)**-2.*numpy.median(allrcs,axis=1)[numpy.argmin(numpy.fabs(rs-1.))],
+                    'k--',lw=2.)
+        pyplot.plot(rs*_REFR0,(rs)**-1.*numpy.median(allrcs,axis=1)[numpy.argmin(numpy.fabs(rs-1.))],
+                    'k-.',lw=2.)
+        pyplot.plot(rs*_REFR0,(rs)**-0.*numpy.median(allrcs,axis=1)[numpy.argmin(numpy.fabs(rs-1.))],
+                    'k:',lw=2.)
+    #bovy_plot.bovy_text(8.5,170,r'$\mathrm{Disk}$',size=16.)
+    #bovy_plot.bovy_text(8.5,80.,r'$\mathrm{Halo}$',size=16.)
+    #if 'apogee' in options.plotfile:
+    #    bovy_plot.bovy_text(r'$+\mathrm{APOGEE}\ V_c(R)$',
+    #                        top_right=True,size=16.)
+    pyplot.savefig(options.plotfile,format=re.split(r'\.',options.plotfile)[-1],
+                   dpi=100)
+    #Plot with just the models
+    bovy_plot.bovy_print()
+    bovy_plot.bovy_plot(rs*_REFR0,(rs)**-2.*numpy.median(allrcs,axis=1)[numpy.argmin(numpy.fabs(rs-1.))],
+                        'k--',lw=2.,
+                        xrange=[0.,10],
+                        yrange=[0.001,10.],
+                        xlabel=r'$R\ (\mathrm{kpc})$',
+                        ylabel=r'$\rho(R,|Z|=0)\ (M_\odot\,\mathrm{pc}^{-3})$',
+                        zorder=10,semilogy=True)
+    pyplot.plot(rs*_REFR0,(rs)**-1.*numpy.median(allrcs,axis=1)[numpy.argmin(numpy.fabs(rs-1.))],
+                'k-.',lw=2.)
+    pyplot.plot(rs*_REFR0,(rs)**-0.*numpy.median(allrcs,axis=1)[numpy.argmin(numpy.fabs(rs-1.))],
+                    'k:',lw=2.)
+    pyplot.savefig('../tex-oort/PotDensities_justmodels.png',
+                   format=re.split(r'\.',options.plotfile)[-1],
                    dpi=100)
     return None
 
@@ -764,6 +931,10 @@ def get_options():
                       dest="calcrotcurves",
                       default=False,
                       help="If set, calculate rotation curves")
+    parser.add_option("--calcdensities",action="store_true", 
+                      dest="calcdensities",
+                      default=False,
+                      help="If set, calculate (mid-plane) densities")
     #plot
     parser.add_option("--plot",action="store_true", 
                       dest="plot",
@@ -788,5 +959,7 @@ if __name__ == '__main__':
         calcDerived(options,args)
     elif options.calcrotcurves:
         calcRotcurves(options,args)
+    elif options.calcdensities:
+        calcDensities(options,args)
     else:
         fitSurfwPot(options,args)
