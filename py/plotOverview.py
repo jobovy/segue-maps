@@ -2,7 +2,7 @@ import sys
 import os, os.path
 import cPickle as pickle
 import numpy
-from scipy import maxentropy, integrate, optimize
+from scipy import misc, integrate, optimize
 import multiprocessing
 from matplotlib.patches import Ellipse
 from matplotlib import pyplot, cm
@@ -532,7 +532,7 @@ def calcAllPDFs(ii,options,args):
     marglogl= numpy.zeros((logl.shape[0],logl.shape[3]))
     for jj in range(marglogl.shape[0]):
         for kk in range(marglogl.shape[1]):
-            marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,0].flatten())
+            marglogl[jj,kk]= misc.logsumexp(logl[jj,0,0,kk,:,:,:,0].flatten())
     if marglogl[-1,-1] < -10000000000000.:
         return numpy.zeros((options.nrds,options.nfhs))
     else:

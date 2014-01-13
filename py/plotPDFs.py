@@ -2,7 +2,7 @@ import sys
 import os, os.path
 import cPickle as pickle
 import numpy
-from scipy import maxentropy
+from scipy import misc
 import multiprocessing
 from galpy.util import bovy_plot, multi
 import monoAbundanceMW
@@ -91,18 +91,18 @@ def plotRdfh(options,args):
                 indx= True-numpy.isnan(logl[jj,0,0,kk,:,:,:,:,:,:,:].flatten())
                 indxdvt0= True-numpy.isnan(logl[jj,0,0,kk,:,:,:,2,:,:,:].flatten())
                 if numpy.sum(indx) > 0:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,:,:,:,:].flatten()[indx])
+                    marglogl[jj,kk]= misc.logsumexp(logl[jj,0,0,kk,:,:,:,:,:,:,:].flatten()[indx])
                 else:
                     marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
                 if numpy.sum(indxdvt0) > 0:
-                    marglogldvt0[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,2,:,:,:].flatten()[indxdvt0])
+                    marglogldvt0[jj,kk]= misc.logsumexp(logl[jj,0,0,kk,:,:,:,2,:,:,:].flatten()[indxdvt0])
                 else:
                     marglogldvt0[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
-            condlogp[jj]= maxentropy.logsumexp(marglogl[jj,:])
-            condlogl= marglogl[jj,:]-maxentropy.logsumexp(marglogl[jj,:])
+            condlogp[jj]= misc.logsumexp(marglogl[jj,:])
+            condlogl= marglogl[jj,:]-misc.logsumexp(marglogl[jj,:])
             condfh[jj]= numpy.sum(numpy.exp(condlogl)*numpy.linspace(0.,1.,logl.shape[3]))/numpy.sum(numpy.exp(condlogl))
-            condlogpdvt0[jj]= maxentropy.logsumexp(marglogldvt0[jj,:])
-            condlogldvt0= marglogldvt0[jj,:]-maxentropy.logsumexp(marglogldvt0[jj,:])
+            condlogpdvt0[jj]= misc.logsumexp(marglogldvt0[jj,:])
+            condlogldvt0= marglogldvt0[jj,:]-misc.logsumexp(marglogldvt0[jj,:])
             condfhdvt0[jj]= numpy.sum(numpy.exp(condlogldvt0)*numpy.linspace(0.,1.,logl.shape[3]))/numpy.sum(numpy.exp(condlogldvt0))
         if monoAbundanceMW.hr(fehs[ii],afes[ii]) < 3.5 \
                 and numpy.amax(logl) < 0.: #latter removes ridiculous bins
@@ -216,7 +216,7 @@ def plotRdhr(options,args):
             for kk in range(marglogl.shape[1]):
                 indx= True-numpy.isnan(logl[jj,0,0,:,kk,:,:,:,:,:,:].flatten())
                 if numpy.sum(indx) > 0:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,kk,:,:,:,:,:,:].flatten()[indx])
+                    marglogl[jj,kk]= misc.logsumexp(logl[jj,0,0,:,kk,:,:,:,:,:,:].flatten()[indx])
                 else:
                     marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         allmarglogl[:,:,ii]= marglogl
@@ -288,7 +288,7 @@ def plotRdPout(options,args):
             for kk in range(marglogl.shape[1]):
                 indx= True-numpy.isnan(logl[jj,0,0,:,:,:,:,:,kk,:,:].flatten())
                 if numpy.sum(indx) > 0:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,:,:,:,:,kk,:,:].flatten()[indx])
+                    marglogl[jj,kk]= misc.logsumexp(logl[jj,0,0,:,:,:,:,:,kk,:,:].flatten()[indx])
                 else:
                     marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         allmarglogl[:,:,ii]= marglogl
@@ -360,7 +360,7 @@ def plotRddvt(options,args):
             for kk in range(marglogl.shape[1]):
                 indx= True-numpy.isnan(logl[jj,0,0,:,:,:,:,kk,:,:,:].flatten())
                 if numpy.sum(indx) > 0:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,:,:,:,kk,:,:,:].flatten()[indx])
+                    marglogl[jj,kk]= misc.logsumexp(logl[jj,0,0,:,:,:,:,kk,:,:,:].flatten()[indx])
                 else:
                     marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         allmarglogl[:,:,ii]= marglogl
@@ -432,7 +432,7 @@ def plotsrsz(options,args):
             for kk in range(marglogl.shape[1]):
                 indx= True-numpy.isnan(logl[:,0,0,:,:,jj,kk,:,:,:,:].flatten())
                 if numpy.sum(indx) > 0:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[:,0,0,:,:,jj,kk,:,:,:,:].flatten()[indx])
+                    marglogl[jj,kk]= misc.logsumexp(logl[:,0,0,:,:,jj,kk,:,:,:,:].flatten()[indx])
                 else:
                     marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         allmarglogl[:,:,ii]= marglogl
@@ -515,7 +515,7 @@ def plotRdsz_single(ii,options,args):
             for kk in range(marglogl.shape[1]):
                 indx= True-numpy.isnan(logl[jj,0,0,:,:,:,kk,:,:,:,:].flatten())
                 if numpy.sum(indx) > 0:
-                    marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,:,:,:,kk,:,:,:,:].flatten()[indx])
+                    marglogl[jj,kk]= misc.logsumexp(logl[jj,0,0,:,:,:,kk,:,:,:,:].flatten()[indx])
                 else:
                     marglogl[jj,kk]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         #Normalize
@@ -574,7 +574,7 @@ def plotPout(options,args):
         for jj in range(marglogl.shape[0]):
             indx= True-numpy.isnan(logl[:,0,0,:,:,:,:,:,jj,:,:].flatten())
             if numpy.sum(indx) > 0:
-                marglogl[jj]= maxentropy.logsumexp(logl[:,0,0,:,:,:,:,:,jj,:,:].flatten()[indx])
+                marglogl[jj]= misc.logsumexp(logl[:,0,0,:,:,:,:,:,jj,:,:].flatten()[indx])
             else:
                 marglogl[jj]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         allmarglogl[:,ii]= marglogl
@@ -641,7 +641,7 @@ def plotdvt(options,args):
         for jj in range(marglogl.shape[0]):
             indx= True-numpy.isnan(logl[:,0,0,:,:,:,:,jj,:,:,:].flatten())
             if numpy.sum(indx) > 0:
-                marglogl[jj]= maxentropy.logsumexp(logl[:,0,0,:,:,:,:,jj,:,:,:].flatten()[indx])
+                marglogl[jj]= misc.logsumexp(logl[:,0,0,:,:,:,:,jj,:,:,:].flatten()[indx])
             else:
                 marglogl[jj]= -numpy.finfo(numpy.dtype(numpy.float64)).max
         allmarglogl[:,ii]= marglogl

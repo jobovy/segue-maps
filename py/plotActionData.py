@@ -6,7 +6,6 @@ import time
 import math
 import numpy
 from scipy import optimize, interpolate, linalg, special
-from scipy.maxentropy import logsumexp
 import cPickle as pickle
 from optparse import OptionParser
 import multi

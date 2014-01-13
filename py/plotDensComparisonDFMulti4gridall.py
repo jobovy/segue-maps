@@ -2,7 +2,7 @@ import os, os.path
 import tempfile
 import copy
 import numpy
-from scipy.maxentropy import logsumexp
+from scipy.misc import logsumexp
 import cPickle as pickle
 from optparse import OptionParser
 import multiprocessing

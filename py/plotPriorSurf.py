@@ -2,7 +2,7 @@ import os, os.path
 import sys
 import numpy
 import pickle
-from scipy import maxentropy, integrate
+from scipy import misc, integrate
 from galpy import potential
 from galpy.util import bovy_plot, save_pickles
 from pixelFitDF import _REFV0, _REFR0, setup_potential

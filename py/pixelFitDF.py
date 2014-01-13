@@ -20,7 +20,7 @@ import subprocess
 import math
 import numpy
 from scipy import optimize, interpolate, special
-from scipy.maxentropy import logsumexp
+from scipy.misc import logsumexp
 from scipy.stats import nanmedian
 #import cPickle as pickle
 import pickle

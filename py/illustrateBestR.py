@@ -1,6 +1,6 @@
 import cPickle as pickle
 import numpy
-from scipy import maxentropy, integrate, interpolate
+from scipy import misc, integrate, interpolate
 from galpy import potential
 from galpy.util import bovy_plot, multi, save_pickles
 from matplotlib import pyplot
@@ -64,7 +64,7 @@ def illustrateBestR(options,args):
     vo= options.fixvc/_REFV0
     for jj in range(logl.shape[0]):
         for kk in range(logl.shape[3]):
-            marglogl[jj,kk]= maxentropy.logsumexp(logl[jj,0,0,kk,:,:,:,0].flatten())
+            marglogl[jj,kk]= misc.logsumexp(logl[jj,0,0,kk,:,:,:,0].flatten())
         #interpolate
         tindx= marglogl[jj,:] > -1000000000.
         intp= interpolate.InterpolatedUnivariateSpline(fhs[tindx],marglogl[jj,tindx],
