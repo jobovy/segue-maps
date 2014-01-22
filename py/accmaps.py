@@ -23,7 +23,6 @@ def accmaps(npix=200):
     accZ_baryon= numpy.empty((len(Rs),len(Zs)))
     #Calculate accelerations
     for ii in range(len(Rs)):
-        print ii
         for jj in range(len(Zs)):
             accR_dm[ii,jj]= potential.evaluateRforces(Rs[ii],Zs[jj],[pot[0]])
             accZ_dm[ii,jj]= potential.evaluatezforces(Rs[ii],Zs[jj],[pot[0]])
