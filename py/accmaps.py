@@ -9,7 +9,8 @@ _REFV0= 220. #km/s
 _REFR0= 8. #kpc
 def accmaps(npix=200):
     #First setup the potential, the following are the best-fit parameters from the Sec. 5 of our paper
-    params= numpy.array([-1.33663190049,0.998420232634,-3.49031638164,0.31949840593,-1.63965169376])
+    #params= numpy.array([-1.33663190049,0.998420232634,-3.49031638164,0.31949840593,-1.63965169376])
+    params= numpy.array([-1.33663190049,0.998420232634,-3.0736938150237028,0.31949840593,-1.63965169376]) #this has a scale height of 360 pc
     try:
         pot= setup_potential(params)
     except RuntimeError: #if this set of parameters gives a nonsense potential
