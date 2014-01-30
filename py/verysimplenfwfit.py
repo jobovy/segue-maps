@@ -39,9 +39,13 @@ def verysimplenfwfit(plotfilename):
                                 nsamples=10000,
                                 nwalkers=6)
     mvirs= numpy.array([mvir(x) for x in samples])
+    concs= numpy.array([conc(x) for x in samples])
     indx= True-numpy.isnan(mvirs)
     mvirs= mvirs[indx]
-    bovy_plot.bovy_text(r'$M_{\mathrm{vir}} = %.2f\pm%.2f\times10^{12}\,M_\odot$' % (numpy.median(mvirs),1.4826*numpy.median(numpy.fabs(mvirs-numpy.median(mvirs)))),
+    indx= True-numpy.isnan(concs)
+    concs= concs[indx]
+    bovy_plot.bovy_text(r'$M_{\mathrm{vir}} = %.2f\pm%.2f\times10^{12}\,M_\odot$' % (numpy.median(mvirs),1.4826*numpy.median(numpy.fabs(mvirs-numpy.median(mvirs)))) +'\n'+
+                        r'$c = %.1f\pm%.1f$' % (numpy.median(concs),1.4826*numpy.median(numpy.fabs(concs-numpy.median(concs)))),
                         top_left=True,size=18.)
     #Create inset with PDF
     insetAxes= pyplot.axes([0.55,0.22,0.3,0.3])
@@ -65,6 +69,16 @@ def mvir(p):
     except ValueError:
         return numpy.nan
     return nfw.mass(rvir)*bovy_conversion.mass_in_1010msol(220.*vo,8.)/100.
+
+def conc(p):
+    vo= numpy.exp(p[0])
+    a= numpy.exp(p[1])  
+    nfw= potential.NFWPotential(normalize=1.,a=a)
+    try:
+        rvir= nfw._rvir(220.*vo,8.,wrtcrit=True,overdens=96.7)
+    except ValueError:
+        return numpy.nan
+    return rvir/a
 
 def chi2(p):
     """chi2 for the Bovy & Rix and Xue et al. measurements"""
