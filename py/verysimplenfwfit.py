@@ -6,10 +6,10 @@ from galpy.util import bovy_plot, bovy_conversion
 from matplotlib import pyplot
 from matplotlib.patches import FancyArrowPatch
 import bovy_mcmc
-def verysimplenfwfit(plotfilename):
+def verysimplenfwfit(plotfilename,wcprior=False,wmassprior=False):
     #Fit
-    p= optimize.fmin_powell(chi2,[-0.5,0.7])
-    print mvir(p)
+    p= optimize.fmin_powell(chi2,[-0.5,0.7],args=(wcprior,wmassprior))
+    print mvir(p), conc(p)*numpy.exp(p[1])*8.
     vo= numpy.exp(p[0])
     a= numpy.exp(p[1])
     nfw= potential.NFWPotential(normalize=1.,a=a)
@@ -33,7 +33,7 @@ def verysimplenfwfit(plotfilename):
     samples= bovy_mcmc.markovpy(p,
                                 0.05,
                                 lnlike,
-                                (),
+                                (wcprior,wmassprior),
                                 isDomainFinite=[[False,False],[False,False]],
                                 domain=[[0.,0.],[0.,0.]],
                                 nsamples=10000,
@@ -44,7 +44,9 @@ def verysimplenfwfit(plotfilename):
     mvirs= mvirs[indx]
     indx= True-numpy.isnan(concs)
     concs= concs[indx]
+    rvirs= concs[indx]*numpy.array([numpy.exp(x[1]) for x in samples])*8.
     bovy_plot.bovy_text(r'$M_{\mathrm{vir}} = %.2f\pm%.2f\times10^{12}\,M_\odot$' % (numpy.median(mvirs),1.4826*numpy.median(numpy.fabs(mvirs-numpy.median(mvirs)))) +'\n'+
+                        r'$r_{\mathrm{vir}} = %i\pm%i\,\mathrm{kpc}$' % (numpy.median(rvirs),1.4826*numpy.median(numpy.fabs(rvirs-numpy.median(rvirs))))+'\n'+
                         r'$c = %.1f\pm%.1f$' % (numpy.median(concs),1.4826*numpy.median(numpy.fabs(concs-numpy.median(concs)))),
                         top_left=True,size=18.)
     #Create inset with PDF
@@ -80,7 +82,7 @@ def conc(p):
         return numpy.nan
     return rvir/a
 
-def chi2(p):
+def chi2(p,wcprior,wmassprior):
     """chi2 for the Bovy & Rix and Xue et al. measurements"""
     vo= numpy.exp(p[0])
     a= numpy.exp(p[1])
@@ -92,15 +94,59 @@ def chi2(p):
         return numpy.nan
     mvir= nfw.mass(rvir)*bovy_conversion.mass_in_1010msol(220.*vo,8.)/100.
     c= rvir/a
-    if numpy.fabs(numpy.log10(c)-1.051+0.099*numpy.log10(mvir)) > 0.1111*3.:
+    out= 0.
+    if wcprior:
+        out-= -0.5*(numpy.log10(c)-1.051+0.099*numpy.log10(mvir))**2./0.111**2.
+    elif numpy.fabs(numpy.log10(c)-1.051+0.099*numpy.log10(mvir)) > 0.1111*3.:
         return 10000000000000000.
+    if wmassprior:
+        out-= -0.9*numpy.log10(mvir)
     mass1= nfw.mass(10./8.)*bovy_conversion.mass_in_1010msol(220.*vo,8.)
     mass2= nfw.mass(60./8.)*bovy_conversion.mass_in_1010msol(220.*vo,8.)
-    return 0.5*((mass1-4.5)**2./1.5**2.+(mass2-35)**2./7.**2.)
+    out-= -0.5*((mass1-4.5)**2./1.5**2.+(mass2-35)**2./7.**2.)
+    #Jacobian
+    out-= numpy.log(jaccmvir(p,numpy.log10(c),numpy.log10(mvir)))
+    return out
 
-def lnlike(p):
-    return -chi2(p)
+def jaccmvir(p,logc,logm):
+    dx= 0.001
+    vo= numpy.exp(p[0]+dx)
+    a= numpy.exp(p[1])
+    if a > 100. or a < 0.01: return 10000000000000.
+    nfw= potential.NFWPotential(normalize=1.,a=a)
+    try:
+        rvir= nfw._rvir(220.*vo,8.,wrtcrit=True,overdens=96.7)
+    except ValueError:
+        return numpy.nan
+    mvir= nfw.mass(rvir)*bovy_conversion.mass_in_1010msol(220.*vo,8.)/100.
+    c= rvir/a
+    dlogcdp0= (numpy.log10(c)-logc)/dx
+    dlogmdp0= (numpy.log10(mvir)-logm)/dx
+    #Change p1
+    vo= numpy.exp(p[0])
+    a= numpy.exp(p[1]+dx)
+    if a > 100. or a < 0.01: return 10000000000000.
+    nfw= potential.NFWPotential(normalize=1.,a=a)
+    try:
+        rvir= nfw._rvir(220.*vo,8.,wrtcrit=True,overdens=96.7)
+    except ValueError:
+        return numpy.nan
+    mvir= nfw.mass(rvir)*bovy_conversion.mass_in_1010msol(220.*vo,8.)/100.
+    c= rvir/a
+    dlogcdp1= (numpy.log10(c)-logc)/dx
+    dlogmdp1= (numpy.log10(mvir)-logm)/dx
+    return numpy.fabs((dlogcdp0*dlogmdp1-dlogcdp1*dlogmdp0))
+
+def lnlike(p,wcprior,wmassprior):
+    return -chi2(p,wcprior,wmassprior)
 
 if __name__ == '__main__':
     numpy.random.seed(1)
-    verysimplenfwfit(sys.argv[1])
+    verysimplenfwfit(sys.argv[1],wcprior=len(sys.argv) > 2,
+                     wmassprior=len(sys.argv) > 3)
+
+"""Make plots with
+python verysimplenfwfit.py ~/Desktop/massMW.png
+python verysimplenfwfit.py ~/Desktop/massMW_wcprior.png wcprior
+python verysimplenfwfit.py ~/Desktop/massMW_wcprior_wmassprior.png wcprior wmassprior
+"""
