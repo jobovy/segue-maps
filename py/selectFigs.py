@@ -2,7 +2,7 @@ import os, os.path
 import math
 import numpy
 from optparse import OptionParser
-import pyfits
+import astropy.io.fits as pyfits
 from galpy.util import bovy_plot, bovy_coords
 from matplotlib import pyplot, cm
 import segueSelect

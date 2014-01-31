@@ -4,7 +4,7 @@ import copy
 import math
 import numpy
 from scipy import special, interpolate, optimize, misc, stats
-import pyfits
+import astropy.io.fits as pyfits
 try:
     from galpy.util import bovy_plot
 except ImportError:

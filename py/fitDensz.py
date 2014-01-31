@@ -9,7 +9,7 @@ import cPickle as pickle
 from matplotlib import pyplot
 from optparse import OptionParser
 from scipy import optimize, special, integrate
-import pyfits
+import astropy.io.fits as pyfits
 from galpy.util import bovy_coords, bovy_plot, bovy_quadpack
 import bovy_mcmc
 import markovpy

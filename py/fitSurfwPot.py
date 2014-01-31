@@ -273,7 +273,8 @@ def calcDerived(options,args):
                                                                 options.multi]))
         for kk in range(len(derived_params[0])):
             xs= numpy.array([s[kk] for s in derived_params])
-            print numpy.mean(xs), numpy.std(xs)
+            print numpy.mean(xs[True-numpy.isnan(xs)]), \
+                numpy.std(xs[True-numpy.isnan(xs)])
     else:
         derived_params= calcDerivedSingle(init_params,options,potoptions)
         print derived_params
@@ -281,7 +282,10 @@ def calcDerived(options,args):
     return None
 
 def calcDerivedSingle(params,options,potoptions):
-    pot= setup_potential(params,potoptions,0,returnrawpot=True)
+    try:
+        pot= setup_potential(params,potoptions,0,returnrawpot=True)
+    except RuntimeError:
+        return [numpy.nan for ii in range(9)]
     ro= options.ro
     vo= params[1]
     zh= numpy.exp(params[2])
@@ -304,7 +308,11 @@ def calcDerivedSingle(params,options,potoptions):
     #mass of the disk
     rhod= pot[3].dens(1.,0.)*_REFV0**2.*vo**2./_REFR0**2./ro**2./4.302*10.**-3.
     massgasdisk= rhod*2.*130./8000.*numpy.exp(1./rd/2.*ro)*rd**2./ro**2.*4.*2.*numpy.pi*(ro*_REFR0)**3./10.*(1.+3./_REFR0)*numpy.exp(-3./_REFR0/2./rd*ro)#cut out central 3 kpc
-    out= [surfz,surfzdisk,rhodm,rhoo,massdisk,alpha,vcdvc,massdisk+massgasdisk]
+    #Mass of the halo within 10 kpc
+    masshalo= pot[1].mass(10./_REFR0/ro)\
+        *bovy_conversion.mass_in_1010msol(_REFV0*vo,_REFR0*ro)
+    out= [surfz,surfzdisk,rhodm,rhoo,massdisk,alpha,vcdvc,massdisk+massgasdisk,
+          masshalo]
     return out
     
 def calcRotcurves(options,args):
