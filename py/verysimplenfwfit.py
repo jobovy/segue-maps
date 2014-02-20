@@ -6,6 +6,13 @@ from galpy.util import bovy_plot, bovy_conversion
 from matplotlib import pyplot
 from matplotlib.patches import FancyArrowPatch
 import bovy_mcmc
+_XUER= numpy.array([22.5, 27.5,32.5,37.5,42.5,47.5,55.])
+_XUEVC= numpy.array([164.,183.,143.,183.,203.,166.,180.])
+_XUEVC_ERR= numpy.array([20.,20.,22.,39.,35.,30.,35.])
+_G= 4.302*10.**-3. #pc / Msolar (km/s)^2
+_XUEMASS= _XUER*_XUEVC**2./_G/10.**7.-5
+_XUEMASS_ERR= numpy.sqrt(2.)*_XUEVC_ERR/_XUEVC*_XUER*_XUEVC**2./_G/10.**7.
+_USE_ALL_XUE= True
 def verysimplenfwfit(plotfilename,wcprior=False,wmassprior=False):
     #Fit
     p= optimize.fmin_powell(chi2,[-0.5,0.7],args=(wcprior,wmassprior))
@@ -23,7 +30,18 @@ def verysimplenfwfit(plotfilename,wcprior=False,wmassprior=False):
                         ylabel=r'$M(<R)\,(10^{12}\,M_\odot)$',
                         yrange=[0.01,1.2],
                         xrange=[3.,400.])
-    pyplot.errorbar([10.,60.],[4.5/100.,3.5/10.],yerr=[1.5/100.,0.7/10.],marker='o',ls='none',color='k')
+    if _USE_ALL_XUE:
+        plotx= [10.]
+        plotx.extend(list(_XUER))
+        ploty= [4.5/100.]
+        ploty.extend(list(_XUEMASS/100.))
+        plotyerr= [1.5/100]
+        plotyerr.extend(list(_XUEMASS_ERR/100.))
+        pyplot.errorbar(plotx,ploty,yerr=plotyerr,marker='o',ls='none',
+                        color='k')
+    else:
+        pyplot.errorbar([10.,60.],[4.5/100.,3.5/10.],yerr=[1.5/100.,0.7/10.],
+                        marker='o',ls='none',color='k')
     pyplot.errorbar([150.],[7.5/10.],[2.5/10.],marker='None',color='k')
     dx= .5
     arr= FancyArrowPatch(posA=(7.,4./100.),posB=(numpy.exp(numpy.log(7.)+dx),numpy.exp(numpy.log(4./100.)+1.5*dx)),arrowstyle='->',connectionstyle='arc3,rad=%4.2f' % (0.),shrinkA=2.0, shrinkB=2.0,mutation_scale=20.0, mutation_aspect=None,fc='k')
@@ -102,8 +120,15 @@ def chi2(p,wcprior,wmassprior):
     if wmassprior:
         out-= -0.9*numpy.log10(mvir)
     mass1= nfw.mass(10./8.)*bovy_conversion.mass_in_1010msol(220.*vo,8.)
-    mass2= nfw.mass(60./8.)*bovy_conversion.mass_in_1010msol(220.*vo,8.)
-    out-= -0.5*((mass1-4.5)**2./1.5**2.+(mass2-35)**2./7.**2.)
+    if _USE_ALL_XUE:
+        out-= -0.5*((mass1-4.5)**2./1.5**2.)
+        for ii in range(len(_XUER)):
+            tmass= nfw.mass(_XUER[ii]/8.)\
+                *bovy_conversion.mass_in_1010msol(220.*vo,8.)
+            out-= -0.5*((tmass-_XUEMASS[ii])**2./_XUEMASS_ERR[ii]**2.)
+    else:
+        mass2= nfw.mass(60./8.)*bovy_conversion.mass_in_1010msol(220.*vo,8.)
+        out-= -0.5*((mass1-4.5)**2./1.5**2.+(mass2-35)**2./7.**2.)
     #Jacobian
     out-= numpy.log(jaccmvir(p,numpy.log10(c),numpy.log10(mvir)))
     return out
