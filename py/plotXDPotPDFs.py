@@ -5,7 +5,10 @@ import math
 import numpy
 import pickle
 from scipy import optimize, integrate, special
-from scipy.maxentropy import logsumexp
+try:
+    from scipy.maxentropy import logsumexp
+except ImportError:
+    from scipy.misc import logsumexp
 from optparse import OptionParser
 import extreme_deconvolution
 from galpy import potential
